@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ChatView from './components/ChatView';
@@ -7,14 +7,18 @@ import TextToSpeechView from './components/TextToSpeechView';
 import CreateVoiceView from './components/CreateVoiceView';
 import AdminView from './components/AdminView';
 import AuthView from './components/auth/AuthView';
+import LandingPage from './components/LandingPage';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Sparkles } from 'lucide-react';
+
+type PublicView = 'landing' | 'login' | 'signup';
 
 function AppContent() {
   const { user, loading, signOut, refreshProfile, isAuthenticated } = useAuth();
   const store = useAppStore(isAuthenticated, refreshProfile);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [publicView, setPublicView] = useState<PublicView>('landing');
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -38,7 +42,20 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <AuthView />;
+    if (publicView === 'landing') {
+      return (
+        <LandingPage
+          onLogin={() => setPublicView('login')}
+          onSignup={() => setPublicView('signup')}
+        />
+      );
+    }
+    return (
+      <AuthView
+        initialMode={publicView}
+        onBack={() => setPublicView('landing')}
+      />
+    );
   }
 
   const headerTitle =

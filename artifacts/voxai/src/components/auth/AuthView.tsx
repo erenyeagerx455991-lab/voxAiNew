@@ -4,8 +4,13 @@ import { Eye, EyeOff, ArrowLeft, Sparkles } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | 'forgot';
 
-export default function AuthView() {
-  const [mode, setMode] = useState<AuthMode>('login');
+interface AuthViewProps {
+  initialMode?: 'login' | 'signup';
+  onBack?: () => void;
+}
+
+export default function AuthView({ initialMode = 'login', onBack }: AuthViewProps) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -49,7 +54,8 @@ export default function AuthView() {
     }
   };
 
-  const title = mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create account' : 'Reset password';
+  const title =
+    mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create account' : 'Reset password';
   const subtitle =
     mode === 'login'
       ? 'Sign in to continue to VoxAI'
@@ -59,6 +65,19 @@ export default function AuthView() {
 
   return (
     <div className="min-h-[100dvh] bg-white flex flex-col">
+      {/* Top bar with back button */}
+      {onBack && (
+        <div className="px-4 pt-4">
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-black transition-colors"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
           {/* Logo */}
@@ -121,6 +140,7 @@ export default function AuthView() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Min. 6 characters"
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                     className="w-full px-4 py-3 pr-11 rounded-xl border border-gray-200 bg-white text-[15px] text-black placeholder:text-gray-400 outline-none focus:border-gray-400 transition-colors"
                     required
                     minLength={6}
@@ -148,10 +168,18 @@ export default function AuthView() {
               {loading ? (
                 <span className="inline-flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  {mode === 'login' ? 'Signing in...' : mode === 'signup' ? 'Creating account...' : 'Sending...'}
+                  {mode === 'login'
+                    ? 'Signing in...'
+                    : mode === 'signup'
+                      ? 'Creating account...'
+                      : 'Sending...'}
                 </span>
+              ) : mode === 'login' ? (
+                'Sign in'
+              ) : mode === 'signup' ? (
+                'Create account'
               ) : (
-                mode === 'login' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Send reset link'
+                'Send reset link'
               )}
             </button>
           </form>
@@ -160,7 +188,11 @@ export default function AuthView() {
             {mode === 'login' && (
               <>
                 <button
-                  onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
+                  onClick={() => {
+                    setMode('forgot');
+                    setError('');
+                    setSuccess('');
+                  }}
                   className="text-sm text-gray-500 hover:text-black transition-colors"
                 >
                   Forgot password?
@@ -168,7 +200,11 @@ export default function AuthView() {
                 <p className="text-sm text-gray-400">
                   Don't have an account?{' '}
                   <button
-                    onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}
+                    onClick={() => {
+                      setMode('signup');
+                      setError('');
+                      setSuccess('');
+                    }}
                     className="text-black font-medium hover:underline"
                   >
                     Sign up
@@ -180,7 +216,11 @@ export default function AuthView() {
               <p className="text-sm text-gray-400">
                 Already have an account?{' '}
                 <button
-                  onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                  onClick={() => {
+                    setMode('login');
+                    setError('');
+                    setSuccess('');
+                  }}
                   className="text-black font-medium hover:underline"
                 >
                   Sign in
@@ -189,7 +229,11 @@ export default function AuthView() {
             )}
             {mode === 'forgot' && (
               <button
-                onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+                onClick={() => {
+                  setMode('login');
+                  setError('');
+                  setSuccess('');
+                }}
                 className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-black transition-colors"
               >
                 <ArrowLeft size={14} />
