@@ -45,7 +45,7 @@ export async function deductCredits(
   if (!user) throw new Error('Not authenticated');
 
   const { data: { session } } = await supabase.auth.getSession();
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/credits`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/credits`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };

@@ -6,7 +6,7 @@ export async function generateSpeech(text: string, voiceName: string): Promise<T
   if (!user) throw new Error('Not authenticated');
 
   const { data: { session } } = await supabase.auth.getSession();
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/tts`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };

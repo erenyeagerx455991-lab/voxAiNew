@@ -42,7 +42,7 @@ export async function createVoiceModel(
 
   // Trigger processing via edge function
   const { data: { session } } = await supabase.auth.getSession();
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voices`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/voices`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };

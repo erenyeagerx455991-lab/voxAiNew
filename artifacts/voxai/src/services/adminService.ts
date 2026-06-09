@@ -25,7 +25,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 
 export async function getAdminStats(): Promise<AdminStats> {
   const headers = await getAuthHeaders();
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/admin`;
 
   const response = await fetch(apiUrl, {
     method: 'GET',
@@ -42,7 +42,7 @@ export async function getAdminStats(): Promise<AdminStats> {
 
 export async function getAdminUsers(page = 1, limit = 20) {
   const headers = await getAuthHeaders();
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/admin`;
 
   const response = await fetch(`${apiUrl}?action=users&page=${page}&limit=${limit}`, {
     method: 'GET',

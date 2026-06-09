@@ -61,7 +61,7 @@ export async function updateProfile(updates: Partial<Pick<Profile, 'name' | 'ava
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
-  const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/profile`;
+  const apiUrl = `https://jjxqvriyfjhvvaixjvwe.supabase.co/functions/v1/profile`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Authorization: `Bearer ${session.access_token}`,
