@@ -27,13 +27,22 @@ export default function AuthView({ initialMode = 'login', onBack }: AuthViewProp
 
     try {
       if (mode === 'signup') {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: { data: { name } },
         });
         if (signUpError) throw signUpError;
-        setSuccess('Account created! You are now signed in.');
+
+        // If Supabase requires email confirmation, session is null after signUp.
+        // Immediately sign in so the user lands on the chat page right away.
+        if (!signUpData.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) {
+            setSuccess('Account created! Please check your email to confirm before signing in.');
+            return;
+          }
+        }
       } else if (mode === 'login') {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
