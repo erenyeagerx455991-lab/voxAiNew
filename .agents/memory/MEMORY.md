@@ -1,0 +1,1 @@
+- [VoxAI Supabase secrets swap](voxai-supabase-secrets.md) — both VITE_SUPABASE_* secrets were entered as JWTs; URL is hardcoded in vite define block as workaround.
