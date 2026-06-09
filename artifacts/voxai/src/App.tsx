@@ -19,6 +19,8 @@ function AppContent() {
   const store = useAppStore(isAuthenticated, refreshProfile);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [publicView, setPublicView] = useState<PublicView>('landing');
+  const [pendingMessage, setPendingMessage] = useState('');
+  const pendingSentRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -30,13 +32,37 @@ function AppContent() {
     scrollToBottom();
   }, [store.activeChatMessages.length, store.isTyping, store.streamingContent, store.chatError, scrollToBottom]);
 
+  // When authenticated + app initialized + pending message → auto-send it
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      store.initialized &&
+      pendingMessage &&
+      !pendingSentRef.current
+    ) {
+      pendingSentRef.current = true;
+      store.handleSend(pendingMessage).finally(() => {
+        setPendingMessage('');
+        pendingSentRef.current = false;
+      });
+    }
+  }, [isAuthenticated, store.initialized, pendingMessage, store.handleSend]);
+
+  const handleLandingSubmit = (text: string) => {
+    setPendingMessage(text);
+    if (!isAuthenticated) {
+      setPublicView('signup');
+    }
+    // If already authenticated, the useEffect above will pick it up
+  };
+
   if (loading || !store.initialized) {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center bg-white">
         <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center mb-4 animate-pulse">
           <Sparkles size={24} className="text-white" strokeWidth={1.5} />
         </div>
-        <p className="text-sm text-gray-400">Loading VoxAI...</p>
+        <p className="text-sm text-gray-400">Loading...</p>
       </div>
     );
   }
@@ -47,6 +73,7 @@ function AppContent() {
         <LandingPage
           onLogin={() => setPublicView('login')}
           onSignup={() => setPublicView('signup')}
+          onSubmit={handleLandingSubmit}
         />
       );
     }

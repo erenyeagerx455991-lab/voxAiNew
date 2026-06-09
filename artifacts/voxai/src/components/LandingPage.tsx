@@ -1,11 +1,27 @@
+import { useState } from 'react';
 import { Sparkles, Plus, Mic, ArrowUp, ChevronDown } from 'lucide-react';
 
 interface LandingPageProps {
   onLogin: () => void;
   onSignup: () => void;
+  onSubmit: (text: string) => void;
 }
 
-export default function LandingPage({ onLogin, onSignup }: LandingPageProps) {
+export default function LandingPage({ onLogin, onSignup, onSubmit }: LandingPageProps) {
+  const [text, setText] = useState('');
+  const hasText = text.trim().length > 0;
+
+  const handleSubmit = () => {
+    if (hasText) onSubmit(text.trim());
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && hasText) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
       {/* Header */}
@@ -33,33 +49,33 @@ export default function LandingPage({ onLogin, onSignup }: LandingPageProps) {
       </header>
 
       {/* Hero */}
-      <main className="flex-1 flex flex-col px-5 pt-10 pb-6 relative">
-        {/* Gradient glow at bottom */}
+      <main className="flex-1 flex flex-col px-5 pt-6 pb-6 relative">
+        {/* Gradient glow */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[420px] h-[260px] bg-gradient-to-t from-purple-600/50 via-blue-500/25 to-transparent blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex-1 flex flex-col">
-          {/* Heading */}
-          <h1 className="text-[32px] leading-[1.2] font-bold tracking-tight mb-3">
+          <h1 className="text-[32px] leading-[1.2] font-bold tracking-tight mb-3 text-center">
             Build a business<br />
             landing page with AI
           </h1>
 
-          {/* Sub heading */}
-          <p className="text-[15px] text-gray-400 leading-relaxed mb-6">
+          <p className="text-[15px] text-gray-400 leading-relaxed mb-6 text-center">
             Describe your business, choose a style, and generate a clean landing page in minutes.
           </p>
 
-          {/* Bold prompt line */}
-          <p className="text-[17px] font-bold text-white mb-4">
+          <p className="text-[17px] font-bold text-white mb-4 text-center">
             What should we build, MARK?
           </p>
 
           {/* Input bar */}
           <div className="rounded-2xl bg-[#1a1a1a] border border-white/10 px-4 pt-4 pb-3 flex flex-col gap-3">
-            <input
-              type="text"
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Ask NexoGen to make a do"
-              className="w-full bg-transparent text-[15px] text-white placeholder:text-gray-500 outline-none"
+              rows={2}
+              className="w-full bg-transparent text-[15px] text-white placeholder:text-gray-500 outline-none resize-none leading-relaxed"
             />
             {/* Bottom row */}
             <div className="flex items-center justify-between">
@@ -77,10 +93,15 @@ export default function LandingPage({ onLogin, onSignup }: LandingPageProps) {
                   <Mic size={20} />
                 </button>
                 <button
-                  onClick={onSignup}
-                  className="w-9 h-9 rounded-full bg-gray-500 hover:bg-gray-400 flex items-center justify-center transition-colors"
+                  onClick={handleSubmit}
+                  disabled={!hasText}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                    hasText
+                      ? 'bg-white hover:bg-gray-100'
+                      : 'bg-gray-600 cursor-not-allowed'
+                  }`}
                 >
-                  <ArrowUp size={18} className="text-white" />
+                  <ArrowUp size={18} className={hasText ? 'text-black' : 'text-gray-400'} />
                 </button>
               </div>
             </div>
