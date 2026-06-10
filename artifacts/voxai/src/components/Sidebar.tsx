@@ -19,7 +19,7 @@ interface SidebarProps {
 }
 
 const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
-  { id: 'chat', label: 'Chat', icon: MessageSquare },
+  { id: 'chat', label: 'Workspace', icon: MessageSquare },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
 ];
 
