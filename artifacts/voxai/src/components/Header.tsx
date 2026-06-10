@@ -17,18 +17,18 @@ function PlayIcon() {
 
 export default function Header({ onMenuClick, title }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800">
       <div className="flex items-center justify-between h-14 px-4 max-w-3xl mx-auto">
         <button
           onClick={onMenuClick}
-          className="p-2 -ml-2 rounded-xl hover:bg-gray-100 transition-colors"
+          className="p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Open menu"
         >
-          <Menu size={22} strokeWidth={1.5} />
+          <Menu size={22} strokeWidth={1.5} className="text-gray-700 dark:text-gray-300" />
         </button>
-        <h1 className="text-[15px] font-semibold text-black truncate">{title}</h1>
+        <h1 className="text-[15px] font-semibold text-black dark:text-white truncate">{title}</h1>
         <button
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-black text-white text-[13px] font-medium hover:bg-gray-800 transition-colors -mr-1"
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-black dark:bg-white text-white dark:text-black text-[13px] font-medium hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors -mr-1"
           aria-label="Preview"
         >
           <PlayIcon />

@@ -7,6 +7,7 @@ import ProjectsView from './components/ProjectsView';
 import AdminView from './components/AdminView';
 import AuthView from './components/auth/AuthView';
 import LandingPage from './components/LandingPage';
+import SettingsPage from './components/SettingsPage';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Sparkles } from 'lucide-react';
@@ -18,11 +19,10 @@ function AppContent() {
   const store = useAppStore(isAuthenticated, refreshProfile);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Always show landing first — regardless of auth state
   const [landingShown, setLandingShown] = useState(true);
-  // null = landing, 'login'/'signup' = auth form (only for unauthenticated)
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [pendingMessage, setPendingMessage] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const pendingSentRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
@@ -59,16 +59,13 @@ function AppContent() {
     if (!isAuthenticated) {
       setAuthMode('signup');
     }
-    // If authenticated, the useEffect above handles redirect
   };
 
-  // "Create project" from Projects view → go back to home/landing
   const handleCreateProject = () => {
     setLandingShown(true);
     setAuthMode(null);
   };
 
-  // Hamburger → Projects on landing page
   const handleOpenProjectsFromLanding = () => {
     if (isAuthenticated) {
       setLandingShown(false);
@@ -78,7 +75,6 @@ function AppContent() {
     }
   };
 
-  // Open a project card → switch to that chat in workspace
   const handleOpenProject = (chatId: string) => {
     store.setActiveChatId(chatId);
     store.setView('chat');
@@ -87,18 +83,22 @@ function AppContent() {
   // ── Loading ────────────────────────────────────────────────────
   if (loading || !store.initialized) {
     return (
-      <div className="h-[100dvh] flex flex-col items-center justify-center bg-white">
-        <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center mb-4 animate-pulse">
-          <Sparkles size={24} className="text-white" strokeWidth={1.5} />
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-white dark:bg-gray-900">
+        <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4 animate-pulse">
+          <Sparkles size={24} className="text-white dark:text-black" strokeWidth={1.5} />
         </div>
         <p className="text-sm text-gray-400">Loading...</p>
       </div>
     );
   }
 
+  // ── Settings overlay (renders on top of everything) ────────────
+  if (showSettings) {
+    return <SettingsPage onClose={() => setShowSettings(false)} />;
+  }
+
   // ── Landing / Auth flow ────────────────────────────────────────
   if (landingShown) {
-    // Non-authenticated user clicked Login or Signup → show auth form
     if (!isAuthenticated && authMode) {
       return (
         <AuthView
@@ -108,13 +108,13 @@ function AppContent() {
       );
     }
 
-    // Landing page — hide auth buttons if already logged in
     return (
       <LandingPage
         onLogin={() => setAuthMode('login')}
         onSignup={() => setAuthMode('signup')}
         onSubmit={handleLandingSubmit}
         onOpenProjects={handleOpenProjectsFromLanding}
+        onOpenSettings={() => setShowSettings(true)}
         onSignOut={signOut}
         profile={user}
         hideAuthButtons={isAuthenticated}
@@ -131,7 +131,7 @@ function AppContent() {
         : 'Admin Dashboard';
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-white overflow-hidden">
+    <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
       <Sidebar
         open={store.sidebarOpen}
         onClose={store.closeSidebar}
