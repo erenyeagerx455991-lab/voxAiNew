@@ -9,6 +9,7 @@ interface MessageInputProps {
 export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const hasText = value.trim().length > 0;
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -37,13 +38,9 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-white/0 pt-6 pb-[env(safe-area-inset-bottom,16px)]">
       <div className="max-w-3xl mx-auto px-4">
-        <div className="flex items-end gap-2 bg-white border border-gray-200 rounded-3xl px-3 py-2 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-          <button
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0"
-            aria-label="Attach"
-          >
-            <Plus size={20} strokeWidth={1.5} className="text-gray-500" />
-          </button>
+        {/* Dark card container */}
+        <div className="bg-[#1c1c1e] rounded-[24px] px-4 pt-4 pb-3 flex flex-col gap-3 shadow-[0_4px_24px_rgba(0,0,0,0.15)]">
+          {/* Textarea */}
           <textarea
             ref={textareaRef}
             value={value}
@@ -51,26 +48,46 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             onKeyDown={handleKeyDown}
             placeholder="Message VoxAI..."
             rows={1}
-            className="flex-1 resize-none bg-transparent text-[15px] text-black placeholder:text-gray-400 outline-none py-2 leading-snug max-h-[120px]"
+            disabled={disabled}
+            className="w-full resize-none bg-transparent text-[15px] text-white placeholder:text-[#8e8e93] outline-none leading-relaxed max-h-[120px] disabled:opacity-50"
           />
-          <button
-            className="p-2 rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0"
-            aria-label="Voice input"
-          >
-            <Mic size={20} strokeWidth={1.5} className="text-gray-500" />
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!value.trim() || disabled}
-            className={`p-2 rounded-xl transition-all flex-shrink-0 ${
-              value.trim()
-                ? 'bg-black text-white hover:bg-gray-800'
-                : 'bg-gray-100 text-gray-400'
-            }`}
-            aria-label="Send"
-          >
-            <ArrowUp size={20} strokeWidth={2} />
-          </button>
+
+          {/* Bottom row */}
+          <div className="flex items-center justify-between">
+            {/* Left: + button */}
+            <button
+              className="w-9 h-9 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-[#3a3a3c] transition-colors"
+              aria-label="Attach"
+            >
+              <Plus size={18} strokeWidth={2} className="text-white" />
+            </button>
+
+            {/* Right: Mic + Send */}
+            <div className="flex items-center gap-3">
+              <button
+                className="text-[#8e8e93] hover:text-white transition-colors"
+                aria-label="Voice"
+              >
+                <Mic size={22} strokeWidth={1.5} />
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!hasText || disabled}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
+                  hasText && !disabled
+                    ? 'bg-white hover:bg-gray-200'
+                    : 'bg-[#3a3a3c] cursor-not-allowed'
+                }`}
+                aria-label="Send"
+              >
+                <ArrowUp
+                  size={18}
+                  strokeWidth={2.5}
+                  className={hasText && !disabled ? 'text-black' : 'text-[#8e8e93]'}
+                />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
