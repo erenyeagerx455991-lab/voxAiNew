@@ -1,4 +1,4 @@
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
 
 interface ChatViewProps {
@@ -6,35 +6,6 @@ interface ChatViewProps {
   isTyping: boolean;
   streamingContent: string;
   chatError: string;
-}
-
-function EmptyState() {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-      <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center mb-5">
-        <Sparkles size={24} className="text-white" strokeWidth={1.5} />
-      </div>
-      <h2 className="text-xl font-semibold text-black mb-2">How can I help you today?</h2>
-      <p className="text-sm text-gray-400 text-center max-w-xs leading-relaxed">
-        Ask me anything. I can chat, convert text to speech, or help you create a custom AI voice.
-      </p>
-      <div className="mt-8 grid grid-cols-2 gap-2.5 w-full max-w-sm">
-        {[
-          'Explain quantum computing',
-          'Write a poem about rain',
-          'Summarize a long article',
-          'Help me brainstorm',
-        ].map((suggestion) => (
-          <div
-            key={suggestion}
-            className="px-3.5 py-3 rounded-2xl border border-gray-200 text-[13px] text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer leading-snug"
-          >
-            {suggestion}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function MessageBubble({ message }: { message: Message }) {
@@ -90,7 +61,7 @@ function ErrorBanner({ message }: { message: string }) {
 
 export default function ChatView({ messages, isTyping, streamingContent, chatError }: ChatViewProps) {
   if (messages.length === 0 && !isTyping && !chatError) {
-    return <EmptyState />;
+    return <div className="flex-1" />;
   }
 
   return (
