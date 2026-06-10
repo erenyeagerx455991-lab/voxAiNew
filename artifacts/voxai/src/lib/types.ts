@@ -64,7 +64,7 @@ export interface CreditUsage {
   created_at: string;
 }
 
-export type View = 'chat' | 'projects' | 'admin';
+export type View = 'chat' | 'projects' | 'admin' | 'builder';
 
 export interface AuthState {
   user: Profile | null;

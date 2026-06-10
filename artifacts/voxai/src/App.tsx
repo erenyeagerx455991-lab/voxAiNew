@@ -8,8 +8,10 @@ import AdminView from './components/AdminView';
 import AuthView from './components/auth/AuthView';
 import LandingPage from './components/LandingPage';
 import SettingsPage from './components/SettingsPage';
+import WorkspacePanel from './components/WorkspacePanel';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
+import { generateWebsite } from './services/builderService';
 import { Sparkles } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | null;
@@ -25,6 +27,27 @@ function AppContent() {
   const [showSettings, setShowSettings] = useState(false);
   const pendingSentRef = useRef(false);
 
+  // ── Builder state ─────────────────────────────────────────────
+  const [builderPrompt, setBuilderPrompt] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState('');
+
+  const runGenerate = useCallback(async (prompt: string) => {
+    setBuilderPrompt(prompt);
+    setGeneratedCode('');
+    setGenerationError('');
+    setIsGenerating(true);
+    try {
+      const code = await generateWebsite(prompt);
+      setGeneratedCode(code);
+    } catch (err) {
+      setGenerationError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  }, []);
+
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -35,7 +58,7 @@ function AppContent() {
     scrollToBottom();
   }, [store.activeChatMessages.length, store.isTyping, store.streamingContent, store.chatError, scrollToBottom]);
 
-  // Authenticated + pending message → send it and go to workspace
+  // Authenticated + pending message → generate and go to builder
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -44,21 +67,26 @@ function AppContent() {
       !pendingSentRef.current
     ) {
       pendingSentRef.current = true;
+      const msg = pendingMessage;
+      setPendingMessage('');
       setLandingShown(false);
       setAuthMode(null);
-      store.setView('chat');
-      store.handleSend(pendingMessage).finally(() => {
-        setPendingMessage('');
+      store.setView('builder');
+      runGenerate(msg).finally(() => {
         pendingSentRef.current = false;
       });
     }
-  }, [isAuthenticated, store.initialized, pendingMessage, store.handleSend, store.setView]);
+  }, [isAuthenticated, store.initialized, pendingMessage, store.setView, runGenerate]);
 
   const handleLandingSubmit = (text: string) => {
-    setPendingMessage(text);
     if (!isAuthenticated) {
+      setPendingMessage(text);
       setAuthMode('signup');
+      return;
     }
+    setLandingShown(false);
+    store.setView('builder');
+    runGenerate(text);
   };
 
   const handleCreateProject = () => {
@@ -92,7 +120,7 @@ function AppContent() {
     );
   }
 
-  // ── Settings overlay (renders on top of everything) ────────────
+  // ── Settings overlay ────────────────────────────────────────────
   if (showSettings) {
     return <SettingsPage onClose={() => setShowSettings(false)} />;
   }
@@ -128,7 +156,9 @@ function AppContent() {
       ? store.chats.find((c) => c.id === store.activeChatId)?.title ?? 'VoxAI'
       : store.view === 'projects'
         ? 'Projects'
-        : 'Admin Dashboard';
+        : store.view === 'builder'
+          ? 'Website Builder'
+          : 'Admin Dashboard';
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
@@ -170,6 +200,15 @@ function AppContent() {
           />
         )}
         {store.view === 'admin' && <AdminView />}
+        {store.view === 'builder' && (
+          <WorkspacePanel
+            prompt={builderPrompt}
+            generatedCode={generatedCode}
+            isGenerating={isGenerating}
+            generationError={generationError}
+            onRegenerate={runGenerate}
+          />
+        )}
       </main>
       <div ref={chatEndRef} />
     </div>
