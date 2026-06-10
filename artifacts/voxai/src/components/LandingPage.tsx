@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Sparkles, Plus, Mic, ArrowUp, ChevronDown } from 'lucide-react';
+import { Menu, FolderOpen, X, Plus, Mic, ArrowUp, ChevronDown } from 'lucide-react';
 
 interface LandingPageProps {
   onLogin: () => void;
   onSignup: () => void;
   onSubmit: (text: string) => void;
+  onOpenProjects?: () => void;
   hideAuthButtons?: boolean;
 }
 
-export default function LandingPage({ onLogin, onSignup, onSubmit, hideAuthButtons }: LandingPageProps) {
+export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProjects, hideAuthButtons }: LandingPageProps) {
   const [text, setText] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const hasText = text.trim().length > 0;
 
   const handleSubmit = () => {
@@ -25,14 +27,63 @@ export default function LandingPage({ onLogin, onSignup, onSubmit, hideAuthButto
 
   return (
     <div className="min-h-[100dvh] bg-[#0a0a0a] text-white flex flex-col overflow-hidden">
+
+      {/* Drawer overlay */}
+      {menuOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      {/* Drawer */}
+      <aside
+        className={`fixed top-0 left-0 h-full w-[260px] bg-[#111111] border-r border-white/10 z-50 flex flex-col transform transition-transform duration-300 ease-in-out ${
+          menuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Drawer header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+          <span className="text-[16px] font-bold text-white tracking-tight">NexoGen</span>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          >
+            <X size={18} className="text-gray-400" />
+          </button>
+        </div>
+
+        {/* Nav */}
+        <nav className="px-3 pt-4">
+          <p className="px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Menu
+          </p>
+          <button
+            onClick={() => {
+              setMenuOpen(false);
+              onOpenProjects?.();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <FolderOpen size={18} strokeWidth={1.5} />
+            Projects
+          </button>
+        </nav>
+      </aside>
+
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
-            <Sparkles size={16} className="text-white" strokeWidth={1.5} />
-          </div>
+        <div className="flex items-center gap-3">
+          {/* Hamburger button */}
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="w-9 h-9 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors"
+          >
+            <Menu size={18} className="text-white" strokeWidth={1.5} />
+          </button>
           <span className="text-[18px] font-bold tracking-tight">NexoGen</span>
         </div>
+
         {!hideAuthButtons && (
           <div className="flex items-center gap-2">
             <button

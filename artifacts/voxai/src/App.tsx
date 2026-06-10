@@ -68,6 +68,16 @@ function AppContent() {
     setAuthMode(null);
   };
 
+  // Hamburger → Projects on landing page
+  const handleOpenProjectsFromLanding = () => {
+    if (isAuthenticated) {
+      setLandingShown(false);
+      store.setView('projects');
+    } else {
+      setAuthMode('login');
+    }
+  };
+
   // Open a project card → switch to that chat in workspace
   const handleOpenProject = (chatId: string) => {
     store.setActiveChatId(chatId);
@@ -104,6 +114,7 @@ function AppContent() {
         onLogin={() => setAuthMode('login')}
         onSignup={() => setAuthMode('signup')}
         onSubmit={handleLandingSubmit}
+        onOpenProjects={handleOpenProjectsFromLanding}
         hideAuthButtons={isAuthenticated}
       />
     );
