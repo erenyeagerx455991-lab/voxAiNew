@@ -115,6 +115,8 @@ function AppContent() {
         onSignup={() => setAuthMode('signup')}
         onSubmit={handleLandingSubmit}
         onOpenProjects={handleOpenProjectsFromLanding}
+        onSignOut={signOut}
+        profile={user}
         hideAuthButtons={isAuthenticated}
       />
     );

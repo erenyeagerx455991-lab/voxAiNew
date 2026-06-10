@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Menu, FolderOpen, X, Plus, Mic, ArrowUp, ChevronDown } from 'lucide-react';
+import { Menu, FolderOpen, X, Plus, Mic, ArrowUp, ChevronDown, LogOut } from 'lucide-react';
+import type { Profile } from '../lib/types';
 
 interface LandingPageProps {
   onLogin: () => void;
   onSignup: () => void;
   onSubmit: (text: string) => void;
   onOpenProjects?: () => void;
+  onSignOut?: () => void;
+  profile?: Profile | null;
   hideAuthButtons?: boolean;
 }
 
-export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProjects, hideAuthButtons }: LandingPageProps) {
+export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProjects, onSignOut, profile, hideAuthButtons }: LandingPageProps) {
   const [text, setText] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const hasText = text.trim().length > 0;
@@ -54,7 +57,7 @@ export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProject
         </div>
 
         {/* Nav */}
-        <nav className="px-3 pt-4">
+        <nav className="px-3 pt-4 flex-1">
           <p className="px-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
             Menu
           </p>
@@ -69,6 +72,54 @@ export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProject
             Projects
           </button>
         </nav>
+
+        {/* Profile section at bottom */}
+        {profile && (
+          <div className="border-t border-white/10 px-4 py-4">
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                {(profile.name || profile.email || 'U')[0].toUpperCase()}
+              </div>
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">
+                  {profile.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{profile.email}</p>
+              </div>
+              {/* Sign out */}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onSignOut?.();
+                }}
+                className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                aria-label="Sign out"
+              >
+                <LogOut size={16} className="text-gray-400 hover:text-white" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Login/Signup in drawer if not authenticated */}
+        {!profile && (
+          <div className="border-t border-white/10 px-4 py-4 flex flex-col gap-2">
+            <button
+              onClick={() => { setMenuOpen(false); onLogin(); }}
+              className="w-full py-2.5 rounded-xl border border-white/20 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => { setMenuOpen(false); onSignup(); }}
+              className="w-full py-2.5 rounded-xl bg-white text-sm font-semibold text-black hover:bg-gray-100 transition-colors"
+            >
+              Sign up
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Header */}
