@@ -11,17 +11,19 @@ import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Sparkles } from 'lucide-react';
 
-type PublicView = 'landing' | 'login' | 'signup';
+type AuthMode = 'login' | 'signup' | null;
 
 function AppContent() {
   const { user, loading, signOut, refreshProfile, isAuthenticated } = useAuth();
   const store = useAppStore(isAuthenticated, refreshProfile);
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const [publicView, setPublicView] = useState<PublicView>('landing');
+
+  // Always show landing first — regardless of auth state
+  const [landingShown, setLandingShown] = useState(true);
+  // null = landing, 'login'/'signup' = auth form (only for unauthenticated)
+  const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [pendingMessage, setPendingMessage] = useState('');
   const pendingSentRef = useRef(false);
-  // Allow showing landing page even when authenticated (e.g. from "Create project")
-  const [showLanding, setShowLanding] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -33,7 +35,7 @@ function AppContent() {
     scrollToBottom();
   }, [store.activeChatMessages.length, store.isTyping, store.streamingContent, store.chatError, scrollToBottom]);
 
-  // When authenticated + app initialized + pending message → auto-send it
+  // Authenticated + pending message → send it and go to workspace
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -42,34 +44,37 @@ function AppContent() {
       !pendingSentRef.current
     ) {
       pendingSentRef.current = true;
-      setShowLanding(false);
+      setLandingShown(false);
+      setAuthMode(null);
       store.setView('chat');
       store.handleSend(pendingMessage).finally(() => {
         setPendingMessage('');
         pendingSentRef.current = false;
       });
     }
-  }, [isAuthenticated, store.initialized, pendingMessage, store.handleSend]);
+  }, [isAuthenticated, store.initialized, pendingMessage, store.handleSend, store.setView]);
 
   const handleLandingSubmit = (text: string) => {
     setPendingMessage(text);
     if (!isAuthenticated) {
-      setPublicView('signup');
+      setAuthMode('signup');
     }
-    // If authenticated, the useEffect above picks it up and hides landing
+    // If authenticated, the useEffect above handles redirect
   };
 
-  // "Create project" → show landing page
+  // "Create project" from Projects view → go back to home/landing
   const handleCreateProject = () => {
-    setShowLanding(true);
+    setLandingShown(true);
+    setAuthMode(null);
   };
 
-  // Open a project card → switch to that chat
+  // Open a project card → switch to that chat in workspace
   const handleOpenProject = (chatId: string) => {
     store.setActiveChatId(chatId);
     store.setView('chat');
   };
 
+  // ── Loading ────────────────────────────────────────────────────
   if (loading || !store.initialized) {
     return (
       <div className="h-[100dvh] flex flex-col items-center justify-center bg-white">
@@ -81,37 +86,30 @@ function AppContent() {
     );
   }
 
-  // Show landing page for unauthenticated users
-  if (!isAuthenticated) {
-    if (publicView === 'landing') {
+  // ── Landing / Auth flow ────────────────────────────────────────
+  if (landingShown) {
+    // Non-authenticated user clicked Login or Signup → show auth form
+    if (!isAuthenticated && authMode) {
       return (
-        <LandingPage
-          onLogin={() => setPublicView('login')}
-          onSignup={() => setPublicView('signup')}
-          onSubmit={handleLandingSubmit}
+        <AuthView
+          initialMode={authMode}
+          onBack={() => setAuthMode(null)}
         />
       );
     }
-    return (
-      <AuthView
-        initialMode={publicView}
-        onBack={() => setPublicView('landing')}
-      />
-    );
-  }
 
-  // Authenticated but "Create project" was clicked → show landing page (no auth buttons)
-  if (showLanding) {
+    // Landing page — hide auth buttons if already logged in
     return (
       <LandingPage
-        onLogin={() => setShowLanding(false)}
-        onSignup={() => setShowLanding(false)}
+        onLogin={() => setAuthMode('login')}
+        onSignup={() => setAuthMode('signup')}
         onSubmit={handleLandingSubmit}
-        hideAuthButtons={true}
+        hideAuthButtons={isAuthenticated}
       />
     );
   }
 
+  // ── Main authenticated app ────────────────────────────────────
   const headerTitle =
     store.view === 'chat'
       ? store.chats.find((c) => c.id === store.activeChatId)?.title ?? 'VoxAI'
