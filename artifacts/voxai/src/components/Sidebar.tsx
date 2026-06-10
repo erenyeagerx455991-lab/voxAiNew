@@ -1,4 +1,4 @@
-import { MessageSquare, AudioWaveform, Mic, Plus, X, Trash2, Pencil, LogOut, Shield } from 'lucide-react';
+import { MessageSquare, FolderOpen, Plus, X, Trash2, Pencil, LogOut, Shield } from 'lucide-react';
 import { useState } from 'react';
 import type { View, Chat } from '../hooks/useAppStore';
 import type { Profile } from '../lib/types';
@@ -20,8 +20,7 @@ interface SidebarProps {
 
 const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'tts', label: 'Text to Speech', icon: AudioWaveform },
-  { id: 'create-voice', label: 'Create Your Own AI Voice', icon: Mic },
+  { id: 'projects', label: 'Projects', icon: FolderOpen },
 ];
 
 export default function Sidebar({

@@ -3,8 +3,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ChatView from './components/ChatView';
 import MessageInput from './components/MessageInput';
-import TextToSpeechView from './components/TextToSpeechView';
-import CreateVoiceView from './components/CreateVoiceView';
+import ProjectsView from './components/ProjectsView';
 import AdminView from './components/AdminView';
 import AuthView from './components/auth/AuthView';
 import LandingPage from './components/LandingPage';
@@ -53,7 +52,18 @@ function AppContent() {
     if (!isAuthenticated) {
       setPublicView('signup');
     }
-    // If already authenticated, the useEffect above will pick it up
+    // If already authenticated, the useEffect above picks it up
+  };
+
+  // "Create project" from Projects view → new chat in chat view
+  const handleCreateProject = () => {
+    store.handleNewChat();
+  };
+
+  // Open a project card → switch to that chat
+  const handleOpenProject = (chatId: string) => {
+    store.setActiveChatId(chatId);
+    store.setView('chat');
   };
 
   if (loading || !store.initialized) {
@@ -88,11 +98,9 @@ function AppContent() {
   const headerTitle =
     store.view === 'chat'
       ? store.chats.find((c) => c.id === store.activeChatId)?.title ?? 'VoxAI'
-      : store.view === 'tts'
-        ? 'Text to Speech'
-        : store.view === 'create-voice'
-          ? 'Create Your Own AI Voice'
-          : 'Admin Dashboard';
+      : store.view === 'projects'
+        ? 'Projects'
+        : 'Admin Dashboard';
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white overflow-hidden">
@@ -124,8 +132,15 @@ function AppContent() {
             <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
           </>
         )}
-        {store.view === 'tts' && <TextToSpeechView onCreditsChange={refreshProfile} />}
-        {store.view === 'create-voice' && <CreateVoiceView onCreditsChange={refreshProfile} />}
+        {store.view === 'projects' && (
+          <ProjectsView
+            chats={store.chats}
+            onOpenProject={handleOpenProject}
+            onCreateProject={handleCreateProject}
+            onDeleteChat={store.handleDeleteChat}
+            onRenameChat={store.handleRenameChat}
+          />
+        )}
         {store.view === 'admin' && <AdminView />}
       </main>
       <div ref={chatEndRef} />
