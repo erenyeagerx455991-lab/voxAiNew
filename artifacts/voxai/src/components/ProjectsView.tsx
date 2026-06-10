@@ -54,48 +54,41 @@ export default function ProjectsView({
       {/* Title */}
       <h1 className="text-2xl font-bold text-black mb-5">All projects</h1>
 
-      {/* Search + Create */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50">
-          <Search size={16} className="text-gray-400 shrink-0" />
-          <input
-            type="text"
-            placeholder="Search for a project"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder:text-gray-400"
-          />
-        </div>
-        <button
-          onClick={onCreateProject}
-          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors shrink-0"
-        >
-          <Plus size={16} />
-          Create project
-        </button>
+      {/* Search bar */}
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 mb-3">
+        <Search size={16} className="text-gray-400 shrink-0" />
+        <input
+          type="text"
+          placeholder="Search for a project"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 text-sm bg-transparent outline-none text-gray-700 placeholder:text-gray-400"
+        />
       </div>
+
+      {/* Create project button — full width */}
+      <button
+        onClick={onCreateProject}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors mb-6"
+      >
+        <Plus size={16} />
+        Create project
+      </button>
 
       {/* Empty state */}
       {chats.length === 0 && (
-        <div className="flex flex-col items-center justify-center pt-16 text-center">
+        <div className="flex flex-col items-center justify-center pt-10 text-center">
           <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
             <MessageSquare size={24} className="text-gray-400" strokeWidth={1.5} />
           </div>
           <p className="text-base font-semibold text-gray-700 mb-1">No projects yet</p>
-          <p className="text-sm text-gray-400 mb-6">Start building with AI on the landing page</p>
-          <button
-            onClick={onCreateProject}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            <Plus size={16} />
-            Create project
-          </button>
+          <p className="text-sm text-gray-400">Start building with AI on the home page</p>
         </div>
       )}
 
       {/* No search results */}
       {chats.length > 0 && filtered.length === 0 && (
-        <div className="text-center pt-12">
+        <div className="text-center pt-8">
           <p className="text-sm text-gray-400">No projects match "{search}"</p>
         </div>
       )}
@@ -105,7 +98,6 @@ export default function ProjectsView({
         <div className="grid grid-cols-2 gap-3">
           {filtered.map((chat) => (
             <div key={chat.id} className="relative group">
-              {/* Card */}
               <button
                 onClick={() => onOpenProject(chat.id)}
                 className="w-full text-left rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden"

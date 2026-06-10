@@ -20,6 +20,8 @@ function AppContent() {
   const [publicView, setPublicView] = useState<PublicView>('landing');
   const [pendingMessage, setPendingMessage] = useState('');
   const pendingSentRef = useRef(false);
+  // Allow showing landing page even when authenticated (e.g. from "Create project")
+  const [showLanding, setShowLanding] = useState(false);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -40,6 +42,7 @@ function AppContent() {
       !pendingSentRef.current
     ) {
       pendingSentRef.current = true;
+      setShowLanding(false);
       store.handleSend(pendingMessage).finally(() => {
         setPendingMessage('');
         pendingSentRef.current = false;
@@ -52,12 +55,12 @@ function AppContent() {
     if (!isAuthenticated) {
       setPublicView('signup');
     }
-    // If already authenticated, the useEffect above picks it up
+    // If authenticated, the useEffect above picks it up and hides landing
   };
 
-  // "Create project" from Projects view → new chat in chat view
+  // "Create project" → show landing page
   const handleCreateProject = () => {
-    store.handleNewChat();
+    setShowLanding(true);
   };
 
   // Open a project card → switch to that chat
@@ -77,6 +80,7 @@ function AppContent() {
     );
   }
 
+  // Show landing page for unauthenticated users
   if (!isAuthenticated) {
     if (publicView === 'landing') {
       return (
@@ -91,6 +95,17 @@ function AppContent() {
       <AuthView
         initialMode={publicView}
         onBack={() => setPublicView('landing')}
+      />
+    );
+  }
+
+  // Authenticated but "Create project" was clicked → show landing page
+  if (showLanding) {
+    return (
+      <LandingPage
+        onLogin={() => setShowLanding(false)}
+        onSignup={() => setShowLanding(false)}
+        onSubmit={handleLandingSubmit}
       />
     );
   }
