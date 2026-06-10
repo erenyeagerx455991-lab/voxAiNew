@@ -5,9 +5,10 @@ interface LandingPageProps {
   onLogin: () => void;
   onSignup: () => void;
   onSubmit: (text: string) => void;
+  hideAuthButtons?: boolean;
 }
 
-export default function LandingPage({ onLogin, onSignup, onSubmit }: LandingPageProps) {
+export default function LandingPage({ onLogin, onSignup, onSubmit, hideAuthButtons }: LandingPageProps) {
   const [text, setText] = useState('');
   const hasText = text.trim().length > 0;
 
@@ -32,20 +33,22 @@ export default function LandingPage({ onLogin, onSignup, onSubmit }: LandingPage
           </div>
           <span className="text-[18px] font-bold tracking-tight">NexoGen</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onLogin}
-            className="px-4 py-2 text-[14px] font-medium text-white hover:text-gray-300 transition-colors"
-          >
-            Login
-          </button>
-          <button
-            onClick={onSignup}
-            className="px-4 py-2 text-[14px] font-semibold bg-white text-black rounded-full hover:bg-gray-100 transition-colors"
-          >
-            Sign up
-          </button>
-        </div>
+        {!hideAuthButtons && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onLogin}
+              className="px-4 py-2 text-[14px] font-medium text-white hover:text-gray-300 transition-colors"
+            >
+              Login
+            </button>
+            <button
+              onClick={onSignup}
+              className="px-4 py-2 text-[14px] font-semibold bg-white text-black rounded-full hover:bg-gray-100 transition-colors"
+            >
+              Sign up
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Hero */}

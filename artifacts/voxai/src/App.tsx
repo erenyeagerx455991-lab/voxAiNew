@@ -43,6 +43,7 @@ function AppContent() {
     ) {
       pendingSentRef.current = true;
       setShowLanding(false);
+      store.setView('chat');
       store.handleSend(pendingMessage).finally(() => {
         setPendingMessage('');
         pendingSentRef.current = false;
@@ -99,13 +100,14 @@ function AppContent() {
     );
   }
 
-  // Authenticated but "Create project" was clicked → show landing page
+  // Authenticated but "Create project" was clicked → show landing page (no auth buttons)
   if (showLanding) {
     return (
       <LandingPage
         onLogin={() => setShowLanding(false)}
         onSignup={() => setShowLanding(false)}
         onSubmit={handleLandingSubmit}
+        hideAuthButtons={true}
       />
     );
   }
