@@ -8,10 +8,9 @@ import AdminView from './components/AdminView';
 import AuthView from './components/auth/AuthView';
 import LandingPage from './components/LandingPage';
 import SettingsPage from './components/SettingsPage';
-import WorkspacePanel from './components/WorkspacePanel';
+import PreviewModal from './components/PreviewModal';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
-import { generateWebsite } from './services/builderService';
 import { Sparkles } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | null;
@@ -25,28 +24,8 @@ function AppContent() {
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [pendingMessage, setPendingMessage] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pendingSentRef = useRef(false);
-
-  // ── Builder state ─────────────────────────────────────────────
-  const [builderPrompt, setBuilderPrompt] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState('');
-
-  const runGenerate = useCallback(async (prompt: string) => {
-    setBuilderPrompt(prompt);
-    setGeneratedCode('');
-    setGenerationError('');
-    setIsGenerating(true);
-    try {
-      const code = await generateWebsite(prompt);
-      setGeneratedCode(code);
-    } catch (err) {
-      setGenerationError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -58,7 +37,7 @@ function AppContent() {
     scrollToBottom();
   }, [store.activeChatMessages.length, store.isTyping, store.streamingContent, store.chatError, scrollToBottom]);
 
-  // Authenticated + pending message → generate and go to builder
+  // Authenticated + pending message → send it and go to workspace
   useEffect(() => {
     if (
       isAuthenticated &&
@@ -67,26 +46,24 @@ function AppContent() {
       !pendingSentRef.current
     ) {
       pendingSentRef.current = true;
-      const msg = pendingMessage;
-      setPendingMessage('');
       setLandingShown(false);
       setAuthMode(null);
-      store.setView('builder');
-      runGenerate(msg).finally(() => {
+      store.setView('chat');
+      store.handleSend(pendingMessage).finally(() => {
+        setPendingMessage('');
         pendingSentRef.current = false;
       });
     }
-  }, [isAuthenticated, store.initialized, pendingMessage, store.setView, runGenerate]);
+  }, [isAuthenticated, store.initialized, pendingMessage, store.handleSend, store.setView]);
 
   const handleLandingSubmit = (text: string) => {
+    setPendingMessage(text);
     if (!isAuthenticated) {
-      setPendingMessage(text);
       setAuthMode('signup');
-      return;
+    } else {
+      setLandingShown(false);
+      store.setView('chat');
     }
-    setLandingShown(false);
-    store.setView('builder');
-    runGenerate(text);
   };
 
   const handleCreateProject = () => {
@@ -153,65 +130,73 @@ function AppContent() {
   // ── Main authenticated app ────────────────────────────────────
   const headerTitle =
     store.view === 'chat'
-      ? store.chats.find((c) => c.id === store.activeChatId)?.title ?? 'VoxAI'
+      ? 'VoxAI'
       : store.view === 'projects'
         ? 'Projects'
-        : store.view === 'builder'
-          ? 'Website Builder'
-          : 'Admin Dashboard';
+        : 'Admin Dashboard';
+
+  const isWorkspaceView = store.view === 'chat';
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
-      <Sidebar
-        open={store.sidebarOpen}
-        onClose={store.closeSidebar}
-        view={store.view}
-        onViewChange={store.setView}
-        chats={store.chats}
-        activeChatId={store.activeChatId}
-        onChatSelect={store.setActiveChatId}
-        onNewChat={store.handleNewChat}
-        onDeleteChat={store.handleDeleteChat}
-        onRenameChat={store.handleRenameChat}
-        profile={user}
-        onSignOut={signOut}
-      />
-      <Header onMenuClick={store.toggleSidebar} title={headerTitle} profile={user} />
+    <>
+      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+        <Sidebar
+          open={store.sidebarOpen}
+          onClose={store.closeSidebar}
+          view={store.view}
+          onViewChange={store.setView}
+          chats={store.chats}
+          activeChatId={store.activeChatId}
+          onChatSelect={store.setActiveChatId}
+          onNewChat={store.handleNewChat}
+          onDeleteChat={store.handleDeleteChat}
+          onRenameChat={store.handleRenameChat}
+          profile={user}
+          onSignOut={signOut}
+        />
+        <Header
+          onMenuClick={store.toggleSidebar}
+          title={headerTitle}
+          profile={user}
+          showPreview={isWorkspaceView}
+          hasCode={!!store.generatedCode}
+          onPreview={() => setShowPreviewModal(true)}
+        />
 
-      <main className="flex-1 flex flex-col mt-14 overflow-hidden">
-        {store.view === 'chat' && (
-          <>
-            <ChatView
-              messages={store.activeChatMessages}
-              isTyping={store.isTyping}
-              streamingContent={store.streamingContent}
-              chatError={store.chatError}
+        <main className="flex-1 flex flex-col mt-14 overflow-hidden">
+          {store.view === 'chat' && (
+            <>
+              <ChatView
+                messages={store.activeChatMessages}
+                isTyping={store.isTyping}
+                streamingContent={store.streamingContent}
+                chatError={store.chatError}
+              />
+              <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
+            </>
+          )}
+          {store.view === 'projects' && (
+            <ProjectsView
+              chats={store.chats}
+              onOpenProject={handleOpenProject}
+              onCreateProject={handleCreateProject}
+              onDeleteChat={store.handleDeleteChat}
+              onRenameChat={store.handleRenameChat}
             />
-            <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
-          </>
-        )}
-        {store.view === 'projects' && (
-          <ProjectsView
-            chats={store.chats}
-            onOpenProject={handleOpenProject}
-            onCreateProject={handleCreateProject}
-            onDeleteChat={store.handleDeleteChat}
-            onRenameChat={store.handleRenameChat}
-          />
-        )}
-        {store.view === 'admin' && <AdminView />}
-        {store.view === 'builder' && (
-          <WorkspacePanel
-            prompt={builderPrompt}
-            generatedCode={generatedCode}
-            isGenerating={isGenerating}
-            generationError={generationError}
-            onRegenerate={runGenerate}
-          />
-        )}
-      </main>
-      <div ref={chatEndRef} />
-    </div>
+          )}
+          {store.view === 'admin' && <AdminView />}
+        </main>
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* ── Preview Modal (full-screen overlay) ── */}
+      {showPreviewModal && store.generatedCode && (
+        <PreviewModal
+          code={store.generatedCode}
+          onClose={() => setShowPreviewModal(false)}
+        />
+      )}
+    </>
   );
 }
 

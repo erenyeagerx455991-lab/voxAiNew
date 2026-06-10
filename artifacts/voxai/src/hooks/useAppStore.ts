@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { sendMessageStream, createChat, getChats, getMessages, updateChatTitle, deleteChat } from '../services/chatService';
+import { createChat, getChats, getMessages, updateChatTitle, deleteChat } from '../services/chatService';
+import { mockStreamResponse } from '../services/mockAiService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
@@ -18,6 +19,7 @@ interface AppState {
   isTyping: boolean;
   streamingContent: string;
   chatError: string;
+  generatedCode: string;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -36,6 +38,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [isTyping, setIsTyping] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [chatError, setChatError] = useState('');
+  const [generatedCode, setGeneratedCode] = useState('');
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -102,30 +105,6 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     };
   }, [activeChatId, isAuthenticated, loadMessages]);
 
-  // Subscribe to real-time chat list changes
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const channel = supabase
-      .channel('chats-list')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'chats',
-        },
-        () => {
-          loadChats();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isAuthenticated, loadChats]);
-
   // Load chats when auth state changes
   useEffect(() => {
     if (isAuthenticated) {
@@ -151,112 +130,110 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       setActiveChatIdState(chat.id);
       setActiveChatMessages([]);
       setChatError('');
+      setGeneratedCode('');
       setView('chat');
       closeSidebar();
     } catch {
-      // handle error
+      // reset to empty chat state even if Supabase fails
+      setActiveChatIdState(null);
+      setActiveChatMessages([]);
+      setChatError('');
+      setGeneratedCode('');
+      setView('chat');
+      closeSidebar();
     }
   }, [closeSidebar]);
 
   const handleSend = useCallback(
     async (content: string) => {
       if (loadingRef.current) return;
-      let chatId = activeChatId;
-      let tempMsgId: string | undefined;
+      loadingRef.current = true;
 
       try {
         setChatError('');
 
+        // Try to create/find a chat in Supabase (best-effort, not blocking)
+        let chatId = activeChatId;
         if (!chatId) {
-          const chat = await createChat(content.slice(0, 30) + (content.length > 30 ? '...' : ''));
-          chatId = chat.id;
-          setChats((prev) => [chat, ...prev]);
-          setActiveChatIdState(chat.id);
+          try {
+            const chat = await createChat(content.slice(0, 40) + (content.length > 40 ? '...' : ''));
+            chatId = chat.id;
+            setChats((prev) => [chat, ...prev]);
+            setActiveChatIdState(chat.id);
+          } catch {
+            // Use a local ID if Supabase fails
+            chatId = crypto.randomUUID();
+            setActiveChatIdState(chatId);
+          }
         }
 
-        // Optimistically add user message
-        tempMsgId = crypto.randomUUID();
-        const tempUserMsg: Message = {
-          id: tempMsgId,
+        // Add user message to local state
+        const userMsgId = crypto.randomUUID();
+        const userMsg: Message = {
+          id: userMsgId,
           chat_id: chatId,
           role: 'user',
           content,
           created_at: new Date().toISOString(),
         };
-        setActiveChatMessages((prev) => [...prev, tempUserMsg]);
+        setActiveChatMessages((prev) => [...prev, userMsg]);
         setIsTyping(true);
         setStreamingContent('');
-        loadingRef.current = true;
 
-        await sendMessageStream(chatId, content, {
-          onToken: (token) => {
+        // Stream mock AI response
+        await mockStreamResponse(
+          content,
+          (token) => {
             setStreamingContent((prev) => prev + token);
           },
-          onDone: (userMessageId, assistantMessageId) => {
-            // Replace temp user message with real one from DB
-            setActiveChatMessages((prev) => {
-              const filtered = prev.filter((m) => m.id !== tempMsgId);
-              const withUserMsg = filtered.some((m) => m.id === userMessageId)
-                ? filtered
-                : [...filtered, { id: userMessageId, chat_id: chatId!, role: 'user' as const, content, created_at: new Date().toISOString() }];
-              if (withUserMsg.some((m) => m.id === assistantMessageId)) return withUserMsg;
-              return [...withUserMsg, { id: assistantMessageId, chat_id: chatId!, role: 'assistant' as const, content: '', created_at: new Date().toISOString() }];
-            });
-
-            // Reload messages to get the full saved assistant message
-            if (chatId) loadMessages(chatId);
-
+          (fullText, code) => {
+            // Done — commit streamed content as an assistant message
+            const assistantMsgId = crypto.randomUUID();
+            const assistantMsg: Message = {
+              id: assistantMsgId,
+              chat_id: chatId!,
+              role: 'assistant',
+              content: fullText,
+              created_at: new Date().toISOString(),
+            };
+            setActiveChatMessages((prev) => [...prev, assistantMsg]);
             setStreamingContent('');
             setIsTyping(false);
+            setGeneratedCode(code);
             loadingRef.current = false;
-            loadChats();
             onCreditsChange?.();
           },
-          onError: (errorMsg, userMessageId) => {
-            console.error('Stream error:', errorMsg);
-
-            // The user message was already saved to DB by the edge function.
-            // Replace the optimistic temp message with the real one from DB.
-            if (userMessageId) {
-              setActiveChatMessages((prev) => {
-                const filtered = prev.filter((m) => m.id !== tempMsgId);
-                if (filtered.some((m) => m.id === userMessageId)) return filtered;
-                return [...filtered, { id: userMessageId, chat_id: chatId!, role: 'user' as const, content, created_at: new Date().toISOString() }];
-              });
-            }
-            // If no userMessageId, the edge function failed before saving,
-            // so keep the optimistic message so the user can see what they sent.
-
-            setChatError(errorMsg);
+          (err) => {
+            setChatError(err);
             setStreamingContent('');
             setIsTyping(false);
             loadingRef.current = false;
-          },
-        });
+          }
+        );
       } catch (err) {
-        console.error('Failed to send message:', err);
-        // Keep the optimistic user message visible on unexpected errors
+        console.error('handleSend error:', err);
         setChatError('Something went wrong. Please try again.');
         setStreamingContent('');
         setIsTyping(false);
         loadingRef.current = false;
       }
     },
-    [activeChatId, loadChats, loadMessages, onCreditsChange]
+    [activeChatId, onCreditsChange]
   );
 
   const handleDeleteChat = useCallback(
     async (id: string) => {
       try {
         await deleteChat(id);
-        setChats((prev) => prev.filter((c) => c.id !== id));
-        if (activeChatId === id) {
-          setActiveChatIdState(null);
-          setActiveChatMessages([]);
-          setChatError('');
-        }
       } catch {
-        // handle error
+        // ignore
+      }
+      setChats((prev) => prev.filter((c) => c.id !== id));
+      if (activeChatId === id) {
+        setActiveChatIdState(null);
+        setActiveChatMessages([]);
+        setChatError('');
+        setGeneratedCode('');
       }
     },
     [activeChatId]
@@ -267,7 +244,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       await updateChatTitle(id, title);
       setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
     } catch {
-      // handle error
+      // ignore
     }
   }, []);
 
@@ -284,6 +261,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     isTyping,
     streamingContent,
     chatError,
+    generatedCode,
     handleSend,
     handleNewChat,
     handleDeleteChat,
