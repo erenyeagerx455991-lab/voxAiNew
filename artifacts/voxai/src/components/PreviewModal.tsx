@@ -78,7 +78,7 @@ export default function PreviewModal({ code, onClose }: PreviewModalProps) {
             key={code}
             srcDoc={previewSrc}
             title="Website preview"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             className="w-full h-full border-0"
           />
         )}

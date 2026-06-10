@@ -51,21 +51,31 @@ Write 2-3 sentences describing what is being built, who it targets, and the over
 
 Respond ONLY in this exact format. No preamble, no extra commentary.`;
 
-const CODE_SYSTEM = `You are an expert React and Tailwind CSS developer. Generate a complete, impressive landing page component.
+const CODE_SYSTEM = `You are an expert React and Tailwind CSS developer. Generate a complete landing page component that runs in a browser sandbox with React 18 and Tailwind CSS available as globals.
 
-STRICT RULES:
-- Write a function named App() 
-- End the file with exactly: export default App
-- NO import or require statements anywhere
-- NO JSX fragments (<> </>), use a <div> wrapper instead
-- Use ONLY Tailwind CSS classes for all styling
-- All content is hardcoded based on the user's description
-- Make it visually stunning: good colors, spacing, typography
-- Include: sticky nav, hero, features/services, social proof, CTA, footer
-- Use emoji as icons where suitable
-- Fully mobile-responsive using Tailwind's md: and lg: prefixes
+ABSOLUTE RULES — violating any of these will break the preview:
+1. NO import statements. NO require(). React, ReactDOM, and all hooks are already global.
+2. NO export statements of any kind. Do NOT write "export default App" or "export function App".
+3. NO TypeScript types or interfaces.
+4. NO JSX fragments (<> </>). Always use a <div> wrapper.
+5. Use React.useState, React.useEffect etc. (namespace them with React.)
+6. Use ONLY Tailwind CSS utility classes for styling.
+7. All text content must be hardcoded strings based on the user's prompt.
+8. The component MUST be named exactly: function App()
 
-Return ONLY the raw JSX/JS code. No markdown fences. No imports. No explanations. Start directly with: function App() {`;
+REQUIRED STRUCTURE — include all of these sections:
+- Sticky top navigation bar with logo and nav links
+- Full-width hero section with bold headline, subheadline, and CTA buttons
+- Features/services section with a 3-column grid
+- Testimonials or stats section
+- Call-to-action banner
+- Footer with links
+
+Make it visually impressive with great colors, spacing, and typography.
+Use emoji as icons where appropriate.
+Fully responsive using Tailwind md: and lg: prefixes.
+
+OUTPUT FORMAT: Return ONLY the raw function code. Absolutely no markdown code fences, no comments about the code, no explanations. The very first character of your response must be the letter 'f' (start of "function App()").`;
 
 // POST /api/chat/stream  — streams the plan text as SSE
 router.post("/chat/stream", async (req, res) => {

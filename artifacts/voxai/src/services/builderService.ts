@@ -198,7 +198,22 @@ export async function generateWebsite(prompt: string): Promise<string> {
   return pickTemplate(prompt);
 }
 
+export function sanitizeCode(raw: string): string {
+  return raw
+    // Remove all import statements (single and multi-line)
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*\n?/gm, '')
+    .replace(/^import\s+['"][^'"]+['"];?\s*\n?/gm, '')
+    // Remove export keywords
+    .replace(/^export\s+default\s+/gm, '')
+    .replace(/^export\s+/gm, '')
+    // Strip markdown fences that slipped through
+    .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/gi, '')
+    .replace(/\n?```\s*$/gi, '')
+    .trim();
+}
+
 export function buildPreviewHtml(code: string): string {
+  const sanitized = sanitizeCode(code);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,14 +223,43 @@ export function buildPreviewHtml(code: string): string {
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>body { margin: 0; }</style>
+  <style>
+    body { margin: 0; }
+    #__error {
+      display: none;
+      padding: 24px;
+      font-family: monospace;
+      font-size: 13px;
+      background: #1a1a1a;
+      color: #ff6b6b;
+      white-space: pre-wrap;
+      min-height: 100vh;
+    }
+  </style>
+  <script>
+    window.addEventListener('error', function(e) {
+      document.getElementById('root').style.display = 'none';
+      var el = document.getElementById('__error');
+      el.style.display = 'block';
+      el.textContent = '⚠ Render error:\\n\\n' + (e.error ? e.error.stack : e.message);
+    });
+  </script>
 </head>
 <body>
   <div id="root"></div>
+  <div id="__error"></div>
   <script type="text/babel">
-    ${code}
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<App />);
+    ${sanitized}
+    try {
+      const rootEl = document.getElementById('root');
+      const appRoot = ReactDOM.createRoot(rootEl);
+      appRoot.render(React.createElement(App));
+    } catch(e) {
+      document.getElementById('root').style.display = 'none';
+      var err = document.getElementById('__error');
+      err.style.display = 'block';
+      err.textContent = '⚠ Render error:\\n\\n' + e.stack;
+    }
   </script>
 </body>
 </html>`;
