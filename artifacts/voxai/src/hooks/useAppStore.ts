@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { createChat, getChats, getMessages, updateChatTitle, deleteChat } from '../services/chatService';
+import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse } from '../services/mockAiService';
 import type { View, Chat, Message } from '../lib/types';
 
@@ -29,6 +29,8 @@ interface AppState {
   loadMessages: (chatId: string) => Promise<void>;
   initialized: boolean;
 }
+
+const CODE_KEY = (id: string) => `voxai_code_${id}`;
 
 export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => void): AppState {
   const [view, setView] = useState<View>('chat');
@@ -122,7 +124,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const setActiveChatId = useCallback((id: string | null) => {
     setActiveChatIdState(id);
     setChatError('');
-    if (id) loadMessages(id);
+    setBuildStep(-1);
+    if (id) {
+      loadMessages(id);
+      // Restore cached generated code for this project
+      const cached = localStorage.getItem(CODE_KEY(id));
+      setGeneratedCode(cached ?? '');
+    } else {
+      setGeneratedCode('');
+    }
   }, [loadMessages]);
 
   const handleNewChat = useCallback(async () => {
@@ -133,14 +143,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       setActiveChatMessages([]);
       setChatError('');
       setGeneratedCode('');
+      setBuildStep(-1);
       setView('chat');
       closeSidebar();
     } catch {
-      // reset to empty chat state even if Supabase fails
       setActiveChatIdState(null);
       setActiveChatMessages([]);
       setChatError('');
       setGeneratedCode('');
+      setBuildStep(-1);
       setView('chat');
       closeSidebar();
     }
@@ -154,51 +165,67 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       try {
         setChatError('');
 
-        // Try to create/find a chat in Supabase (best-effort, not blocking)
+        // Create or reuse a chat in Supabase
         let chatId = activeChatId;
         if (!chatId) {
           try {
-            const chat = await createChat(content.slice(0, 40) + (content.length > 40 ? '...' : ''));
+            const chat = await createChat(content.slice(0, 50) + (content.length > 50 ? '…' : ''));
             chatId = chat.id;
             setChats((prev) => [chat, ...prev]);
             setActiveChatIdState(chat.id);
           } catch {
-            // Use a local ID if Supabase fails
             chatId = crypto.randomUUID();
             setActiveChatIdState(chatId);
           }
         }
 
-        // Add user message to local state
-        const userMsgId = crypto.randomUUID();
-        const userMsg: Message = {
-          id: userMsgId,
-          chat_id: chatId,
-          role: 'user',
-          content,
-          created_at: new Date().toISOString(),
-        };
-        setActiveChatMessages((prev) => [...prev, userMsg]);
+        // Save user message to Supabase (best-effort), then show it
+        let userMsg: Message;
+        try {
+          userMsg = await addMessage(chatId, 'user', content);
+        } catch {
+          userMsg = {
+            id: crypto.randomUUID(),
+            chat_id: chatId,
+            role: 'user',
+            content,
+            created_at: new Date().toISOString(),
+          };
+        }
+        // Add only if not already injected by real-time subscription
+        setActiveChatMessages((prev) =>
+          prev.some((m) => m.id === userMsg.id) ? prev : [...prev, userMsg]
+        );
+
         setIsTyping(true);
         setStreamingContent('');
 
-        // Stream mock AI response
         await mockStreamResponse(
           content,
-          (token) => {
-            setStreamingContent((prev) => prev + token);
-          },
-          (fullText, code) => {
-            // Done — commit streamed content as an assistant message
-            const assistantMsgId = crypto.randomUUID();
-            const assistantMsg: Message = {
-              id: assistantMsgId,
-              chat_id: chatId!,
-              role: 'assistant',
-              content: fullText,
-              created_at: new Date().toISOString(),
-            };
-            setActiveChatMessages((prev) => [...prev, assistantMsg]);
+          (token) => setStreamingContent((prev) => prev + token),
+          async (fullText, code) => {
+            // Save assistant (plan) message to Supabase
+            let assistantMsg: Message;
+            try {
+              assistantMsg = await addMessage(chatId!, 'assistant', fullText);
+            } catch {
+              assistantMsg = {
+                id: crypto.randomUUID(),
+                chat_id: chatId!,
+                role: 'assistant',
+                content: fullText,
+                created_at: new Date().toISOString(),
+              };
+            }
+            setActiveChatMessages((prev) =>
+              prev.some((m) => m.id === assistantMsg.id) ? prev : [...prev, assistantMsg]
+            );
+
+            // Persist generated code to localStorage so it survives page reloads
+            if (code && chatId) {
+              localStorage.setItem(CODE_KEY(chatId), code);
+            }
+
             setStreamingContent('');
             setIsTyping(false);
             setGeneratedCode(code);
@@ -233,12 +260,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       } catch {
         // ignore
       }
+      // Remove cached code for this project
+      localStorage.removeItem(CODE_KEY(id));
       setChats((prev) => prev.filter((c) => c.id !== id));
       if (activeChatId === id) {
         setActiveChatIdState(null);
         setActiveChatMessages([]);
         setChatError('');
         setGeneratedCode('');
+        setBuildStep(-1);
       }
     },
     [activeChatId]
