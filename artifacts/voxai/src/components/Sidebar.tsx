@@ -130,15 +130,6 @@ export default function Sidebar({
             );
           })}
 
-          {/* Settings button */}
-          <button
-            onClick={() => { onOpenSettings(); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Settings size={18} strokeWidth={1.5} />
-            Settings
-          </button>
-
           {profile?.subscription_plan === 'premium' && (
             <button
               onClick={() => handleNavClick('admin')}
@@ -224,6 +215,13 @@ export default function Sidebar({
                 </p>
                 <p className="text-xs text-gray-400 truncate">{profile.credits} credits</p>
               </div>
+              <button
+                onClick={() => { onOpenSettings(); onClose(); }}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title="Settings"
+              >
+                <Settings size={16} className="text-gray-400" />
+              </button>
               <button
                 onClick={onSignOut}
                 className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
