@@ -18,7 +18,20 @@ CRITICAL RULES:
 RESPONSE FORMAT — use these exact emoji headers in this order:
 
 ✅ Plan (Checklist)
-List only the steps needed for THIS website. Each bullet is a concrete build action.
+Write TECHNICAL BUILD STEPS only — exactly as a developer would write tasks in a project tracker.
+STRICT RULES for each bullet:
+- Always name the ACTUAL library, tool, page, component, or feature being built/installed
+- NEVER write generic steps like "Define the purpose", "Design the interface", "Plan the layout", "Set up project", or "Test the website"
+- Every step must mention something specific: a real component name, a real library, or a real UI feature
+- Good examples:
+  • "Build Hero section with animated gradient headline and dual CTA buttons"
+  • "Create sticky Navbar with mobile hamburger menu using React state"
+  • "Install framer-motion and add scroll-triggered fade-in animations"
+  • "Build Pricing section with 3-tier card grid and toggle for monthly/yearly"
+  • "Create Contact form with name, email, message fields and submit handler"
+  • "Build Product grid with filter sidebar and sort dropdown"
+- Bad examples (NEVER write these): "Define website goals", "Plan navigation structure", "Ensure mobile responsiveness", "Review design"
+- Step count based on complexity: simple site = 3-4 steps, medium = 5-6 steps, complex = 7-8 steps
 
 📋 Project Summary
 Describe what is being built, who it targets, and the visual direction — tailored to this request.
