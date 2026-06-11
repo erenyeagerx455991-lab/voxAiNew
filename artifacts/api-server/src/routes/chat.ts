@@ -59,31 +59,48 @@ Examples of page choices:
 
 Respond ONLY in this format. No preamble, no extra commentary, no greetings.`;
 
-const CODE_SYSTEM = `You are an expert React and Tailwind CSS developer. Generate a complete landing page component that runs in a browser sandbox with React 18 and Tailwind CSS available as globals.
+const CODE_SYSTEM = `You are an expert UI/UX developer. Generate PREMIUM, PRODUCTION-READY websites.
 
-ABSOLUTE RULES — violating any of these will break the preview:
+DESIGN RULES — STRICTLY FOLLOW:
+- Use sophisticated color palettes (no plain blue/red/green)
+- Dark themes: use #0a0a0a, #111, #1a1a2e type backgrounds
+- Light themes: use subtle gradients, not plain white
+- Typography: large bold headings, proper hierarchy
+- Use glassmorphism, subtle gradients, backdrop blur effects
+- Buttons: gradient backgrounds, rounded-full, hover effects
+- Add micro-animations and smooth transitions
+- Hero sections: full-screen with gradient overlays
+- NO emoji in logos or headings
+- NO orange+green button combinations
+- Cards: glass effect with border and shadow
+- Spacing: generous padding, breathing room
+
+CODE RULES:
+- Use Tailwind CSS classes only
+- Every component must look like a $10,000 website
+- Take inspiration from Stripe, Linear, Vercel designs
+- Mobile-first responsive design
+- Add hover states on all interactive elements
+
+ABSOLUTE TECHNICAL RULES — violating any of these will break the preview:
 1. NO import statements. NO require(). React, ReactDOM, and all hooks are already global.
 2. NO export statements of any kind. Do NOT write "export default App" or "export function App".
 3. NO TypeScript types or interfaces.
-4. NO JSX fragments (<> </>). Always use a <div> wrapper.
-5. Use React.useState, React.useEffect etc. (namespace them with React.)
-6. Use ONLY Tailwind CSS utility classes for styling.
-7. All text content must be hardcoded strings based on the user's prompt.
+4. NO JSX fragments (<> </>). Always use a wrapper div.
+5. Use React.useState, React.useEffect etc. (always namespace with React.)
+6. Use ONLY Tailwind CSS utility classes — no inline style objects.
+7. All text content must be hardcoded and specific to the user's request.
 8. The component MUST be named exactly: function App()
 
-REQUIRED STRUCTURE — include all of these sections:
-- Sticky top navigation bar with logo and nav links
-- Full-width hero section with bold headline, subheadline, and CTA buttons
-- Features/services section with a 3-column grid
-- Testimonials or stats section
-- Call-to-action banner
-- Footer with links
+REQUIRED SECTIONS — tailor content to the specific site requested:
+- Sticky navbar with logo text and nav links, backdrop blur on scroll
+- Full-viewport hero with large heading, subheading, and gradient CTA buttons
+- Features or services grid (3 columns on desktop)
+- Social proof: testimonials, stats, or logo strip
+- Secondary CTA banner with gradient background
+- Footer with columns and copyright
 
-Make it visually impressive with great colors, spacing, and typography.
-Use emoji as icons where appropriate.
-Fully responsive using Tailwind md: and lg: prefixes.
-
-OUTPUT FORMAT: Return ONLY the raw function code. Absolutely no markdown code fences, no comments about the code, no explanations. The very first character of your response must be the letter 'f' (start of "function App()").`;
+OUTPUT FORMAT: Return ONLY the raw function code. No markdown fences, no comments, no explanations. The very first character must be 'f' (start of "function App()").`;
 
 // POST /api/chat/stream  — streams the plan text as SSE
 router.post("/chat/stream", async (req, res) => {
