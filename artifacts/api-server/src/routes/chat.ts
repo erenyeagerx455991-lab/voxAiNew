@@ -92,13 +92,19 @@ ABSOLUTE TECHNICAL RULES — violating any of these will break the preview:
 7. All text content must be hardcoded and specific to the user's request.
 8. The component MUST be named exactly: function App()
 
-REQUIRED SECTIONS — tailor content to the specific site requested:
-- Sticky navbar with logo text and nav links, backdrop blur on scroll
-- Full-viewport hero with large heading, subheading, and gradient CTA buttons
-- Features or services grid (3 columns on desktop)
-- Social proof: testimonials, stats, or logo strip
-- Secondary CTA banner with gradient background
-- Footer with columns and copyright
+REQUIRED SECTIONS — you MUST include ALL of these, in this order, no exceptions:
+1. Navbar — sticky, logo text left, nav links right, backdrop-blur bg
+2. Hero — min-h-screen, large gradient headline, subheadline, 2 CTA buttons
+3. Features grid — 3 columns, icon/emoji + title + description per card
+4. Social proof — stats row OR 2-3 testimonial cards
+5. CTA Banner — gradient bg, headline, single button
+6. Footer — 3-4 columns with links, bottom copyright bar
+
+EFFICIENCY RULES — keep code concise so all sections fit:
+- Use .map() over arrays for repeated cards instead of copy-pasting JSX
+- Keep each section under 40 lines
+- No redundant wrapper divs
+- Inline data arrays at the top of the function (const features = [...])
 
 OUTPUT FORMAT: Return ONLY the raw function code. No markdown fences, no comments, no explanations. The very first character must be 'f' (start of "function App()").`;
 
@@ -187,10 +193,10 @@ router.post("/chat/code", async (req, res) => {
       body: JSON.stringify({
         model: MODEL,
         stream: false,
-        max_tokens: 4096,
+        max_tokens: 8000,
         messages: [
           { role: "system", content: CODE_SYSTEM },
-          { role: "user", content: `Build a landing page for: ${prompt}` },
+          { role: "user", content: `Build a complete landing page for: ${prompt}. Include ALL sections: navbar, hero, features grid, social proof, CTA banner, and footer. Do not truncate or stop early.` },
         ],
       }),
     });
