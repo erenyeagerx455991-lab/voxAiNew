@@ -87,7 +87,7 @@ STRICT RULE 2 — NO EMOJI AS ICONS:
 
 STRICT LAYOUT RULES — every rule below is MANDATORY, no exceptions:
 
-Rule 1 — HERO: Always use "flex flex-col items-center justify-center min-h-screen text-center" on the hero section. No top-heavy or bottom-heavy layouts. Content must be perfectly centered.
+Rule 1 — HERO: Always use "min-h-screen flex flex-col items-center justify-center text-center px-6" on the hero section. Content must appear in the MIDDLE of the screen — no top-heavy or bottom-heavy layouts. The main heading must use "text-5xl md:text-7xl font-black".
 
 Rule 2 — FEATURES GRID: Always use "grid grid-cols-1 md:grid-cols-3 gap-6" for features. NEVER stack features in a single vertical column.
 
@@ -104,6 +104,11 @@ Rule 7 — FOOTER: Always use "grid grid-cols-2 md:grid-cols-4 gap-8" for footer
 Rule 8 — SECTION HEADINGS: Every section heading must use "text-3xl md:text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent". Never plain text color for headings.
 
 Rule 9 — SECTION SPACING: Every section must use "py-24" as its vertical padding. Never use py-8 or less.
+
+Rule 10 — CARD TEXT VISIBILITY: All card text must be clearly readable on dark backgrounds.
+- Card titles: always "text-white font-semibold text-lg"
+- Card descriptions: always "text-gray-300 text-sm"
+- NEVER use text-gray-600, text-gray-700, text-gray-800, or any shade darker than text-gray-400 on dark backgrounds
 
 CODE RULES:
 - Use Tailwind CSS classes only
