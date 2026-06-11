@@ -154,6 +154,7 @@ function AppContent() {
           profile={user}
           onSignOut={signOut}
           onGoHome={() => setLandingShown(true)}
+          onOpenSettings={() => setShowSettings(true)}
         />
         <Header
           onMenuClick={store.toggleSidebar}

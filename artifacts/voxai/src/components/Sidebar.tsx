@@ -1,4 +1,4 @@
-import { MessageSquare, FolderOpen, Plus, X, Trash2, Pencil, LogOut, Shield, Home } from 'lucide-react';
+import { MessageSquare, FolderOpen, Plus, X, Trash2, Pencil, LogOut, Shield, Home, Settings } from 'lucide-react';
 import { useState } from 'react';
 import type { View, Chat } from '../hooks/useAppStore';
 import type { Profile } from '../lib/types';
@@ -17,6 +17,7 @@ interface SidebarProps {
   profile: Profile | null;
   onSignOut: () => void;
   onGoHome: () => void;
+  onOpenSettings: () => void;
 }
 
 const navItems: { id: View; label: string; icon: typeof MessageSquare }[] = [
@@ -38,6 +39,7 @@ export default function Sidebar({
   profile,
   onSignOut,
   onGoHome,
+  onOpenSettings,
 }: SidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -127,6 +129,15 @@ export default function Sidebar({
               </button>
             );
           })}
+
+          {/* Settings button */}
+          <button
+            onClick={() => { onOpenSettings(); onClose(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <Settings size={18} strokeWidth={1.5} />
+            Settings
+          </button>
 
           {profile?.subscription_plan === 'premium' && (
             <button
