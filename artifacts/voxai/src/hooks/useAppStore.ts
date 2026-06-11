@@ -31,6 +31,57 @@ interface AppState {
 }
 
 const CODE_KEY = (id: string) => `voxai_code_${id}`;
+const LOCAL_CHATS_KEY = 'voxai_local_chats';
+const LOCAL_MSGS_KEY = (id: string) => `voxai_msgs_${id}`;
+
+function getLocalChats(): Chat[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_CHATS_KEY);
+    return raw ? (JSON.parse(raw) as Chat[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalChats(chats: Chat[]) {
+  try {
+    localStorage.setItem(LOCAL_CHATS_KEY, JSON.stringify(chats));
+  } catch {}
+}
+
+function addLocalChat(chat: Chat) {
+  const existing = getLocalChats();
+  if (existing.some((c) => c.id === chat.id)) return;
+  saveLocalChats([chat, ...existing]);
+}
+
+function removeLocalChat(id: string) {
+  saveLocalChats(getLocalChats().filter((c) => c.id !== id));
+  localStorage.removeItem(LOCAL_MSGS_KEY(id));
+}
+
+function updateLocalChatTitle(id: string, title: string) {
+  saveLocalChats(
+    getLocalChats().map((c) => (c.id === id ? { ...c, title, updated_at: new Date().toISOString() } : c))
+  );
+}
+
+function getLocalMessages(chatId: string): Message[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_MSGS_KEY(chatId));
+    return raw ? (JSON.parse(raw) as Message[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function addLocalMessage(msg: Message) {
+  const existing = getLocalMessages(msg.chat_id);
+  if (existing.some((m) => m.id === msg.id)) return;
+  try {
+    localStorage.setItem(LOCAL_MSGS_KEY(msg.chat_id), JSON.stringify([...existing, msg]));
+  } catch {}
+}
 
 export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => void): AppState {
   const [view, setView] = useState<View>('chat');
@@ -53,18 +104,30 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const loadChats = useCallback(async () => {
     try {
       const data = await getChats();
-      setChats(data);
+      // Merge with any locally saved chats (ids not already in Supabase)
+      const localChats = getLocalChats();
+      const supabaseIds = new Set(data.map((c) => c.id));
+      const localOnly = localChats.filter((c) => !supabaseIds.has(c.id));
+      setChats([...data, ...localOnly].sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+      ));
     } catch {
-      setChats([]);
+      // Supabase unavailable — fall back to localStorage entirely
+      setChats(getLocalChats());
     }
   }, []);
 
   const loadMessages = useCallback(async (chatId: string) => {
     try {
       const msgs = await getMessages(chatId);
-      setActiveChatMessages(msgs);
+      if (msgs.length > 0) {
+        setActiveChatMessages(msgs);
+      } else {
+        // Supabase returned nothing — try localStorage
+        setActiveChatMessages(getLocalMessages(chatId));
+      }
     } catch {
-      setActiveChatMessages([]);
+      setActiveChatMessages(getLocalMessages(chatId));
     }
   }, []);
 
@@ -109,12 +172,13 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     };
   }, [activeChatId, isAuthenticated, loadMessages]);
 
-  // Load chats when auth state changes
+  // Load chats on auth state change
   useEffect(() => {
     if (isAuthenticated) {
       loadChats().then(() => setInitialized(true));
     } else {
-      setChats([]);
+      // Not logged in — load from localStorage
+      setChats(getLocalChats());
       setActiveChatIdState(null);
       setActiveChatMessages([]);
       setInitialized(true);
@@ -127,7 +191,6 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setBuildStep(-1);
     if (id) {
       loadMessages(id);
-      // Restore cached generated code for this project
       const cached = localStorage.getItem(CODE_KEY(id));
       setGeneratedCode(cached ?? '');
     } else {
@@ -136,25 +199,31 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   }, [loadMessages]);
 
   const handleNewChat = useCallback(async () => {
+    const now = new Date().toISOString();
+    let chat: Chat;
     try {
-      const chat = await createChat();
-      setChats((prev) => [chat, ...prev]);
-      setActiveChatIdState(chat.id);
-      setActiveChatMessages([]);
-      setChatError('');
-      setGeneratedCode('');
-      setBuildStep(-1);
-      setView('chat');
-      closeSidebar();
+      chat = await createChat();
     } catch {
-      setActiveChatIdState(null);
-      setActiveChatMessages([]);
-      setChatError('');
-      setGeneratedCode('');
-      setBuildStep(-1);
-      setView('chat');
-      closeSidebar();
+      chat = {
+        id: crypto.randomUUID(),
+        user_id: 'local',
+        title: 'New chat',
+        created_at: now,
+        updated_at: now,
+      };
     }
+    addLocalChat(chat);
+    setChats((prev) => {
+      if (prev.some((c) => c.id === chat.id)) return prev;
+      return [chat, ...prev];
+    });
+    setActiveChatIdState(chat.id);
+    setActiveChatMessages([]);
+    setChatError('');
+    setGeneratedCode('');
+    setBuildStep(-1);
+    setView('chat');
+    closeSidebar();
   }, [closeSidebar]);
 
   const handleSend = useCallback(
@@ -165,21 +234,33 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       try {
         setChatError('');
 
-        // Create or reuse a chat in Supabase
         let chatId = activeChatId;
         if (!chatId) {
+          const now = new Date().toISOString();
+          const title = content.slice(0, 50) + (content.length > 50 ? '…' : '');
+          let newChat: Chat;
           try {
-            const chat = await createChat(content.slice(0, 50) + (content.length > 50 ? '…' : ''));
-            chatId = chat.id;
-            setChats((prev) => [chat, ...prev]);
-            setActiveChatIdState(chat.id);
+            newChat = await createChat(title);
           } catch {
-            chatId = crypto.randomUUID();
-            setActiveChatIdState(chatId);
+            newChat = {
+              id: crypto.randomUUID(),
+              user_id: 'local',
+              title,
+              created_at: now,
+              updated_at: now,
+            };
           }
+          // Always persist locally so it survives reloads
+          addLocalChat(newChat);
+          chatId = newChat.id;
+          setChats((prev) => {
+            if (prev.some((c) => c.id === newChat.id)) return prev;
+            return [newChat, ...prev];
+          });
+          setActiveChatIdState(newChat.id);
         }
 
-        // Save user message to Supabase (best-effort), then show it
+        // Save user message (Supabase first, localStorage fallback)
         let userMsg: Message;
         try {
           userMsg = await addMessage(chatId, 'user', content);
@@ -192,7 +273,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             created_at: new Date().toISOString(),
           };
         }
-        // Add only if not already injected by real-time subscription
+        addLocalMessage(userMsg);
         setActiveChatMessages((prev) =>
           prev.some((m) => m.id === userMsg.id) ? prev : [...prev, userMsg]
         );
@@ -204,7 +285,6 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           content,
           (token) => setStreamingContent((prev) => prev + token),
           async (fullText, code) => {
-            // Save assistant (plan) message to Supabase
             let assistantMsg: Message;
             try {
               assistantMsg = await addMessage(chatId!, 'assistant', fullText);
@@ -217,11 +297,11 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
                 created_at: new Date().toISOString(),
               };
             }
+            addLocalMessage(assistantMsg);
             setActiveChatMessages((prev) =>
               prev.some((m) => m.id === assistantMsg.id) ? prev : [...prev, assistantMsg]
             );
 
-            // Persist generated code to localStorage so it survives page reloads
             if (code && chatId) {
               localStorage.setItem(CODE_KEY(chatId), code);
             }
@@ -257,10 +337,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     async (id: string) => {
       try {
         await deleteChat(id);
-      } catch {
-        // ignore
-      }
-      // Remove cached code for this project
+      } catch {}
+      removeLocalChat(id);
       localStorage.removeItem(CODE_KEY(id));
       setChats((prev) => prev.filter((c) => c.id !== id));
       if (activeChatId === id) {
@@ -277,10 +355,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const handleRenameChat = useCallback(async (id: string, title: string) => {
     try {
       await updateChatTitle(id, title);
-      setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
-    } catch {
-      // ignore
-    }
+    } catch {}
+    updateLocalChatTitle(id, title);
+    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
   }, []);
 
   return {
