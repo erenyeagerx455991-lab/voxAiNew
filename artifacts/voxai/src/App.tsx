@@ -153,6 +153,7 @@ function AppContent() {
           onRenameChat={store.handleRenameChat}
           profile={user}
           onSignOut={signOut}
+          onGoHome={() => setLandingShown(true)}
         />
         <Header
           onMenuClick={store.toggleSidebar}
