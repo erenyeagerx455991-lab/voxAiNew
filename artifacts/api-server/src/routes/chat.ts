@@ -2,7 +2,21 @@ import { Router } from "express";
 
 const router: Router = Router();
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const MODEL = "llama-3.3-70b-versatile";
+const PLAN_MODEL = "llama-3.1-8b-instant";   // fast + token-light for plan text
+const CODE_MODEL = "llama-3.3-70b-versatile"; // powerful for code generation
+
+function parseGroqError(raw: string): string {
+  try {
+    const outer = JSON.parse(raw);
+    const msg: string = outer?.error?.message ?? outer?.error ?? raw;
+    if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("rate_limit")) {
+      return "Rate limit reached — please wait a minute and try again.";
+    }
+    return msg;
+  } catch {
+    return "AI service error. Please try again.";
+  }
+}
 
 const PLAN_SYSTEM = `You are an AI website builder assistant. Carefully analyse the user's request and generate a FULLY TAILORED, UNIQUE response every time.
 
@@ -197,7 +211,7 @@ router.post("/chat/stream", async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: PLAN_MODEL,
         stream: true,
         messages: [
           { role: "system", content: PLAN_SYSTEM },
@@ -207,8 +221,8 @@ router.post("/chat/stream", async (req, res) => {
     });
 
     if (!upstream.ok || !upstream.body) {
-      const err = await upstream.text();
-      res.write(`data: ${JSON.stringify({ error: err })}\n\n`);
+      const errText = await upstream.text();
+      res.write(`data: ${JSON.stringify({ error: parseGroqError(errText) })}\n\n`);
       return res.end();
     }
 
@@ -237,7 +251,7 @@ router.post("/chat/stream", async (req, res) => {
       }
     }
   } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: String(err) })}\n\n`);
+    res.write(`data: ${JSON.stringify({ error: "Stream connection failed. Please try again." })}\n\n`);
   }
 
   res.end();
@@ -259,7 +273,7 @@ router.post("/chat/code", async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODEL,
+        model: CODE_MODEL,
         stream: false,
         max_tokens: 8000,
         messages: [
@@ -270,8 +284,8 @@ router.post("/chat/code", async (req, res) => {
     });
 
     if (!upstream.ok) {
-      const err = await upstream.text();
-      return res.status(500).json({ error: err });
+      const errText = await upstream.text();
+      return res.status(500).json({ error: parseGroqError(errText) });
     }
 
     const data = (await upstream.json()) as {
