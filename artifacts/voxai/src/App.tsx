@@ -219,7 +219,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 lg:bg-[#111118] overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 md:bg-[#111118] overflow-hidden">
         <Sidebar
           open={store.sidebarOpen}
           onClose={store.closeSidebar}
@@ -245,11 +245,11 @@ function AppContent() {
           onPreview={() => setShowPreviewModal(true)}
         />
 
-        <main className="flex-1 flex flex-col lg:flex-row mt-14 overflow-hidden">
+        <main className="flex-1 flex flex-col md:flex-row mt-14 overflow-hidden">
           {store.view === 'chat' && (
             <>
-              {/* ── Chat panel: full width on mobile, 40% on desktop ── */}
-              <div className="w-full lg:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 lg:bg-[#111118] lg:border-r lg:border-white/8">
+              {/* ── Chat panel: full width on mobile, 40% on split ── */}
+              <div className="w-full md:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#111118] md:border-r md:border-white/8">
                 <ChatView
                   messages={store.activeChatMessages}
                   isTyping={store.isTyping}
@@ -260,8 +260,8 @@ function AppContent() {
                 <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
               </div>
 
-              {/* ── Preview panel: hidden on mobile, 60% on desktop ── */}
-              <div className="hidden lg:flex lg:w-3/5 flex-col overflow-hidden bg-[#0d0d12]">
+              {/* ── Preview panel: hidden on mobile, 60% on split ── */}
+              <div className="hidden md:flex md:w-3/5 flex-col overflow-hidden bg-[#0d0d12]">
                 {store.isTyping ? (
                   <BuildingPreview buildStep={store.buildStep} />
                 ) : store.generatedCode ? (
