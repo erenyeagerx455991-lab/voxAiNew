@@ -69,11 +69,21 @@ DESIGN RULES — STRICTLY FOLLOW:
 - Use glassmorphism, subtle gradients, backdrop blur effects
 - Buttons: gradient backgrounds, rounded-full, hover effects
 - Add micro-animations and smooth transitions
-- Hero sections: full-screen with gradient overlays
-- NO emoji in logos or headings
 - NO orange+green button combinations
 - Cards: glass effect with border and shadow
 - Spacing: generous padding, breathing room
+
+STRICT RULE 1 — HERO SECTION:
+- Must use min-h-screen with flex items-center justify-center so content is vertically centered
+- Must have a large gradient background (e.g. bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a])
+- Must include a badge/pill element ABOVE the main heading (e.g. a small rounded-full span with border and subtle bg)
+- Must include a stats row BELOW the CTA buttons (3 stats side by side, e.g. "10k+ Users · 99.9% Uptime · 4.9★ Rating")
+- No empty/blank space anywhere — fill the viewport with content
+
+STRICT RULE 2 — NO EMOJI AS ICONS:
+- NEVER use emoji (🚀 ⚡ 🎨 ✅ etc.) as decorative icons inside cards, feature grids, or section headers
+- Use only: CSS-based shapes (div with border-radius, gradients), unicode arrow/symbol characters styled with Tailwind (→ ↗ ◆ ▸), or simple bold text labels
+- Emoji are allowed ONLY in stats rows or testimonials where they represent actual content (e.g. star ratings)
 
 CODE RULES:
 - Use Tailwind CSS classes only
