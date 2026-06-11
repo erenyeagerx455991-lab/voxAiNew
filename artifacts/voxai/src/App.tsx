@@ -11,7 +11,8 @@ import SettingsPage from './components/SettingsPage';
 import PreviewModal from './components/PreviewModal';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
-import { Sparkles } from 'lucide-react';
+import { buildPreviewHtml } from './services/builderService';
+import { Sparkles, Monitor } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | null;
 
@@ -165,17 +166,46 @@ function AppContent() {
           onPreview={() => setShowPreviewModal(true)}
         />
 
-        <main className="flex-1 flex flex-col mt-14 overflow-hidden">
+        <main className="flex-1 flex flex-col lg:flex-row mt-14 overflow-hidden">
           {store.view === 'chat' && (
             <>
-              <ChatView
-                messages={store.activeChatMessages}
-                isTyping={store.isTyping}
-                streamingContent={store.streamingContent}
-                chatError={store.chatError}
-                buildStep={store.buildStep}
-              />
-              <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
+              {/* ── Chat panel: full width on mobile, 40% on desktop ── */}
+              <div className="w-full lg:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 lg:bg-gray-950 lg:border-r lg:border-gray-800">
+                <ChatView
+                  messages={store.activeChatMessages}
+                  isTyping={store.isTyping}
+                  streamingContent={store.streamingContent}
+                  chatError={store.chatError}
+                  buildStep={store.buildStep}
+                />
+                <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* ── Preview panel: hidden on mobile, 60% on desktop ── */}
+              <div className="hidden lg:flex lg:w-3/5 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+                {store.generatedCode ? (
+                  <iframe
+                    key={store.generatedCode}
+                    srcDoc={buildPreviewHtml(store.generatedCode)}
+                    title="Live preview"
+                    sandbox="allow-scripts allow-same-origin"
+                    className="w-full h-full border-0"
+                  />
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
+                    <div className="w-16 h-16 rounded-2xl bg-gray-800 flex items-center justify-center">
+                      <Monitor size={28} className="text-gray-500" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-[15px] font-semibold text-gray-400 mb-1">Live Preview</p>
+                      <p className="text-[13px] text-gray-600 leading-relaxed max-w-xs">
+                        Your website will appear here as soon as the AI builds it.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
           {store.view === 'projects' && (
@@ -189,7 +219,6 @@ function AppContent() {
           )}
           {store.view === 'admin' && <AdminView />}
         </main>
-        <div ref={chatEndRef} />
       </div>
 
       {/* ── Preview Modal (full-screen overlay) ── */}
