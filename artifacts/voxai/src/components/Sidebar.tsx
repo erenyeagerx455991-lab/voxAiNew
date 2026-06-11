@@ -96,18 +96,19 @@ export default function Sidebar({
 
         {/* Navigation */}
         <nav className="px-3 pt-4 pb-2">
-          {/* Home button */}
+          <p className="px-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+            Features
+          </p>
+
+          {/* Home button inside Features */}
           <button
             onClick={() => { onGoHome(); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 mb-1"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <Home size={18} strokeWidth={1.5} />
             Home
           </button>
 
-          <p className="px-3 text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2 mt-1">
-            Features
-          </p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = view === item.id;
