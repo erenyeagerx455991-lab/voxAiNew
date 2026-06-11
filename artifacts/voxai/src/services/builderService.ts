@@ -200,9 +200,9 @@ export async function generateWebsite(prompt: string): Promise<string> {
 
 export function sanitizeCode(raw: string): string {
   return raw
-    // Remove all import statements (single and multi-line)
-    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*\n?/gm, '')
-    .replace(/^import\s+['"][^'"]+['"];?\s*\n?/gm, '')
+    // Remove single-line import statements only (no multiline span)
+    .replace(/^import\s[^\n]*from\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
     // Remove export keywords
     .replace(/^export\s+default\s+/gm, '')
     .replace(/^export\s+/gm, '')

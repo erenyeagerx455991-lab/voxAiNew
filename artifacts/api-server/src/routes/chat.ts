@@ -92,21 +92,54 @@ ABSOLUTE TECHNICAL RULES — violating any of these will break the preview:
 7. All text content must be hardcoded and specific to the user's request.
 8. The component MUST be named exactly: function App()
 
-REQUIRED SECTIONS — you MUST include ALL of these, in this order, no exceptions:
+CODE STRUCTURE — use this exact pattern to avoid premature JSX closure:
+Write each section as its own named function, then compose them in App().
+This is REQUIRED — do not put everything inside one giant return statement.
+
+Example skeleton (fill in real content):
+function Navbar() {
+  return (<nav className="...">...</nav>);
+}
+function Hero() {
+  return (<section className="...">...</section>);
+}
+function Features() {
+  const items = [{icon:'...', title:'...', desc:'...'},...];
+  return (<section className="...">...</section>);
+}
+function SocialProof() {
+  return (<section className="...">...</section>);
+}
+function CtaBanner() {
+  return (<section className="...">...</section>);
+}
+function Footer() {
+  return (<footer className="...">...</footer>);
+}
+function App() {
+  return (
+    <div>
+      <Navbar />
+      <Hero />
+      <Features />
+      <SocialProof />
+      <CtaBanner />
+      <Footer />
+    </div>
+  );
+}
+
+REQUIRED SECTIONS — all six MUST be present:
 1. Navbar — sticky, logo text left, nav links right, backdrop-blur bg
-2. Hero — min-h-screen, large gradient headline, subheadline, 2 CTA buttons
-3. Features grid — 3 columns, icon/emoji + title + description per card
-4. Social proof — stats row OR 2-3 testimonial cards
-5. CTA Banner — gradient bg, headline, single button
-6. Footer — 3-4 columns with links, bottom copyright bar
+2. Hero — min-h-screen, gradient headline, subheadline, 2 CTA buttons
+3. Features — 3-column card grid using .map() over a data array
+4. SocialProof — stats row OR 2-3 testimonial cards using .map()
+5. CtaBanner — gradient bg, headline, one button
+6. Footer — columns with links, bottom copyright bar
 
-EFFICIENCY RULES — keep code concise so all sections fit:
-- Use .map() over arrays for repeated cards instead of copy-pasting JSX
-- Keep each section under 40 lines
-- No redundant wrapper divs
-- Inline data arrays at the top of the function (const features = [...])
+EFFICIENCY — use .map() for all repeated elements; keep each function under 35 lines.
 
-OUTPUT FORMAT: Return ONLY the raw function code. No markdown fences, no comments, no explanations. The very first character must be 'f' (start of "function App()").`;
+OUTPUT FORMAT: Return ONLY the raw JS/JSX code. No markdown fences, no explanations. Start with "function Navbar()".`;
 
 // POST /api/chat/stream  — streams the plan text as SSE
 router.post("/chat/stream", async (req, res) => {
@@ -207,9 +240,12 @@ router.post("/chat/code", async (req, res) => {
     }
 
     const data = (await upstream.json()) as {
-      choices: Array<{ message: { content: string } }>;
+      choices: Array<{ message: { content: string }; finish_reason: string }>;
     };
     let code = data.choices?.[0]?.message?.content ?? "";
+    const finishReason = data.choices?.[0]?.finish_reason ?? "unknown";
+
+    console.log(`[code] finish_reason=${finishReason} chars=${code.length}`);
 
     // Strip any markdown code fences the model might add
     code = code
@@ -217,7 +253,7 @@ router.post("/chat/code", async (req, res) => {
       .replace(/\n?```\s*$/i, "")
       .trim();
 
-    res.json({ code });
+    res.json({ code, finishReason });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
