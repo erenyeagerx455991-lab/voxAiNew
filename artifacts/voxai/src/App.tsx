@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ChatView from './components/ChatView';
@@ -19,24 +19,12 @@ type AuthMode = 'login' | 'signup' | null;
 function AppContent() {
   const { user, loading, signOut, refreshProfile, isAuthenticated } = useAuth();
   const store = useAppStore(isAuthenticated, refreshProfile);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
   const [landingShown, setLandingShown] = useState(true);
   const [authMode, setAuthMode] = useState<AuthMode>(null);
   const [pendingMessage, setPendingMessage] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pendingSentRef = useRef(false);
-
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
-  }, []);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [store.activeChatMessages.length, store.isTyping, store.streamingContent, store.chatError, scrollToBottom]);
 
   // Authenticated + pending message → send it and go to workspace
   useEffect(() => {
@@ -140,7 +128,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 lg:bg-[#111118] overflow-hidden">
         <Sidebar
           open={store.sidebarOpen}
           onClose={store.closeSidebar}
@@ -170,7 +158,7 @@ function AppContent() {
           {store.view === 'chat' && (
             <>
               {/* ── Chat panel: full width on mobile, 40% on desktop ── */}
-              <div className="w-full lg:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 lg:bg-gray-950 lg:border-r lg:border-gray-800">
+              <div className="w-full lg:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 lg:bg-[#111118] lg:border-r lg:border-white/8">
                 <ChatView
                   messages={store.activeChatMessages}
                   isTyping={store.isTyping}
@@ -179,11 +167,10 @@ function AppContent() {
                   buildStep={store.buildStep}
                 />
                 <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
-                <div ref={chatEndRef} />
               </div>
 
               {/* ── Preview panel: hidden on mobile, 60% on desktop ── */}
-              <div className="hidden lg:flex lg:w-3/5 flex-col overflow-hidden bg-gray-50 dark:bg-gray-950">
+              <div className="hidden lg:flex lg:w-3/5 flex-col overflow-hidden bg-[#0d0d12]">
                 {store.generatedCode ? (
                   <iframe
                     key={store.generatedCode}

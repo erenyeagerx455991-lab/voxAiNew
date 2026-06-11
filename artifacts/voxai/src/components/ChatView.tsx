@@ -1,3 +1,4 @@
+import { useRef, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
 
@@ -14,7 +15,7 @@ function BuildProgress({ buildStep }: { buildStep: number }) {
 
   return (
     <div className="flex justify-start mb-4">
-      <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex flex-col gap-2 min-w-[220px]">
+      <div className="bg-gray-100 dark:bg-gray-800 lg:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex flex-col gap-2 min-w-[220px]">
         {BUILD_STEPS.map((label, i) => {
           const isDone = buildStep > i || buildStep === 5;
           const isActive = buildStep === i;
@@ -39,7 +40,7 @@ function BuildProgress({ buildStep }: { buildStep: number }) {
               <span
                 className={`text-[13px] leading-snug transition-colors ${
                   isDone
-                    ? 'text-gray-700 dark:text-gray-300 font-medium'
+                    ? 'text-gray-700 dark:text-gray-300 lg:text-gray-300 font-medium'
                     : isActive
                     ? 'text-blue-600 dark:text-blue-400 font-semibold'
                     : 'text-gray-400 dark:text-gray-500'
@@ -70,8 +71,8 @@ function MessageBubble({ message }: { message: Message }) {
       <div
         className={`max-w-[85%] px-4 py-3 rounded-2xl text-[14.5px] leading-relaxed whitespace-pre-wrap ${
           isUser
-            ? 'bg-black text-white rounded-br-md'
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-md'
+            ? 'bg-black text-white rounded-br-md lg:bg-indigo-600'
+            : 'bg-gray-100 dark:bg-gray-800 lg:bg-gray-800 text-gray-900 dark:text-gray-100 lg:text-gray-100 rounded-bl-md'
         }`}
       >
         {message.content}
@@ -83,7 +84,7 @@ function MessageBubble({ message }: { message: Message }) {
 function StreamingBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-start mb-4">
-      <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-[14.5px] leading-relaxed whitespace-pre-wrap">
+      <div className="max-w-[85%] px-4 py-3 rounded-2xl rounded-bl-md bg-gray-100 dark:bg-gray-800 lg:bg-gray-800 text-gray-900 dark:text-gray-100 lg:text-gray-100 text-[14.5px] leading-relaxed whitespace-pre-wrap">
         {content}
         <span className="inline-block w-0.5 h-4 bg-gray-400 dark:bg-gray-500 ml-0.5 animate-pulse align-text-bottom" />
       </div>
@@ -94,7 +95,7 @@ function StreamingBubble({ content }: { content: string }) {
 function TypingIndicator() {
   return (
     <div className="flex justify-start mb-4">
-      <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1">
+      <div className="bg-gray-100 dark:bg-gray-800 lg:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1">
         <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce [animation-delay:0ms]" />
         <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce [animation-delay:150ms]" />
         <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce [animation-delay:300ms]" />
@@ -115,32 +116,35 @@ function ErrorBanner({ message }: { message: string }) {
 }
 
 export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep }: ChatViewProps) {
-  if (messages.length === 0 && !isTyping && !chatError && buildStep < 0) {
-    return <div className="flex-1 bg-white dark:bg-gray-900" />;
-  }
+  const endRef = useRef<HTMLDivElement>(null);
 
-  // Show streaming text only once Building Sections (step 2) is active
+  useEffect(() => {
+    setTimeout(() => {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
+  }, [messages.length, isTyping, streamingContent, chatError]);
+
   const showStreaming = buildStep >= 2 || buildStep === 5 || buildStep < 0;
 
+  if (messages.length === 0 && !isTyping && !chatError && buildStep < 0) {
+    return <div className="flex-1 bg-white dark:bg-gray-900 lg:bg-[#111118]" />;
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-gray-900">
-      <div className="max-w-3xl mx-auto">
+    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-gray-900 lg:bg-[#111118]">
+      <div className="max-w-2xl mx-auto">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
 
-        {/* Progress steps — shown while generating */}
         {isTyping && <BuildProgress buildStep={buildStep} />}
-
-        {/* Streaming plan text — shown after Building Sections begins */}
         {isTyping && streamingContent && showStreaming && (
           <StreamingBubble content={streamingContent} />
         )}
-
-        {/* Fallback dots if no content yet and not in progress */}
         {isTyping && !streamingContent && buildStep < 0 && <TypingIndicator />}
-
         {chatError && <ErrorBanner message={chatError} />}
+
+        <div ref={endRef} />
       </div>
     </div>
   );

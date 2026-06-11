@@ -20,17 +20,17 @@ function PlayIcon() {
 
 export default function Header({ onMenuClick, title, onPreview, hasCode, showPreview }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800">
-      <div className="flex items-center justify-between h-14 px-4 max-w-3xl mx-auto">
+    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-gray-900/80 lg:bg-[#111118]/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 lg:border-white/8">
+      <div className="flex items-center justify-between h-14 px-4 lg:px-6">
         <button
           onClick={onMenuClick}
-          className="p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="p-2 -ml-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 lg:hover:bg-white/10 transition-colors"
           aria-label="Open menu"
         >
-          <Menu size={22} strokeWidth={1.5} className="text-gray-700 dark:text-gray-300" />
+          <Menu size={22} strokeWidth={1.5} className="text-gray-700 dark:text-gray-300 lg:text-gray-300" />
         </button>
 
-        <h1 className="text-[15px] font-semibold text-black dark:text-white truncate">{title}</h1>
+        <h1 className="text-[15px] font-semibold text-black dark:text-white lg:text-white truncate">{title}</h1>
 
         {showPreview ? (
           <button
@@ -38,8 +38,8 @@ export default function Header({ onMenuClick, title, onPreview, hasCode, showPre
             disabled={!hasCode}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] font-medium transition-all -mr-1 ${
               hasCode
-                ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                ? 'bg-black dark:bg-white lg:bg-indigo-600 lg:hover:bg-indigo-500 text-white dark:text-black lg:text-white cursor-pointer'
+                : 'bg-gray-100 dark:bg-gray-800 lg:bg-white/10 text-gray-400 dark:text-gray-600 lg:text-gray-600 cursor-not-allowed'
             }`}
             aria-label="Preview"
           >
