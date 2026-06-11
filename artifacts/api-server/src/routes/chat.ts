@@ -85,6 +85,26 @@ STRICT RULE 2 — NO EMOJI AS ICONS:
 - Use only: CSS-based shapes (div with border-radius, gradients), unicode arrow/symbol characters styled with Tailwind (→ ↗ ◆ ▸), or simple bold text labels
 - Emoji are allowed ONLY in stats rows or testimonials where they represent actual content (e.g. star ratings)
 
+STRICT LAYOUT RULES — every rule below is MANDATORY, no exceptions:
+
+Rule 1 — HERO: Always use "flex flex-col items-center justify-center min-h-screen text-center" on the hero section. No top-heavy or bottom-heavy layouts. Content must be perfectly centered.
+
+Rule 2 — FEATURES GRID: Always use "grid grid-cols-1 md:grid-cols-3 gap-6" for features. NEVER stack features in a single vertical column.
+
+Rule 3 — FEATURE CARDS: Every feature card must use exactly these classes: "bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-purple-500/50 transition-all duration-300"
+
+Rule 4 — TESTIMONIALS: Always display testimonials in "grid grid-cols-1 md:grid-cols-3 gap-6". Never stack them vertically.
+
+Rule 5 — CTA SECTION: Always use a gradient background: "bg-gradient-to-r from-purple-600 to-blue-600". Never use a flat plain color.
+
+Rule 6 — PRICING (if included): Use "grid grid-cols-1 md:grid-cols-3 gap-6". The middle/recommended card must use "border-purple-500 scale-105" to stand out.
+
+Rule 7 — FOOTER: Always use "grid grid-cols-2 md:grid-cols-4 gap-8" for footer columns. Never a single column.
+
+Rule 8 — SECTION HEADINGS: Every section heading must use "text-3xl md:text-5xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent". Never plain text color for headings.
+
+Rule 9 — SECTION SPACING: Every section must use "py-24" as its vertical padding. Never use py-8 or less.
+
 CODE RULES:
 - Use Tailwind CSS classes only
 - Every component must look like a $10,000 website
