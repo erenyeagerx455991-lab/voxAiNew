@@ -1,11 +1,66 @@
 import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
 
+const BUILD_STEPS = [
+  'Understanding Business',
+  'Writing Content',
+  'Building Sections',
+  'Creating Layout',
+  'Preparing Preview',
+];
+
+function BuildProgress({ buildStep }: { buildStep: number }) {
+  if (buildStep < 0) return null;
+
+  return (
+    <div className="flex justify-start mb-4">
+      <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex flex-col gap-2 min-w-[220px]">
+        {BUILD_STEPS.map((label, i) => {
+          const isDone = buildStep > i || buildStep === 5;
+          const isActive = buildStep === i;
+          const isPending = buildStep < i && buildStep !== 5;
+
+          return (
+            <div key={label} className="flex items-center gap-2">
+              {isDone && (
+                <span className="w-4 h-4 flex items-center justify-center text-emerald-500 text-sm font-bold shrink-0">✓</span>
+              )}
+              {isActive && (
+                <span className="w-4 h-4 flex items-center justify-center shrink-0">
+                  <svg className="animate-spin text-blue-500 w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                </span>
+              )}
+              {isPending && (
+                <span className="w-4 h-4 flex items-center justify-center text-gray-300 dark:text-gray-600 text-sm shrink-0">○</span>
+              )}
+              <span
+                className={`text-[13px] leading-snug transition-colors ${
+                  isDone
+                    ? 'text-gray-700 dark:text-gray-300 font-medium'
+                    : isActive
+                    ? 'text-blue-600 dark:text-blue-400 font-semibold'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 interface ChatViewProps {
   messages: Message[];
   isTyping: boolean;
   streamingContent: string;
   chatError: string;
+  buildStep: number;
 }
 
 function MessageBubble({ message }: { message: Message }) {
@@ -59,10 +114,13 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-export default function ChatView({ messages, isTyping, streamingContent, chatError }: ChatViewProps) {
-  if (messages.length === 0 && !isTyping && !chatError) {
+export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep }: ChatViewProps) {
+  if (messages.length === 0 && !isTyping && !chatError && buildStep < 0) {
     return <div className="flex-1 bg-white dark:bg-gray-900" />;
   }
+
+  // Show streaming text only once Building Sections (step 2) is active
+  const showStreaming = buildStep >= 2 || buildStep === 5 || buildStep < 0;
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-gray-900">
@@ -70,8 +128,18 @@ export default function ChatView({ messages, isTyping, streamingContent, chatErr
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-        {isTyping && streamingContent && <StreamingBubble content={streamingContent} />}
-        {isTyping && !streamingContent && <TypingIndicator />}
+
+        {/* Progress steps — shown while generating */}
+        {isTyping && <BuildProgress buildStep={buildStep} />}
+
+        {/* Streaming plan text — shown after Building Sections begins */}
+        {isTyping && streamingContent && showStreaming && (
+          <StreamingBubble content={streamingContent} />
+        )}
+
+        {/* Fallback dots if no content yet and not in progress */}
+        {isTyping && !streamingContent && buildStep < 0 && <TypingIndicator />}
+
         {chatError && <ErrorBanner message={chatError} />}
       </div>
     </div>

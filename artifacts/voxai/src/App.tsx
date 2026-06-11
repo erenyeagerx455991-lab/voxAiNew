@@ -171,6 +171,7 @@ function AppContent() {
                 isTyping={store.isTyping}
                 streamingContent={store.streamingContent}
                 chatError={store.chatError}
+                buildStep={store.buildStep}
               />
               <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
             </>

@@ -20,6 +20,7 @@ interface AppState {
   streamingContent: string;
   chatError: string;
   generatedCode: string;
+  buildStep: number;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -39,6 +40,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [streamingContent, setStreamingContent] = useState('');
   const [chatError, setChatError] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
+  const [buildStep, setBuildStep] = useState(-1);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -200,6 +202,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             setStreamingContent('');
             setIsTyping(false);
             setGeneratedCode(code);
+            setBuildStep(5);
             loadingRef.current = false;
             onCreditsChange?.();
           },
@@ -207,8 +210,10 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             setChatError(err);
             setStreamingContent('');
             setIsTyping(false);
+            setBuildStep(-1);
             loadingRef.current = false;
-          }
+          },
+          (step) => setBuildStep(step)
         );
       } catch (err) {
         console.error('handleSend error:', err);
@@ -262,6 +267,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     streamingContent,
     chatError,
     generatedCode,
+    buildStep,
     handleSend,
     handleNewChat,
     handleDeleteChat,
