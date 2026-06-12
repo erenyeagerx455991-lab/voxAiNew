@@ -200,15 +200,21 @@ export async function generateWebsite(prompt: string): Promise<string> {
 
 export function sanitizeCode(raw: string): string {
   return raw
-    // Remove single-line import statements only (no multiline span)
-    .replace(/^import\s[^\n]*from\s+['"][^'"]+['"];?\s*$/gm, '')
+    // Strip markdown fences
+    .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/gi, '')
+    .replace(/\n?```\s*$/gi, '')
+    // Remove import statements (single-line and multi-line)
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
     .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^import\s*\{[\s\S]*?\}\s*from\s+['"][^'"]+['"];?\s*$/gm, '')
     // Remove export keywords
     .replace(/^export\s+default\s+/gm, '')
     .replace(/^export\s+/gm, '')
-    // Strip markdown fences that slipped through
-    .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/gi, '')
-    .replace(/\n?```\s*$/gi, '')
+    // Remove TypeScript interface and type alias declarations
+    .replace(/^interface\s+\w+[\s\S]*?\n\}/gm, '')
+    .replace(/^type\s+\w+\s*=[\s\S]*?;?\s*$/gm, '')
+    // Remove standalone TypeScript type annotations from function params (basic)
+    // (Babel with typescript preset handles remaining TS, so this is just extra safety)
     .trim();
 }
 
@@ -227,28 +233,33 @@ export function buildPreviewHtml(code: string): string {
     body { margin: 0; }
     #__error {
       display: none;
-      padding: 24px;
-      font-family: monospace;
-      font-size: 13px;
-      background: #1a1a1a;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
       color: #ff6b6b;
-      white-space: pre-wrap;
       min-height: 100vh;
+      text-align: left;
     }
   </style>
   <script>
     window.addEventListener('error', function(e) {
       document.getElementById('root').style.display = 'none';
       var el = document.getElementById('__error');
-      el.style.display = 'block';
-      el.textContent = '⚠ Render error:\\n\\n' + (e.error ? e.error.stack : e.message);
+      el.style.display = 'flex';
+      var msg = e.error ? (e.error.message || String(e.error)) : (e.message || 'Unknown error');
+      // Strip internal Babel/unpkg stack frames — just show the first meaningful line
+      var lines = msg.split('\\n');
+      var clean = lines.slice(0, 3).join('\\n');
+      el.innerHTML = '<div style="max-width:540px"><div style="font-size:28px;margin-bottom:12px">⚠</div><div style="font-size:15px;font-weight:700;color:#ff6b6b;margin-bottom:8px">Preview Render Error</div><pre style="font-size:12px;color:#fca5a5;background:#2a1515;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap;">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre><div style="font-size:11px;color:#666;margin-top:10px">The AI-generated code has a syntax error. Try regenerating the website.</div></div>';
     });
   </script>
 </head>
 <body>
   <div id="root"></div>
   <div id="__error"></div>
-  <script type="text/babel">
+  <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">
     ${sanitized}
     try {
       const rootEl = document.getElementById('root');
@@ -258,7 +269,7 @@ export function buildPreviewHtml(code: string): string {
       document.getElementById('root').style.display = 'none';
       var err = document.getElementById('__error');
       err.style.display = 'block';
-      err.textContent = '⚠ Render error:\\n\\n' + e.stack;
+      err.textContent = '⚠ Render error:\\n\\n' + (e && e.message ? e.message : String(e));
     }
   </script>
 </body>
