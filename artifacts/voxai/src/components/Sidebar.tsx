@@ -70,7 +70,7 @@ export default function Sidebar({
         />
       )}
       <aside
-        className={`fixed top-0 left-0 h-full w-[300px] bg-white dark:bg-gray-900 z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-[300px] bg-white dark:bg-[#2d2d2d] z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

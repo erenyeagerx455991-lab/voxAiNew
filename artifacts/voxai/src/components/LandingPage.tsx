@@ -30,7 +30,7 @@ export default function LandingPage({ onLogin, onSignup, onSubmit, onOpenProject
   };
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-white flex flex-col overflow-hidden">
+    <div className="min-h-[100dvh] bg-gray-50 dark:bg-[#2d2d2d] text-gray-900 dark:text-white flex flex-col overflow-hidden">
 
       {/* Drawer overlay */}
       {menuOpen && (
