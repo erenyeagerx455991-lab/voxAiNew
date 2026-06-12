@@ -42,7 +42,7 @@ export default function ProjectsView({ chats, onOpenProject, onCreateProject, on
   };
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pt-5 pb-8 bg-white dark:bg-[#2d2d2d]">
+    <div className="flex-1 overflow-y-auto px-4 pt-5 pb-8 bg-white dark:bg-[#181817]">
       <h1 className="text-2xl font-bold text-black dark:text-white mb-5">All projects</h1>
 
       {/* Search */}
@@ -116,7 +116,7 @@ export default function ProjectsView({ chats, onOpenProject, onCreateProject, on
               <div className="absolute top-2 right-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === chat.id ? null : chat.id); }}
-                  className="w-7 h-7 rounded-lg bg-white/80 dark:bg-[#2d2d2d]/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-900"
+                  className="w-7 h-7 rounded-lg bg-white/80 dark:bg-[#181817]/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-gray-900"
                 >
                   <MoreHorizontal size={14} className="text-gray-600 dark:text-gray-400" />
                 </button>

@@ -20,7 +20,7 @@ function PlayIcon() {
 
 export default function Header({ onMenuClick, title, onPreview, hasCode, showPreview }: HeaderProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-[#2d2d2d]/95 md:bg-[#2d2d2d]/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 md:border-white/8">
+    <header className="fixed top-0 left-0 right-0 z-30 bg-white/80 dark:bg-[#181817]/95 md:bg-[#181817]/95 backdrop-blur-xl border-b border-gray-100 dark:border-gray-800 md:border-white/8">
       <div className="flex items-center justify-between h-14 px-4 md:px-6">
         <button
           onClick={onMenuClick}

@@ -47,7 +47,7 @@ export default function WorkspacePanel({
   const hasContent = !!generatedCode && !isGenerating;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-[#2d2d2d]">
+    <div className="flex flex-col h-full bg-white dark:bg-[#181817]">
 
       {/* ── Tab bar ── */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
@@ -104,7 +104,7 @@ export default function WorkspacePanel({
 
         {/* Loading skeleton */}
         {isGenerating && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#2d2d2d] z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-white dark:bg-[#181817] z-10">
             <Loader2 size={32} className="text-indigo-500 animate-spin" />
             <div className="text-center">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-1">Generating your page…</p>
@@ -171,7 +171,7 @@ export default function WorkspacePanel({
       </div>
 
       {/* ── Iterate input ── */}
-      <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#2d2d2d]">
+      <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-[#181817]">
         <div className="flex items-end gap-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-4 py-3">
           <textarea
             ref={textareaRef}

@@ -180,14 +180,14 @@ export default function ChatView({ messages, isTyping, streamingContent, chatErr
   }, [messages.length, isTyping, streamingContent, chatError, buildStep]);
 
   if (messages.length === 0 && !isTyping && !chatError && buildStep < 0) {
-    return <div className="flex-1 bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d]" />;
+    return <div className="flex-1 bg-white dark:bg-[#181817] md:bg-[#181817]" />;
   }
 
   const hasPlanItems = parsePlanItems(streamingContent).length > 0;
   const planIsComplete = buildStep > 0 && hasPlanItems;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d]">
+    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-[#181817] md:bg-[#181817]">
       <div className="max-w-2xl mx-auto">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />

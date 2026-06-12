@@ -168,7 +168,7 @@ function AppContent() {
   // ── Loading ────────────────────────────────────────────────────
   if (loading || !store.initialized) {
     return (
-      <div className="h-[100dvh] flex flex-col items-center justify-center bg-white dark:bg-[#2d2d2d]">
+      <div className="h-[100dvh] flex flex-col items-center justify-center bg-white dark:bg-[#181817]">
         <div className="w-12 h-12 rounded-2xl bg-black dark:bg-white flex items-center justify-center mb-4 animate-pulse">
           <Sparkles size={24} className="text-white dark:text-black" strokeWidth={1.5} />
         </div>
@@ -219,7 +219,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d] overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-white dark:bg-[#181817] md:bg-[#181817] overflow-hidden">
         <Sidebar
           open={store.sidebarOpen}
           onClose={store.closeSidebar}
@@ -253,7 +253,7 @@ function AppContent() {
             <>
               {/* ── Chat panel: full width on mobile, dynamic on split ── */}
               <div
-                className="flex flex-col overflow-hidden bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d] md:shrink-0"
+                className="flex flex-col overflow-hidden bg-white dark:bg-[#181817] md:bg-[#181817] md:shrink-0"
                 style={isMd ? { width: `${splitPos}%` } : { width: '100%' }}
                 onMouseDown={isMd ? (e) => startPanelGesture(e.clientX, e.clientY, 'chat') : undefined}
                 onTouchStart={isMd ? (e) => startPanelGesture(e.touches[0].clientX, e.touches[0].clientY, 'chat') : undefined}
