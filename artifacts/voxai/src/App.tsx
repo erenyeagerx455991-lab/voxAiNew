@@ -219,7 +219,7 @@ function AppContent() {
 
   return (
     <>
-      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 md:bg-[#111118] overflow-hidden">
+      <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 md:bg-[#2d2d2d] overflow-hidden">
         <Sidebar
           open={store.sidebarOpen}
           onClose={store.closeSidebar}
@@ -253,7 +253,7 @@ function AppContent() {
             <>
               {/* ── Chat panel: full width on mobile, dynamic on split ── */}
               <div
-                className="flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#111118] md:shrink-0"
+                className="flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#2d2d2d] md:shrink-0"
                 style={isMd ? { width: `${splitPos}%` } : { width: '100%' }}
                 onMouseDown={isMd ? (e) => startPanelGesture(e.clientX, e.clientY, 'chat') : undefined}
                 onTouchStart={isMd ? (e) => startPanelGesture(e.touches[0].clientX, e.touches[0].clientY, 'chat') : undefined}

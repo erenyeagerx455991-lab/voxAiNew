@@ -42,7 +42,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
       fixed bottom-0 left-0 right-0 z-20
       md:static md:bottom-auto md:left-auto md:right-auto md:z-auto
       bg-gradient-to-t from-white dark:from-gray-900 via-white dark:via-gray-900 to-transparent
-      md:bg-none md:bg-[#111118] md:border-t md:border-white/5
+      md:bg-none md:bg-[#2d2d2d] md:border-t md:border-white/5
       pt-6 pb-[env(safe-area-inset-bottom,16px)]
       md:pt-3 md:pb-4
     ">

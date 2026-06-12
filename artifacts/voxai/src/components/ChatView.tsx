@@ -180,20 +180,18 @@ export default function ChatView({ messages, isTyping, streamingContent, chatErr
   }, [messages.length, isTyping, streamingContent, chatError, buildStep]);
 
   if (messages.length === 0 && !isTyping && !chatError && buildStep < 0) {
-    return <div className="flex-1 bg-white dark:bg-gray-900 md:bg-[#111118]" />;
+    return <div className="flex-1 bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d]" />;
   }
 
   const hasPlanItems = parsePlanItems(streamingContent).length > 0;
   const planIsComplete = buildStep > 0 && hasPlanItems;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-gray-900 md:bg-[#111118]">
+    <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-[#2d2d2d] md:bg-[#2d2d2d]">
       <div className="max-w-2xl mx-auto">
         {messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
-
-        {isTyping && <AgentPipeline buildStep={buildStep} />}
 
         {isTyping && hasPlanItems && (
           <PlanChecklist content={streamingContent} isComplete={planIsComplete} />
