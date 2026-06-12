@@ -88,40 +88,31 @@ function PlanChecklist({ content, isComplete }: { content: string; isComplete: b
 
   return (
     <div className="flex justify-start mb-3">
-      <div className="bg-[#0f1117] border border-gray-700/60 rounded-2xl rounded-bl-md px-4 py-4 min-w-[280px] max-w-[360px]">
-        <div className="flex items-center gap-2 mb-3">
-          <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
-            <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-          </svg>
-          <span className="text-white font-semibold text-sm">Plan</span>
-        </div>
-        <div className="flex flex-col gap-2.5">
-          {items.map((item, i) => {
-            const isLast = i === items.length - 1 && !isComplete;
-            const done = !isLast;
-            return (
-              <div key={i} className="flex items-start gap-2.5">
-                <div className={`w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
-                  done
-                    ? 'bg-emerald-500/15 border-emerald-500/70'
-                    : 'border-gray-600 bg-gray-800/50'
-                }`}>
-                  {done && (
-                    <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <span className={`text-[12.5px] leading-snug ${done ? 'text-gray-300' : 'text-gray-500'}`}>
-                  {item}
-                </span>
+      <div className="flex flex-col gap-2 max-w-[85%]">
+        {items.map((item, i) => {
+          const isLast = i === items.length - 1 && !isComplete;
+          const done = !isLast;
+          return (
+            <div key={i} className="flex items-start gap-2.5">
+              <div className={`w-[18px] h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
+                done
+                  ? 'bg-emerald-500/15 border-emerald-500/70'
+                  : 'border-gray-600'
+              }`}>
+                {done && (
+                  <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
               </div>
-            );
-          })}
-        </div>
+              <span className={`text-[13px] leading-snug ${done ? 'text-gray-200' : 'text-gray-500'}`}>
+                {item}
+              </span>
+            </div>
+          );
+        })}
         {isComplete && (
-          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-gray-700/40">
+          <div className="flex items-center gap-1.5 mt-1">
             <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M2 12l5 5L15 7M8 12l5 5L23 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
