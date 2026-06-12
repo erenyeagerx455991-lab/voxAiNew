@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import ChatView from './components/ChatView';
@@ -25,6 +25,55 @@ function AppContent() {
   const [showSettings, setShowSettings] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const pendingSentRef = useRef(false);
+
+  // ── Resizable split panel ──────────────────────────────────────
+  const [splitPos, setSplitPos] = useState(40); // % width for chat panel
+  const [isMd, setIsMd] = useState(() => window.innerWidth >= 768);
+  const isDragging = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMd(window.innerWidth >= 768);
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const clamp = (v: number) => Math.min(75, Math.max(20, v));
+
+  const onDragMove = useCallback((clientX: number) => {
+    if (!isDragging.current || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const pct = ((clientX - rect.left) / rect.width) * 100;
+    setSplitPos(clamp(pct));
+  }, []);
+
+  const onDragEnd = useCallback(() => {
+    isDragging.current = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => onDragMove(e.clientX);
+    const onTouchMove = (e: TouchEvent) => onDragMove(e.touches[0].clientX);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onDragEnd);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onDragEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onDragEnd);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onDragEnd);
+    };
+  }, [onDragMove, onDragEnd]);
+
+  const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   // Authenticated + pending message → send it and go to workspace
   useEffect(() => {
@@ -154,11 +203,17 @@ function AppContent() {
           onPreview={() => setShowPreviewModal(true)}
         />
 
-        <main className="flex-1 flex flex-col md:flex-row mt-14 overflow-hidden">
+        <main
+          ref={containerRef}
+          className="flex-1 flex flex-col md:flex-row mt-14 overflow-hidden"
+        >
           {store.view === 'chat' && (
             <>
-              {/* ── Chat panel: full width on mobile, 40% on split ── */}
-              <div className="w-full md:w-2/5 flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#111118] md:border-r md:border-white/8">
+              {/* ── Chat panel: full width on mobile, dynamic on split ── */}
+              <div
+                className="flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#111118] md:shrink-0"
+                style={isMd ? { width: `${splitPos}%` } : { width: '100%' }}
+              >
                 <ChatView
                   messages={store.activeChatMessages}
                   isTyping={store.isTyping}
@@ -169,8 +224,22 @@ function AppContent() {
                 <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
               </div>
 
-              {/* ── Preview panel: hidden on mobile, 60% on split ── */}
-              <div className="hidden md:flex md:w-3/5 flex-col overflow-hidden">
+              {/* ── Drag handle: only on md+ ── */}
+              <div
+                onMouseDown={startDrag}
+                onTouchStart={startDrag}
+                className="hidden md:flex w-[5px] shrink-0 cursor-col-resize items-center justify-center bg-white/4 hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors group z-10"
+                title="Drag to resize"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="w-0.5 h-1.5 rounded-full bg-white/25 group-hover:bg-indigo-400/70 transition-colors" />
+                  <div className="w-0.5 h-1.5 rounded-full bg-white/25 group-hover:bg-indigo-400/70 transition-colors" />
+                  <div className="w-0.5 h-1.5 rounded-full bg-white/25 group-hover:bg-indigo-400/70 transition-colors" />
+                </div>
+              </div>
+
+              {/* ── Preview panel: hidden on mobile, dynamic on split ── */}
+              <div className="hidden md:flex flex-col flex-1 overflow-hidden">
                 <WorkspacePreviewPanel
                   code={store.generatedCode}
                   isBuilding={store.isTyping}
