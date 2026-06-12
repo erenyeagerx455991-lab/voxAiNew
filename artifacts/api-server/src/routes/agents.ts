@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { selectTemplatesForPrompt, buildContextFromTemplates } from "../components/registry";
 
 const router: Router = Router();
 
@@ -137,8 +138,9 @@ Rules:
 - Colors must match the website type and audience
 - No generic blue+green combos; be creative`;
 
-function buildCodeSystem(design: any) {
-  return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website.
+function buildCodeSystem(design: any, componentContext?: string) {
+  const componentSection = componentContext ? `\n\nCOMPONENT LIBRARY TEMPLATES (use these as reference — adapt them with the correct content, colors, and text for this specific website):\n${componentContext}\n` : '';
+  return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website.${componentSection}
 
 DESIGN TOKENS (follow these exactly):
 - Theme: ${design.theme}
@@ -288,6 +290,11 @@ router.post("/agents/build", async (req, res) => {
 
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design });
 
+    // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
+    const selectedTemplates = selectTemplatesForPrompt(prompt);
+    const componentContext = buildContextFromTemplates(selectedTemplates);
+    console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
+
     // ── AGENT 3: CODE GENERATION ──────────────────────────────────────────────
     sse(res, { type: "step", step: 2, agent: "Code Generation Agent", status: "active" });
 
@@ -295,8 +302,8 @@ router.post("/agents/build", async (req, res) => {
     try {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
-          { role: "system", content: buildCodeSystem(design) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nInclude ALL 6 sections: Navbar, Hero, Features, SocialProof, CtaBanner, Footer. Do not truncate.` },
+          { role: "system", content: buildCodeSystem(design, componentContext) },
+          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nInclude ALL 6 sections: Navbar, Hero, Features, SocialProof, CtaBanner, Footer. Use the component templates above as your structural reference — replace placeholder text with real content. Do not truncate.` },
         ],
         8000
       );
@@ -304,8 +311,8 @@ router.post("/agents/build", async (req, res) => {
       console.error("OpenRouter codegen failed, falling back to Groq:", e);
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
-          { role: "system", content: buildCodeSystem(design) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}. Include ALL 6 sections. Do not truncate.` },
+          { role: "system", content: buildCodeSystem(design, componentContext) },
+          { role: "user", content: `Build a complete landing page for: ${prompt}. Use the component templates as reference. Include ALL 6 sections. Do not truncate.` },
         ],
         false, 8000
       );
