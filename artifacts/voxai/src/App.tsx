@@ -208,9 +208,10 @@ function AppContent() {
   }
 
   // ── Main authenticated app ────────────────────────────────────
+  const activeChat = store.chats.find((c) => c.id === store.activeChatId);
   const headerTitle =
     store.view === 'chat'
-      ? 'VoxAI'
+      ? (activeChat?.title || '')
       : store.view === 'projects'
         ? 'Projects'
         : 'Admin Dashboard';
