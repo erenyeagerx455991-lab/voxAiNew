@@ -9,103 +9,12 @@ import AuthView from './components/auth/AuthView';
 import LandingPage from './components/LandingPage';
 import SettingsPage from './components/SettingsPage';
 import PreviewModal from './components/PreviewModal';
+import WorkspacePreviewPanel from './components/WorkspacePreviewPanel';
 import { useAppStore } from './hooks/useAppStore';
 import { useAuth, AuthProvider } from './hooks/useAuth';
-import { buildPreviewHtml } from './services/builderService';
-import { Sparkles, Monitor } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 type AuthMode = 'login' | 'signup' | null;
-
-const BUILD_STEP_LABELS = [
-  'Understanding your idea...',
-  'Writing content...',
-  'Building sections...',
-  'Creating layout...',
-  'Preparing preview...',
-];
-
-function BuildingPreview({ buildStep }: { buildStep: number }) {
-  const label =
-    buildStep >= 0 && buildStep < BUILD_STEP_LABELS.length
-      ? BUILD_STEP_LABELS[buildStep]
-      : 'Building...';
-  const progress = Math.max(8, ((buildStep + 1) / 5) * 100);
-
-  return (
-    <div className="flex-1 flex flex-col bg-[#0d0d12] overflow-hidden">
-      {/* Fake browser chrome */}
-      <div className="flex items-center gap-3 px-4 py-2.5 bg-[#16161f] border-b border-white/5 shrink-0">
-        <div className="flex gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-red-500/30" />
-          <div className="w-3 h-3 rounded-full bg-yellow-500/30" />
-          <div className="w-3 h-3 rounded-full bg-green-500/30" />
-        </div>
-        <div className="flex-1 bg-[#0d0d12] rounded-md h-6 flex items-center px-3 gap-2">
-          <div className="w-3 h-3 rounded-full bg-white/5 shrink-0" />
-          <div className="h-2 bg-white/8 rounded-full animate-pulse w-32" />
-        </div>
-      </div>
-
-      {/* Animated skeleton website */}
-      <div className="flex-1 flex flex-col items-center justify-center px-10 gap-8">
-        <div className="w-full max-w-md space-y-3">
-          {/* Hero */}
-          <div
-            className="h-10 rounded-xl animate-pulse"
-            style={{ background: 'rgba(99,102,241,0.18)', animationDelay: '0ms' }}
-          />
-          <div className="h-3 rounded-full animate-pulse bg-white/6 w-3/4 mx-auto" style={{ animationDelay: '80ms' }} />
-          <div className="h-3 rounded-full animate-pulse bg-white/4 w-1/2 mx-auto" style={{ animationDelay: '160ms' }} />
-
-          {/* CTA */}
-          <div className="flex gap-2 justify-center pt-1">
-            <div className="h-8 w-24 rounded-lg animate-pulse bg-indigo-500/25" style={{ animationDelay: '240ms' }} />
-            <div className="h-8 w-20 rounded-lg animate-pulse bg-white/6" style={{ animationDelay: '320ms' }} />
-          </div>
-
-          {/* Cards row */}
-          <div className="grid grid-cols-3 gap-2 pt-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-20 rounded-xl animate-pulse bg-white/5"
-                style={{ animationDelay: `${400 + i * 100}ms` }}
-              />
-            ))}
-          </div>
-
-          {/* Text lines */}
-          <div className="space-y-2 pt-1">
-            <div className="h-2.5 rounded-full animate-pulse bg-white/5 w-full" style={{ animationDelay: '700ms' }} />
-            <div className="h-2.5 rounded-full animate-pulse bg-white/4 w-5/6" style={{ animationDelay: '780ms' }} />
-            <div className="h-2.5 rounded-full animate-pulse bg-white/3 w-4/6" style={{ animationDelay: '860ms' }} />
-          </div>
-        </div>
-
-        {/* Status row */}
-        <div className="flex flex-col items-center gap-3 w-full max-w-md">
-          {/* Progress bar */}
-          <div className="w-full h-0.5 bg-white/5 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-indigo-500 rounded-full transition-all duration-700 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Label + dots */}
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:0ms]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:150ms]" />
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:300ms]" />
-            </div>
-            <span className="text-[13px] text-gray-500">{label}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function AppContent() {
   const { user, loading, signOut, refreshProfile, isAuthenticated } = useAuth();
@@ -261,30 +170,12 @@ function AppContent() {
               </div>
 
               {/* ── Preview panel: hidden on mobile, 60% on split ── */}
-              <div className="hidden md:flex md:w-3/5 flex-col overflow-hidden bg-[#0d0d12]">
-                {store.isTyping ? (
-                  <BuildingPreview buildStep={store.buildStep} />
-                ) : store.generatedCode ? (
-                  <iframe
-                    key={store.generatedCode}
-                    srcDoc={buildPreviewHtml(store.generatedCode)}
-                    title="Live preview"
-                    sandbox="allow-scripts allow-same-origin"
-                    className="w-full h-full border-0"
-                  />
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
-                    <div className="w-16 h-16 rounded-2xl bg-[#1a1a24] flex items-center justify-center">
-                      <Monitor size={28} className="text-gray-600" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-gray-500 mb-1">Live Preview</p>
-                      <p className="text-[13px] text-gray-600 leading-relaxed max-w-xs">
-                        Your website will appear here as soon as the AI builds it.
-                      </p>
-                    </div>
-                  </div>
-                )}
+              <div className="hidden md:flex md:w-3/5 flex-col overflow-hidden">
+                <WorkspacePreviewPanel
+                  code={store.generatedCode}
+                  isBuilding={store.isTyping}
+                  buildStep={store.buildStep}
+                />
               </div>
             </>
           )}
