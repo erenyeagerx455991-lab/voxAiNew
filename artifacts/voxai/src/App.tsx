@@ -29,8 +29,17 @@ function AppContent() {
   // ── Resizable split panel ──────────────────────────────────────
   const [splitPos, setSplitPos] = useState(40); // % width for chat panel
   const [isMd, setIsMd] = useState(() => window.innerWidth >= 768);
-  const isDragging = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  // gesture state: tracks each swipe/drag across both panels + divider
+  const gestureRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    mode: 'idle' as 'idle' | 'detecting' | 'resize' | 'scroll',
+    source: null as 'chat' | 'preview' | 'divider' | null,
+  });
 
   useEffect(() => {
     const check = () => setIsMd(window.innerWidth >= 768);
@@ -40,40 +49,73 @@ function AppContent() {
 
   const clamp = (v: number) => Math.min(75, Math.max(20, v));
 
-  const onDragMove = useCallback((clientX: number) => {
-    if (!isDragging.current || !containerRef.current) return;
+  const applyResize = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const pct = ((clientX - rect.left) / rect.width) * 100;
-    setSplitPos(clamp(pct));
+    setSplitPos(clamp(((clientX - rect.left) / rect.width) * 100));
   }, []);
 
-  const onDragEnd = useCallback(() => {
-    isDragging.current = false;
+  // Call this on mousedown / touchstart anywhere on a panel or the divider
+  const startPanelGesture = useCallback((clientX: number, clientY: number, source: 'chat' | 'preview' | 'divider') => {
+    if (!isMd) return;
+    const mode = source === 'divider' ? 'resize' : 'detecting';
+    gestureRef.current = { active: true, startX: clientX, startY: clientY, mode, source };
+    if (source === 'divider') {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+  }, [isMd]);
+
+  const onGestureMove = useCallback((clientX: number, clientY: number) => {
+    const g = gestureRef.current;
+    if (!g.active) return;
+    const dx = clientX - g.startX;
+    const dy = clientY - g.startY;
+    // direction detection: lock mode on first significant movement
+    if (g.mode === 'detecting' && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      g.mode = Math.abs(dx) >= Math.abs(dy) ? 'resize' : 'scroll';
+      if (g.mode === 'resize') {
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      }
+    }
+    if (g.mode === 'resize') applyResize(clientX);
+  }, [applyResize]);
+
+  const onGestureEnd = useCallback((_clientX: number, _clientY: number) => {
+    const g = gestureRef.current;
+    // If tap on preview panel (no resize), briefly disable overlay so click reaches iframe
+    if (g.source === 'preview' && g.mode !== 'resize' && overlayRef.current) {
+      overlayRef.current.style.pointerEvents = 'none';
+      setTimeout(() => {
+        if (overlayRef.current) overlayRef.current.style.pointerEvents = 'auto';
+      }, 200);
+    }
+    gestureRef.current = { active: false, startX: 0, startY: 0, mode: 'idle', source: null };
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }, []);
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => onDragMove(e.clientX);
-    const onTouchMove = (e: TouchEvent) => onDragMove(e.touches[0].clientX);
+    const onMouseMove = (e: MouseEvent) => onGestureMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      onGestureMove(e.touches[0].clientX, e.touches[0].clientY);
+      // Block page scroll only when actively resizing
+      if (gestureRef.current.mode === 'resize') e.preventDefault();
+    };
+    const onMouseUp = (e: MouseEvent) => onGestureEnd(e.clientX, e.clientY);
+    const onTouchEnd = (e: TouchEvent) => onGestureEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
     window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onDragEnd);
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onDragEnd);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
     return () => {
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onDragEnd);
+      window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onDragEnd);
+      window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [onDragMove, onDragEnd]);
-
-  const startDrag = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    isDragging.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  };
+  }, [onGestureMove, onGestureEnd]);
 
   // Authenticated + pending message → send it and go to workspace
   useEffect(() => {
@@ -213,6 +255,8 @@ function AppContent() {
               <div
                 className="flex flex-col overflow-hidden bg-white dark:bg-gray-900 md:bg-[#111118] md:shrink-0"
                 style={isMd ? { width: `${splitPos}%` } : { width: '100%' }}
+                onMouseDown={isMd ? (e) => startPanelGesture(e.clientX, e.clientY, 'chat') : undefined}
+                onTouchStart={isMd ? (e) => startPanelGesture(e.touches[0].clientX, e.touches[0].clientY, 'chat') : undefined}
               >
                 <ChatView
                   messages={store.activeChatMessages}
@@ -224,10 +268,10 @@ function AppContent() {
                 <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
               </div>
 
-              {/* ── Drag handle: only on md+ ── */}
+              {/* ── Drag handle divider: only on md+ ── */}
               <div
-                onMouseDown={startDrag}
-                onTouchStart={startDrag}
+                onMouseDown={(e) => { e.preventDefault(); startPanelGesture(e.clientX, e.clientY, 'divider'); }}
+                onTouchStart={(e) => { e.preventDefault(); startPanelGesture(e.touches[0].clientX, e.touches[0].clientY, 'divider'); }}
                 className="hidden md:flex w-[5px] shrink-0 cursor-col-resize items-center justify-center bg-white/4 hover:bg-indigo-500/30 active:bg-indigo-500/50 transition-colors group z-10"
                 title="Drag to resize"
               >
@@ -239,11 +283,20 @@ function AppContent() {
               </div>
 
               {/* ── Preview panel: hidden on mobile, dynamic on split ── */}
-              <div className="hidden md:flex flex-col flex-1 overflow-hidden">
+              <div className="hidden md:flex flex-col flex-1 overflow-hidden relative">
                 <WorkspacePreviewPanel
                   code={store.generatedCode}
                   isBuilding={store.isTyping}
                   buildStep={store.buildStep}
+                />
+                {/* Transparent overlay — captures swipe anywhere on preview to resize.
+                    Taps pass through automatically (pointer-events toggled in onGestureEnd). */}
+                <div
+                  ref={overlayRef}
+                  className="absolute inset-0 z-10"
+                  style={{ pointerEvents: 'auto', touchAction: 'none' }}
+                  onMouseDown={(e) => startPanelGesture(e.clientX, e.clientY, 'preview')}
+                  onTouchStart={(e) => startPanelGesture(e.touches[0].clientX, e.touches[0].clientY, 'preview')}
                 />
               </div>
             </>
