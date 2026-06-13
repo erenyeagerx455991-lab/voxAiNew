@@ -11,6 +11,11 @@ const DESIGN_MODEL = "google/gemini-flash-1.5-8b";
 const CODEGEN_MODEL = "deepseek/deepseek-chat";
 const CODEFIX_MODEL = "llama-3.3-70b-versatile";
 
+interface PageBlueprint {
+  websiteType: string;
+  sectionOrder: string[];
+}
+
 function sse(res: any, data: object) {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
@@ -81,12 +86,35 @@ async function callOpenRouter(apiKey: string, model: string, messages: any[], ma
   return data.choices?.[0]?.message?.content ?? "";
 }
 
+const SECTION_MENU = `
+Available sections (use only what fits the site type):
+- Navbar          — sticky nav with logo + links
+- Hero            — above-the-fold hero section
+- LogoCloud       — trusted-by brand logo strip
+- FeaturesBento   — asymmetric bento grid for features (modern/premium)
+- Features        — classic 3-column feature cards grid
+- DashboardPreview — product UI / dashboard screenshot mockup
+- Testimonials    — customer testimonials cards
+- SocialProof     — stats, metrics, trust indicators
+- Pricing         — pricing tiers
+- CTA             — call-to-action banner
+- FAQ             — accordion FAQ
+- Gallery         — photo/work gallery grid
+- Menu            — restaurant menu with tabs
+- ChefStory       — restaurant chef/about split section
+- Reservation     — restaurant booking form
+- Projects        — portfolio project grid
+- CaseStudies     — agency case study results
+- Contact         — contact form + info
+- Footer          — site footer
+`.trim();
+
 const PLANNER_SYSTEM = `You are a Planner Agent for an AI website builder. Analyze the user's request and produce TWO things:
 
 PART 1 — PLAN (visible to user):
 Format with these exact emoji headers:
 ✅ Plan (Checklist)
-Write 4-7 TECHNICAL BUILD STEPS. Each must name a real component, library, or UI feature (e.g. "Build Hero section with animated gradient headline", "Create sticky Navbar with hamburger menu").
+Write 4-7 TECHNICAL BUILD STEPS. Each must name a real component, library, or UI feature.
 
 📋 Project Summary
 2-3 sentences about what's being built, who it targets, and visual direction.
@@ -110,6 +138,27 @@ contentTone: [e.g. Professional, Playful, Luxury, Minimal, Bold]
 keyFeatures: [comma-separated list of 3-4 key features]
 colorMood: [e.g. Dark & Techy, Light & Clean, Vibrant & Bold, Elegant & Minimal]
 ---END_BRIEF---
+
+PART 3 — PAGE BLUEPRINT (for internal use, append after design brief):
+---PAGE_BLUEPRINT---
+{
+  "websiteType": "[exact site type]",
+  "sectionOrder": [list of section names from the available sections, in order, tailored to this specific site type]
+}
+---END_BLUEPRINT---
+
+${SECTION_MENU}
+
+Rules for sectionOrder:
+- Navbar is always first, Footer is always last
+- Hero is almost always second
+- Choose sections that make sense for the specific site type — NOT a generic list
+- A restaurant site needs: Gallery, Menu, ChefStory, Reservation — NOT Pricing or FeaturesBento
+- A portfolio needs: Projects, CaseStudies, Contact — NOT Pricing or LogoCloud
+- A SaaS/AI startup needs: LogoCloud, FeaturesBento or Features, DashboardPreview, Pricing, Testimonials
+- An agency needs: Projects or CaseStudies, Testimonials, Contact
+- Minimum 5 sections, maximum 9 sections
+- Only use section names exactly as listed above
 
 Respond ONLY in this format. No preamble.`;
 
@@ -138,8 +187,14 @@ Rules:
 - Colors must match the website type and audience
 - No generic blue+green combos; be creative`;
 
-function buildCodeSystem(design: any, componentContext?: string) {
-  const componentSection = componentContext ? `\n\nCOMPONENT LIBRARY TEMPLATES (use these as reference — adapt them with the correct content, colors, and text for this specific website):\n${componentContext}\n` : '';
+function buildCodeSystem(design: any, blueprint: PageBlueprint, componentContext?: string) {
+  const sectionList = blueprint.sectionOrder.map((s, i) => `${i + 1}. ${s}`).join('\n');
+  const functionNames = blueprint.sectionOrder.map(s => `${s}()`).join(', ');
+  const appReturn = blueprint.sectionOrder.map(s => `<${s}/>`).join('');
+  const componentSection = componentContext
+    ? `\n\nCOMPONENT LIBRARY TEMPLATES (use as structural reference — adapt content, colors, and copy for this specific site):\n${componentContext}\n`
+    : '';
+
   return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website.${componentSection}
 
 DESIGN TOKENS (follow these exactly):
@@ -152,15 +207,20 @@ DESIGN TOKENS (follow these exactly):
 - Mood: ${design.mood}
 - Layout: ${design.layoutStyle}
 
-MANDATORY LAYOUT RULES:
-1. Hero: "min-h-screen flex flex-col items-center justify-center text-center px-6" — centered, badge pill above heading, stats row below CTA
-2. Features: "grid grid-cols-1 md:grid-cols-3 gap-6" — NEVER single column
-3. Testimonials/Social Proof: "grid grid-cols-1 md:grid-cols-3 gap-6"
-4. Pricing (if any): "grid grid-cols-1 md:grid-cols-3 gap-6", middle card uses scale-105
-5. Footer: "grid grid-cols-2 md:grid-cols-4 gap-8"
-6. Section headings: use heading gradient with bg-clip-text text-transparent
-7. All sections: "py-24" vertical padding
-8. Card text on dark: titles "text-white font-semibold text-lg", desc "text-gray-300 text-sm"
+PAGE BLUEPRINT — build EXACTLY these sections in this exact order:
+${sectionList}
+
+Do NOT add sections not in this list. Do NOT rearrange the order.
+Each section must be a separate named function matching the section name exactly.
+
+LAYOUT RULES (apply per section type):
+- Hero: "min-h-screen flex flex-col items-center justify-center text-center px-6" — centered, badge above heading, stats row below CTA
+- Features / FeaturesBento: grid layout — NEVER single column on desktop
+- Testimonials: "grid grid-cols-1 md:grid-cols-3 gap-6"
+- Pricing: "grid grid-cols-1 md:grid-cols-3 gap-6", middle card uses scale-105
+- Footer: "grid grid-cols-2 md:grid-cols-4 gap-8"
+- All sections: "py-24" vertical padding
+- Section headings: use heading gradient with bg-clip-text text-transparent
 
 ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 1. NO import statements. NO require(). React and all hooks are already global.
@@ -168,50 +228,38 @@ ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 3. NO TypeScript types or interfaces.
 4. NO JSX fragments (<> </>). Always use a wrapper div.
 5. Use React.useState, React.useEffect (always namespace with React.)
-6. ONLY Tailwind CSS classes — no style={} objects.
-7. Function must be named exactly: function App()
-8. NO emoji as decorative icons — use CSS shapes or unicode characters.
+6. ONLY Tailwind CSS classes — no style={} objects except for WebkitTextStroke.
+7. Each section function must be named EXACTLY as listed in the blueprint above.
+8. NO emoji as decorative icons — use CSS shapes, unicode characters, or text symbols.
 
 CODE STRUCTURE — required pattern:
-function Navbar() { return (<nav>...</nav>); }
-function Hero() { return (<section>...</section>); }
-function Features() { const items = [...]; return (<section>...</section>); }
-function SocialProof() { return (<section>...</section>); }
-function CtaBanner() { return (<section>...</section>); }
-function Footer() { return (<footer>...</footer>); }
-function App() { return (<div><Navbar/><Hero/><Features/><SocialProof/><CtaBanner/><Footer/></div>); }
+[one function per section in blueprint order]
+function App() { return (<div>${appReturn}</div>); }
 
-REQUIRED SECTIONS (all 6 must be present):
-1. Navbar — sticky, backdrop-blur, logo left, links right
-2. Hero — badge pill, large gradient heading, subheading, 2 CTA buttons, stats row
-3. Features — 3-col card grid with .map() over data array
-4. SocialProof — testimonials or stats using .map()
-5. CtaBanner — gradient bg, bold headline, one button
-6. Footer — 4-col grid with links, copyright bar
+The App() function must render all ${blueprint.sectionOrder.length} sections: ${functionNames}
 
-Use .map() for all repeated elements. Keep each function under 40 lines.
-OUTPUT: Raw JSX only. No markdown. Start with "function Navbar()".`;
+Use .map() for all repeated elements. Replace ALL placeholder text with real, specific content for this site.
+OUTPUT: Raw JSX only. No markdown. Start with the first section function.`;
 }
 
-const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX code and MUST:
+const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX code and MUST fix it to be preview-safe.
 
-1. Check and fix these CRITICAL issues:
+1. Fix these CRITICAL issues:
    - Remove any import/export statements (they break the preview)
    - Remove any TypeScript types or interfaces
    - Remove any JSX fragments (<> </>) — replace with wrapper divs
-   - Ensure function is named exactly "function App()"
+   - Ensure the file ends with "function App()" that renders all sections
    - Ensure all React hooks use React.useState, React.useEffect (namespaced)
-   - Ensure no inline style objects (style={{}}) — convert to Tailwind classes
+   - Convert inline style={} objects to Tailwind classes (exception: WebkitTextStroke is allowed)
    - Fix any syntax errors or unclosed JSX tags
 
-2. Improve quality:
-   - Ensure all 6 sections exist: Navbar, Hero, Features, SocialProof, CtaBanner, Footer
-   - If any section is missing, add a basic version
-   - Ensure Features and SocialProof use "grid grid-cols-1 md:grid-cols-3 gap-6"
-   - Add hover effects on all interactive elements if missing
+2. Preserve the dynamic structure:
+   - Do NOT add or remove sections — keep exactly the sections that exist in the code
+   - Do NOT enforce any fixed section order — the blueprint determines the order
+   - Add hover effects on interactive elements if missing
 
 3. Return ONLY the corrected raw JSX code. No markdown, no explanation.
-   Start with "function Navbar()".`;
+   Start with the first section function (not App).`;
 
 router.post("/agents/build", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
@@ -237,7 +285,7 @@ router.post("/agents/build", async (req, res) => {
         { role: "system", content: PLANNER_SYSTEM },
         { role: "user", content: prompt },
       ],
-      true, 2000,
+      true, 2500,
       (token) => {
         planText += token;
         // Only stream tokens before the design brief separator
@@ -247,13 +295,34 @@ router.post("/agents/build", async (req, res) => {
       }
     );
 
-    // Extract design brief from plan text
+    // Extract design brief
     let briefText = "";
     const briefMatch = planText.match(/---DESIGN_BRIEF---([\s\S]*?)---END_BRIEF---/);
     if (briefMatch) briefText = briefMatch[1].trim();
-    const cleanPlan = planText.replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "").trim();
+    const cleanPlan = planText.replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "")
+                               .replace(/---PAGE_BLUEPRINT---[\s\S]*?---END_BLUEPRINT---/, "")
+                               .trim();
 
-    sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done" });
+    // Extract page blueprint
+    let blueprint: PageBlueprint = {
+      websiteType: "Generic",
+      sectionOrder: ["Navbar", "Hero", "Features", "Testimonials", "CTA", "Footer"],
+    };
+    const blueprintMatch = planText.match(/---PAGE_BLUEPRINT---([\s\S]*?)---END_BLUEPRINT---/);
+    if (blueprintMatch) {
+      try {
+        const raw = blueprintMatch[1].trim();
+        const parsed = JSON.parse(raw);
+        if (parsed.sectionOrder && Array.isArray(parsed.sectionOrder) && parsed.sectionOrder.length >= 3) {
+          blueprint = parsed as PageBlueprint;
+        }
+      } catch (e) {
+        console.error("Failed to parse page blueprint, using defaults:", e);
+      }
+    }
+
+    console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
+    sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
 
     // ── AGENT 2: DESIGN ───────────────────────────────────────────────────────
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "active" });
@@ -278,7 +347,7 @@ router.post("/agents/build", async (req, res) => {
       const designRaw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
         [
           { role: "system", content: DESIGN_SYSTEM },
-          { role: "user", content: `Website brief:\n${briefText || prompt}\n\nGenerate design decisions JSON.` },
+          { role: "user", content: `Website brief:\n${briefText || prompt}\nWebsite type: ${blueprint.websiteType}\n\nGenerate design decisions JSON.` },
         ],
         1000
       );
@@ -291,19 +360,20 @@ router.post("/agents/build", async (req, res) => {
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
-    const selectedTemplates = selectTemplatesForPrompt(prompt);
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
 
     // ── AGENT 3: CODE GENERATION ──────────────────────────────────────────────
     sse(res, { type: "step", step: 2, agent: "Code Generation Agent", status: "active" });
 
+    const sectionCount = blueprint.sectionOrder.length;
     let generatedCode = "";
     try {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
-          { role: "system", content: buildCodeSystem(design, componentContext) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nInclude ALL 6 sections: Navbar, Hero, Features, SocialProof, CtaBanner, Footer. Use the component templates above as your structural reference — replace placeholder text with real content. Do not truncate.` },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
+          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Do not truncate.` },
         ],
         8000
       );
@@ -311,8 +381,8 @@ router.post("/agents/build", async (req, res) => {
       console.error("OpenRouter codegen failed, falling back to Groq:", e);
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
-          { role: "system", content: buildCodeSystem(design, componentContext) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}. Use the component templates as reference. Include ALL 6 sections. Do not truncate.` },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
+          { role: "user", content: `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Do not truncate.` },
         ],
         false, 8000
       );
@@ -334,7 +404,7 @@ router.post("/agents/build", async (req, res) => {
       const fixed = await callGroq(groqKey, CODEFIX_MODEL,
         [
           { role: "system", content: CODEFIX_SYSTEM },
-          { role: "user", content: `Fix and improve this React website code:\n\n${generatedCode}` },
+          { role: "user", content: `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}` },
         ],
         false, 8000
       );
@@ -351,7 +421,7 @@ router.post("/agents/build", async (req, res) => {
     sse(res, { type: "step", step: 3, agent: "Code Fix Agent", status: "done" });
 
     // ── DONE ──────────────────────────────────────────────────────────────────
-    sse(res, { type: "done", code: fixedCode, plan: cleanPlan });
+    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint });
 
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });
