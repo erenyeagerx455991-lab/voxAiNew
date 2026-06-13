@@ -16,6 +16,50 @@ interface PageBlueprint {
   sectionOrder: string[];
 }
 
+interface DesignDNA {
+  designLanguage: string;
+  layoutStyle: string;
+  typographySystem: {
+    headingWeight: string;
+    headingTracking: string;
+    scale: string;
+    fontFamily: string;
+  };
+  spacingSystem: {
+    density: string;
+    sectionPadding: string;
+    componentGap: string;
+  };
+  colorSystem: {
+    theme: string;
+    background: string;
+    surface: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+    text: string;
+    textMuted: string;
+    border: string;
+  };
+  animationPersonality: string;
+  decorationLevel: string;
+  componentPreferences: string[];
+  heroStyle: string;
+  cardStyle: string;
+  visualDensity: string;
+  theme: string;
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  bgColor: string;
+  bgGradient: string;
+  headingGradient: string;
+  buttonStyle: string;
+  buttonColors: string;
+  cardStyleTokens: string;
+  mood: string;
+}
+
 function sse(res: any, data: object) {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
@@ -137,6 +181,7 @@ targetAudience: [who this is for]
 contentTone: [e.g. Professional, Playful, Luxury, Minimal, Bold]
 keyFeatures: [comma-separated list of 3-4 key features]
 colorMood: [e.g. Dark & Techy, Light & Clean, Vibrant & Bold, Elegant & Minimal]
+referenceSites: [comma-separated list of any mentioned design references e.g. "Linear, Stripe" — or "none" if not mentioned]
 ---END_BRIEF---
 
 PART 3 — PAGE BLUEPRINT (for internal use, append after design brief):
@@ -162,32 +207,87 @@ Rules for sectionOrder:
 
 Respond ONLY in this format. No preamble.`;
 
-const DESIGN_SYSTEM = `You are a Design Agent. Given a website brief, output ONLY a JSON object with design decisions.
+const DESIGN_SYSTEM = `You are a Design Agent. Your job is to detect the visual DNA from the website brief and reference sites, then output a precise design system as JSON.
 
-Output EXACTLY this JSON structure (no markdown, no explanation):
+REFERENCE SITE DNA LIBRARY — when a reference is detected, apply its design DNA exactly:
+
+Linear → { designLanguage: "minimal-flat", theme: dark, bg: #0F0F0F, surface: #1A1A1A, primary: #5E6AD2, accent: #5E6AD2, text: #FFFFFF, textMuted: #8A8A8A, border: #2A2A2A, headingWeight: font-black, headingTracking: tracking-tight, scale: lg, cardStyle: flat-bordered, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-md, mood: Focused }
+
+Stripe → { designLanguage: "premium-gradient", theme: dark, bg: #0A2540, surface: #0F3460, primary: #635BFF, accent: #00D4FF, text: #FFFFFF, textMuted: #A8B4C0, border: rgba(255,255,255,0.1), headingWeight: font-bold, headingTracking: tracking-tight, scale: xl, cardStyle: gradient-border, heroStyle: centered-gradient, animationPersonality: expressive, decorationLevel: rich, visualDensity: balanced, buttonStyle: rounded-full, mood: Premium }
+
+Vercel → { designLanguage: "monochrome", theme: dark, bg: #000000, surface: #111111, primary: #FFFFFF, accent: #FFFFFF, text: #FFFFFF, textMuted: #888888, border: #333333, headingWeight: font-black, headingTracking: tracking-tighter, scale: xl, cardStyle: flat-bordered, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: balanced, buttonStyle: rounded-lg, mood: Sharp }
+
+Notion → { designLanguage: "editorial", theme: light, bg: #FFFFFF, surface: #F7F6F3, primary: #37352F, accent: #2F80ED, text: #37352F, textMuted: #9B9B9B, border: #E9E9E7, headingWeight: font-bold, headingTracking: tracking-normal, scale: md, cardStyle: outline-hover, heroStyle: editorial-large, animationPersonality: none, decorationLevel: minimal, visualDensity: comfortable, buttonStyle: rounded-md, mood: Editorial }
+
+Framer → { designLanguage: "bold-motion", theme: dark, bg: #0B0B0B, surface: #141414, primary: #FF3D57, accent: #FF6B35, text: #FFFFFF, textMuted: #666666, border: #222222, headingWeight: font-black, headingTracking: tracking-tighter, scale: xl, cardStyle: flat-bordered, heroStyle: editorial-large, animationPersonality: expressive, decorationLevel: moderate, visualDensity: balanced, buttonStyle: rounded-none, mood: Dramatic }
+
+Cursor → { designLanguage: "dev-minimal", theme: dark, bg: #0D0D0D, surface: #161616, primary: #00FF9D, accent: #00FF9D, text: #FFFFFF, textMuted: #555555, border: #252525, headingWeight: font-bold, headingTracking: tracking-tight, scale: lg, cardStyle: flat-bordered, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-sm, mood: Terminal }
+
+Perplexity → { designLanguage: "academic-clean", theme: dark, bg: #1C1C1E, surface: #2C2C2E, primary: #FF6600, accent: #FF6600, text: #FFFFFF, textMuted: #8E8E93, border: #3A3A3C, headingWeight: font-semibold, headingTracking: tracking-normal, scale: md, cardStyle: solid-surface, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-lg, mood: Informative }
+
+INSTRUCTIONS:
+1. Scan the brief for any reference site names (Linear, Stripe, Vercel, Notion, Framer, Cursor, Perplexity, etc.)
+2. If a reference is found, use its DNA as the foundation — then adapt colors/content for the specific business
+3. If no reference is found, derive a unique design identity from the business type, industry, and tone
+4. NEVER default to purple gradients. NEVER default to glassmorphism unless explicitly appropriate.
+5. Every site must have a unique visual identity
+
+Industry defaults when no reference is given:
+- Fintech/Banking → dark navy, blue accent, premium, trust-focused
+- Healthcare → light clean, green/teal accent, calm, editorial
+- Food/Restaurant → warm dark, amber accent, textured, sensory
+- Fashion/Luxury → black/cream, gold accent, serif, editorial
+- Education → light, indigo accent, readable, comfortable
+- Developer Tool → dark, green/cyan accent, monospace, dense
+- Creative Agency → dark, bold accent color, dramatic typography
+- E-commerce → light clean or dark based on brand, clear CTAs
+
+Output ONLY this JSON (no markdown, no explanation, no code fences):
 {
-  "theme": "dark" or "light",
+  "designLanguage": "minimal-flat | premium-gradient | monochrome | editorial | bold-motion | dev-minimal | academic-clean | warm-organic | luxury-editorial",
+  "layoutStyle": "flat-ui | layered-depth | grid-strict | editorial-flow | asymmetric | dense-grid",
+  "typographySystem": {
+    "headingWeight": "font-black | font-bold | font-semibold",
+    "headingTracking": "tracking-tighter | tracking-tight | tracking-normal | tracking-wide",
+    "scale": "xl | lg | md",
+    "fontFamily": "sans | serif | mono"
+  },
+  "spacingSystem": {
+    "density": "tight | comfortable | spacious",
+    "sectionPadding": "py-16 | py-20 | py-24 | py-32",
+    "componentGap": "gap-3 | gap-4 | gap-6 | gap-8"
+  },
+  "colorSystem": {
+    "theme": "dark | light",
+    "background": "#hexcode",
+    "surface": "#hexcode",
+    "primary": "#hexcode",
+    "secondary": "#hexcode",
+    "accent": "#hexcode",
+    "text": "#hexcode",
+    "textMuted": "#hexcode",
+    "border": "#hexcode or rgba(...)"
+  },
+  "animationPersonality": "none | subtle | moderate | expressive",
+  "decorationLevel": "none | minimal | moderate | rich",
+  "componentPreferences": ["flat-card", "gradient-card", "bordered-card", "pill-badge", "sharp-badge", "outline-button", "solid-button", "ghost-button"],
+  "heroStyle": "centered-minimal | centered-gradient | split-layout | editorial-large | fullbleed-overlay",
+  "cardStyle": "flat-bordered | glass-blur | solid-surface | gradient-border | outline-hover",
+  "visualDensity": "sparse | balanced | dense",
+  "theme": "dark | light",
   "primaryColor": "#hexcode",
-  "secondaryColor": "#hexcode", 
+  "secondaryColor": "#hexcode",
   "accentColor": "#hexcode",
   "bgColor": "#hexcode",
-  "bgGradient": "tailwind gradient class e.g. from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a]",
-  "fontStyle": "modern" or "serif" or "playful" or "minimal",
-  "layoutStyle": "glassmorphism" or "neumorphism" or "flat-minimal" or "bold-editorial",
-  "headingGradient": "tailwind gradient e.g. from-purple-400 via-pink-400 to-blue-400",
-  "buttonStyle": "gradient rounded-full" or "solid rounded-lg" or "outline rounded-full",
-  "buttonColors": "tailwind classes e.g. bg-gradient-to-r from-purple-600 to-blue-600",
-  "cardStyle": "glassmorphism bg-white/5 backdrop-blur-sm border border-white/10" or "solid bg-gray-800 border border-gray-700",
-  "mood": "one word e.g. Innovative, Elegant, Vibrant, Calm, Bold"
-}
+  "bgGradient": "tailwind from-[bg] to-[bg2] (subtle, matching theme)",
+  "headingGradient": "tailwind gradient matching primary/accent colors",
+  "buttonStyle": "rounded-full | rounded-lg | rounded-md | rounded-sm | rounded-none",
+  "buttonColors": "tailwind bg and text classes",
+  "cardStyleTokens": "tailwind classes for card bg, border, radius",
+  "mood": "one word"
+}`;
 
-Rules:
-- Dark theme: use deep backgrounds like #0a0a0a, #0f0f1a, #111827
-- Light theme: use subtle tints like #fafafa, #f8f6ff, #f0fdf4
-- Colors must match the website type and audience
-- No generic blue+green combos; be creative`;
-
-function buildCodeSystem(design: any, blueprint: PageBlueprint, componentContext?: string) {
+function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentContext?: string) {
   const sectionList = blueprint.sectionOrder.map((s, i) => `${i + 1}. ${s}`).join('\n');
   const functionNames = blueprint.sectionOrder.map(s => `${s}()`).join(', ');
   const appReturn = blueprint.sectionOrder.map(s => `<${s}/>`).join('');
@@ -195,32 +295,137 @@ function buildCodeSystem(design: any, blueprint: PageBlueprint, componentContext
     ? `\n\nCOMPONENT LIBRARY TEMPLATES (use as structural reference — adapt content, colors, and copy for this specific site):\n${componentContext}\n`
     : '';
 
-  return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website.${componentSection}
+  const cs = design.colorSystem ?? {};
+  const ts = design.typographySystem ?? {};
+  const ss = design.spacingSystem ?? {};
 
-DESIGN TOKENS (follow these exactly):
-- Theme: ${design.theme}
-- Background: ${design.bgColor} with gradient: ${design.bgGradient}
-- Primary: ${design.primaryColor}, Secondary: ${design.secondaryColor}, Accent: ${design.accentColor}
-- Heading gradient: ${design.headingGradient}
-- Button: ${design.buttonStyle} with ${design.buttonColors}
-- Card style: ${design.cardStyle}
-- Mood: ${design.mood}
-- Layout: ${design.layoutStyle}
+  const bg = cs.background ?? design.bgColor ?? '#0a0a0a';
+  const surface = cs.surface ?? '#1a1a1a';
+  const primary = cs.primary ?? design.primaryColor ?? '#ffffff';
+  const accent = cs.accent ?? design.accentColor ?? primary;
+  const textColor = cs.text ?? '#ffffff';
+  const textMuted = cs.textMuted ?? '#888888';
+  const borderColor = cs.border ?? '#333333';
+  const isLight = (design.theme ?? cs.theme) === 'light';
 
-PAGE BLUEPRINT — build EXACTLY these sections in this exact order:
+  const headingWeight = ts.headingWeight ?? 'font-bold';
+  const headingTracking = ts.headingTracking ?? 'tracking-tight';
+  const headingScale = ts.scale === 'xl' ? 'text-6xl md:text-8xl' : ts.scale === 'lg' ? 'text-5xl md:text-7xl' : 'text-4xl md:text-5xl';
+  const subHeadingScale = ts.scale === 'xl' ? 'text-4xl md:text-5xl' : ts.scale === 'lg' ? 'text-3xl md:text-4xl' : 'text-2xl md:text-3xl';
+
+  const sectionPad = ss.sectionPadding ?? 'py-24';
+  const componentGap = ss.componentGap ?? 'gap-6';
+
+  const cardStyleGuide = (() => {
+    switch (design.cardStyle) {
+      case 'flat-bordered': return `bg-[${surface}] border border-[${borderColor}] rounded-xl`;
+      case 'glass-blur': return `bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl`;
+      case 'solid-surface': return `bg-[${surface}] rounded-xl`;
+      case 'gradient-border': return `bg-[${surface}] border border-[${accent}]/30 rounded-2xl hover:border-[${accent}]/60`;
+      case 'outline-hover': return `bg-transparent border border-[${borderColor}] hover:border-[${primary}] rounded-lg`;
+      default: return `bg-[${surface}] border border-[${borderColor}] rounded-xl`;
+    }
+  })();
+
+  const buttonGuide = (() => {
+    const radius = design.buttonStyle ?? 'rounded-lg';
+    const comps = design.componentPreferences ?? [];
+    if (comps.includes('ghost-button')) return `border border-[${primary}] text-[${primary}] hover:bg-[${primary}]/10 ${radius}`;
+    if (comps.includes('outline-button')) return `border border-[${borderColor}] text-[${textColor}] hover:border-[${primary}] ${radius}`;
+    return `bg-[${primary}] text-${isLight ? 'white' : 'white'} hover:opacity-90 ${radius}`;
+  })();
+
+  const heroGuide = (() => {
+    switch (design.heroStyle) {
+      case 'centered-minimal': return 'min-h-screen flex flex-col items-center justify-center text-center px-6 — clean, no heavy decoration, strong typography only';
+      case 'centered-gradient': return 'min-h-screen flex flex-col items-center justify-center text-center px-6 — add radial gradient orbs and layered depth';
+      case 'split-layout': return 'min-h-screen grid grid-cols-1 md:grid-cols-2 gap-0 — left: text content, right: visual/mockup';
+      case 'editorial-large': return 'min-h-screen flex flex-col justify-end px-8 md:px-16 pb-24 — huge oversized text, minimal other content';
+      case 'fullbleed-overlay': return 'min-h-screen relative — full background color/image with overlay, centered content';
+      default: return 'min-h-screen flex flex-col items-center justify-center text-center px-6';
+    }
+  })();
+
+  const animationGuide = (() => {
+    switch (design.animationPersonality) {
+      case 'none': return 'No hover animations. No transitions. Static elements only.';
+      case 'subtle': return 'Subtle hover effects only: hover:opacity-80, hover:border-color transitions (duration-200). No scale transforms.';
+      case 'moderate': return 'Moderate hover effects: hover:scale-[1.02], hover:-translate-y-1, color transitions (duration-300).';
+      case 'expressive': return 'Rich animations: hover:scale-105, hover:-translate-y-2, gradient shimmer, group-hover transitions (duration-300 ease-out). Add animated gradient orbs in backgrounds.';
+      default: return 'Subtle hover transitions only.';
+    }
+  })();
+
+  const decorationGuide = (() => {
+    switch (design.decorationLevel) {
+      case 'none': return 'NO decorative elements. No gradient orbs, no background patterns, no decorative shapes. Let typography and spacing do the work.';
+      case 'minimal': return 'Minimal decoration: single subtle accent line or dot. No orbs or blobs.';
+      case 'moderate': return 'Moderate decoration: one subtle background gradient, geometric lines or grid pattern at low opacity.';
+      case 'rich': return 'Rich decoration: gradient orbs (blur-3xl, low opacity), animated gradient backgrounds, depth layers, particle-like dots grid.';
+      default: return 'Minimal decoration only.';
+    }
+  })();
+
+  const headingGradient = design.headingGradient ?? `from-[${textColor}] to-[${textMuted}]`;
+
+  return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website with a UNIQUE visual identity.${componentSection}
+
+═══ DESIGN DNA ═══
+Design Language: ${design.designLanguage}
+Layout Style: ${design.layoutStyle}
+Theme: ${isLight ? 'LIGHT' : 'DARK'}
+Mood: ${design.mood}
+Visual Density: ${design.visualDensity}
+
+═══ COLOR SYSTEM ═══
+Background: ${bg}
+Surface (cards/panels): ${surface}
+Primary: ${primary}
+Accent: ${accent}
+Text: ${textColor}
+Text Muted: ${textMuted}
+Border: ${borderColor}
+Heading Gradient: ${headingGradient}
+
+═══ TYPOGRAPHY ═══
+Heading weight: ${headingWeight}
+Heading tracking: ${headingTracking}
+Hero heading size: ${headingScale}
+Section heading size: ${subHeadingScale}
+Font family: ${ts.fontFamily ?? 'sans'} (use font-${ts.fontFamily ?? 'sans'} class)
+
+═══ SPACING ═══
+Section padding: ${sectionPad}
+Component gap: ${componentGap}
+Density: ${ss.density ?? 'comfortable'}
+
+═══ COMPONENT STYLES ═══
+Card style — use exactly: ${cardStyleGuide}
+Button (primary): ${buttonGuide}
+Button (secondary): border border-[${borderColor}] text-[${textMuted}] hover:text-[${textColor}] hover:border-[${primary}] ${design.buttonStyle ?? 'rounded-lg'} px-6 py-3
+
+═══ HERO LAYOUT ═══
+${heroGuide}
+
+═══ ANIMATION RULES ═══
+${animationGuide}
+
+═══ DECORATION RULES ═══
+${decorationGuide}
+
+═══ PAGE BLUEPRINT ═══
+Build EXACTLY these sections in this exact order:
 ${sectionList}
 
 Do NOT add sections not in this list. Do NOT rearrange the order.
 Each section must be a separate named function matching the section name exactly.
 
 LAYOUT RULES (apply per section type):
-- Hero: "min-h-screen flex flex-col items-center justify-center text-center px-6" — centered, badge above heading, stats row below CTA
 - Features / FeaturesBento: grid layout — NEVER single column on desktop
-- Testimonials: "grid grid-cols-1 md:grid-cols-3 gap-6"
-- Pricing: "grid grid-cols-1 md:grid-cols-3 gap-6", middle card uses scale-105
+- Testimonials: "grid grid-cols-1 md:grid-cols-3 ${componentGap}"
+- Pricing: "grid grid-cols-1 md:grid-cols-3 ${componentGap}", middle card uses scale-105
 - Footer: "grid grid-cols-2 md:grid-cols-4 gap-8"
-- All sections: "py-24" vertical padding
-- Section headings: use heading gradient with bg-clip-text text-transparent
+- All section headings: use heading gradient with bg-clip-text text-transparent
 
 ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 1. NO import statements. NO require(). React and all hooks are already global.
@@ -230,7 +435,8 @@ ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 5. Use React.useState, React.useEffect (always namespace with React.)
 6. ONLY Tailwind CSS classes — no style={} objects except for WebkitTextStroke.
 7. Each section function must be named EXACTLY as listed in the blueprint above.
-8. NO emoji as decorative icons — use CSS shapes, unicode characters, or text symbols.
+8. NO emoji as decorative icons — use CSS shapes, unicode characters (◆ ▸ ◈ ◉ ◐ ✦ ⬡), or text symbols.
+9. Use bg-[#hexcode] syntax for custom colors from the design DNA above.
 
 CODE STRUCTURE — required pattern:
 [one function per section in blueprint order]
@@ -256,10 +462,54 @@ const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX code and
 2. Preserve the dynamic structure:
    - Do NOT add or remove sections — keep exactly the sections that exist in the code
    - Do NOT enforce any fixed section order — the blueprint determines the order
-   - Add hover effects on interactive elements if missing
+   - Add hover effects on interactive elements if missing (respect animation personality)
 
 3. Return ONLY the corrected raw JSX code. No markdown, no explanation.
    Start with the first section function (not App).`;
+
+const DEFAULT_DESIGN: DesignDNA = {
+  designLanguage: "monochrome",
+  layoutStyle: "flat-ui",
+  typographySystem: {
+    headingWeight: "font-black",
+    headingTracking: "tracking-tighter",
+    scale: "lg",
+    fontFamily: "sans",
+  },
+  spacingSystem: {
+    density: "balanced",
+    sectionPadding: "py-24",
+    componentGap: "gap-6",
+  },
+  colorSystem: {
+    theme: "dark",
+    background: "#0a0a0a",
+    surface: "#141414",
+    primary: "#ffffff",
+    secondary: "#e5e5e5",
+    accent: "#ffffff",
+    text: "#ffffff",
+    textMuted: "#666666",
+    border: "#2a2a2a",
+  },
+  animationPersonality: "subtle",
+  decorationLevel: "none",
+  componentPreferences: ["flat-card", "solid-button"],
+  heroStyle: "centered-minimal",
+  cardStyle: "flat-bordered",
+  visualDensity: "balanced",
+  theme: "dark",
+  primaryColor: "#ffffff",
+  secondaryColor: "#e5e5e5",
+  accentColor: "#ffffff",
+  bgColor: "#0a0a0a",
+  bgGradient: "from-[#0a0a0a] to-[#111111]",
+  headingGradient: "from-white to-gray-400",
+  buttonStyle: "rounded-lg",
+  buttonColors: "bg-white text-black hover:bg-gray-100",
+  cardStyleTokens: "bg-[#141414] border border-[#2a2a2a] rounded-xl",
+  mood: "Sharp",
+};
 
 router.post("/agents/build", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
@@ -288,22 +538,25 @@ router.post("/agents/build", async (req, res) => {
       true, 2500,
       (token) => {
         planText += token;
-        // Only stream tokens before the design brief separator
         if (!planText.includes("---DESIGN_BRIEF---")) {
           sse(res, { type: "token", token });
         }
       }
     );
 
-    // Extract design brief
     let briefText = "";
     const briefMatch = planText.match(/---DESIGN_BRIEF---([\s\S]*?)---END_BRIEF---/);
     if (briefMatch) briefText = briefMatch[1].trim();
-    const cleanPlan = planText.replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "")
-                               .replace(/---PAGE_BLUEPRINT---[\s\S]*?---END_BLUEPRINT---/, "")
-                               .trim();
 
-    // Extract page blueprint
+    let referenceSites = "none";
+    const refMatch = briefText.match(/referenceSites:\s*(.+)/);
+    if (refMatch) referenceSites = refMatch[1].trim();
+
+    const cleanPlan = planText
+      .replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "")
+      .replace(/---PAGE_BLUEPRINT---[\s\S]*?---END_BLUEPRINT---/, "")
+      .trim();
+
     let blueprint: PageBlueprint = {
       websiteType: "Generic",
       sectionOrder: ["Navbar", "Hero", "Features", "Testimonials", "CTA", "Footer"],
@@ -322,41 +575,42 @@ router.post("/agents/build", async (req, res) => {
     }
 
     console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
+    console.log(`[Design] referenceSites="${referenceSites}"`);
     sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
 
-    // ── AGENT 2: DESIGN ───────────────────────────────────────────────────────
+    // ── AGENT 2: DESIGN DNA ───────────────────────────────────────────────────
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "active" });
 
-    let design: any = {
-      theme: "dark",
-      primaryColor: "#7c3aed",
-      secondaryColor: "#3b82f6",
-      accentColor: "#a855f7",
-      bgColor: "#0a0a0a",
-      bgGradient: "from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a]",
-      headingGradient: "from-purple-400 via-pink-400 to-blue-400",
-      buttonStyle: "gradient rounded-full",
-      buttonColors: "bg-gradient-to-r from-purple-600 to-blue-600",
-      cardStyle: "glassmorphism bg-white/5 backdrop-blur-sm border border-white/10",
-      mood: "Innovative",
-      layoutStyle: "glassmorphism",
-      fontStyle: "modern",
-    };
+    let design: DesignDNA = { ...DEFAULT_DESIGN };
 
     try {
+      const designPrompt = [
+        `Website brief:\n${briefText || prompt}`,
+        `Website type: ${blueprint.websiteType}`,
+        referenceSites !== "none" ? `Design references: ${referenceSites}` : "",
+        `\nGenerate the complete design DNA JSON for this site.`,
+      ].filter(Boolean).join('\n');
+
       const designRaw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
         [
           { role: "system", content: DESIGN_SYSTEM },
-          { role: "user", content: `Website brief:\n${briefText || prompt}\nWebsite type: ${blueprint.websiteType}\n\nGenerate design decisions JSON.` },
+          { role: "user", content: designPrompt },
         ],
-        1000
+        1500
       );
       const jsonMatch = designRaw.match(/\{[\s\S]*\}/);
-      if (jsonMatch) design = { ...design, ...JSON.parse(jsonMatch[0]) };
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        design = { ...DEFAULT_DESIGN, ...parsed };
+        if (parsed.colorSystem) design.colorSystem = { ...DEFAULT_DESIGN.colorSystem, ...parsed.colorSystem };
+        if (parsed.typographySystem) design.typographySystem = { ...DEFAULT_DESIGN.typographySystem, ...parsed.typographySystem };
+        if (parsed.spacingSystem) design.spacingSystem = { ...DEFAULT_DESIGN.spacingSystem, ...parsed.spacingSystem };
+      }
     } catch (e) {
       console.error("Design agent error (using defaults):", e);
     }
 
+    console.log(`[Design DNA] language=${design.designLanguage} cardStyle=${design.cardStyle} heroStyle=${design.heroStyle} animation=${design.animationPersonality}`);
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
@@ -373,7 +627,7 @@ router.post("/agents/build", async (req, res) => {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
           { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Do not truncate.` },
+          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Apply the design DNA precisely. Do not truncate.` },
         ],
         8000
       );
@@ -382,13 +636,12 @@ router.post("/agents/build", async (req, res) => {
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
           { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Do not truncate.` },
+          { role: "user", content: `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.` },
         ],
         false, 8000
       );
     }
 
-    // Strip markdown fences if present
     generatedCode = generatedCode
       .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/i, "")
       .replace(/\n?```\s*$/i, "")
