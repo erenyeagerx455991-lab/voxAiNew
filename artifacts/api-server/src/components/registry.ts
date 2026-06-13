@@ -239,6 +239,300 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
 }`,
   },
 
+  // ── HERO SYSTEM V2 ─────────────────────────────────────────────────────────
+  {
+    id: 'hero-centered-v1', name: 'Hero Centered Premium', category: 'hero',
+    industries: ['saas', 'fintech', 'ai', 'startup'], tags: ['centered', 'gradient-orbs', 'pill-cta', 'stripe-style'],
+    description: 'Centered hero with layered gradient background orbs, gradient heading two-tone, pill CTAs, stat divider row. Stripe/premium-gradient DNA.',
+    priority: 11,
+    standaloneCode: `function Hero() {
+  const stats = [{ value: '99.99%', label: 'Uptime SLA' }, { value: '$0', label: 'Setup fee' }, { value: '135+', label: 'Countries' }];
+  return (
+    <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 overflow-hidden pt-20">
+      <div className="absolute inset-0 bg-[#0A2540]" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] bg-gradient-to-b from-[#635BFF]/25 via-[#00D4FF]/10 to-transparent rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#00D4FF]/8 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#635BFF]/8 rounded-full blur-3xl" />
+      <div className="relative z-10 max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 border border-[#635BFF]/40 bg-[#635BFF]/15 text-[#a9a4ff] text-xs font-semibold px-4 py-2 rounded-full mb-8">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#635BFF] animate-pulse" />
+          HEADLINE_BADGE
+        </div>
+        <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-none mb-6">
+          <span className="text-white">HEADLINE_LINE1</span>
+          <br />
+          <span className="bg-gradient-to-r from-[#635BFF] via-[#00D4FF] to-white bg-clip-text text-transparent">HEADLINE_LINE2</span>
+        </h1>
+        <p className="text-lg text-[#A8B4C0] max-w-2xl mx-auto mb-10 leading-relaxed">SUBHEADLINE</p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <button className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base">CTA_PRIMARY</button>
+          <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base">CTA_SECONDARY</button>
+        </div>
+        <div className="flex items-center justify-center gap-12 border-t border-white/8 pt-8">
+          {stats.map(s => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl font-bold text-white">{s.value}</div>
+              <div className="text-xs text-[#A8B4C0] mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+  {
+    id: 'hero-asymmetric-v1', name: 'Hero Asymmetric Split', category: 'hero',
+    industries: ['saas', 'ai', 'startup', 'generic'], tags: ['asymmetric', 'two-column', 'product-mockup', 'vercel-style', 'monochrome'],
+    description: 'Two-column grid: left text block (left-aligned heading + CTA), right product terminal/code mockup. Vercel/monochrome DNA. Fundamentally different from centered heroes.',
+    priority: 11,
+    standaloneCode: `function Hero() {
+  const cmdLines = [
+    { color: 'text-[#00FFF0]', text: '$ PRODUCT_COMMAND' },
+    { color: 'text-white/40',  text: '✓ Connected to runtime' },
+    { color: 'text-white/40',  text: '✓ Dependencies resolved' },
+    { color: 'text-white/60',  text: '◆ Deploying to production...' },
+    { color: 'text-green-400', text: '✓ Build complete in 0.8s' },
+  ];
+  const metaStats = [['10K+', 'Developers'], ['99.9%', 'Uptime'], ['50ms', 'P99 latency']];
+  return (
+    <section className="min-h-screen bg-black pt-20">
+      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-16 items-center min-h-[calc(100vh-80px)]">
+        <div className="flex flex-col justify-center">
+          <div className="inline-flex items-center gap-2 border border-white/15 text-white/50 text-xs font-medium px-3 py-1.5 rounded-full mb-8 w-fit">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FFF0]" />
+            HEADLINE_BADGE
+          </div>
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-[0.92] mb-6">
+            <span className="text-white">HEADLINE_LINE1</span>
+            <br />
+            <span className="text-white/30">HEADLINE_LINE2</span>
+          </h1>
+          <p className="text-white/45 text-lg mb-10 max-w-md leading-relaxed">SUBHEADLINE</p>
+          <div className="flex gap-3">
+            <button className="bg-white text-black font-bold px-7 py-3.5 rounded-lg hover:bg-white/90 transition-all text-sm">CTA_PRIMARY →</button>
+            <button className="border border-white/15 text-white/60 font-medium px-7 py-3.5 rounded-lg hover:border-white/30 transition-all text-sm">CTA_SECONDARY</button>
+          </div>
+          <div className="flex items-center gap-8 mt-10 pt-8 border-t border-white/8">
+            {metaStats.map(([v, l]) => (
+              <div key={l}>
+                <div className="text-xl font-black text-white">{v}</div>
+                <div className="text-xs text-white/25 mt-0.5">{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="hidden md:block">
+          <div className="rounded-2xl border border-white/10 bg-[#111111] overflow-hidden shadow-2xl">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/8 bg-[#0a0a0a]">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500/40" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/40" />
+                <div className="w-3 h-3 rounded-full bg-green-500/40" />
+              </div>
+              <div className="flex-1 bg-white/5 rounded-md h-5 mx-2" />
+            </div>
+            <div className="p-6 space-y-3 font-mono text-sm min-h-[220px]">
+              {cmdLines.map((line, i) => (
+                <div key={i} className={line.color}>{line.text}</div>
+              ))}
+              <div className="text-white/15 pt-2 animate-pulse">_</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+  {
+    id: 'hero-editorial-v1', name: 'Hero Editorial Typography', category: 'hero',
+    industries: ['saas', 'ai', 'startup'], tags: ['editorial', 'oversized-type', 'linear-style', 'minimal', 'bottom-bar'],
+    description: 'Oversized editorial heading fills the viewport as the primary visual. Subtext and CTA in a bottom bar separated by a divider. No badge, no stats block — typography IS the hero. Linear/minimal-flat DNA.',
+    priority: 11,
+    standaloneCode: `function Hero() {
+  return (
+    <section className="min-h-screen bg-[#0F0F0F] flex flex-col pt-28 pb-16 px-8 md:px-16 overflow-hidden">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-center">
+        <h1 className="font-bold leading-[0.90] tracking-[-0.04em] text-white mb-0"
+          style={{fontSize: 'clamp(52px, 9vw, 128px)'}}>
+          HEADLINE_LINE1
+          <br />
+          <span className="bg-gradient-to-r from-[#5E6AD2] via-[#a78bfa] to-[#ec4899] bg-clip-text text-transparent">
+            HEADLINE_LINE2
+          </span>
+        </h1>
+      </div>
+      <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row md:items-end justify-between gap-8 pt-10 border-t border-white/8">
+        <div className="max-w-xs">
+          <p className="text-white/35 text-base leading-relaxed">SUBHEADLINE</p>
+        </div>
+        <div className="flex items-center gap-5">
+          <button className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm">CTA_PRIMARY</button>
+          <button className="text-white/35 hover:text-white text-sm font-medium transition-colors tracking-wide">CTA_SECONDARY →</button>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+  {
+    id: 'hero-dashboard-v1', name: 'Hero Dashboard Preview', category: 'hero',
+    industries: ['saas', 'ai', 'startup'], tags: ['dashboard', 'product-screenshot', 'app-preview', 'bottom-mockup'],
+    description: 'Compact top text block + full-width dashboard product mockup below the fold. Product UI dominates the hero. For analytics/infra/SaaS where the product IS the headline.',
+    priority: 10,
+    standaloneCode: `function Hero() {
+  const kpis = [['2.4M', 'Requests/min'], ['99.9%', 'Success rate'], ['1.2ms', 'Avg latency']];
+  const navItems = ['Dashboard', 'Analytics', 'Projects', 'Team', 'Settings'];
+  const barHeights = [28, 44, 36, 52, 38, 60, 42, 56, 34, 48, 40, 64, 46, 54, 38, 50, 42, 58, 36, 52, 44, 62, 48, 38];
+  return (
+    <section className="min-h-screen bg-[#09090b] pt-20 pb-0 overflow-hidden">
+      <div className="max-w-5xl mx-auto px-6 text-center pt-16 pb-10">
+        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-white/50 text-xs px-4 py-2 rounded-full mb-6">
+          <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+          HEADLINE_BADGE
+        </div>
+        <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4 leading-none">HEADLINE_LINE1</h1>
+        <p className="text-white/35 text-lg max-w-xl mx-auto mb-8">SUBHEADLINE</p>
+        <div className="flex gap-3 justify-center">
+          <button className="bg-white text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-white/90 transition-all">CTA_PRIMARY →</button>
+          <button className="border border-white/10 text-white/50 font-medium px-6 py-3 rounded-xl text-sm hover:border-white/25 transition-all">CTA_SECONDARY</button>
+        </div>
+      </div>
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="rounded-t-2xl border border-white/10 border-b-0 bg-[#111113] overflow-hidden shadow-2xl">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-white/8 bg-[#0d0d0f]">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500/50" />
+            </div>
+            <div className="flex-1 bg-white/5 rounded-md h-4 mx-2 max-w-48" />
+          </div>
+          <div className="flex h-[300px]">
+            <div className="w-44 border-r border-white/8 p-4 space-y-1 shrink-0">
+              {navItems.map(item => (
+                <div key={item} className="flex items-center gap-2 px-2 py-1.5 rounded-md">
+                  <div className="w-3 h-3 rounded bg-white/10 shrink-0" />
+                  <span className="text-white/30 text-xs">{item}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex-1 p-5 space-y-3 overflow-hidden">
+              <div className="grid grid-cols-3 gap-3">
+                {kpis.map(([v, l]) => (
+                  <div key={l} className="bg-white/5 rounded-xl p-4 border border-white/8">
+                    <div className="text-xs text-white/25 mb-1">{l}</div>
+                    <div className="text-2xl font-black text-white">{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white/5 rounded-xl p-4 border border-white/8 flex items-end gap-0.5">
+                {barHeights.map((h, i) => (
+                  <div key={i} className="flex-1 rounded-sm bg-white/15 hover:bg-white/30 transition-colors"
+                    style={{height: h + 'px'}} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+  {
+    id: 'hero-bento-v1', name: 'Hero Bento Grid', category: 'hero',
+    industries: ['saas', 'ai', 'startup', 'agency'], tags: ['bento', 'grid', 'framer-style', 'card-mosaic', 'magazine'],
+    description: 'Bento grid layout where the hero IS a mosaic of cards — headline card, feature card, stats card, integration card, CTA card. No traditional centered block. Framer/expressive DNA.',
+    priority: 10,
+    standaloneCode: `function Hero() {
+  const integrations = ['Figma', 'React', 'GitHub', 'Vercel', 'Slack'];
+  const stats = [['10K+', 'Teams'], ['99.9%', 'SLA'], ['4.9★', 'Rating']];
+  return (
+    <section className="min-h-screen bg-[#0c0c0f] pt-24 pb-10 px-4 md:px-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white leading-none mb-3">HEADLINE_LINE1</h1>
+          <p className="text-white/35 text-base max-w-lg mx-auto">SUBHEADLINE</p>
+        </div>
+        <div className="grid grid-cols-12 gap-3" style={{gridTemplateRows: 'repeat(3, auto)'}}>
+          <div className="col-span-12 md:col-span-5 row-span-2 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden min-h-[260px] hover:scale-[1.01] transition-transform">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-2xl -translate-y-12 translate-x-12" />
+            <div>
+              <div className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-4">FEATURE_LABEL</div>
+              <p className="text-white text-2xl font-bold leading-tight">HEADLINE_LINE2</p>
+            </div>
+            <button className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all">CTA_PRIMARY →</button>
+          </div>
+          <div className="col-span-12 md:col-span-4 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center gap-4 hover:border-white/20 transition-colors">
+            {stats.map(([v, l]) => (
+              <div key={l} className="text-center flex-1">
+                <div className="text-xl font-black text-white">{v}</div>
+                <div className="text-white/25 text-xs mt-0.5">{l}</div>
+              </div>
+            ))}
+          </div>
+          <div className="col-span-12 md:col-span-3 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-white/20 transition-colors min-h-[120px]">
+            <div className="text-white/30 text-xs font-semibold uppercase tracking-widest">Integrations</div>
+            <div className="flex flex-wrap gap-1.5">
+              {integrations.map(i => (
+                <span key={i} className="bg-white/8 text-white/45 text-xs px-2.5 py-1 rounded-lg">{i}</span>
+              ))}
+            </div>
+          </div>
+          <div className="col-span-12 md:col-span-7 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center justify-between gap-4 hover:border-white/20 transition-colors">
+            <div>
+              <div className="text-white font-semibold text-sm mb-1">Ready to ship faster?</div>
+              <div className="text-white/25 text-xs">No setup required. Free plan forever.</div>
+            </div>
+            <button className="border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-2xl hover:bg-white/8 transition-all shrink-0">CTA_SECONDARY →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+  {
+    id: 'hero-story-v1', name: 'Hero Narrative Story', category: 'hero',
+    industries: ['agency', 'portfolio', 'startup'], tags: ['narrative', 'editorial', 'light-bg', 'agency-style', 'service-tags'],
+    description: 'Light-background agency/narrative hero. Eyebrow label + rule, oversized editorial heading, bottom divider bar with subtext left / service tags center / CTA right. No badge, no stats grid.',
+    priority: 10,
+    standaloneCode: `function Hero() {
+  const services = ['Brand Strategy', 'Web Design', 'Motion', 'Development'];
+  return (
+    <section className="min-h-screen bg-[#f5f5f0] flex flex-col pt-28 px-8 md:px-20">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+        <div className="flex items-center gap-4 mb-12">
+          <div className="w-10 h-px bg-gray-800" />
+          <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">TAGLINE</span>
+        </div>
+        <div className="flex-1 flex flex-col justify-center">
+          <h1 className="font-black leading-[0.88] tracking-[-0.04em] text-gray-900 max-w-5xl mb-12"
+            style={{fontSize: 'clamp(44px, 7.5vw, 112px)'}}>
+            HEADLINE_LINE1
+            <br />
+            <span className="text-gray-300">HEADLINE_LINE2</span>
+          </h1>
+          <div className="flex flex-col md:flex-row md:items-end gap-8 border-t-2 border-gray-900 pt-8">
+            <p className="text-gray-500 text-base leading-relaxed max-w-xs">SUBHEADLINE</p>
+            <div className="flex gap-2 flex-wrap md:mx-auto">
+              {services.map(s => (
+                <span key={s} className="text-xs font-semibold tracking-widest uppercase text-gray-400 border border-gray-200 px-4 py-2 rounded-full">{s}</span>
+              ))}
+            </div>
+            <div className="md:ml-auto shrink-0">
+              <button className="bg-gray-900 text-white font-bold text-sm px-8 py-4 rounded-full hover:bg-gray-700 transition-all">CTA_PRIMARY →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+
   // ── LOGO CLOUD ─────────────────────────────────────────────────────────────
   {
     id: 'logo-cloud-v1', name: 'Logo Cloud', category: 'logo-cloud',
@@ -923,7 +1217,102 @@ export function getTemplatesByCategory(category: ComponentCategory): ComponentTe
   return COMPONENT_TEMPLATES.filter(c => c.category === category).sort((a, b) => b.priority - a.priority);
 }
 
-export function selectTemplatesForPrompt(prompt: string, sectionOrder?: string[]): ComponentTemplate[] {
+// Maps reference site keywords to specific hero variant IDs
+const HERO_REFERENCE_MAP: Record<string, string> = {
+  'stripe':   'hero-centered-v1',
+  'paypal':   'hero-centered-v1',
+  'square':   'hero-centered-v1',
+  'braintree':'hero-centered-v1',
+  'vercel':   'hero-asymmetric-v1',
+  'netlify':  'hero-asymmetric-v1',
+  'railway':  'hero-asymmetric-v1',
+  'linear':   'hero-editorial-v1',
+  'notion':   'hero-editorial-v1',
+  'craft':    'hero-editorial-v1',
+  'framer':   'hero-bento-v1',
+  'webflow':  'hero-bento-v1',
+  'figma':    'hero-bento-v1',
+  'cursor':   'hero-asymmetric-v1',
+  'perplexity':'hero-centered-v1',
+};
+
+function selectHeroVariant(
+  detected: string[],
+  referenceSites: string,
+  design?: HeroSelectorInput,
+): ComponentTemplate | undefined {
+  const refsLower = referenceSites.toLowerCase();
+
+  // 1. Explicit reference site match (highest priority)
+  for (const [ref, heroId] of Object.entries(HERO_REFERENCE_MAP)) {
+    if (refsLower.includes(ref)) {
+      const found = COMPONENT_TEMPLATES.find(t => t.id === heroId);
+      if (found) return found;
+    }
+  }
+
+  // 2. Design DNA fallback
+  if (design) {
+    const { heroStyle, designLanguage, layoutStyle, animationPersonality, decorationLevel } = design;
+
+    // Premium-gradient + expressive → centered with gradient orbs
+    if (heroStyle === 'centered-gradient' ||
+        (designLanguage === 'premium-gradient' && animationPersonality === 'expressive')) {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-centered-v1');
+      if (t) return t;
+    }
+
+    // Monochrome/minimal → asymmetric split (product mockup)
+    if ((heroStyle === 'centered-minimal' || layoutStyle === 'minimal') &&
+        (designLanguage === 'monochrome' || designLanguage === 'minimal-flat')) {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-asymmetric-v1');
+      if (t) return t;
+    }
+
+    // Minimal-flat + no decoration → editorial typography
+    if (designLanguage === 'minimal-flat' && decorationLevel === 'none') {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-editorial-v1');
+      if (t) return t;
+    }
+
+    // Monochrome with no explicit minimal → asymmetric
+    if (designLanguage === 'monochrome' && decorationLevel === 'none') {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-asymmetric-v1');
+      if (t) return t;
+    }
+
+    // Expressive + rich decoration → bento grid
+    if (animationPersonality === 'expressive' && decorationLevel === 'rich' &&
+        layoutStyle !== 'layered-depth') {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-bento-v1');
+      if (t) return t;
+    }
+  }
+
+  // 3. Industry fallback
+  if (detected.includes('agency') || detected.includes('portfolio')) {
+    const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-story-v1');
+    if (t) return t;
+  }
+
+  // 4. No override — let normal scoring select
+  return undefined;
+}
+
+export interface HeroSelectorInput {
+  heroStyle?: string;
+  designLanguage?: string;
+  layoutStyle?: string;
+  animationPersonality?: string;
+  decorationLevel?: string;
+}
+
+export function selectTemplatesForPrompt(
+  prompt: string,
+  sectionOrder?: string[],
+  design?: HeroSelectorInput,
+  referenceSites?: string,
+): ComponentTemplate[] {
   const lower = prompt.toLowerCase();
   const detected: string[] = [];
   for (const [ind, kws] of Object.entries(INDUSTRY_MAP)) {
@@ -934,15 +1323,12 @@ export function selectTemplatesForPrompt(prompt: string, sectionOrder?: string[]
   let categories: ComponentCategory[];
 
   if (sectionOrder && sectionOrder.length > 0) {
-    // Use the blueprint's section order to determine which templates to fetch
     categories = sectionOrder
       .map(s => SECTION_TO_CATEGORY[s.toLowerCase().replace(/[^a-z]/g, '')])
       .filter((c): c is ComponentCategory => !!c);
-    // Deduplicate while preserving order
     const seen = new Set<string>();
     categories = categories.filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
   } else {
-    // Fallback: use prompt-based detection
     const requiredCats: ComponentCategory[] = ['navbar', 'hero', 'features', 'testimonials', 'cta', 'footer'];
     const optCats: ComponentCategory[] = [];
     if (needsPricing(prompt)) optCats.push('pricing');
@@ -951,8 +1337,15 @@ export function selectTemplatesForPrompt(prompt: string, sectionOrder?: string[]
     categories = [...requiredCats, ...optCats];
   }
 
+  // Pre-compute hero variant override (DNA + reference site aware)
+  const heroOverride = selectHeroVariant(detected, referenceSites ?? 'none', design);
+
   const result: ComponentTemplate[] = [];
   for (const cat of categories) {
+    if (cat === 'hero' && heroOverride) {
+      result.push(heroOverride);
+      continue;
+    }
     const candidates = getTemplatesByCategory(cat);
     if (candidates.length === 0) continue;
     const scored = candidates.map(c => ({

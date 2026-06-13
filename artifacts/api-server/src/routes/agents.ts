@@ -716,7 +716,7 @@ router.post("/agents/build", async (req, res) => {
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
-    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder);
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
 
@@ -761,7 +761,7 @@ router.post("/agents/build", async (req, res) => {
           { role: "system", content: CODEFIX_SYSTEM },
           { role: "user", content: `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}` },
         ],
-        false, 8000
+        false, 4096
       );
       if (fixed && fixed.length > 200) {
         fixedCode = fixed
@@ -905,7 +905,7 @@ router.post("/agents/audit", async (req, res) => {
     audit.dnaDiff = { fields: dnaDiff, changedFromDefault: changedFields, totalFields: KEY_FIELDS.length, collapsed: changedFields === 0 };
 
     // ── STAGE 4: CODE GEN PROMPT ────────────────────────────────────────────
-    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder);
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, finalDNA, referenceSites);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     const codeGenSystemPrompt = buildCodeSystem(finalDNA, blueprint, componentContext);
 
