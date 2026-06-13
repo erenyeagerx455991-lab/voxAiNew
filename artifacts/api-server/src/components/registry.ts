@@ -1,3 +1,5 @@
+import { SECTION_TEMPLATES } from './section-templates';
+
 export type ComponentCategory =
   | 'navbar' | 'hero' | 'features' | 'pricing'
   | 'testimonials' | 'cta' | 'footer' | 'gallery' | 'faq' | 'contact'
@@ -81,6 +83,9 @@ function needsContact(prompt: string): boolean {
 }
 
 const COMPONENT_TEMPLATES: ComponentTemplate[] = [
+  // ── SECTION V2 TEMPLATES (spreads in all features/dashboard/pricing V2) ────
+  ...(SECTION_TEMPLATES as ComponentTemplate[]),
+
   // ── NAVBAR ────────────────────────────────────────────────────────────────
   {
     id: 'navbar-modern-v1', name: 'Navbar Modern', category: 'navbar',
@@ -1236,6 +1241,69 @@ const HERO_REFERENCE_MAP: Record<string, string> = {
   'perplexity':'hero-centered-v1',
 };
 
+// Maps reference site keywords to features section IDs (V2)
+const FEATURES_REFERENCE_MAP: Record<string, string> = {
+  'stripe':   'features-stripe-v1',
+  'paypal':   'features-stripe-v1',
+  'square':   'features-stripe-v1',
+  'linear':   'features-editorial-v1',
+  'notion':   'features-editorial-v1',
+  'craft':    'features-editorial-v1',
+  'vercel':   'features-split-v1',
+  'netlify':  'features-split-v1',
+  'railway':  'features-split-v1',
+  'framer':   'features-framer-v1',
+  'webflow':  'features-framer-v1',
+  'figma':    'features-framer-v1',
+};
+
+// Maps reference site keywords to dashboard-preview section IDs (V2)
+const DASHBOARD_REFERENCE_MAP: Record<string, string> = {
+  'stripe':   'dashboard-revenue-v1',
+  'paypal':   'dashboard-revenue-v1',
+  'square':   'dashboard-revenue-v1',
+  'linear':   'dashboard-kanban-v1',
+  'notion':   'dashboard-kanban-v1',
+  'vercel':   'dashboard-vercel-v1',
+  'netlify':  'dashboard-vercel-v1',
+  'railway':  'dashboard-vercel-v1',
+  'framer':   'dashboard-aiflow-v1',
+  'webflow':  'dashboard-aiflow-v1',
+  'figma':    'dashboard-aiflow-v1',
+};
+
+// Maps reference site keywords to pricing section IDs (V2)
+const PRICING_REFERENCE_MAP: Record<string, string> = {
+  'stripe':   'pricing-comparison-v1',
+  'paypal':   'pricing-comparison-v1',
+  'square':   'pricing-comparison-v1',
+  'linear':   'pricing-minimal-v1',
+  'notion':   'pricing-minimal-v1',
+  'craft':    'pricing-minimal-v1',
+  'vercel':   'pricing-horizontal-v1',
+  'netlify':  'pricing-horizontal-v1',
+  'railway':  'pricing-horizontal-v1',
+  'framer':   'pricing-cardstack-v1',
+  'webflow':  'pricing-cardstack-v1',
+  'figma':    'pricing-cardstack-v1',
+};
+
+// Category-aware reference lookup: only matches templates in the correct category
+function selectSectionByReference(
+  category: ComponentCategory,
+  primaryReference?: string,
+): ComponentTemplate | undefined {
+  if (!primaryReference || primaryReference === 'none' || primaryReference.trim() === '') return undefined;
+  const key = primaryReference.toLowerCase().trim();
+  let id: string | undefined;
+  if (category === 'features') id = FEATURES_REFERENCE_MAP[key];
+  else if (category === 'dashboard-preview') id = DASHBOARD_REFERENCE_MAP[key];
+  else if (category === 'pricing') id = PRICING_REFERENCE_MAP[key];
+  if (!id) return undefined;
+  // filter by category to avoid ID collisions across categories
+  return COMPONENT_TEMPLATES.find(t => t.id === id && t.category === category);
+}
+
 function selectHeroVariant(
   detected: string[],
   referenceSites: string,
@@ -1358,6 +1426,14 @@ export function selectTemplatesForPrompt(
     if (cat === 'hero' && heroOverride) {
       result.push(heroOverride);
       continue;
+    }
+    // Section Architecture V2: reference-based routing for features, dashboard, pricing
+    if (cat === 'features' || cat === 'dashboard-preview' || cat === 'pricing') {
+      const sectionOverride = selectSectionByReference(cat, primaryReference);
+      if (sectionOverride) {
+        result.push(sectionOverride);
+        continue;
+      }
     }
     const candidates = getTemplatesByCategory(cat);
     if (candidates.length === 0) continue;

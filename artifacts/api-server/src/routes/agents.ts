@@ -991,12 +991,56 @@ router.post("/agents/audit", async (req, res) => {
     const dnaPass = dnaVerifier ? dnaVerifier(finalDNA) : true;
     const validationStatus = heroMatch && dnaPass ? "pass" : !heroMatch ? "fail:hero_mismatch" : "fail:dna_mismatch";
 
+    const SECTION_EXPECTED_FEATURES: Record<string, string> = {
+      stripe: 'features-stripe-v1', paypal: 'features-stripe-v1',
+      linear: 'features-editorial-v1', notion: 'features-editorial-v1',
+      vercel: 'features-split-v1', netlify: 'features-split-v1',
+      framer: 'features-framer-v1', webflow: 'features-framer-v1', figma: 'features-framer-v1',
+    };
+    const SECTION_EXPECTED_DASHBOARD: Record<string, string> = {
+      stripe: 'dashboard-revenue-v1', paypal: 'dashboard-revenue-v1',
+      linear: 'dashboard-kanban-v1', notion: 'dashboard-kanban-v1',
+      vercel: 'dashboard-vercel-v1', netlify: 'dashboard-vercel-v1',
+      framer: 'dashboard-aiflow-v1', webflow: 'dashboard-aiflow-v1',
+    };
+    const SECTION_EXPECTED_PRICING: Record<string, string> = {
+      stripe: 'pricing-comparison-v1', paypal: 'pricing-comparison-v1',
+      linear: 'pricing-minimal-v1', notion: 'pricing-minimal-v1',
+      vercel: 'pricing-horizontal-v1', netlify: 'pricing-horizontal-v1',
+      framer: 'pricing-cardstack-v1', webflow: 'pricing-cardstack-v1', figma: 'pricing-cardstack-v1',
+    };
+
+    const ref = auditPrimaryRef.toLowerCase();
+    const selectedFeatures = selectedTemplates.find((t: any) => t.category === 'features')?.id ?? 'none';
+    const selectedDashboard = selectedTemplates.find((t: any) => t.category === 'dashboard-preview')?.id ?? 'none';
+    const selectedPricing = selectedTemplates.find((t: any) => t.category === 'pricing')?.id ?? 'none';
+    const expectedFeatures = SECTION_EXPECTED_FEATURES[ref] ?? 'unknown';
+    const expectedDashboard = SECTION_EXPECTED_DASHBOARD[ref] ?? 'unknown';
+    const expectedPricing = SECTION_EXPECTED_PRICING[ref] ?? 'unknown';
+    // null = section not in blueprint (N/A, doesn't count against score)
+    const featuresMatch = selectedFeatures === 'none' ? null : (expectedFeatures === 'unknown' || selectedFeatures === expectedFeatures);
+    const dashboardMatch = selectedDashboard === 'none' ? null : (expectedDashboard === 'unknown' || selectedDashboard === expectedDashboard);
+    const pricingMatch = selectedPricing === 'none' ? null : (expectedPricing === 'unknown' || selectedPricing === expectedPricing);
+    const activeChecks = ([heroMatch, featuresMatch, dashboardMatch, pricingMatch] as (boolean | null)[]).filter(m => m !== null) as boolean[];
+    const matchPoints = activeChecks.filter(Boolean).length;
+    const architectureMatchScore = activeChecks.length > 0 ? Math.round((matchPoints / activeChecks.length) * 100) : 100;
+
     audit.referenceRouting = {
       primaryReference: auditPrimaryRef,
       secondaryReferences: auditSecondaryRefs,
       selectedHero,
+      selectedFeatures,
+      selectedDashboard,
+      selectedPricing,
       expectedHero,
+      expectedFeatures,
+      expectedDashboard,
+      expectedPricing,
       heroMatch,
+      featuresMatch,
+      dashboardMatch,
+      pricingMatch,
+      architectureMatchScore,
       dnaPass,
       validationStatus,
     };
