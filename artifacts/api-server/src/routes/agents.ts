@@ -194,7 +194,9 @@ targetAudience: [who this is for]
 contentTone: [e.g. Professional, Playful, Luxury, Minimal, Bold]
 keyFeatures: [comma-separated list of 3-4 key features]
 colorMood: [e.g. Dark & Techy, Light & Clean, Vibrant & Bold, Elegant & Minimal]
-referenceSites: [comma-separated list of any mentioned design references e.g. "Linear, Stripe" — or "none" if not mentioned]
+referenceSites: [ONLY sites EXPLICITLY named by the user, comma-separated in user order — or "none". NEVER add inferred or competitor sites.]
+primaryReference: [the single FIRST and most dominant reference explicitly mentioned by the user — or "none"]
+secondaryReferences: [any additional explicitly mentioned references in user order — or "none"]
 ---END_BRIEF---
 
 PART 3 — PAGE BLUEPRINT (for internal use, append after design brief):
@@ -218,17 +220,25 @@ Rules for sectionOrder:
 - Minimum 5 sections, maximum 9 sections
 - Only use section names exactly as listed above
 
+CRITICAL REFERENCE EXTRACTION RULES (apply strictly to referenceSites / primaryReference / secondaryReferences):
+- Include ONLY sites the user explicitly named. Never infer, add competitors, or expand references.
+- "similar to Linear" → referenceSites: "Linear", primaryReference: "Linear", secondaryReferences: "none"
+- "similar to Vercel" → referenceSites: "Vercel", primaryReference: "Vercel", secondaryReferences: "none"
+- "inspired by Stripe and Linear" → referenceSites: "Stripe, Linear", primaryReference: "Stripe", secondaryReferences: "Linear"
+- Never add Stripe to a Linear prompt. Never add Vercel to a Stripe prompt. Never expand single references.
+- User's word order = priority order. First mentioned = primaryReference.
+
 Respond ONLY in this format. No preamble.`;
 
 const DESIGN_SYSTEM = `You are a Design Agent. Your job is to detect the visual DNA from the website brief and reference sites, then output a precise design system as JSON.
 
 REFERENCE SITE DNA LIBRARY — when a reference is detected, apply its design DNA exactly:
 
-Linear → { designLanguage: "minimal-flat", theme: dark, bg: #0F0F0F, surface: #1A1A1A, primary: #5E6AD2, accent: #5E6AD2, text: #FFFFFF, textMuted: #8A8A8A, border: #2A2A2A, headingWeight: font-black, headingTracking: tracking-tight, scale: lg, cardStyle: flat-bordered, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-md, mood: Focused }
+Linear → { designLanguage: "minimal-flat", theme: dark, bg: #0F0F0F, surface: #1A1A1A, primary: #5E6AD2, accent: #5E6AD2, text: #FFFFFF, textMuted: #8A8A8A, border: #2A2A2A, headingWeight: font-black, headingTracking: tracking-tight, scale: lg, cardStyle: flat-bordered, heroStyle: editorial-large, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-md, mood: Focused }
 
 Stripe → { designLanguage: "premium-gradient", theme: dark, bg: #0A2540, surface: #0F3460, primary: #635BFF, accent: #00D4FF, text: #FFFFFF, textMuted: #A8B4C0, border: rgba(255,255,255,0.1), headingWeight: font-bold, headingTracking: tracking-tight, scale: xl, cardStyle: gradient-border, heroStyle: centered-gradient, animationPersonality: expressive, decorationLevel: rich, visualDensity: balanced, buttonStyle: rounded-full, mood: Premium }
 
-Vercel → { designLanguage: "monochrome", theme: dark, bg: #000000, surface: #111111, primary: #FFFFFF, accent: #FFFFFF, text: #FFFFFF, textMuted: #888888, border: #333333, headingWeight: font-black, headingTracking: tracking-tighter, scale: xl, cardStyle: flat-bordered, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: balanced, buttonStyle: rounded-lg, mood: Sharp }
+Vercel → { designLanguage: "monochrome", theme: dark, bg: #000000, surface: #111111, primary: #FFFFFF, accent: #FFFFFF, text: #FFFFFF, textMuted: #888888, border: #333333, headingWeight: font-black, headingTracking: tracking-tighter, scale: xl, cardStyle: flat-bordered, heroStyle: split-layout, animationPersonality: subtle, decorationLevel: none, visualDensity: balanced, buttonStyle: rounded-lg, mood: Sharp }
 
 Notion → { designLanguage: "editorial", theme: light, bg: #FFFFFF, surface: #F7F6F3, primary: #37352F, accent: #2F80ED, text: #37352F, textMuted: #9B9B9B, border: #E9E9E7, headingWeight: font-bold, headingTracking: tracking-normal, scale: md, cardStyle: outline-hover, heroStyle: editorial-large, animationPersonality: none, decorationLevel: minimal, visualDensity: comfortable, buttonStyle: rounded-md, mood: Editorial }
 
@@ -238,9 +248,18 @@ Cursor → { designLanguage: "dev-minimal", theme: dark, bg: #0D0D0D, surface: #
 
 Perplexity → { designLanguage: "academic-clean", theme: dark, bg: #1C1C1E, surface: #2C2C2E, primary: #FF6600, accent: #FF6600, text: #FFFFFF, textMuted: #8E8E93, border: #3A3A3C, headingWeight: font-semibold, headingTracking: tracking-normal, scale: md, cardStyle: solid-surface, heroStyle: centered-minimal, animationPersonality: subtle, decorationLevel: none, visualDensity: dense, buttonStyle: rounded-lg, mood: Informative }
 
+DOMINANCE RULES — When a primary reference is specified, you MUST output EXACTLY that reference's DNA. Do NOT blend with other design systems:
+- Single reference: The entire DNA must match that reference. No exceptions. No mixing.
+- Linear as primary: designLanguage MUST be "minimal-flat", heroStyle MUST be "editorial-large", decorationLevel MUST be "none"
+- Stripe as primary: designLanguage MUST be "premium-gradient", heroStyle MUST be "centered-gradient", decorationLevel MUST be "rich"
+- Vercel as primary: designLanguage MUST be "monochrome", heroStyle MUST be "split-layout", decorationLevel MUST be "none"
+- Framer as primary: designLanguage MUST be "bold-motion", heroStyle MUST be "editorial-large", animationPersonality MUST be "expressive"
+- Notion as primary: designLanguage MUST be "editorial", heroStyle MUST be "editorial-large", theme MUST be "light"
+- Multiple references: primaryReference (first mentioned) controls the entire DNA. Secondary references are ignored for DNA selection.
+
 INSTRUCTIONS:
-1. Scan the brief for any reference site names (Linear, Stripe, Vercel, Notion, Framer, Cursor, Perplexity, etc.)
-2. If a reference is found, use its DNA as the foundation — then adapt colors/content for the specific business
+1. Identify the primaryReference (first explicitly named reference site in the brief/prompt)
+2. If a primaryReference is found, apply ONLY its DNA from the library above — do NOT blend with secondary references
 3. If no reference is found, derive a unique design identity from the business type, industry, and tone
 4. NEVER default to purple gradients. NEVER default to glassmorphism unless explicitly appropriate.
 5. Every site must have a unique visual identity
@@ -565,6 +584,19 @@ router.post("/agents/build", async (req, res) => {
     const refMatch = briefText.match(/referenceSites:\s*(.+)/);
     if (refMatch) referenceSites = refMatch[1].trim();
 
+    let primaryReference = "none";
+    const primaryRefMatch = briefText.match(/primaryReference:\s*(.+)/);
+    if (primaryRefMatch) primaryReference = primaryRefMatch[1].trim();
+    if (primaryReference === "none" && referenceSites !== "none") {
+      primaryReference = referenceSites.split(',')[0].trim();
+    }
+
+    let secondaryReferences: string[] = [];
+    const secondaryRefMatch = briefText.match(/secondaryReferences:\s*(.+)/);
+    if (secondaryRefMatch && secondaryRefMatch[1].trim() !== "none") {
+      secondaryReferences = secondaryRefMatch[1].trim().split(',').map(s => s.trim());
+    }
+
     const cleanPlan = planText
       .replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "")
       .replace(/---PAGE_BLUEPRINT---[\s\S]*?---END_BLUEPRINT---/, "")
@@ -588,7 +620,7 @@ router.post("/agents/build", async (req, res) => {
     }
 
     console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
-    console.log(`[Design] referenceSites="${referenceSites}"`);
+    console.log(`[Design] referenceSites="${referenceSites}" primaryReference="${primaryReference}"`);
     sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
 
     // ── AGENT 2: DESIGN DNA ───────────────────────────────────────────────────
@@ -596,12 +628,12 @@ router.post("/agents/build", async (req, res) => {
 
     // Known reference sites and their DNA verification rules
     const REFERENCE_VERIFIERS: Record<string, (d: DesignDNA) => boolean> = {
-      stripe:     (d) => d.designLanguage !== "monochrome" && d.colorSystem.background !== "#0a0a0a" && d.colorSystem.primary !== "#ffffff",
-      linear:     (d) => d.colorSystem.primary !== "#ffffff" && d.colorSystem.primary !== "#e5e5e5",
-      vercel:     (_) => true, // Vercel IS monochrome — always passes
-      notion:     (d) => d.colorSystem.theme === "light" || d.theme === "light",
-      framer:     (d) => d.designLanguage !== "monochrome" && d.animationPersonality !== "subtle",
-      cursor:     (d) => d.colorSystem.primary !== "#ffffff",
+      stripe:     (d) => d.designLanguage === "premium-gradient" && d.heroStyle === "centered-gradient" && d.colorSystem.background !== "#0a0a0a",
+      linear:     (d) => d.designLanguage === "minimal-flat" && d.heroStyle === "editorial-large" && d.decorationLevel === "none",
+      vercel:     (d) => d.designLanguage === "monochrome" && d.heroStyle === "split-layout",
+      notion:     (d) => (d.colorSystem.theme === "light" || d.theme === "light") && d.heroStyle === "editorial-large",
+      framer:     (d) => d.designLanguage === "bold-motion" && d.animationPersonality === "expressive",
+      cursor:     (d) => d.colorSystem.primary !== "#ffffff" && d.designLanguage !== "premium-gradient",
       perplexity: (d) => d.colorSystem.primary !== "#ffffff" && d.colorSystem.primary !== "#e5e5e5",
     };
 
@@ -677,12 +709,30 @@ router.post("/agents/build", async (req, res) => {
           failedFields: { designLanguage: attempt1.parsed.designLanguage, background: attempt1.parsed.colorSystem.background, primary: attempt1.parsed.colorSystem.primary },
         });
 
-        // Retry with a more explicit, stripped-down prompt
-        const retryUserPrompt = [
-          `IMPORTANT: The user explicitly wants a design SIMILAR TO ${referenceSites.toUpperCase()}.`,
-          `You MUST apply the ${referenceSites} DNA from the reference library — do NOT output generic monochrome defaults.`,
-          `\n${designPrompt}`,
-        ].join('\n');
+        // Retry with a reference-specific, explicit prompt
+        const REFERENCE_DNA_REQUIREMENTS: Record<string, { designLanguage: string; heroStyle: string; extra?: string }> = {
+          stripe:     { designLanguage: "premium-gradient", heroStyle: "centered-gradient",  extra: 'decorationLevel MUST be "rich", animationPersonality MUST be "expressive"' },
+          linear:     { designLanguage: "minimal-flat",     heroStyle: "editorial-large",    extra: 'decorationLevel MUST be "none", animationPersonality MUST be "subtle"' },
+          vercel:     { designLanguage: "monochrome",       heroStyle: "split-layout",       extra: 'decorationLevel MUST be "none", animationPersonality MUST be "subtle"' },
+          framer:     { designLanguage: "bold-motion",      heroStyle: "editorial-large",    extra: 'animationPersonality MUST be "expressive"' },
+          notion:     { designLanguage: "editorial",        heroStyle: "editorial-large",    extra: 'theme MUST be "light"' },
+        };
+        const primLower = primaryReference.toLowerCase();
+        const req = REFERENCE_DNA_REQUIREMENTS[primLower];
+        const retryUserPrompt = req
+          ? [
+              `CRITICAL: The PRIMARY reference is "${primaryReference}". You MUST output EXACTLY:`,
+              `  designLanguage: "${req.designLanguage}"`,
+              `  heroStyle: "${req.heroStyle}"`,
+              req.extra ? `  ${req.extra}` : '',
+              `Apply ONLY the ${primaryReference} DNA from the reference library. Do NOT mix with other design systems.`,
+              `\n${designPrompt}`,
+            ].filter(Boolean).join('\n')
+          : [
+              `IMPORTANT: The PRIMARY reference is "${primaryReference}". Apply its DNA EXACTLY as shown in the reference library.`,
+              `Do NOT output generic defaults. Do NOT blend with other design systems.`,
+              `\n${designPrompt}`,
+            ].join('\n');
 
         const attempt2 = await runDesignAgent(2);
         if (attempt2.parsed) {
@@ -716,7 +766,7 @@ router.post("/agents/build", async (req, res) => {
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
-    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites);
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites, primaryReference);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
 
@@ -815,6 +865,20 @@ router.post("/agents/audit", async (req, res) => {
     const briefText = briefMatch ? briefMatch[1].trim() : "";
     const refMatch = briefText.match(/referenceSites:\s*(.+)/);
     const referenceSites = refMatch ? refMatch[1].trim() : "none";
+
+    let auditPrimaryRef = "none";
+    const auditPrimaryRefMatch = briefText.match(/primaryReference:\s*(.+)/);
+    if (auditPrimaryRefMatch) auditPrimaryRef = auditPrimaryRefMatch[1].trim();
+    if (auditPrimaryRef === "none" && referenceSites !== "none") {
+      auditPrimaryRef = referenceSites.split(',')[0].trim();
+    }
+
+    let auditSecondaryRefs: string[] = [];
+    const auditSecondaryMatch = briefText.match(/secondaryReferences:\s*(.+)/);
+    if (auditSecondaryMatch && auditSecondaryMatch[1].trim() !== "none") {
+      auditSecondaryRefs = auditSecondaryMatch[1].trim().split(',').map(s => s.trim());
+    }
+
     const blueprintMatch = planText.match(/---PAGE_BLUEPRINT---([\s\S]*?)---END_BLUEPRINT---/);
     let blueprint: PageBlueprint = { websiteType: "Generic", sectionOrder: ["Navbar", "Hero", "Features", "CTA", "Footer"] };
     if (blueprintMatch) {
@@ -822,6 +886,8 @@ router.post("/agents/audit", async (req, res) => {
     }
     audit.plannerOutput.brief = briefText;
     audit.plannerOutput.referenceSites = referenceSites;
+    audit.plannerOutput.primaryReference = auditPrimaryRef;
+    audit.plannerOutput.secondaryReferences = auditSecondaryRefs;
     audit.plannerOutput.blueprint = blueprint;
 
     // ── STAGE 2: DESIGN AGENT ───────────────────────────────────────────────
@@ -905,9 +971,35 @@ router.post("/agents/audit", async (req, res) => {
     audit.dnaDiff = { fields: dnaDiff, changedFromDefault: changedFields, totalFields: KEY_FIELDS.length, collapsed: changedFields === 0 };
 
     // ── STAGE 4: CODE GEN PROMPT ────────────────────────────────────────────
-    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, finalDNA, referenceSites);
+    const AUDIT_HERO_MAP: Record<string, string> = {
+      stripe: 'hero-centered-v1', linear: 'hero-editorial-v1', vercel: 'hero-asymmetric-v1',
+      framer: 'hero-bento-v1', notion: 'hero-editorial-v1', cursor: 'hero-asymmetric-v1',
+    };
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, finalDNA, referenceSites, auditPrimaryRef);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     const codeGenSystemPrompt = buildCodeSystem(finalDNA, blueprint, componentContext);
+
+    const selectedHero = selectedTemplates.find(t => t.category === 'hero')?.id ?? 'none';
+    const expectedHero = AUDIT_HERO_MAP[auditPrimaryRef.toLowerCase()] ?? 'unknown';
+    const heroMatch = expectedHero === 'unknown' || selectedHero === expectedHero;
+    const dnaVerifiers: Record<string, (d: DesignDNA) => boolean> = {
+      stripe: (d) => d.designLanguage === "premium-gradient" && d.heroStyle === "centered-gradient",
+      linear: (d) => d.designLanguage === "minimal-flat" && d.heroStyle === "editorial-large",
+      vercel:  (d) => d.designLanguage === "monochrome" && d.heroStyle === "split-layout",
+    };
+    const dnaVerifier = dnaVerifiers[auditPrimaryRef.toLowerCase()];
+    const dnaPass = dnaVerifier ? dnaVerifier(finalDNA) : true;
+    const validationStatus = heroMatch && dnaPass ? "pass" : !heroMatch ? "fail:hero_mismatch" : "fail:dna_mismatch";
+
+    audit.referenceRouting = {
+      primaryReference: auditPrimaryRef,
+      secondaryReferences: auditSecondaryRefs,
+      selectedHero,
+      expectedHero,
+      heroMatch,
+      dnaPass,
+      validationStatus,
+    };
 
     audit.codeGeneratorPrompt = {
       systemPromptLength: codeGenSystemPrompt.length,

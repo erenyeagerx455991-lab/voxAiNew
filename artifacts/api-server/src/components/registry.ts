@@ -1240,32 +1240,50 @@ function selectHeroVariant(
   detected: string[],
   referenceSites: string,
   design?: HeroSelectorInput,
+  primaryReference?: string,
 ): ComponentTemplate | undefined {
-  const refsLower = referenceSites.toLowerCase();
 
-  // 1. Explicit reference site match (highest priority)
-  for (const [ref, heroId] of Object.entries(HERO_REFERENCE_MAP)) {
-    if (refsLower.includes(ref)) {
-      const found = COMPONENT_TEMPLATES.find(t => t.id === heroId);
+  // 0. Primary reference — direct exact lookup (HIGHEST PRIORITY, deterministic)
+  if (primaryReference && primaryReference !== 'none' && primaryReference.trim() !== '') {
+    const primKey = primaryReference.toLowerCase().trim();
+    if (HERO_REFERENCE_MAP[primKey]) {
+      const found = COMPONENT_TEMPLATES.find(t => t.id === HERO_REFERENCE_MAP[primKey]);
       if (found) return found;
     }
   }
 
-  // 2. Design DNA fallback
+  // 1. Industry keyword fallback (before DNA — agency/portfolio always get story hero)
+  if (detected.includes('agency') || detected.includes('portfolio')) {
+    const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-story-v1');
+    if (t) return t;
+  }
+
+  // 2. Design DNA fallback (only reached when no primaryReference and not agency/portfolio)
   if (design) {
     const { heroStyle, designLanguage, layoutStyle, animationPersonality, decorationLevel } = design;
 
-    // Premium-gradient + expressive → centered with gradient orbs
-    if (heroStyle === 'centered-gradient' ||
-        (designLanguage === 'premium-gradient' && animationPersonality === 'expressive')) {
-      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-centered-v1');
+    // Split-layout → asymmetric two-column (Vercel-style)
+    if (heroStyle === 'split-layout') {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-asymmetric-v1');
       if (t) return t;
     }
 
-    // Monochrome/minimal → asymmetric split (product mockup)
-    if ((heroStyle === 'centered-minimal' || layoutStyle === 'minimal') &&
-        (designLanguage === 'monochrome' || designLanguage === 'minimal-flat')) {
-      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-asymmetric-v1');
+    // Bold-motion + editorial-large → bento grid (Framer-style) — check BEFORE general editorial-large
+    if (heroStyle === 'editorial-large' && (designLanguage === 'bold-motion' || animationPersonality === 'expressive')) {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-bento-v1');
+      if (t) return t;
+    }
+
+    // Editorial-large → oversized typography (Linear-style)
+    if (heroStyle === 'editorial-large') {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-editorial-v1');
+      if (t) return t;
+    }
+
+    // Premium-gradient + expressive → centered with gradient orbs (Stripe-style)
+    if (heroStyle === 'centered-gradient' ||
+        (designLanguage === 'premium-gradient' && animationPersonality === 'expressive')) {
+      const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-centered-v1');
       if (t) return t;
     }
 
@@ -1275,7 +1293,7 @@ function selectHeroVariant(
       if (t) return t;
     }
 
-    // Monochrome with no explicit minimal → asymmetric
+    // Monochrome + no decoration → asymmetric
     if (designLanguage === 'monochrome' && decorationLevel === 'none') {
       const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-asymmetric-v1');
       if (t) return t;
@@ -1289,13 +1307,7 @@ function selectHeroVariant(
     }
   }
 
-  // 3. Industry fallback
-  if (detected.includes('agency') || detected.includes('portfolio')) {
-    const t = COMPONENT_TEMPLATES.find(t => t.id === 'hero-story-v1');
-    if (t) return t;
-  }
-
-  // 4. No override — let normal scoring select
+  // 3. No override — let normal scoring select
   return undefined;
 }
 
@@ -1312,6 +1324,7 @@ export function selectTemplatesForPrompt(
   sectionOrder?: string[],
   design?: HeroSelectorInput,
   referenceSites?: string,
+  primaryReference?: string,
 ): ComponentTemplate[] {
   const lower = prompt.toLowerCase();
   const detected: string[] = [];
@@ -1337,8 +1350,8 @@ export function selectTemplatesForPrompt(
     categories = [...requiredCats, ...optCats];
   }
 
-  // Pre-compute hero variant override (DNA + reference site aware)
-  const heroOverride = selectHeroVariant(detected, referenceSites ?? 'none', design);
+  // Pre-compute hero variant override (primaryReference → deterministic direct lookup)
+  const heroOverride = selectHeroVariant(detected, referenceSites ?? 'none', design, primaryReference);
 
   const result: ComponentTemplate[] = [];
   for (const cat of categories) {

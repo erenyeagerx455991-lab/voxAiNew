@@ -1,0 +1,305 @@
+Implement Reference Routing V3 for NexoGen.
+
+Current Problem
+
+The Hero System V2 exists and multiple hero architectures are available.
+
+However:
+
+- Planner sometimes hallucinates extra references
+- "similar to Linear" becomes ["Linear", "Stripe"]
+- "similar to Vercel" becomes ["Vercel", "Linear", "Stripe"]
+- Hero selector uses first-match-wins logic
+- Design Agent sometimes applies the wrong design DNA
+- Stripe DNA leaks into Linear and Vercel generations
+
+This causes incorrect hero selection and incorrect visual systems.
+
+---
+
+TASK 1 — Planner Reference Extraction Fix
+
+Update PLANNER_SYSTEM.
+
+Rules:
+
+referenceSites must contain ONLY references explicitly mentioned by the user.
+
+Never infer additional references.
+
+Never add competitor websites.
+
+Never expand references.
+
+Examples:
+
+User:
+"Create an AI startup website similar to Linear"
+
+Output:
+["Linear"]
+
+NOT:
+["Linear","Stripe","Vercel"]
+
+---
+
+User:
+"Create a website similar to Stripe"
+
+Output:
+["Stripe"]
+
+NOT:
+["Stripe","PayPal","Square"]
+
+---
+
+User:
+"Create a website inspired by Vercel and Linear"
+
+Output:
+["Vercel","Linear"]
+
+Do not add any additional references.
+
+Planner should preserve user order.
+
+---
+
+TASK 2 — Reference Priority System
+
+Create:
+
+primaryReference
+secondaryReferences
+
+Example:
+
+["Linear","Notion","Vercel"]
+
+Result:
+
+primaryReference = "Linear"
+
+secondaryReferences = ["Notion","Vercel"]
+
+The first reference mentioned by the user is always dominant.
+
+---
+
+TASK 3 — Hero Selector Fix
+
+Current behavior:
+
+Looping through HERO_REFERENCE_MAP and returning first match.
+
+Remove this behavior.
+
+New behavior:
+
+Step 1:
+Check primaryReference.
+
+Step 2:
+Map primaryReference directly.
+
+Example:
+
+Linear → hero-editorial-v1
+
+Vercel → hero-asymmetric-v1
+
+Stripe → hero-centered-v1
+
+Framer → hero-bento-v1
+
+Notion → hero-editorial-v1
+
+Agency → hero-story-v1
+
+Portfolio → hero-story-v1
+
+Only use secondary references if primary reference is missing.
+
+Primary reference always wins.
+
+---
+
+TASK 4 — Design Agent Dominance Rules
+
+When exactly one reference exists:
+
+The generated DNA must follow that reference.
+
+Do not blend design systems.
+
+Examples:
+
+Reference:
+["Linear"]
+
+Must output:
+
+designLanguage = minimal-flat
+
+heroStyle = editorial
+
+cardStyle = flat-bordered
+
+animation = subtle
+
+decoration = none
+
+---
+
+Reference:
+["Stripe"]
+
+Must output:
+
+designLanguage = premium-gradient
+
+heroStyle = centered-gradient
+
+cardStyle = gradient-border
+
+animation = expressive
+
+decoration = rich
+
+---
+
+Reference:
+["Vercel"]
+
+Must output:
+
+designLanguage = monochrome
+
+heroStyle = asymmetric
+
+cardStyle = flat-bordered
+
+animation = subtle
+
+decoration = none
+
+---
+
+TASK 5 — DNA Validation Layer
+
+After Design Agent returns DNA:
+
+Verify DNA matches the primary reference.
+
+Examples:
+
+Linear:
+
+designLanguage must not equal premium-gradient
+
+background must not equal Stripe background
+
+heroStyle must equal editorial
+
+---
+
+Vercel:
+
+heroStyle must equal asymmetric
+
+designLanguage must equal monochrome
+
+---
+
+Stripe:
+
+heroStyle must equal centered-gradient
+
+designLanguage must equal premium-gradient
+
+If validation fails:
+
+Emit:
+
+design_retry
+
+Regenerate DNA using a stronger reference-specific prompt.
+
+---
+
+TASK 6 — Audit Enhancements
+
+Update /api/agents/audit
+
+Return:
+
+- userPrompt
+- referenceSites
+- primaryReference
+- secondaryReferences
+- selectedHero
+- expectedHero
+- designDNA
+- validationStatus
+- retryCount
+
+---
+
+TASK 7 — Verification Tests
+
+Run and verify:
+
+1. 
+
+"Create an AI startup website similar to Stripe"
+
+Expected:
+hero-centered-v1
+
+2. 
+
+"Create an AI startup website similar to Vercel"
+
+Expected:
+hero-asymmetric-v1
+
+3. 
+
+"Create an AI startup website similar to Linear"
+
+Expected:
+hero-editorial-v1
+
+4. 
+
+"Create an AI startup website similar to Framer"
+
+Expected:
+hero-bento-v1
+
+5. 
+
+"Create a creative agency website"
+
+Expected:
+hero-story-v1
+
+All tests must pass before deployment.
+
+---
+
+Success Criteria
+
+Linear never becomes Stripe.
+
+Vercel never becomes Stripe.
+
+Primary reference always controls hero architecture.
+
+Primary reference always controls design DNA.
+
+Audit endpoint clearly shows routing decisions.
+
+Hero selection becomes deterministic and predictable.
