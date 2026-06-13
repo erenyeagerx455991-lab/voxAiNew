@@ -7,7 +7,7 @@ const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const PLANNER_MODEL = "llama-3.1-8b-instant";
-const DESIGN_MODEL = "google/gemini-flash-1.5-8b";
+const DESIGN_MODEL = "google/gemini-2.5-flash-lite";
 const CODEGEN_MODEL = "deepseek/deepseek-chat";
 const CODEFIX_MODEL = "llama-3.3-70b-versatile";
 
@@ -111,6 +111,13 @@ async function callGroq(
   return full;
 }
 
+interface OpenRouterError extends Error {
+  status: number;
+  requestId: string;
+  model: string;
+  body: string;
+}
+
 async function callOpenRouter(apiKey: string, model: string, messages: any[], maxTokens = 4000): Promise<string> {
   const resp = await fetch(OPENROUTER_URL, {
     method: "POST",
@@ -122,9 +129,15 @@ async function callOpenRouter(apiKey: string, model: string, messages: any[], ma
     },
     body: JSON.stringify({ model, messages, max_tokens: maxTokens }),
   });
+  const requestId = resp.headers.get("x-request-id") ?? resp.headers.get("cf-ray") ?? "unknown";
   if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`OpenRouter error: ${txt}`);
+    const body = await resp.text();
+    const err = new Error(`OpenRouter ${resp.status} for model "${model}" [req:${requestId}]: ${body}`) as OpenRouterError;
+    err.status = resp.status;
+    err.requestId = requestId;
+    err.model = model;
+    err.body = body;
+    throw err;
   }
   const data = await resp.json() as any;
   return data.choices?.[0]?.message?.content ?? "";
@@ -581,37 +594,126 @@ router.post("/agents/build", async (req, res) => {
     // ── AGENT 2: DESIGN DNA ───────────────────────────────────────────────────
     sse(res, { type: "step", step: 1, agent: "Design Agent", status: "active" });
 
-    let design: DesignDNA = { ...DEFAULT_DESIGN };
+    // Known reference sites and their DNA verification rules
+    const REFERENCE_VERIFIERS: Record<string, (d: DesignDNA) => boolean> = {
+      stripe:     (d) => d.designLanguage !== "monochrome" && d.colorSystem.background !== "#0a0a0a" && d.colorSystem.primary !== "#ffffff",
+      linear:     (d) => d.colorSystem.primary !== "#ffffff" && d.colorSystem.primary !== "#e5e5e5",
+      vercel:     (_) => true, // Vercel IS monochrome — always passes
+      notion:     (d) => d.colorSystem.theme === "light" || d.theme === "light",
+      framer:     (d) => d.designLanguage !== "monochrome" && d.animationPersonality !== "subtle",
+      cursor:     (d) => d.colorSystem.primary !== "#ffffff",
+      perplexity: (d) => d.colorSystem.primary !== "#ffffff" && d.colorSystem.primary !== "#e5e5e5",
+    };
 
-    try {
-      const designPrompt = [
-        `Website brief:\n${briefText || prompt}`,
-        `Website type: ${blueprint.websiteType}`,
-        referenceSites !== "none" ? `Design references: ${referenceSites}` : "",
-        `\nGenerate the complete design DNA JSON for this site.`,
-      ].filter(Boolean).join('\n');
-
-      const designRaw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
-        [
-          { role: "system", content: DESIGN_SYSTEM },
-          { role: "user", content: designPrompt },
-        ],
-        1500
-      );
-      const jsonMatch = designRaw.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        design = { ...DEFAULT_DESIGN, ...parsed };
-        if (parsed.colorSystem) design.colorSystem = { ...DEFAULT_DESIGN.colorSystem, ...parsed.colorSystem };
-        if (parsed.typographySystem) design.typographySystem = { ...DEFAULT_DESIGN.typographySystem, ...parsed.typographySystem };
-        if (parsed.spacingSystem) design.spacingSystem = { ...DEFAULT_DESIGN.spacingSystem, ...parsed.spacingSystem };
-      }
-    } catch (e) {
-      console.error("Design agent error (using defaults):", e);
+    function detectKnownRefs(refs: string): string[] {
+      const lower = refs.toLowerCase();
+      return Object.keys(REFERENCE_VERIFIERS).filter(r => lower.includes(r));
     }
 
-    console.log(`[Design DNA] language=${design.designLanguage} cardStyle=${design.cardStyle} heroStyle=${design.heroStyle} animation=${design.animationPersonality}`);
-    sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design });
+    function verifyDNA(design: DesignDNA, refs: string): { passed: boolean; failedRefs: string[] } {
+      const known = detectKnownRefs(refs);
+      if (known.length === 0) return { passed: true, failedRefs: [] };
+      const failedRefs = known.filter(r => !REFERENCE_VERIFIERS[r](design));
+      return { passed: failedRefs.length === 0, failedRefs };
+    }
+
+    function parseDesignRaw(raw: string): DesignDNA | null {
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return null;
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const merged: DesignDNA = { ...DEFAULT_DESIGN, ...parsed };
+        if (parsed.colorSystem) merged.colorSystem = { ...DEFAULT_DESIGN.colorSystem, ...parsed.colorSystem };
+        if (parsed.typographySystem) merged.typographySystem = { ...DEFAULT_DESIGN.typographySystem, ...parsed.typographySystem };
+        if (parsed.spacingSystem) merged.spacingSystem = { ...DEFAULT_DESIGN.spacingSystem, ...parsed.spacingSystem };
+        return merged;
+      } catch {
+        return null;
+      }
+    }
+
+    let design: DesignDNA = { ...DEFAULT_DESIGN };
+    let designAgentStatus: "success" | "failed" | "retry_success" | "retry_failed" = "failed";
+    let designAgentError: string | null = null;
+
+    const designPrompt = [
+      `Website brief:\n${briefText || prompt}`,
+      `Website type: ${blueprint.websiteType}`,
+      referenceSites !== "none" ? `Design references: ${referenceSites}` : "",
+      `\nGenerate the complete design DNA JSON for this site.`,
+    ].filter(Boolean).join('\n');
+
+    async function runDesignAgent(attempt: number): Promise<{ raw: string; parsed: DesignDNA | null; error: string | null }> {
+      try {
+        const raw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
+          [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: designPrompt }],
+          1500
+        );
+        const parsed = parseDesignRaw(raw);
+        return { raw, parsed, error: null };
+      } catch (e: any) {
+        const status = (e as OpenRouterError).status ?? "unknown";
+        const reqId  = (e as OpenRouterError).requestId ?? "unknown";
+        const errMsg = `Design Agent attempt ${attempt} FAILED — model: ${DESIGN_MODEL}, status: ${status}, requestId: ${reqId}, message: ${e.message}`;
+        console.error(`[DesignAgent] ${errMsg}`);
+        return { raw: "", parsed: null, error: errMsg };
+      }
+    }
+
+    // Attempt 1
+    const attempt1 = await runDesignAgent(1);
+    if (attempt1.parsed) {
+      const verify = verifyDNA(attempt1.parsed, referenceSites);
+      if (verify.passed) {
+        design = attempt1.parsed;
+        designAgentStatus = "success";
+        console.log(`[DesignAgent] Attempt 1 PASSED verification. refs="${referenceSites}"`);
+      } else {
+        // DNA collapsed — retry with a more explicit prompt
+        console.warn(`[DesignAgent] Attempt 1 DNA VERIFICATION FAILED for refs: [${verify.failedRefs.join(", ")}]. bg=${attempt1.parsed.colorSystem.background} primary=${attempt1.parsed.colorSystem.primary} lang=${attempt1.parsed.designLanguage}. Retrying...`);
+        sse(res, {
+          type: "design_retry",
+          reason: `DNA verification failed for references: [${verify.failedRefs.join(", ")}]`,
+          failedFields: { designLanguage: attempt1.parsed.designLanguage, background: attempt1.parsed.colorSystem.background, primary: attempt1.parsed.colorSystem.primary },
+        });
+
+        // Retry with a more explicit, stripped-down prompt
+        const retryUserPrompt = [
+          `IMPORTANT: The user explicitly wants a design SIMILAR TO ${referenceSites.toUpperCase()}.`,
+          `You MUST apply the ${referenceSites} DNA from the reference library — do NOT output generic monochrome defaults.`,
+          `\n${designPrompt}`,
+        ].join('\n');
+
+        const attempt2 = await runDesignAgent(2);
+        if (attempt2.parsed) {
+          const verify2 = verifyDNA(attempt2.parsed, referenceSites);
+          design = attempt2.parsed;
+          designAgentStatus = verify2.passed ? "retry_success" : "retry_failed";
+          if (!verify2.passed) {
+            console.warn(`[DesignAgent] Retry also failed verification for [${verify2.failedRefs.join(", ")}]. Using retry result anyway.`);
+          } else {
+            console.log(`[DesignAgent] Retry PASSED verification.`);
+          }
+        } else {
+          designAgentStatus = "retry_failed";
+          designAgentError = attempt2.error;
+          console.error(`[DesignAgent] Retry also failed: ${attempt2.error}`);
+        }
+      }
+    } else {
+      // Parse failed or model errored
+      designAgentError = attempt1.error ?? "Design Agent returned unparseable output";
+      sse(res, {
+        type: "design_agent_error",
+        designAgentStatus: "failed",
+        error: designAgentError,
+        model: DESIGN_MODEL,
+      });
+      console.error(`[DesignAgent] Using DEFAULT_DESIGN. Reason: ${designAgentError}`);
+    }
+
+    console.log(`[Design DNA] status=${designAgentStatus} language=${design.designLanguage} cardStyle=${design.cardStyle} heroStyle=${design.heroStyle} animation=${design.animationPersonality} bg=${design.colorSystem.background} primary=${design.colorSystem.primary}`);
+    sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
     const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder);
@@ -681,6 +783,155 @@ router.post("/agents/build", async (req, res) => {
   }
 
   res.end();
+});
+
+// ── DESIGN AUDIT ENDPOINT ────────────────────────────────────────────────────
+// Returns every pipeline stage as structured JSON for debugging.
+// POST /api/agents/audit  { prompt: string }
+router.post("/agents/audit", async (req, res) => {
+  const groqKey = process.env["GROQ_API_KEY"];
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  const { prompt } = req.body as { prompt: string };
+
+  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
+  if (!prompt) return res.status(400).json({ error: "prompt required" });
+
+  const audit: Record<string, any> = {
+    prompt,
+    models: { planner: PLANNER_MODEL, design: DESIGN_MODEL, codegen: CODEGEN_MODEL, codefix: CODEFIX_MODEL },
+  };
+
+  // ── STAGE 1: PLANNER ──────────────────────────────────────────────────────
+  try {
+    let planText = "";
+    await callGroq(groqKey, PLANNER_MODEL,
+      [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: prompt }],
+      true, 2500, (token) => { planText += token; }
+    );
+    audit.plannerOutput = { raw: planText };
+
+    const briefMatch = planText.match(/---DESIGN_BRIEF---([\s\S]*?)---END_BRIEF---/);
+    const briefText = briefMatch ? briefMatch[1].trim() : "";
+    const refMatch = briefText.match(/referenceSites:\s*(.+)/);
+    const referenceSites = refMatch ? refMatch[1].trim() : "none";
+    const blueprintMatch = planText.match(/---PAGE_BLUEPRINT---([\s\S]*?)---END_BLUEPRINT---/);
+    let blueprint: PageBlueprint = { websiteType: "Generic", sectionOrder: ["Navbar", "Hero", "Features", "CTA", "Footer"] };
+    if (blueprintMatch) {
+      try { blueprint = JSON.parse(blueprintMatch[1].trim()); } catch {}
+    }
+    audit.plannerOutput.brief = briefText;
+    audit.plannerOutput.referenceSites = referenceSites;
+    audit.plannerOutput.blueprint = blueprint;
+
+    // ── STAGE 2: DESIGN AGENT ───────────────────────────────────────────────
+    const designPrompt = [
+      `Website brief:\n${briefText || prompt}`,
+      `Website type: ${blueprint.websiteType}`,
+      referenceSites !== "none" ? `Design references: ${referenceSites}` : "",
+      `\nGenerate the complete design DNA JSON for this site.`,
+    ].filter(Boolean).join('\n');
+
+    audit.designAgentInput = { systemPromptLength: DESIGN_SYSTEM.length, userPrompt: designPrompt };
+
+    let designAgentRawOutput = "";
+    let parsedDNA: Partial<DesignDNA> | null = null;
+    let finalDNA: DesignDNA = { ...DEFAULT_DESIGN };
+    let designAgentStatus = "not_run";
+    let designAgentError: string | null = null;
+
+    try {
+      designAgentRawOutput = await callOpenRouter(openrouterKey, DESIGN_MODEL,
+        [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: designPrompt }],
+        1500
+      );
+      designAgentStatus = "success";
+      const jsonMatch = designAgentRawOutput.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedDNA = JSON.parse(jsonMatch[0]);
+        finalDNA = { ...DEFAULT_DESIGN, ...(parsedDNA as any) };
+        if ((parsedDNA as any).colorSystem) finalDNA.colorSystem = { ...DEFAULT_DESIGN.colorSystem, ...(parsedDNA as any).colorSystem };
+        if ((parsedDNA as any).typographySystem) finalDNA.typographySystem = { ...DEFAULT_DESIGN.typographySystem, ...(parsedDNA as any).typographySystem };
+        if ((parsedDNA as any).spacingSystem) finalDNA.spacingSystem = { ...DEFAULT_DESIGN.spacingSystem, ...(parsedDNA as any).spacingSystem };
+      } else {
+        designAgentStatus = "parse_failed";
+        designAgentError = "Model response contained no JSON object";
+      }
+    } catch (e: any) {
+      designAgentStatus = "failed";
+      const orErr = e as OpenRouterError;
+      designAgentError = e.message;
+      audit.designAgentError = {
+        message: e.message,
+        model: orErr.model ?? DESIGN_MODEL,
+        status: orErr.status ?? null,
+        requestId: orErr.requestId ?? null,
+        body: orErr.body ?? null,
+      };
+    }
+
+    // ── STAGE 3: DNA DIFF vs DEFAULT ────────────────────────────────────────
+    const KEY_FIELDS = [
+      ["designLanguage"],
+      ["layoutStyle"],
+      ["animationPersonality"],
+      ["decorationLevel"],
+      ["heroStyle"],
+      ["cardStyle"],
+      ["colorSystem", "background"],
+      ["colorSystem", "surface"],
+      ["colorSystem", "primary"],
+      ["colorSystem", "accent"],
+      ["colorSystem", "textMuted"],
+      ["colorSystem", "border"],
+      ["typographySystem", "headingWeight"],
+      ["typographySystem", "scale"],
+      ["spacingSystem", "sectionPadding"],
+    ] as const;
+
+    const get = (obj: any, path: readonly string[]) => path.reduce((o, k) => o?.[k], obj);
+    const dnaDiff: Record<string, { default: any; actual: any; changed: boolean }> = {};
+    for (const path of KEY_FIELDS) {
+      const key = path.join(".");
+      const def = get(DEFAULT_DESIGN, path);
+      const act = get(finalDNA, path);
+      dnaDiff[key] = { default: def, actual: act, changed: def !== act };
+    }
+    const changedFields = Object.values(dnaDiff).filter(v => v.changed).length;
+
+    audit.designAgentOutput = { raw: designAgentRawOutput, status: designAgentStatus, error: designAgentError };
+    audit.parsedDNA = parsedDNA;
+    audit.finalDNA = finalDNA;
+    audit.dnaDiff = { fields: dnaDiff, changedFromDefault: changedFields, totalFields: KEY_FIELDS.length, collapsed: changedFields === 0 };
+
+    // ── STAGE 4: CODE GEN PROMPT ────────────────────────────────────────────
+    const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder);
+    const componentContext = buildContextFromTemplates(selectedTemplates);
+    const codeGenSystemPrompt = buildCodeSystem(finalDNA, blueprint, componentContext);
+
+    audit.codeGeneratorPrompt = {
+      systemPromptLength: codeGenSystemPrompt.length,
+      systemPromptPreview: codeGenSystemPrompt.slice(0, 1200) + (codeGenSystemPrompt.length > 1200 ? "\n...[truncated]" : ""),
+      userPrompt: `Build a complete landing page for: ${prompt} — ${blueprint.sectionOrder.length} sections: ${blueprint.sectionOrder.join(' → ')}`,
+      selectedTemplates: selectedTemplates.map(t => t.id),
+    };
+
+    audit.summary = {
+      referenceSites,
+      designAgentStatus,
+      dnaCollapsed: changedFields === 0,
+      changedFieldsFromDefault: changedFields,
+      dominantColor: finalDNA.colorSystem.primary,
+      background: finalDNA.colorSystem.background,
+      designLanguage: finalDNA.designLanguage,
+      animationPersonality: finalDNA.animationPersonality,
+    };
+
+  } catch (e: any) {
+    audit.fatalError = e.message;
+  }
+
+  res.json(audit);
 });
 
 export default router;
