@@ -1,0 +1,244 @@
+import React from 'react';
+
+function Navbar() {
+  const links = ['Features', 'Solutions', 'Developers', 'Pricing'];
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A2540]/90 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#635BFF] to-[#00D4FF] flex items-center justify-center">
+            <div className="w-3 h-3 bg-white rounded-sm" />
+          </div>
+          <span className="text-white font-bold text-lg">AI Pay</span>
+        </div>
+        <div className="hidden md:flex items-center gap-8">
+          {links.map(l => <a key={l} href="#" className="text-[#A8B4C0] hover:text-white text-sm font-medium transition-colors">{l}</a>)}
+        </div>
+        <button className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+          Get Started →
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function Hero() {
+  const stats = [{ value: '99.99%', label: 'Uptime' }, { value: '240ms', label: 'Avg. Speed' }, { value: '256-bit', label: 'Encryption' }];
+  return (
+    <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-[#0A2540] pt-20 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#635BFF] blur-3xl opacity-40 animate-pulse" />
+        <div className="absolute bottom-1/3 right-1/3 w-96 h-96 rounded-full bg-[#00D4FF] blur-3xl opacity-20 animate-pulse delay-300" />
+      </div>
+      
+      <div className="relative z-10">
+        <div className="inline-flex items-center gap-2 border border-[#00D4FF]/30 bg-[#00D4FF]/10 text-[#00D4FF] text-xs font-semibold px-4 py-2 rounded-full mb-8">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#00D4FF] animate-pulse" />
+          Now with AI Fraud Detection
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6 max-w-5xl">
+          <span className="bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">Payments infrastructure</span>
+          <br />
+          <span className="bg-gradient-to-r from-[#00D4FF] to-[#635BFF] bg-clip-text text-transparent">for the AI era</span>
+        </h1>
+        <p className="text-lg md:text-xl text-[#A8B4C0] max-w-2xl mx-auto mb-10 leading-relaxed">
+          AI-powered payment processing that reduces fraud, increases approval rates, and grows with your business.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 mb-16">
+          <button className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base">
+            Start integrating →
+          </button>
+          <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all text-base">
+            Contact sales
+          </button>
+        </div>
+        <div className="flex items-center gap-12">
+          {stats.map(s => <div key={s.label} className="text-center"><div className="text-2xl font-black text-white">{s.value}</div><div className="text-xs text-[#A8B4C0] mt-1">{s.label}</div></div>)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturesBento() {
+  return (
+    <section className="py-24 bg-[#0F3460]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">The complete payments toolkit</h2>
+          <p className="text-[#A8B4C0] text-lg max-w-xl mx-auto">Everything you need to accept payments, reduce fraud, and grow globally.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-7 bg-[#0F3460] border border-[#00D4FF]/30 rounded-2xl p-8 hover:border-[#00D4FF]/60 transition-all group min-h-[260px] flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#635BFF] to-[#00D4FF] mb-5 flex items-center justify-center text-white font-bold">✦</div>
+              <h3 className="text-white font-bold text-2xl mb-2">AI Fraud Detection</h3>
+              <p className="text-[#A8B4C0] text-sm leading-relaxed max-w-sm">Our machine learning models analyze thousands of signals to detect and prevent fraud in real-time.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[#00D4FF] text-sm font-semibold mt-6 group-hover:gap-3 transition-all">Learn more →</div>
+          </div>
+          <div className="md:col-span-5 bg-[#0F3460] border border-[#00D4FF]/30 rounded-2xl p-8 hover:border-[#00D4FF]/60 transition-all group min-h-[260px] flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D4FF] to-[#00A3FF] mb-5 flex items-center justify-center text-white font-bold">◈</div>
+              <h3 className="text-white font-bold text-2xl mb-2">Global Payments</h3>
+              <p className="text-[#A8B4C0] text-sm leading-relaxed">Accept payments in 135+ currencies with local payment methods.</p>
+            </div>
+            <div className="flex items-center gap-2 text-[#00D4FF] text-sm font-semibold mt-6 group-hover:gap-3 transition-all">Learn more →</div>
+          </div>
+          <div className="md:col-span-4 bg-[#0F3460] border border-[#00D4FF]/30 rounded-2xl p-8 hover:border-[#00D4FF]/60 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00D4FF] to-[#00FFC2] mb-5 flex items-center justify-center text-white font-bold">▸</div>
+            <h3 className="text-white font-bold text-xl mb-2">Smart Routing</h3>
+            <p className="text-[#A8B4C0] text-sm leading-relaxed">Dynamically route payments to increase approval rates.</p>
+          </div>
+          <div className="md:col-span-4 bg-[#0F3460] border border-[#00D4FF]/30 rounded-2xl p-8 hover:border-[#00D4FF]/60 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#635BFF] to-[#A463FF] mb-5 flex items-center justify-center text-white font-bold">◆</div>
+            <h3 className="text-white font-bold text-xl mb-2">Revenue Recovery</h3>
+            <p className="text-[#A8B4C0] text-sm leading-relaxed">Automatically retry failed payments with intelligent timing.</p>
+          </div>
+          <div className="md:col-span-4 bg-[#0F3460] border border-[#00D4FF]/30 rounded-2xl p-8 hover:border-[#00D4FF]/60 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF6384] to-[#FFA463] mb-5 flex items-center justify-center text-white font-bold">◉</div>
+            <h3 className="text-white font-bold text-xl mb-2">Real-time Analytics</h3>
+            <p className="text-[#A8B4C0] text-sm leading-relaxed">Monitor transactions and business metrics in real-time.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Testimonials() {
+  const reviews = [
+    { name: 'Sarah Chen', role: 'CTO at Flowbase', stars: 5, quote: 'AI Pay reduced our chargeback rate by 83% while increasing our approval rates. The AI models are incredibly accurate.' },
+    { name: 'Marcus Rivera', role: 'Founder, Launchpad', stars: 5, quote: 'Implementation took less than a day. The documentation is superb and their support team is world-class.' },
+    { name: 'Priya Patel', role: 'Head of Payments', stars: 5, quote: 'We evaluated every payment provider and AI Pay was the only solution that could handle our global scale.' },
+  ];
+  const colors = ['from-[#635BFF] to-[#A463FF]','from-[#00D4FF] to-[#00A3FF]','from-[#00FFC2] to-[#00D4FF]'];
+  const initials = name => name.split(' ').map(n => n[0]).join('');
+  return (
+    <section className="py-24 bg-[#0A2540]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Trusted by innovators</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {reviews.map((r, i) => (
+            <div key={i} className="bg-[#0F3460] backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col">
+              <div className="flex gap-1 mb-4">{[...Array(r.stars)].map((_, j) => <span key={j} className="text-amber-400 text-sm">★</span>)}</div>
+              <p className="text-[#A8B4C0] text-sm leading-relaxed flex-1 mb-6">"{r.quote}"</p>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colors[i]} flex items-center justify-center text-white text-sm font-bold`}>{initials(r.name)}</div>
+                <div><div className="text-white font-semibold text-sm">{r.name}</div><div className="text-[#A8B4C0] text-xs">{r.role}</div></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTA() {
+  return (
+    <section className="py-24 bg-[#0A2540]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="relative rounded-3xl bg-gradient-to-r from-[#635BFF] via-[#00A3FF] to-[#00D4FF] p-12 md:p-16 overflow-hidden text-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-4">Ready to get started?</h2>
+            <p className="text-white/70 text-lg mb-10 max-w-2xl mx-auto">Join thousands of businesses processing billions with AI Pay.</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="bg-white text-[#635BFF] font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all">Create account</button>
+              <button className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all">Contact sales</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LogoCloud() {
+  const logos = ['Stripe', 'Shopify', 'Slack', 'Zoom', 'Dropbox', 'Twilio', 'Coinbase', 'Brex'];
+  return (
+    <section className="py-16 border-y border-white/5 bg-[#0F3460]">
+      <div className="max-w-7xl mx-auto px-6">
+        <p className="text-center text-[#A8B4C0] text-xs font-semibold tracking-widest uppercase mb-10">Trusted by innovative companies</p>
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+          {logos.map(logo => (
+            <span key={logo} className="text-[#A8B4C0] hover:text-white font-semibold text-sm tracking-wide transition-colors select-none">{logo}</span>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SocialProof() {
+  const metrics = [
+    { value: '$18B+', label: 'Annual payment volume' },
+    { value: '135+', label: 'Countries supported' },
+    { value: '99.99%', label: 'Platform uptime' },
+    { value: '24/7', label: 'Support coverage' }
+  ];
+  return (
+    <section className="py-24 bg-[#0A2540]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {metrics.map((m, i) => (
+            <div key={i} className="text-center">
+              <div className="text-4xl md:text-5xl font-black bg-gradient-to-r from-[#00D4FF] to-[#635BFF] bg-clip-text text-transparent mb-2">{m.value}</div>
+              <div className="text-[#A8B4C0] text-sm font-medium">{m.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  const cols = [
+    { title: 'Product', links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
+    { title: 'Developers', links: ['Documentation', 'API Reference', 'SDKs', 'Guides'] },
+    { title: 'Company', links: ['About', 'Blog', 'Careers', 'Contact'] },
+  ];
+  return (
+    <footer className="bg-[#050508] border-t border-white/5">
+      <div className="max-w-7xl mx-auto px-6 py-14">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div>
+            <span className="text-white font-bold text-lg block mb-4">AI Pay</span>
+            <p className="text-[#A8B4C0] text-sm leading-relaxed mb-4">The future of payments infrastructure powered by AI.</p>
+          </div>
+          {cols.map(col => (
+            <div key={col.title}>
+              <h4 className="text-white font-semibold text-sm mb-4">{col.title}</h4>
+              <ul className="flex flex-col gap-2.5">{col.links.map(l => <li key={l}><a href="#" className="text-[#A8B4C0] hover:text-white text-sm transition-colors">{l}</a></li>)}</ul>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-white/5 pt-6 flex items-center justify-between">
+          <p className="text-[#A8B4C0] text-sm">© 2025 AI Pay. All rights reserved.</p>
+          <div className="flex items-center gap-2 text-[#A8B4C0] text-xs"><div className="w-2 h-2 rounded-full bg-[#00D4FF] animate-pulse" />All systems operational</div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function App() {
+  return (
+    <div className="bg-[#0A2540] text-white font-sans">
+      <Navbar />
+      <Hero />
+      <FeaturesBento />
+      <Testimonials />
+      <CTA />
+      <LogoCloud />
+      <SocialProof />
+      <Footer />
+    </div>
+  );
+}
+
+export default App;

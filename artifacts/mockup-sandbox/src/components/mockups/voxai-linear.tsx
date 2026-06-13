@@ -1,0 +1,276 @@
+import React from 'react';
+
+function Navbar() {
+  const links = ['Features', 'Pricing', 'Docs', 'Blog'];
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+            <div className="w-3 h-3 bg-white rounded-sm" />
+          </div>
+          <span className="text-white font-bold text-lg">MindSpark</span>
+        </div>
+        <div className="hidden md:flex items-center gap-8">
+          {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">{l}</a>)}
+        </div>
+        <button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+          Get Started →
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function Hero() {
+  const stats = [{ value: '50K+', label: 'Developers' }, { value: '99.9%', label: 'Uptime' }, { value: '4.9★', label: 'Rating' }];
+  return (
+    <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a] pt-20">
+      <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8">
+        <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+        AI-powered automation platform
+      </div>
+      <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6 max-w-5xl">
+        <span className="bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">Build Smarter with</span>
+        <br />
+        <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">AI Copilots</span>
+      </h1>
+      <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">MindSpark transforms how developers work by integrating AI directly into your workflow</p>
+      <div className="flex flex-col sm:flex-row gap-4 mb-16">
+        <button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base">Start Building</button>
+        <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all text-base">View Demo</button>
+      </div>
+      <div className="flex items-center gap-12">
+        {stats.map(s => <div key={s.label} className="text-center"><div className="text-2xl font-black text-white">{s.value}</div><div className="text-xs text-gray-500 mt-1">{s.label}</div></div>)}
+      </div>
+    </section>
+  );
+}
+
+function FeaturesBento() {
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Supercharge Your Workflow</h2>
+          <p className="text-gray-400 text-lg max-w-xl mx-auto">AI features designed for developers and tech teams</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+          <div className="md:col-span-7 bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-violet-500/40 transition-all group min-h-[260px] flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 mb-5 flex items-center justify-center text-white font-bold">✦</div>
+              <h3 className="text-white font-bold text-2xl mb-2">Code Generation</h3>
+              <p className="text-gray-400 text-sm leading-relaxed max-w-sm">Generate production-ready code from natural language prompts with our AI pair programmer</p>
+            </div>
+            <div className="flex items-center gap-2 text-violet-400 text-sm font-semibold mt-6 group-hover:gap-3 transition-all">Learn more →</div>
+          </div>
+          <div className="md:col-span-5 bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-blue-500/40 transition-all group min-h-[260px] flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 mb-5 flex items-center justify-center text-white font-bold">◈</div>
+              <h3 className="text-white font-bold text-2xl mb-2">Debugging Assistant</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">AI that analyzes stack traces and suggests fixes in seconds</p>
+            </div>
+            <div className="flex items-center gap-2 text-blue-400 text-sm font-semibold mt-6 group-hover:gap-3 transition-all">Learn more →</div>
+          </div>
+          <div className="md:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-emerald-500/40 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 mb-5 flex items-center justify-center text-white font-bold">▸</div>
+            <h3 className="text-white font-bold text-xl mb-2">Test Generation</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">Automatically create comprehensive test suites for your code</p>
+          </div>
+          <div className="md:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-pink-500/40 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 mb-5 flex items-center justify-center text-white font-bold">◆</div>
+            <h3 className="text-white font-bold text-xl mb-2">Documentation</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">AI that writes and maintains up-to-date documentation</p>
+          </div>
+          <div className="md:col-span-4 bg-white/5 border border-white/10 rounded-2xl p-8 hover:border-amber-500/40 transition-all">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 mb-5 flex items-center justify-center text-white font-bold">◉</div>
+            <h3 className="text-white font-bold text-xl mb-2">CI/CD Optimization</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">AI analyzes your pipelines and suggests performance improvements</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DashboardPreview() {
+  const metrics = [{ label: 'Time Saved', value: '124K hrs', change: '+18%', up: true }, { label: 'Developers', value: '8,402', change: '+32%', up: true }, { label: 'Bugs', value: '1.2%', change: '-0.4%', up: false }];
+  const rows = ['Code completion triggered', 'Test suite generated', 'Debug session started', 'Documentation updated'];
+  return (
+    <section className="py-24 bg-[#0a0a0a] overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">Developer Dashboard</h2>
+          <p className="text-gray-400 text-lg max-w-xl mx-auto">Real-time insights into your AI-assisted workflow</p>
+        </div>
+        <div className="relative rounded-2xl border border-white/10 bg-[#111118] overflow-hidden shadow-2xl shadow-black/60">
+          <div className="bg-[#0d0d14] border-b border-white/5 px-5 py-3 flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-red-500/70" />
+            <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
+            <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
+            <div className="ml-4 bg-white/5 rounded-md px-4 py-1 text-gray-500 text-xs">app.mindspark.ai/dashboard</div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {metrics.map((m, i) => (
+                <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                  <p className="text-gray-500 text-xs mb-1">{m.label}</p>
+                  <p className="text-white font-black text-2xl">{m.value}</p>
+                  <p className={`text-xs mt-1 font-medium ${m.up ? 'text-emerald-400' : 'text-rose-400'}`}>{m.change} vs last month</p>
+                </div>
+              ))}
+            </div>
+            <div className="bg-white/5 rounded-xl border border-white/5 overflow-hidden">
+              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+                <span className="text-white text-sm font-semibold">Recent Activity</span>
+                <span className="text-gray-500 text-xs">View all →</span>
+              </div>
+              {rows.map((row, i) => (
+                <div key={i} className="px-4 py-3 border-b border-white/5 last:border-0 flex items-center justify-between hover:bg-white/5 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-500" />
+                    <span className="text-gray-300 text-sm">{row}</span>
+                  </div>
+                  <span className="text-gray-600 text-xs">Just now</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Pricing() {
+  const [yearly, setYearly] = React.useState(false);
+  const plans = [
+    { name: 'Starter', price: yearly ? 0 : 0, features: ['5 projects', '10K AI tokens/mo', 'Community support'], cta: 'Start free' },
+    { name: 'Pro', price: yearly ? 19 : 29, popular: true, features: ['Unlimited projects', '500K AI tokens/mo', 'Priority support', 'Custom models', 'Analytics'], cta: 'Start free trial' },
+    { name: 'Enterprise', price: yearly ? 79 : 99, features: ['Unlimited everything', 'SLA', 'Dedicated support', 'SSO & SAML', 'On-prem'], cta: 'Contact sales' },
+  ];
+  return (
+    <section className="py-24 bg-gradient-to-b from-[#0a0a0a] to-[#0d0d1a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Simple, transparent pricing</h2>
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full p-1 mt-6">
+            <button onClick={() => setYearly(false)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${!yearly ? 'bg-white text-black' : 'text-gray-400'}`}>Monthly</button>
+            <button onClick={() => setYearly(true)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${yearly ? 'bg-white text-black' : 'text-gray-400'}`}>Yearly <span className="text-emerald-400 text-xs">-35%</span></button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          {plans.map(plan => (
+            <div key={plan.name} className={`rounded-2xl p-6 border ${plan.popular ? 'bg-gradient-to-b from-violet-900/60 to-blue-900/40 border-violet-500 scale-105 shadow-2xl shadow-violet-500/20' : 'bg-white/5 border-white/10'}`}>
+              {plan.popular && <div className="text-center mb-4"><span className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">Most Popular</span></div>}
+              <h3 className="text-white font-bold text-xl mb-1">{plan.name}</h3>
+              <div className="mb-6 mt-3"><span className="text-4xl font-black text-white">${plan.price}</span><span className="text-gray-500 text-sm">/mo</span></div>
+              <button className={`w-full py-3 rounded-xl font-semibold text-sm mb-6 ${plan.popular ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white' : 'border border-white/20 text-white hover:bg-white/10'}`}>{plan.cta}</button>
+              <div className="flex flex-col gap-2.5">
+                {plan.features.map((f, j) => <div key={j} className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center shrink-0"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400" /></div><span className="text-gray-300 text-sm">{f}</span></div>)}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Testimonials() {
+  const reviews = [
+    { name: 'Sarah Chen', role: 'CTO at Flowbase', stars: 5, quote: 'MindSpark cut our debugging time by 70%. The AI assistant catches edge cases we would have missed.' },
+    { name: 'Marcus Rivera', role: 'Founder, Launchpad', stars: 5, quote: 'Our team velocity increased 3x after adopting MindSpark. The code generation is eerily accurate.' },
+    { name: 'Priya Patel', role: 'Head of Design', stars: 5, quote: 'Even our non-technical team members can prototype ideas now. The AI bridges the gap between design and engineering.' },
+  ];
+  const colors = ['from-violet-500 to-purple-600','from-blue-500 to-cyan-500','from-emerald-500 to-teal-500'];
+  const initials = name => name.split(' ').map(n => n[0]).join('');
+  return (
+    <section className="py-24 bg-gradient-to-b from-[#0a0a0a] to-[#0d0d1a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">Trusted by developers</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {reviews.map((r, i) => (
+            <div key={i} className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 flex flex-col">
+              <div className="flex gap-1 mb-4">{[...Array(r.stars)].map((_, j) => <span key={j} className="text-amber-400 text-sm">★</span>)}</div>
+              <p className="text-gray-300 text-sm leading-relaxed flex-1 mb-6">"{r.quote}"</p>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${colors[i]} flex items-center justify-center text-white text-sm font-bold`}>{initials(r.name)}</div>
+                <div><div className="text-white font-semibold text-sm">{r.name}</div><div className="text-gray-500 text-xs">{r.role}</div></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CTA() {
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="relative rounded-3xl bg-gradient-to-r from-violet-600 via-purple-600 to-blue-600 p-12 md:p-16 overflow-hidden text-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+          <div className="relative z-10">
+            <h2 className="text-4xl md:text-6xl font-black text-white mb-4">Ready to transform your workflow?</h2>
+            <p className="text-white/70 text-lg mb-10 max-w-2xl mx-auto">Join thousands of developers building smarter with AI</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button className="bg-white text-violet-700 font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all">Get Started Free</button>
+              <button className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all">Schedule Demo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  const cols = [
+    { title: 'Product', links: ['Features', 'Pricing', 'Changelog', 'Roadmap'] },
+    { title: 'Company', links: ['About', 'Blog', 'Careers', 'Contact'] },
+    { title: 'Legal', links: ['Privacy Policy', 'Terms', 'Cookie Policy'] },
+  ];
+  return (
+    <footer className="bg-[#050508] border-t border-white/5">
+      <div className="max-w-7xl mx-auto px-6 py-14">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+          <div>
+            <span className="text-white font-bold text-lg block mb-4">MindSpark</span>
+            <p className="text-gray-500 text-sm leading-relaxed mb-4">AI-powered developer tools for the modern workflow</p>
+          </div>
+          {cols.map(col => (
+            <div key={col.title}>
+              <h4 className="text-white font-semibold text-sm mb-4">{col.title}</h4>
+              <ul className="flex flex-col gap-2.5">{col.links.map(l => <li key={l}><a href="#" className="text-gray-500 hover:text-gray-300 text-sm transition-colors">{l}</a></li>)}</ul>
+            </div>
+          ))}
+        </div>
+        <div className="border-t border-white/5 pt-6 flex items-center justify-between">
+          <p className="text-gray-600 text-sm">© 2025 MindSpark. All rights reserved.</p>
+          <div className="flex items-center gap-2 text-gray-600 text-xs"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />All systems operational</div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+function App() {
+  return (
+    <div className="bg-[#0a0a0a] text-white">
+      <Navbar/>
+      <Hero/>
+      <FeaturesBento/>
+      <DashboardPreview/>
+      <Pricing/>
+      <Testimonials/>
+      <CTA/>
+      <Footer/>
+    </div>
+  );
+}
+
+export default App;
