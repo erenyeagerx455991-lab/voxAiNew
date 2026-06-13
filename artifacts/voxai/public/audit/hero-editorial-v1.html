@@ -1,0 +1,38 @@
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>hero-editorial-v1 (Linear DNA)</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>body{margin:0}</style>
+</head><body><div id="root"></div>
+<script type="text/babel" data-presets="react,typescript">
+function Hero() {
+  return (
+    <section className="min-h-screen bg-[#0F0F0F] flex flex-col pt-28 pb-16 px-8 md:px-16 overflow-hidden">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-center">
+        <h1 className="font-bold leading-[0.90] tracking-[-0.04em] text-white mb-0"
+          style={{fontSize: 'clamp(52px, 9vw, 128px)'}}>
+          Plan. Build.
+          <br />
+          <span className="bg-gradient-to-r from-[#5E6AD2] via-[#a78bfa] to-[#ec4899] bg-clip-text text-transparent">
+            Ship faster.
+          </span>
+        </h1>
+      </div>
+      <div className="max-w-7xl mx-auto w-full flex flex-col md:flex-row md:items-end justify-between gap-8 pt-10 border-t border-white/8">
+        <div className="max-w-xs">
+          <p className="text-white/35 text-base leading-relaxed">The project management tool built for modern software teams. Linear-inspired, purpose-built for speed.</p>
+        </div>
+        <div className="flex items-center gap-5">
+          <button className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm">Start for free</button>
+          <button className="text-white/35 hover:text-white text-sm font-medium transition-colors tracking-wide">See how it works →</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+function App(){return <Hero/>}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script></body></html>
