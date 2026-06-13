@@ -1,4 +1,5 @@
 import { SECTION_TEMPLATES } from './section-templates';
+import { DIVERSITY_TEMPLATES } from './diversity-templates';
 
 export type ComponentCategory =
   | 'navbar' | 'hero' | 'features' | 'pricing'
@@ -83,7 +84,9 @@ function needsContact(prompt: string): boolean {
 }
 
 const COMPONENT_TEMPLATES: ComponentTemplate[] = [
-  // ── SECTION V2 TEMPLATES (spreads in all features/dashboard/pricing V2) ────
+  // ── DIVERSITY TEMPLATES (Bento V2×6, Navbar V2×6, CTA V2×6, FAQ V2×5) ─────
+  ...(DIVERSITY_TEMPLATES as ComponentTemplate[]),
+  // ── SECTION V2 TEMPLATES (features/dashboard/pricing V2) ────────────────────
   ...(SECTION_TEMPLATES as ComponentTemplate[]),
 
   // ── NAVBAR ────────────────────────────────────────────────────────────────
@@ -544,11 +547,13 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     industries: ['saas', 'ai', 'startup', 'agency', 'generic'], tags: ['social-proof', 'brands', 'minimal'],
     description: 'Trusted-by logo strip with company name pills', priority: 9,
     standaloneCode: `function LogoCloud() {
-  const logos = ['Vercel', 'Stripe', 'Linear', 'Notion', 'Figma', 'Loom', 'Raycast', 'Arc'];
+  // REQUIRED: Replace each LOGO_COMPANY_N with a real company name that would actually use this product.
+  // Match the industry — a restaurant SaaS shows restaurant chains; a DevOps tool shows tech companies.
+  const logos = ['LOGO_COMPANY_1', 'LOGO_COMPANY_2', 'LOGO_COMPANY_3', 'LOGO_COMPANY_4', 'LOGO_COMPANY_5', 'LOGO_COMPANY_6', 'LOGO_COMPANY_7', 'LOGO_COMPANY_8'];
   return (
-    <section className="py-16 border-y border-white/5 bg-[#0a0a0a]">
+    <section className="py-16 border-y border-white/5">
       <div className="max-w-7xl mx-auto px-6">
-        <p className="text-center text-gray-500 text-xs font-semibold tracking-widest uppercase mb-10">Trusted by teams at</p>
+        <p className="text-center text-gray-500 text-xs font-semibold tracking-widest uppercase mb-10">LOGO_CLOUD_LABEL</p>
         <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
           {logos.map(logo => (
             <span key={logo} className="text-gray-600 hover:text-gray-400 font-semibold text-sm tracking-wide transition-colors select-none">{logo}</span>
@@ -1071,9 +1076,10 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     description: 'Dark 3-column testimonial cards with star ratings', priority: 9,
     standaloneCode: `function Testimonials() {
   const reviews = [
-    { name: 'Sarah Chen', role: 'CTO at Flowbase', stars: 5, quote: 'TESTIMONIAL_1' },
-    { name: 'Marcus Rivera', role: 'Founder, Launchpad', stars: 5, quote: 'TESTIMONIAL_2' },
-    { name: 'Priya Patel', role: 'Head of Design', stars: 5, quote: 'TESTIMONIAL_3' },
+    // REQUIRED: Replace each TESTIMONIAL_N_* with real names, roles, and quotes specific to this product.
+    { name: 'TESTIMONIAL_1_NAME', role: 'TESTIMONIAL_1_ROLE', stars: 5, quote: 'TESTIMONIAL_1_QUOTE' },
+    { name: 'TESTIMONIAL_2_NAME', role: 'TESTIMONIAL_2_ROLE', stars: 5, quote: 'TESTIMONIAL_2_QUOTE' },
+    { name: 'TESTIMONIAL_3_NAME', role: 'TESTIMONIAL_3_ROLE', stars: 5, quote: 'TESTIMONIAL_3_QUOTE' },
   ];
   const colors = ['from-violet-500 to-purple-600','from-blue-500 to-cyan-500','from-emerald-500 to-teal-500'];
   const initials = name => name.split(' ').map(n => n[0]).join('');
@@ -1288,20 +1294,101 @@ const PRICING_REFERENCE_MAP: Record<string, string> = {
   'figma':    'pricing-cardstack-v1',
 };
 
-// Category-aware reference lookup: only matches templates in the correct category
+// Phase 3 — Maps reference site keywords to navbar template IDs (V2)
+const NAVBAR_REFERENCE_MAP: Record<string, string> = {
+  'linear':      'navbar-minimal-v2',
+  'vercel':      'navbar-minimal-v2',
+  'cursor':      'navbar-minimal-v2',
+  'notion':      'navbar-editorial-v2',
+  'framer':      'navbar-editorial-v2',
+  'webflow':     'navbar-editorial-v2',
+  'stripe':      'navbar-enterprise-v2',
+  'paypal':      'navbar-enterprise-v2',
+};
+
+// Phase 3 — Navbar routing by industry (when no primaryReference)
+const NAVBAR_INDUSTRY_MAP: Record<string, string> = {
+  'agency':     'navbar-floating-v2',
+  'portfolio':  'navbar-floating-v2',
+  'restaurant': 'navbar-minimal-v1',
+  'fintech':    'navbar-enterprise-v2',
+};
+
+// Phase 2 — Maps reference site keywords to bento template IDs (V2)
+const BENTO_REFERENCE_MAP: Record<string, string> = {
+  'linear':   'bento-minimal-v1',
+  'vercel':   'bento-editorial-v1',
+  'notion':   'bento-editorial-v1',
+  'stripe':   'bento-dashboard-v1',
+  'framer':   'bento-magazine-v1',
+  'webflow':  'bento-magazine-v1',
+  'figma':    'bento-asymmetric-v1',
+};
+
+// Phase 4 — Maps design language to CTA template IDs
+const CTA_DNA_MAP: Record<string, string> = {
+  'minimal-flat':     'cta-editorial-v1',
+  'monochrome':       'cta-minimal-v1',
+  'editorial':        'cta-editorial-v1',
+  'premium-gradient': 'cta-gradient-v1',
+  'bold-motion':      'cta-split-v1',
+  'dev-minimal':      'cta-minimal-v1',
+  'warm-organic':     'cta-story-v1',
+  'luxury-editorial': 'cta-story-v1',
+};
+
+// Phase 5 — Maps design language to FAQ template IDs
+const FAQ_DNA_MAP: Record<string, string> = {
+  'minimal-flat':     'faq-minimal-v1',
+  'monochrome':       'faq-columns-v1',
+  'editorial':        'faq-columns-v1',
+  'premium-gradient': 'faq-grid-v1',
+  'bold-motion':      'faq-grid-v1',
+  'dev-minimal':      'faq-minimal-v1',
+  'warm-organic':     'faq-sidebar-v1',
+  'luxury-editorial': 'faq-columns-v1',
+};
+
+// Category-aware reference lookup — routes by reference, DNA, and industry
 function selectSectionByReference(
   category: ComponentCategory,
   primaryReference?: string,
+  designLanguage?: string,
+  detected?: string[],
 ): ComponentTemplate | undefined {
-  if (!primaryReference || primaryReference === 'none' || primaryReference.trim() === '') return undefined;
-  const key = primaryReference.toLowerCase().trim();
+  const key = (primaryReference ?? '').toLowerCase().trim();
+  const hasRef = key && key !== 'none';
+
+  // Reference-based routing (highest priority)
   let id: string | undefined;
-  if (category === 'features') id = FEATURES_REFERENCE_MAP[key];
-  else if (category === 'dashboard-preview') id = DASHBOARD_REFERENCE_MAP[key];
-  else if (category === 'pricing') id = PRICING_REFERENCE_MAP[key];
-  if (!id) return undefined;
-  // filter by category to avoid ID collisions across categories
-  return COMPONENT_TEMPLATES.find(t => t.id === id && t.category === category);
+  if (hasRef) {
+    if (category === 'features') id = FEATURES_REFERENCE_MAP[key];
+    else if (category === 'dashboard-preview') id = DASHBOARD_REFERENCE_MAP[key];
+    else if (category === 'pricing') id = PRICING_REFERENCE_MAP[key];
+    else if (category === 'bento') id = BENTO_REFERENCE_MAP[key];
+    else if (category === 'navbar') id = NAVBAR_REFERENCE_MAP[key];
+    if (id) return COMPONENT_TEMPLATES.find(t => t.id === id && t.category === category);
+  }
+
+  // DNA-based routing for CTA and FAQ (regardless of reference)
+  if (category === 'cta' && designLanguage) {
+    const dnaId = CTA_DNA_MAP[designLanguage];
+    if (dnaId) return COMPONENT_TEMPLATES.find(t => t.id === dnaId && t.category === category);
+  }
+  if (category === 'faq' && designLanguage) {
+    const dnaId = FAQ_DNA_MAP[designLanguage];
+    if (dnaId) return COMPONENT_TEMPLATES.find(t => t.id === dnaId && t.category === category);
+  }
+
+  // Industry-based navbar routing (when no reference match)
+  if (category === 'navbar' && detected) {
+    for (const ind of detected) {
+      const indId = NAVBAR_INDUSTRY_MAP[ind];
+      if (indId) return COMPONENT_TEMPLATES.find(t => t.id === indId && t.category === category);
+    }
+  }
+
+  return undefined;
 }
 
 function selectHeroVariant(
@@ -1401,6 +1488,12 @@ export function selectTemplatesForPrompt(
   }
   if (detected.length === 0) detected.push('generic');
 
+  // Phase 8: deterministic tiebreaker seed per prompt — breaks array-position bias
+  const seed = prompt.split('').reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0xffff, 0);
+
+  // Phase 6: extract designLanguage for DNA-based routing
+  const designLanguage = (design as any)?.designLanguage as string | undefined;
+
   let categories: ComponentCategory[];
 
   if (sectionOrder && sectionOrder.length > 0) {
@@ -1427,14 +1520,17 @@ export function selectTemplatesForPrompt(
       result.push(heroOverride);
       continue;
     }
-    // Section Architecture V2: reference-based routing for features, dashboard, pricing
-    if (cat === 'features' || cat === 'dashboard-preview' || cat === 'pricing') {
-      const sectionOverride = selectSectionByReference(cat, primaryReference);
+
+    // Phase 2-5: Reference + DNA + Industry routing for all major section categories
+    if (cat === 'features' || cat === 'dashboard-preview' || cat === 'pricing' ||
+        cat === 'bento' || cat === 'navbar' || cat === 'cta' || cat === 'faq') {
+      const sectionOverride = selectSectionByReference(cat, primaryReference, designLanguage, detected);
       if (sectionOverride) {
         result.push(sectionOverride);
         continue;
       }
     }
+
     const candidates = getTemplatesByCategory(cat);
     if (candidates.length === 0) continue;
     const scored = candidates.map(c => ({
@@ -1442,7 +1538,12 @@ export function selectTemplatesForPrompt(
       score: c.priority + c.industries.filter(i => detected.includes(i)).length * 3,
     }));
     scored.sort((a, b) => b.score - a.score);
-    result.push(scored[0].c);
+
+    // Phase 8: Break scoring ties with deterministic seed — avoids always-first-in-array bias
+    const topScore = scored[0].score;
+    const tied = scored.filter(s => s.score === topScore);
+    const winner = tied.length > 1 ? tied[seed % tied.length] : scored[0];
+    result.push(winner.c);
   }
 
   return result;

@@ -972,4 +972,72 @@ export const SECTION_TEMPLATES: any[] = [
   );
 }`,
   },
+
+  {
+    id: 'dashboard-activity-v1', name: 'Dashboard Activity Timeline', category: 'dashboard-preview',
+    industries: ['saas', 'startup', 'ai', 'fintech', 'generic'], tags: ['timeline', 'activity', 'log'],
+    description: 'Real-time activity/audit log timeline with status badges and timestamps', priority: 7,
+    standaloneCode: `function DashboardPreview() {
+  const events = [
+    { type: 'success', icon: '✓', user: 'ACTIVITY_USER_1', action: 'ACTIVITY_ACTION_1', time: 'ACTIVITY_TIME_1' },
+    { type: 'info',    icon: '·', user: 'ACTIVITY_USER_2', action: 'ACTIVITY_ACTION_2', time: 'ACTIVITY_TIME_2' },
+    { type: 'success', icon: '✓', user: 'ACTIVITY_USER_3', action: 'ACTIVITY_ACTION_3', time: 'ACTIVITY_TIME_3' },
+    { type: 'warning', icon: '!', user: 'ACTIVITY_USER_4', action: 'ACTIVITY_ACTION_4', time: 'ACTIVITY_TIME_4' },
+    { type: 'info',    icon: '·', user: 'ACTIVITY_USER_5', action: 'ACTIVITY_ACTION_5', time: 'ACTIVITY_TIME_5' },
+    { type: 'success', icon: '✓', user: 'ACTIVITY_USER_6', action: 'ACTIVITY_ACTION_6', time: 'ACTIVITY_TIME_6' },
+  ];
+  const color = { success: 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20', info: 'text-blue-400 bg-blue-400/10 border-blue-400/20', warning: 'text-amber-400 bg-amber-400/10 border-amber-400/20' };
+  const stats = [
+    { label: 'STAT_1_LABEL', value: 'STAT_1_VALUE', delta: 'STAT_1_DELTA' },
+    { label: 'STAT_2_LABEL', value: 'STAT_2_VALUE', delta: 'STAT_2_DELTA' },
+    { label: 'STAT_3_LABEL', value: 'STAT_3_VALUE', delta: 'STAT_3_DELTA' },
+  ];
+  return (
+    <section className="py-24">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-black text-white tracking-tight mb-3">DASHBOARD_HEADING</h2>
+          <p className="text-gray-400">DASHBOARD_SUBHEADING</p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 bg-[#111] border border-white/8 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/6">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500/70"/>
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70"/>
+                <div className="w-2.5 h-2.5 rounded-full bg-green-500/70"/>
+              </div>
+              <span className="text-gray-500 text-xs font-mono">DASHBOARD_TAB_LABEL</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
+                <span className="text-emerald-400 text-xs">live</span>
+              </div>
+            </div>
+            <div className="p-5 space-y-1">
+              {events.map((e, i) => (
+                <div key={i} className="flex items-start gap-4 py-3 border-b border-white/4 last:border-0">
+                  <span className={\`w-6 h-6 rounded-full border text-xs flex items-center justify-center shrink-0 mt-0.5 \${color[e.type]}\`}>{e.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm"><span className="font-semibold">{e.user}</span> <span className="text-gray-400">{e.action}</span></p>
+                  </div>
+                  <span className="text-gray-600 text-xs shrink-0 font-mono">{e.time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            {stats.map((s, i) => (
+              <div key={i} className="bg-[#111] border border-white/8 rounded-xl p-5 flex-1">
+                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">{s.label}</p>
+                <p className="text-3xl font-black text-white tracking-tighter mb-1">{s.value}</p>
+                <p className="text-emerald-400 text-xs font-semibold">{s.delta}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
 ];

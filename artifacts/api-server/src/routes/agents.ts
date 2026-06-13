@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { selectTemplatesForPrompt, buildContextFromTemplates } from "../components/registry";
+import { selectTemplatesForPrompt, buildContextFromTemplates, getTemplatesByCategory } from "../components/registry";
 
 const router: Router = Router();
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-const PLANNER_MODEL = "llama-3.1-8b-instant";
+const PLANNER_MODEL = "llama-3.3-70b-versatile";
 const DESIGN_MODEL = "google/gemini-2.5-flash-lite";
 const CODEGEN_MODEL = "deepseek/deepseek-chat";
 const CODEFIX_MODEL = "llama-3.3-70b-versatile";
@@ -400,6 +400,62 @@ function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentC
 
   const headingGradient = design.headingGradient ?? `from-[${textColor}] to-[${textMuted}]`;
 
+  // Phase 6 — Layout Style Engine: layoutStyle actively drives structural decisions
+  const layoutStyleRules = (() => {
+    switch (design.layoutStyle) {
+      case 'editorial-flow': return `
+═══ LAYOUT STYLE — Editorial Flow ═══
+- Section headings MUST be oversized (text-5xl md:text-7xl or larger), LEFT-ALIGNED, never centered
+- Avoid rigid card grids — prefer flowing rows, single-column lists, large pull-quotes
+- Heavy whitespace — sections feel like editorial magazine spreads
+- At least 2 sections must use left-aligned (NOT centered) layout
+- Use thin horizontal rules (border-t border-white/10) to separate content blocks
+- Typography does the visual work — minimize boxed cards`;
+      case 'grid-strict': return `
+═══ LAYOUT STYLE — Grid Strict ═══
+- ALL content in explicit CSS grid — use grid-cols-2, grid-cols-3, or grid-cols-4 for every section
+- Consistent card heights across all cards in each section
+- Information-dense: prefer gap-4 over gap-6, compact py-16 padding
+- Use precise col-span values to create visual hierarchy
+- Tables and data lists are preferred over freeform layouts`;
+      case 'asymmetric': return `
+═══ LAYOUT STYLE — Asymmetric ═══
+- Every content section ALTERNATES direction: text-left+visual-right, then visual-left+text-right
+- Use unequal column splits: 7/5, 8/4, or 5/7 — NEVER equal 6/6 splits
+- Nothing is centered except the hero — all other sections are left or right weighted
+- Stagger cards: alternate heights or use -mt-8 offset on every other column`;
+      case 'layered-depth': return `
+═══ LAYOUT STYLE — Layered Depth ═══
+- Elements must OVERLAP using negative margins (-mt-12) or relative/absolute positioning
+- Cards use z-index stacking (z-10, z-20, z-30) to create visible depth
+- Floating panels: use shadow-2xl + ring-1 to make elements appear to float
+- Background cards peek behind foreground elements using translate-y or opacity layers
+- At least 1 section must have visually overlapping elements`;
+      case 'dense-grid': return `
+═══ LAYOUT STYLE — Dense Grid ═══
+- Section padding MAXIMUM py-16 — no py-24 or py-32 anywhere
+- Use text-sm for body, text-xs for labels throughout — compact and information-rich
+- Prefer grid-cols-4 over grid-cols-3, grid-cols-3 over grid-cols-2
+- Tight gaps: gap-2 or gap-3 (not gap-6 or gap-8)
+- Tables and data-heavy lists preferred over decorative card layouts`;
+      default: return '';
+    }
+  })();
+
+  // Phase 8 — Structure Randomization: deterministic variation per blueprint to break template cloning
+  const variationSeed = blueprint.sectionOrder.join('').split('').reduce((a: number, c: string) => (a * 31 + c.charCodeAt(0)) & 0xffff, 0);
+  const featureCount = 3 + (variationSeed % 3);       // 3, 4, or 5 features
+  const statCount = 2 + (variationSeed % 2);            // 2 or 3 stats
+  const accentVariant = ['side-border', 'number-prefix', 'horizontal-rule'][variationSeed % 3];
+  const structureVariationRules = `
+═══ STRUCTURE VARIATION (apply exactly — do NOT replicate template DOM verbatim) ═══
+- Feature items for this site: use exactly ${featureCount} (not 3, not 6 — exactly ${featureCount})
+- Stats/metrics: show exactly ${statCount} key metrics in hero or social proof sections
+- Card accent style: use "${accentVariant}" as a visual accent on at least one section's cards
+- One section MUST use a horizontal flex-row layout (not a vertical stack or grid)
+- At least one section MUST NOT use cards — use a numbered list, table row, or pure text layout instead
+- VARY the grid column count across sections — never use the same grid-cols-N in every section`;
+
   return `You are a Code Generation Agent. Generate a COMPLETE, PRODUCTION-READY React + Tailwind website with a UNIQUE visual identity.${componentSection}
 
 ═══ DESIGN DNA ═══
@@ -457,7 +513,18 @@ LAYOUT RULES (apply per section type):
 - Testimonials: "grid grid-cols-1 md:grid-cols-3 ${componentGap}"
 - Pricing: "grid grid-cols-1 md:grid-cols-3 ${componentGap}", middle card uses scale-105
 - Footer: "grid grid-cols-2 md:grid-cols-4 gap-8"
-- All section headings: use heading gradient with bg-clip-text text-transparent
+- HEADINGS: The hero H1 ONLY may use the heading gradient (bg-clip-text text-transparent bg-gradient-to-r ${headingGradient}). ALL other section headings MUST use plain text-[${textColor}]. Vary each section heading style: underline accent, uppercase overline label, large number prefix, oversized drop cap, or border-l side bar — NEVER the same style twice.
+${layoutStyleRules}
+${structureVariationRules}
+
+═══ SVG ILLUSTRATIONS ═══
+When a section needs a visual but no image is specified — create an inline SVG:
+- Product/dashboard screenshot: SVG browser frame (rounded rect + 3 dot circles) containing simplified rect grid rows
+- Bar chart: vertical rect elements at varying heights above a baseline line
+- Line chart: polyline on faint grid lines
+- Icon illustrations: simple geometric shapes using stroke="currentColor"
+- Dimensions: viewBox="0 0 400 240" or "0 0 320 200", keep shapes simple
+- Colors: use design accent color (${accent}) for highlight shapes, border color (${borderColor}) for structural lines
 
 ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 1. NO import statements. NO require(). React and all hooks are already global.
@@ -675,10 +742,10 @@ router.post("/agents/build", async (req, res) => {
       `\nGenerate the complete design DNA JSON for this site.`,
     ].filter(Boolean).join('\n');
 
-    async function runDesignAgent(attempt: number): Promise<{ raw: string; parsed: DesignDNA | null; error: string | null }> {
+    async function runDesignAgent(attempt: number, overridePrompt?: string): Promise<{ raw: string; parsed: DesignDNA | null; error: string | null }> {
       try {
         const raw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
-          [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: designPrompt }],
+          [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: overridePrompt ?? designPrompt }],
           1500
         );
         const parsed = parseDesignRaw(raw);
@@ -734,7 +801,7 @@ router.post("/agents/build", async (req, res) => {
               `\n${designPrompt}`,
             ].join('\n');
 
-        const attempt2 = await runDesignAgent(2);
+        const attempt2 = await runDesignAgent(2, retryUserPrompt);
         if (attempt2.parsed) {
           const verify2 = verifyDNA(attempt2.parsed, referenceSites);
           design = attempt2.parsed;
@@ -811,7 +878,7 @@ router.post("/agents/build", async (req, res) => {
           { role: "system", content: CODEFIX_SYSTEM },
           { role: "user", content: `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}` },
         ],
-        false, 4096
+        false, 8192
       );
       if (fixed && fixed.length > 200) {
         fixedCode = fixed
@@ -1025,6 +1092,32 @@ router.post("/agents/audit", async (req, res) => {
     const matchPoints = activeChecks.filter(Boolean).length;
     const architectureMatchScore = activeChecks.length > 0 ? Math.round((matchPoints / activeChecks.length) * 100) : 100;
 
+    // ── STAGE 4b: ARCHITECTURE DIVERSITY SCORE (Phase 10) ──────────────────
+    const diversityCounts = {
+      hero:              getTemplatesByCategory('hero').length,
+      features:          getTemplatesByCategory('features').length,
+      pricing:           getTemplatesByCategory('pricing').length,
+      dashboard:         getTemplatesByCategory('dashboard-preview').length,
+      navbar:            getTemplatesByCategory('navbar').length,
+      bento:             getTemplatesByCategory('bento').length,
+      cta:               getTemplatesByCategory('cta').length,
+      faq:               getTemplatesByCategory('faq').length,
+      testimonials:      getTemplatesByCategory('testimonials').length,
+    };
+    // Score: each category worth up to 100. Formula: min(100, (count / 6) * 100). 6+ variants = full score.
+    const catScore = (n: number) => Math.min(100, Math.round((n / 6) * 100));
+    const categoryScores: Record<string, number> = {};
+    for (const [cat, count] of Object.entries(diversityCounts)) {
+      categoryScores[cat] = catScore(count);
+    }
+    const overallArchitectureScore = Math.round(
+      Object.values(categoryScores).reduce((a, b) => a + b, 0) / Object.values(categoryScores).length
+    );
+    // Routing coverage: count how many routing maps have an entry for primaryRef
+    const routingMaps = ['hero', 'features', 'dashboard', 'pricing', 'navbar', 'bento', 'cta', 'faq'];
+    const routingCoverage = [heroMatch, featuresMatch, dashboardMatch, pricingMatch]
+      .filter(m => m !== null).length;
+
     audit.referenceRouting = {
       primaryReference: auditPrimaryRef,
       secondaryReferences: auditSecondaryRefs,
@@ -1043,6 +1136,19 @@ router.post("/agents/audit", async (req, res) => {
       architectureMatchScore,
       dnaPass,
       validationStatus,
+    };
+
+    audit.architectureDiversity = {
+      templateCounts: diversityCounts,
+      categoryScores,
+      overallArchitectureScore,
+      routingCoverage,
+      routingMapsCount: routingMaps.length,
+      target: 90,
+      passing: overallArchitectureScore >= 90,
+      note: overallArchitectureScore >= 90
+        ? `PASS — system diversity ≥ 90 (${overallArchitectureScore})`
+        : `FAIL — system diversity ${overallArchitectureScore} < 90 target. Low categories: ${Object.entries(categoryScores).filter(([,s]) => s < 90).map(([c,s]) => `${c}(${s})`).join(', ')}`,
     };
 
     audit.codeGeneratorPrompt = {
