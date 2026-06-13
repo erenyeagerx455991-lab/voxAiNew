@@ -9,6 +9,7 @@ import { footerComponents } from './footer';
 import { galleryComponents } from './gallery';
 import { faqComponents } from './faq';
 import { contactComponents } from './contact';
+import { allPremiumComponents } from './premium';
 
 const ALL_COMPONENTS: ComponentDef[] = [
   ...navbarComponents,
@@ -21,6 +22,7 @@ const ALL_COMPONENTS: ComponentDef[] = [
   ...galleryComponents,
   ...faqComponents,
   ...contactComponents,
+  ...allPremiumComponents,
 ];
 
 export function getAllComponents(): ComponentDef[] {
@@ -65,7 +67,7 @@ export function searchComponents(query: string): ComponentDef[] {
 export function getTopComponentPerCategory(): Record<ComponentCategory, ComponentDef> {
   const categories: ComponentCategory[] = [
     'navbar', 'hero', 'features', 'pricing',
-    'testimonials', 'cta', 'footer', 'gallery', 'faq', 'contact'
+    'testimonials', 'cta', 'footer', 'gallery', 'faq', 'contact', 'dashboard'
   ];
   return Object.fromEntries(
     categories
@@ -77,7 +79,7 @@ export function getTopComponentPerCategory(): Record<ComponentCategory, Componen
 export function getRegistryStats(): RegistryStats {
   const categories: ComponentCategory[] = [
     'navbar', 'hero', 'features', 'pricing',
-    'testimonials', 'cta', 'footer', 'gallery', 'faq', 'contact'
+    'testimonials', 'cta', 'footer', 'gallery', 'faq', 'contact', 'dashboard'
   ];
   return {
     total: ALL_COMPONENTS.length,

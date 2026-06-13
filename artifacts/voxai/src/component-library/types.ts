@@ -1,7 +1,7 @@
 export type ComponentCategory =
   | 'navbar' | 'hero' | 'features' | 'pricing'
   | 'testimonials' | 'cta' | 'footer' | 'gallery'
-  | 'faq' | 'contact';
+  | 'faq' | 'contact' | 'dashboard';
 
 export type ComponentStyle =
   | 'modern' | 'minimal' | 'bold' | 'elegant'
