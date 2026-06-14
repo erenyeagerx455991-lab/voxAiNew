@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import {
-  Eye, Files, Copy, Check, Search, ChevronRight,
-  FileCode2, FileJson, FileText, Globe, X, Monitor,
+  Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
+  FileCode2, FileJson, FileText, Globe, X, Monitor, Folder,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
 import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
@@ -76,6 +76,87 @@ function BuildingState({ buildStep }: { buildStep: number }) {
           <span className="text-[13px] text-gray-500">{label}</span>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Collapsible folder tree ──────────────────────────────────────────────────
+type FileTree = Record<string, ProjectFile[]>;
+
+function buildFileTree(files: ProjectFile[]): FileTree {
+  const tree: FileTree = {};
+  for (const f of files) {
+    const folder = f.path || '';
+    if (!tree[folder]) tree[folder] = [];
+    tree[folder].push(f);
+  }
+  return tree;
+}
+
+interface FileTreeProps {
+  files: ProjectFile[];
+  selectedFile: ProjectFile | null;
+  onSelect: (f: ProjectFile) => void;
+}
+
+function FileTreeView({ files, selectedFile, onSelect }: FileTreeProps) {
+  const tree = useMemo(() => buildFileTree(files), [files]);
+  const sortedFolders = useMemo(
+    () => Object.keys(tree).sort((a, b) => {
+      if (a === '') return -1;
+      if (b === '') return 1;
+      return a.localeCompare(b);
+    }),
+    [tree]
+  );
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(sortedFolders));
+
+  const toggle = (folder: string) =>
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.has(folder) ? next.delete(folder) : next.add(folder);
+      return next;
+    });
+
+  return (
+    <div className="flex flex-col py-1">
+      {sortedFolders.map(folder => {
+        const folderFiles = tree[folder];
+        const isExpanded = expanded.has(folder);
+        const label = folder
+          ? folder.replace(/^src\//, '').replace(/\/$/, '')
+          : 'root';
+        const isRoot = folder === '';
+
+        return (
+          <div key={folder}>
+            {!isRoot && (
+              <button
+                onClick={() => toggle(folder)}
+                className="flex items-center gap-1.5 w-full px-3 py-1 text-left hover:bg-white/5 transition-colors"
+              >
+                {isExpanded
+                  ? <ChevronDown size={11} className="text-gray-600 shrink-0" />
+                  : <ChevronRight size={11} className="text-gray-600 shrink-0" />}
+                <Folder size={12} className="text-blue-400/70 shrink-0" />
+                <span className="text-[11px] text-gray-500 font-medium tracking-wide">{label}</span>
+              </button>
+            )}
+            {(isRoot || isExpanded) && folderFiles.map(f => (
+              <button
+                key={f.path + f.name}
+                onClick={() => onSelect(f)}
+                className={`flex items-center gap-2 w-full text-left transition-colors py-1.5 pr-3 ${!isRoot ? 'pl-7' : 'pl-3'} ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'bg-white/10' : 'hover:bg-white/5'}`}
+              >
+                {fileIcon(f.lang)}
+                <span className={`text-[12px] truncate ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'text-white' : 'text-gray-300'}`}>
+                  {f.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -197,7 +278,7 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
         />
       )}
 
-      {/* ── Files tab: list ── */}
+      {/* ── Files tab: collapsible folder tree ── */}
       {tab === 'files' && !selectedFile && (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Search */}
@@ -217,24 +298,31 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
               )}
             </div>
           </div>
-          {/* List */}
+          {/* Tree or filtered flat list when searching */}
           <div className="flex-1 overflow-y-auto">
-            {filtered.map((file) => (
-              <button
-                key={file.path + file.name}
-                onClick={() => setSelectedFile(file)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 border-b border-white/4 text-left group transition-colors"
-              >
-                {fileIcon(file.lang)}
-                <div className="flex-1 min-w-0">
-                  {file.path && (
-                    <p className="text-[10px] text-gray-600 truncate">{file.path}</p>
-                  )}
-                  <p className="text-[13px] text-gray-300 font-medium truncate">{file.name}</p>
-                </div>
-                <ChevronRight size={13} className="text-gray-700 group-hover:text-gray-500 shrink-0" />
-              </button>
-            ))}
+            {search.trim() ? (
+              // Flat search results
+              filtered.map((file) => (
+                <button
+                  key={file.path + file.name}
+                  onClick={() => setSelectedFile(file)}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-white/5 text-left transition-colors"
+                >
+                  {fileIcon(file.lang)}
+                  <div className="flex-1 min-w-0">
+                    {file.path && <p className="text-[10px] text-gray-600 truncate">{file.path}</p>}
+                    <p className="text-[12px] text-gray-300 truncate">{file.name}</p>
+                  </div>
+                </button>
+              ))
+            ) : (
+              // Collapsible folder tree (no search active)
+              <FileTreeView
+                files={files}
+                selectedFile={selectedFile}
+                onSelect={setSelectedFile}
+              />
+            )}
           </div>
         </div>
       )}

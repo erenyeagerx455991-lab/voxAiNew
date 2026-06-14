@@ -719,26 +719,29 @@ const SSE_LUCIDE_ICONS = [
 /**
  * Extract component functions from the LLM output.
  *
- * Primary path: parse `// === FILE: src/components/Name.tsx ===` delimiter
- * comments that the Frontend Agent is instructed to emit. This is
- * blueprint-driven and gives the LLM control over file boundaries.
+ * Primary path: parse `// === FILE: src/pages/Name.tsx ===` and
+ * `// === FILE: src/components/Name.tsx ===` delimiter comments emitted by
+ * the Frontend Agent. The folder in the delimiter IS the source of truth for
+ * page vs. shared component classification — no name-based heuristic needed.
  *
- * Fallback: heuristic function-boundary regex for outputs that omit delimiters.
+ * Fallback: function-boundary regex when the LLM omits delimiters.
  */
-function sseExtractFunctions(code: string): Array<{ name: string; body: string }> {
-  // Primary: delimiter-based extraction (blueprint-driven multi-file output)
-  const delimPattern = /\/\/\s*===\s*FILE:\s*(?:src\/(?:components|pages|)\/)?([A-Z][a-zA-Z0-9]*)\.tsx\s*===/g;
-  const delimPositions: Array<{ name: string; start: number; headerEnd: number }> = [];
+function sseExtractFunctions(code: string): Array<{ name: string; body: string; folder: string }> {
+  // Primary: delimiter-based extraction — folder declared by the LLM
+  const delimPattern = /\/\/\s*===\s*FILE:\s*(?:src\/)?((?:components|pages|lib|hooks|utils)\/)?([A-Z][a-zA-Z0-9]*)\.tsx\s*===/g;
+  const delimPositions: Array<{ name: string; start: number; headerEnd: number; folder: string }> = [];
   let m: RegExpExecArray | null;
   while ((m = delimPattern.exec(code)) !== null) {
-    const headerEnd = m.index + m[0].length;
-    delimPositions.push({ name: m[1], start: m.index, headerEnd });
+    const subFolder = m[1] || '';
+    // Preserve the declared subfolder (pages/, components/, etc.)
+    const folder = subFolder ? `src/${subFolder}` : 'src/';
+    delimPositions.push({ name: m[2], start: m.index, headerEnd: m.index + m[0].length, folder });
   }
 
   if (delimPositions.length >= 2) {
-    // At least 2 file markers found — use delimiter-based splitting
     return delimPositions.map((p, i) => ({
       name: p.name,
+      folder: p.folder,
       body: code.slice(
         p.headerEnd,
         i + 1 < delimPositions.length ? delimPositions[i + 1].start : code.length
@@ -746,7 +749,7 @@ function sseExtractFunctions(code: string): Array<{ name: string; body: string }
     }));
   }
 
-  // Fallback: regex-based function boundary detection
+  // Fallback: regex-based function boundary detection (folder defaults to components/)
   const funcPattern = /^function\s+([A-Z][a-zA-Z0-9]*)\s*\(\s*\)/gm;
   const positions: Array<{ name: string; start: number }> = [];
   while ((m = funcPattern.exec(code)) !== null) {
@@ -754,6 +757,7 @@ function sseExtractFunctions(code: string): Array<{ name: string; body: string }
   }
   return positions.map((p, i) => ({
     name: p.name,
+    folder: 'src/components/',
     body: code.slice(p.start, i + 1 < positions.length ? positions[i + 1].start : code.length).trim(),
   }));
 }
@@ -861,16 +865,29 @@ function buildServerProjectFiles(
       pageNameSet.has(n.replace(/page$/, '').replace(/view$/, '').replace(/screen$/, ''));
   };
 
+  // Classification uses delimiter-declared folder as source of truth.
+  // If the LLM outputs // === FILE: src/pages/Dashboard.tsx === then
+  // Dashboard lands in src/pages/ regardless of its name.
+  // Fallback: blueprint heuristic name-matching for delimiter-less outputs.
   const pageComponents: string[] = [];
   const sharedComponents: string[] = [];
 
   for (const f of sectionFuncs) {
-    (isPageComponent(f.name) ? pageComponents : sharedComponents).push(f.name);
+    if (f.folder === 'src/pages/') {
+      pageComponents.push(f.name);
+    } else if (f.folder === 'src/components/' || !isPageComponent(f.name)) {
+      sharedComponents.push(f.name);
+    } else {
+      // f.folder is generic ('src/' or default) AND name matches a blueprint page
+      pageComponents.push(f.name);
+    }
   }
 
-  // Per-component files (blueprint-driven folder placement) + per-file validation
+  // Per-file generation using delimiter-declared folder + per-file validation
   for (const f of sectionFuncs) {
-    const folder = pageComponents.includes(f.name) ? 'src/pages/' : 'src/components/';
+    const folder = f.folder !== 'src/'
+      ? f.folder
+      : (pageComponents.includes(f.name) ? 'src/pages/' : 'src/components/');
     const content = sseToTsxFile(f.name, f.body);
     const validation = validateTsxFile(f.name, content);
     if (!validation.valid) {
@@ -879,8 +896,9 @@ function buildServerProjectFiles(
     files.push({ path: folder, name: `${f.name}.tsx`, lang: 'tsx', content });
   }
 
-  // App.tsx — use React Router when multiple blueprint pages are resolved
-  const useRouter = hasMultiplePages && pageComponents.length > 0;
+  // Use React Router when any page components are present (deterministic from
+  // delimiter folder or blueprint heuristic — not guessed from section names).
+  const useRouter = pageComponents.length > 0;
   let appContent: string;
 
   if (useRouter) {
@@ -1167,7 +1185,7 @@ router.post("/agents/build", async (req, res) => {
 
     async function runDesignAgent(attempt: number, overridePrompt?: string): Promise<{ raw: string; parsed: DesignDNA | null; error: string | null }> {
       try {
-        const raw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
+        const raw = await callOpenRouter(openrouterKey as string, DESIGN_MODEL,
           [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: overridePrompt ?? designPrompt }],
           1500
         );
@@ -1264,12 +1282,36 @@ router.post("/agents/build", async (req, res) => {
     sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });
 
     const sectionCount = blueprint.sectionOrder.length;
+    const isMultiPageApp = projectBlueprint.pages.length > 1;
+
+    // Multi-page apps get a page-driven prompt (one page function per blueprint page).
+    // Single-page / landing pages keep the section-order-driven prompt (proven quality).
+    const codegenUserPrompt = isMultiPageApp
+      ? `Build a ${projectBlueprint.projectType} with these pages from the architecture blueprint: ${projectBlueprint.pages.join(', ')}.
+
+Output each page using FILE delimiters so files can be extracted:
+${projectBlueprint.pages.map(p => `// === FILE: src/pages/${p}.tsx ===\nfunction ${p}() { /* full ${p} page */ }`).join('\n\n')}
+
+Shared layout components (Navbar, Footer, Sidebar) use:
+// === FILE: src/components/Navbar.tsx ===
+function Navbar() { /* sticky navigation */ }
+
+Architecture context: ${projectBlueprint.description}
+Shared components: ${projectBlueprint.components.join(', ') || 'Navbar, Footer'}
+Auth: ${projectBlueprint.authNeeded} | Dashboard: ${projectBlueprint.dashboardNeeded}
+
+Prompt: ${prompt}
+Plan: ${cleanPlan}
+
+Apply the design DNA above to ALL pages. Make each page production-quality and visually coherent. Do not truncate.`
+      : `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Apply the design DNA precisely. Do not truncate.`;
+
     let generatedCode = "";
     try {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
           { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Apply the design DNA precisely. Do not truncate.` },
+          { role: "user", content: codegenUserPrompt },
         ],
         8000
       );
@@ -1278,7 +1320,7 @@ router.post("/agents/build", async (req, res) => {
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
           { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
-          { role: "user", content: `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.` },
+          { role: "user", content: isMultiPageApp ? codegenUserPrompt : `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.` },
         ],
         false, 8000
       );
@@ -1321,6 +1363,43 @@ router.post("/agents/build", async (req, res) => {
     // TypeScript project output, driven by projectBlueprint.pages/components.
     const projectFiles = buildServerProjectFiles(fixedCode, projectBlueprint, blueprint.sectionOrder);
     console.log(`[ProjectFiles] Generated ${projectFiles.length} files (${projectFiles.filter(f => f.lang === 'tsx').length} TSX, ${projectFiles.filter(f => f.lang === 'ts').length} TS)`);
+
+    // ── PER-FILE FIX LOOP ─────────────────────────────────────────────────────
+    // Validate every generated TSX file. Files that fail the deterministic check
+    // get a targeted, fast LLM repair call (llama-3.1-8b-instant, ≤1500 tokens).
+    // All repairs run in parallel — total latency = slowest single repair.
+    const PERFILE_FIX_MODEL = "llama-3.1-8b-instant";
+    const repairTargets = projectFiles.filter(f =>
+      f.lang === 'tsx' && f.name !== 'main.tsx'
+    );
+    const repairJobs = repairTargets
+      .map(file => {
+        const validation = validateTsxFile(file.name, file.content);
+        if (validation.valid) return null;
+        console.warn(`[PerFileRepair] Repairing ${file.name}: ${validation.issues.join('; ')}`);
+        return (async () => {
+          try {
+            const fixed = await callGroq(groqKey, PERFILE_FIX_MODEL,
+              [
+                { role: 'system', content: 'Fix the React TypeScript component file. Return ONLY the corrected file — no markdown, no explanation.' },
+                { role: 'user', content: `Fix ${file.name}. Issues: ${validation.issues.join(', ')}.\n\n${file.content}` },
+              ],
+              false, 1500
+            );
+            if (fixed && fixed.length > 80) {
+              file.content = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+              console.log(`[PerFileRepair] ${file.name} repaired (${file.content.length} chars).`);
+            }
+          } catch (e) {
+            console.error(`[PerFileRepair] Failed to repair ${file.name}:`, e);
+          }
+        })();
+      })
+      .filter(Boolean) as Promise<void>[];
+
+    if (repairJobs.length > 0) {
+      await Promise.all(repairJobs);
+    }
 
     // ── DONE ──────────────────────────────────────────────────────────────────
     sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: projectFiles });
