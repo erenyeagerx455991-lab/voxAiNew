@@ -2,9 +2,11 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse } from '../services/mockAiService';
+import type { ProjectBlueprint } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
+export type { ProjectBlueprint };
 
 interface AppState {
   view: View;
@@ -21,6 +23,8 @@ interface AppState {
   chatError: string;
   generatedCode: string;
   buildStep: number;
+  projectBlueprint: ProjectBlueprint | null;
+  sectionOrder: string[] | undefined;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -94,6 +98,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [chatError, setChatError] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [buildStep, setBuildStep] = useState(-1);
+  const [projectBlueprint, setProjectBlueprint] = useState<ProjectBlueprint | null>(null);
+  const [sectionOrder, setSectionOrder] = useState<string[] | undefined>(undefined);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -189,6 +195,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setActiveChatIdState(id);
     setChatError('');
     setBuildStep(-1);
+    setProjectBlueprint(null);
+    setSectionOrder(undefined);
     if (id) {
       loadMessages(id);
       const cached = localStorage.getItem(CODE_KEY(id));
@@ -222,6 +230,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setChatError('');
     setGeneratedCode('');
     setBuildStep(-1);
+    setProjectBlueprint(null);
+    setSectionOrder(undefined);
     setView('chat');
     closeSidebar();
   }, [closeSidebar]);
@@ -284,7 +294,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         await mockStreamResponse(
           content,
           (token) => setStreamingContent((prev) => prev + token),
-          async (fullText, code) => {
+          async (fullText, code, pb?, so?) => {
             let assistantMsg: Message;
             try {
               assistantMsg = await addMessage(chatId!, 'assistant', fullText);
@@ -309,6 +319,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             setStreamingContent('');
             setIsTyping(false);
             setGeneratedCode(code);
+            if (pb) setProjectBlueprint(pb);
+            if (so) setSectionOrder(so);
             setBuildStep(5);
             loadingRef.current = false;
             onCreditsChange?.();
@@ -347,6 +359,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         setChatError('');
         setGeneratedCode('');
         setBuildStep(-1);
+        setProjectBlueprint(null);
+        setSectionOrder(undefined);
       }
     },
     [activeChatId]
@@ -375,6 +389,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     chatError,
     generatedCode,
     buildStep,
+    projectBlueprint,
+    sectionOrder,
     handleSend,
     handleNewChat,
     handleDeleteChat,

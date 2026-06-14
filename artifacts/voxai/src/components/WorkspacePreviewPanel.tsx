@@ -3,19 +3,15 @@ import {
   Eye, Files, Copy, Check, Search, ChevronRight,
   FileCode2, FileJson, FileText, Globe, X, Monitor,
 } from 'lucide-react';
-import { buildPreviewHtml, sanitizeCode } from '../services/builderService';
+import { buildPreviewHtml, generateProjectFiles } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
 
 interface Props {
   code: string;
   isBuilding: boolean;
   buildStep: number;
-}
-
-interface ProjectFile {
-  path: string;
-  name: string;
-  lang: string;
-  content: string;
+  projectBlueprint?: ProjectBlueprint | null;
+  sectionOrder?: string[];
 }
 
 function fileIcon(lang: string) {
@@ -25,24 +21,12 @@ function fileIcon(lang: string) {
   return                       <FileCode2 size={14} className="text-sky-400   shrink-0" />;
 }
 
-function buildProjectFiles(code: string): ProjectFile[] {
-  const sanitized = sanitizeCode(code);
-  return [
-    { path: 'src/', name: 'App.jsx',           lang: 'jsx', content: sanitized },
-    { path: 'src/', name: 'index.jsx',          lang: 'jsx', content: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);` },
-    { path: 'src/', name: 'index.css',          lang: 'css', content: `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }` },
-    { path: '',    name: 'index.html',          lang: 'html', content: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>VoxAI App</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/index.jsx"></script>\n  </body>\n</html>` },
-    { path: '',    name: 'tailwind.config.js',  lang: 'js',  content: `/** @type {import('tailwindcss').Config} */\nexport default {\n  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n};` },
-    { path: '',    name: 'vite.config.js',      lang: 'js',  content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n});` },
-    { path: '',    name: 'package.json',        lang: 'json', content: JSON.stringify({ name: 'voxai-app', private: true, version: '0.0.0', type: 'module', scripts: { dev: 'vite', build: 'vite build', preview: 'vite preview' }, dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' }, devDependencies: { '@vitejs/plugin-react': '^4.3.1', tailwindcss: '^3.4.14', vite: '^5.4.10' } }, null, 2) },
-  ];
-}
-
 const BUILD_STEP_LABELS = [
   'Understanding your idea...',
-  'Writing content...',
-  'Building sections...',
-  'Creating layout...',
+  'Planning architecture...',
+  'Crafting design system...',
+  'Writing components...',
+  'Polishing code...',
   'Preparing preview...',
 ];
 
@@ -51,7 +35,7 @@ function BuildingState({ buildStep }: { buildStep: number }) {
     buildStep >= 0 && buildStep < BUILD_STEP_LABELS.length
       ? BUILD_STEP_LABELS[buildStep]
       : 'Building...';
-  const progress = Math.max(8, ((buildStep + 1) / 5) * 100);
+  const progress = Math.max(8, ((buildStep + 1) / 6) * 100);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-10 gap-8">
@@ -94,13 +78,16 @@ function BuildingState({ buildStep }: { buildStep: number }) {
   );
 }
 
-export default function WorkspacePreviewPanel({ code, isBuilding, buildStep }: Props) {
+export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, projectBlueprint, sectionOrder }: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const files = useMemo(() => (code ? buildProjectFiles(code) : []), [code]);
+  const files = useMemo(
+    () => (code ? generateProjectFiles(code, projectBlueprint ?? undefined, sectionOrder) : []),
+    [code, projectBlueprint, sectionOrder]
+  );
   const filtered = search.trim()
     ? files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     : files;

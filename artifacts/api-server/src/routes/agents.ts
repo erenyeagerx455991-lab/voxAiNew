@@ -16,6 +16,24 @@ interface PageBlueprint {
   sectionOrder: string[];
 }
 
+interface ProjectBlueprint {
+  projectType: string;
+  pages: string[];
+  components: string[];
+  databaseTables: string[];
+  apis: string[];
+  authNeeded: boolean;
+  dashboardNeeded: boolean;
+  techStack: {
+    frontend: string;
+    routing: string;
+    ui: string;
+    backend: string;
+    database: string;
+  };
+  description: string;
+}
+
 interface DesignDNA {
   designLanguage: string;
   layoutStyle: string;
@@ -165,6 +183,33 @@ Available sections (use only what fits the site type):
 - Contact         — contact form + info
 - Footer          — site footer
 `.trim();
+
+const ARCHITECTURE_SYSTEM = `You are an Architecture Agent for an AI software builder. Analyze the user's prompt and output a precise project blueprint as JSON.
+
+Output ONLY valid JSON (no markdown, no code fences, no explanation):
+{
+  "projectType": "one of: Landing Page, SaaS, E-commerce, Portfolio, Restaurant, Agency, Blog, Dashboard App, AI Tool, Developer Tool",
+  "pages": ["array of page names, e.g. Landing, Dashboard, Login, Signup, Settings, Pricing, Blog, About, Contact"],
+  "components": ["reusable component names, e.g. Navbar, Hero, PricingCard, FeatureGrid, Footer, Testimonials"],
+  "databaseTables": ["database entities, e.g. users, projects, subscriptions, posts — empty array for simple landing pages"],
+  "apis": ["API route domains, e.g. auth, users, projects, billing, ai — empty array for simple landing pages"],
+  "authNeeded": false,
+  "dashboardNeeded": false,
+  "techStack": {
+    "frontend": "React + TypeScript + Tailwind CSS",
+    "routing": "React Router v6",
+    "ui": "shadcn/ui + Lucide Icons",
+    "backend": "Express.js + TypeScript",
+    "database": "PostgreSQL + Prisma"
+  },
+  "description": "one sentence describing what this software does"
+}
+
+Rules:
+- Simple landing page/portfolio/restaurant: authNeeded false, dashboardNeeded false, pages ["Landing"], databaseTables [], apis []
+- SaaS/app with user accounts: authNeeded true, dashboardNeeded true, multiple pages including Login/Signup/Dashboard
+- E-commerce: authNeeded true, pages include Landing/Products/Cart/Checkout
+- Be realistic — don't add unnecessary complexity for simple marketing sites`;
 
 const PLANNER_SYSTEM = `You are a Planner Agent for an AI website builder. Analyze the user's request and produce TWO things:
 
@@ -534,7 +579,7 @@ ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 5. Use React.useState, React.useEffect (always namespace with React.)
 6. ONLY Tailwind CSS classes — no style={} objects except for WebkitTextStroke.
 7. Each section function must be named EXACTLY as listed in the blueprint above.
-8. NO emoji as decorative icons — use CSS shapes, unicode characters (◆ ▸ ◈ ◉ ◐ ✦ ⬡), or text symbols.
+8. Use Lucide icons — they are available as global variables in the preview. Use them as JSX: <ChevronRight size={16} />, <ArrowRight size={20} />, <Star size={18} />, <Check size={16} />, <Zap size={20} />, <Shield size={20} />, <Globe size={20} />, <Users size={20} />, <BarChart3 size={20} />, <Code2 size={20} />, <Layers size={20} />, <Sparkles size={20} />, <Play size={16} />, <Menu size={20} />, <X size={16} />, <ExternalLink size={14} />, <Github size={20} />, <Twitter size={20} />, <Mail size={16} />. Import syntax: NOT needed (globals). Use size prop and className for color.
 9. Use bg-[#hexcode] syntax for custom colors from the design DNA above.
 
 CODE STRUCTURE — required pattern:
@@ -562,6 +607,7 @@ const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX code and
    - Do NOT add or remove sections — keep exactly the sections that exist in the code
    - Do NOT enforce any fixed section order — the blueprint determines the order
    - Add hover effects on interactive elements if missing (respect animation personality)
+   - KEEP all Lucide icon JSX elements (<ChevronRight />, <ArrowRight />, <Star />, etc.) — they are available as globals in the preview. Do NOT remove them.
 
 3. Return ONLY the corrected raw JSX code. No markdown, no explanation.
    Start with the first section function (not App).`;
@@ -690,8 +736,50 @@ router.post("/agents/build", async (req, res) => {
     console.log(`[Design] referenceSites="${referenceSites}" primaryReference="${primaryReference}"`);
     sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
 
-    // ── AGENT 2: DESIGN DNA ───────────────────────────────────────────────────
-    sse(res, { type: "step", step: 1, agent: "Design Agent", status: "active" });
+    // ── AGENT 2: ARCHITECTURE ─────────────────────────────────────────────────
+    sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "active" });
+
+    let projectBlueprint: ProjectBlueprint = {
+      projectType: blueprint.websiteType || "Landing Page",
+      pages: ["Landing"],
+      components: blueprint.sectionOrder || [],
+      databaseTables: [],
+      apis: [],
+      authNeeded: false,
+      dashboardNeeded: false,
+      techStack: {
+        frontend: "React + TypeScript + Tailwind CSS",
+        routing: "React Router v6",
+        ui: "shadcn/ui + Lucide Icons",
+        backend: "Express.js + TypeScript",
+        database: "PostgreSQL + Prisma",
+      },
+      description: "",
+    };
+
+    try {
+      const archResult = await callGroq(
+        groqKey, PLANNER_MODEL,
+        [
+          { role: "system", content: ARCHITECTURE_SYSTEM },
+          { role: "user", content: `Prompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}` },
+        ],
+        false, 1000
+      );
+      const archJsonMatch = archResult.match(/\{[\s\S]*\}/);
+      if (archJsonMatch) {
+        const parsed = JSON.parse(archJsonMatch[0]);
+        projectBlueprint = { ...projectBlueprint, ...parsed };
+      }
+    } catch (e) {
+      console.error("[ArchitectureAgent] Failed (using defaults):", e);
+    }
+
+    console.log(`[Architecture] projectType=${projectBlueprint.projectType} pages=[${projectBlueprint.pages.join(', ')}] auth=${projectBlueprint.authNeeded} dashboard=${projectBlueprint.dashboardNeeded}`);
+    sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "done", projectBlueprint });
+
+    // ── AGENT 3: DESIGN DNA ───────────────────────────────────────────────────
+    sse(res, { type: "step", step: 2, agent: "Design Agent", status: "active" });
 
     // Known reference sites and their DNA verification rules
     const REFERENCE_VERIFIERS: Record<string, (d: DesignDNA) => boolean> = {
@@ -830,15 +918,15 @@ router.post("/agents/build", async (req, res) => {
     }
 
     console.log(`[Design DNA] status=${designAgentStatus} language=${design.designLanguage} cardStyle=${design.cardStyle} heroStyle=${design.heroStyle} animation=${design.animationPersonality} bg=${design.colorSystem.background} primary=${design.colorSystem.primary}`);
-    sse(res, { type: "step", step: 1, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
+    sse(res, { type: "step", step: 2, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
     // ── COMPONENT LIBRARY SELECTION ───────────────────────────────────────────
     const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites, primaryReference);
     const componentContext = buildContextFromTemplates(selectedTemplates);
     console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
 
-    // ── AGENT 3: CODE GENERATION ──────────────────────────────────────────────
-    sse(res, { type: "step", step: 2, agent: "Code Generation Agent", status: "active" });
+    // ── AGENT 4: FRONTEND / CODE GENERATION ──────────────────────────────────
+    sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });
 
     const sectionCount = blueprint.sectionOrder.length;
     let generatedCode = "";
@@ -866,10 +954,10 @@ router.post("/agents/build", async (req, res) => {
       .replace(/\n?```\s*$/i, "")
       .trim();
 
-    sse(res, { type: "step", step: 2, agent: "Code Generation Agent", status: "done" });
+    sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "done" });
 
-    // ── AGENT 4: CODE FIX ─────────────────────────────────────────────────────
-    sse(res, { type: "step", step: 3, agent: "Code Fix Agent", status: "active" });
+    // ── AGENT 5: CODE FIX ─────────────────────────────────────────────────────
+    sse(res, { type: "step", step: 4, agent: "Code Fix Agent", status: "active" });
 
     let fixedCode = generatedCode;
     try {
@@ -890,10 +978,10 @@ router.post("/agents/build", async (req, res) => {
       console.error("Code fix agent error (using generated code):", e);
     }
 
-    sse(res, { type: "step", step: 3, agent: "Code Fix Agent", status: "done" });
+    sse(res, { type: "step", step: 4, agent: "Code Fix Agent", status: "done" });
 
     // ── DONE ──────────────────────────────────────────────────────────────────
-    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint });
+    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder });
 
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });

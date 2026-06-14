@@ -3,3 +3,4 @@
 - [VoxAI Hero System V2](voxai-hero-system-v2.md) — 6 hero variants with unique DOM structures; selector uses reference sites first, then DNA fallback; Groq Code Fix TPM fix.
 - [VoxAI Reference Routing V3](voxai-reference-routing-v3.md) — primaryReference direct lookup in hero selector; industry fallback before DNA fallback; heroStyle fixed for Linear/Vercel; all 5 tests pass.
 - [VoxAI Section Architecture V2](voxai-section-arch-v2.md) — 16 new templates (features/dashboard/pricing), reference maps, category-aware routing, audit upgrade; all 4 audits score 100.
+- [VoxAI Multi-File Foundation](voxai-multifile-foundation.md) — Architecture Agent + generateProjectFiles + Lucide CDN bridge; 6-step pipeline; preview uses UMD globals pattern.

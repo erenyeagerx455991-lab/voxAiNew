@@ -3,11 +3,12 @@ import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
 
 const AGENT_STEPS = [
-  { label: 'Planner Agent', colors: 'from-violet-500 to-purple-600' },
-  { label: 'Design Agent', colors: 'from-pink-500 to-rose-500' },
-  { label: 'Code Generation Agent', colors: 'from-blue-500 to-cyan-500' },
-  { label: 'Code Fix Agent', colors: 'from-emerald-500 to-teal-500' },
-  { label: 'Preparing Preview', colors: 'from-amber-500 to-orange-500' },
+  { label: 'Planner Agent',       colors: 'from-violet-500 to-purple-600' },
+  { label: 'Architecture Agent',  colors: 'from-fuchsia-500 to-pink-600' },
+  { label: 'Design Agent',        colors: 'from-pink-500 to-rose-500' },
+  { label: 'Frontend Agent',      colors: 'from-blue-500 to-cyan-500' },
+  { label: 'Code Fix Agent',      colors: 'from-emerald-500 to-teal-500' },
+  { label: 'Preparing Preview',   colors: 'from-amber-500 to-orange-500' },
 ];
 
 function AgentIcon({ idx, isActive, isDone, colors }: { idx: number; isActive: boolean; isDone: boolean; colors: string }) {

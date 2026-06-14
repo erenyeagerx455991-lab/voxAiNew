@@ -1,222 +1,365 @@
+export interface ProjectBlueprint {
+  projectType: string;
+  pages: string[];
+  components: string[];
+  databaseTables: string[];
+  apis: string[];
+  authNeeded: boolean;
+  dashboardNeeded: boolean;
+  techStack: {
+    frontend: string;
+    routing: string;
+    ui: string;
+    backend?: string;
+    database?: string;
+  };
+  description?: string;
+}
+
+export interface ProjectFile {
+  path: string;
+  name: string;
+  lang: string;
+  content: string;
+}
+
 const TEMPLATES: Record<string, string> = {
   default: `function App() {
   return (
     <div className="min-h-screen bg-white font-sans">
-      {/* Hero */}
       <header className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white">
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <span className="text-xl font-bold tracking-tight">YourBrand</span>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-            <a href="#" className="hover:text-indigo-200 transition-colors">Features</a>
-            <a href="#" className="hover:text-indigo-200 transition-colors">Pricing</a>
-            <a href="#" className="hover:text-indigo-200 transition-colors">About</a>
-          </nav>
           <button className="bg-white text-indigo-600 font-semibold text-sm px-5 py-2 rounded-full hover:bg-indigo-50 transition-colors">
             Get Started
           </button>
         </div>
         <div className="max-w-3xl mx-auto px-6 py-24 text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
-            Build something<br />
-            <span className="text-indigo-200">amazing today</span>
-          </h1>
+          <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">Build something amazing today</h1>
           <p className="text-lg text-indigo-100 mb-10 max-w-xl mx-auto">
-            The fastest way to launch your idea. Powerful tools, beautiful design, zero friction.
+            The fastest way to launch your idea.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button className="bg-white text-indigo-700 font-bold px-8 py-3.5 rounded-full text-base hover:bg-indigo-50 transition-colors shadow-lg">
-              Start for free
-            </button>
-            <button className="border border-white/40 text-white font-semibold px-8 py-3.5 rounded-full text-base hover:bg-white/10 transition-colors">
-              See how it works →
-            </button>
-          </div>
         </div>
       </header>
-
-      {/* Features */}
-      <section className="max-w-6xl mx-auto px-6 py-20">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-4">Everything you need</h2>
-        <p className="text-center text-gray-500 mb-14 max-w-xl mx-auto">
-          Packed with features to help you move faster and build better products.
-        </p>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { icon: "⚡", title: "Lightning Fast", desc: "Optimised for speed from day one. Sub-second load times guaranteed." },
-            { icon: "🎨", title: "Beautiful UI", desc: "Crafted with care. Every pixel is deliberate and purposeful." },
-            { icon: "🔒", title: "Secure by Default", desc: "Enterprise-grade security baked in, not bolted on." },
-          ].map((f) => (
-            <div key={f.title} className="bg-gray-50 rounded-2xl p-7 border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="text-3xl mb-4">{f.icon}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{f.title}</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="bg-gray-900 text-white py-20 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-4">Ready to get started?</h2>
-          <p className="text-gray-400 mb-8">Join thousands of teams already building with us.</p>
-          <button className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-10 py-4 rounded-full text-base transition-colors">
-            Create your free account
-          </button>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-100 py-8 px-6 text-center text-sm text-gray-400">
-        © 2026 YourBrand · Privacy · Terms
-      </footer>
-    </div>
-  );
-}`,
-
-  saas: `function App() {
-  return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans">
-      <header className="border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-sky-500 rounded-lg"></div>
-            <span className="font-bold text-lg">SaasKit</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm text-slate-300">
-            <a href="#" className="hover:text-white transition-colors">Product</a>
-            <a href="#" className="hover:text-white transition-colors">Pricing</a>
-            <a href="#" className="hover:text-white transition-colors">Docs</a>
-          </nav>
-          <div className="flex items-center gap-3">
-            <button className="text-sm text-slate-300 hover:text-white transition-colors">Sign in</button>
-            <button className="bg-sky-500 hover:bg-sky-400 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-              Start free trial
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-6 py-32 text-center">
-        <div className="inline-flex items-center gap-2 bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-semibold px-4 py-1.5 rounded-full mb-8">
-          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span>
-          Now in public beta
-        </div>
-        <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-none">
-          Ship your SaaS<br />
-          <span className="text-sky-400">10× faster</span>
-        </h1>
-        <p className="text-slate-400 text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
-          Authentication, billing, teams, and more — all pre-built so you can focus on what makes your product unique.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-8 py-4 rounded-xl text-base transition-colors">
-            Get started free →
-          </button>
-          <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-xl text-base hover:bg-white/5 transition-colors">
-            View demo
-          </button>
-        </div>
-        <p className="text-xs text-slate-500 mt-4">No credit card required · 14-day free trial</p>
-      </main>
-
-      <section className="border-t border-white/5 py-16 px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-4 gap-6 text-center">
-          {[["10k+", "Developers"], ["99.9%", "Uptime"], ["< 50ms", "Response time"], ["24/7", "Support"]].map(([val, label]) => (
-            <div key={label} className="bg-white/5 rounded-2xl p-6 border border-white/10">
-              <div className="text-3xl font-black text-sky-400 mb-1">{val}</div>
-              <div className="text-slate-400 text-sm">{label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}`,
-
-  agency: `function App() {
-  return (
-    <div className="min-h-screen bg-amber-50 font-sans">
-      <header className="px-6 py-5 flex items-center justify-between max-w-6xl mx-auto">
-        <span className="text-xl font-black tracking-tighter text-gray-900">STUDIO</span>
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
-          <a href="#" className="hover:text-gray-900 transition-colors">Work</a>
-          <a href="#" className="hover:text-gray-900 transition-colors">Services</a>
-          <a href="#" className="hover:text-gray-900 transition-colors">About</a>
-        </nav>
-        <button className="bg-gray-900 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-gray-700 transition-colors">
-          Let's talk
-        </button>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 pt-16 pb-24">
-        <div className="max-w-4xl">
-          <p className="text-sm font-semibold text-amber-600 uppercase tracking-widest mb-6">Creative Agency</p>
-          <h1 className="text-6xl md:text-8xl font-black leading-none tracking-tighter text-gray-900 mb-8">
-            We make<br />
-            brands that<br />
-            <em className="italic text-amber-500 not-italic">people love</em>
-          </h1>
-          <p className="text-gray-600 text-xl max-w-xl leading-relaxed mb-10">
-            Brand strategy, digital design, and content that connects. We help ambitious companies find their voice.
-          </p>
-          <button className="bg-gray-900 text-white font-bold px-8 py-4 rounded-full text-base hover:bg-gray-700 transition-colors">
-            See our work
-          </button>
-        </div>
-
-        <div className="mt-20 grid md:grid-cols-3 gap-4">
-          {[
-            { bg: "bg-gray-900", label: "Brand Identity", color: "text-white" },
-            { bg: "bg-amber-400", label: "Web Design", color: "text-gray-900" },
-            { bg: "bg-gray-200", label: "Content Strategy", color: "text-gray-900" },
-          ].map((c) => (
-            <div key={c.label} className={\`\${c.bg} rounded-3xl p-8 h-48 flex items-end\`}>
-              <span className={\`\${c.color} font-bold text-lg\`}>{c.label}</span>
-            </div>
-          ))}
-        </div>
-      </main>
     </div>
   );
 }`,
 };
 
-function pickTemplate(prompt: string): string {
-  const lower = prompt.toLowerCase();
-  if (lower.includes('saas') || lower.includes('software') || lower.includes('app') || lower.includes('platform') || lower.includes('tool')) {
-    return TEMPLATES.saas;
-  }
-  if (lower.includes('agency') || lower.includes('studio') || lower.includes('creative') || lower.includes('design') || lower.includes('brand')) {
-    return TEMPLATES.agency;
-  }
-  return TEMPLATES.default;
-}
-
-export async function generateWebsite(prompt: string): Promise<string> {
-  await new Promise((resolve) => setTimeout(resolve, 2200));
-  return pickTemplate(prompt);
-}
-
 export function sanitizeCode(raw: string): string {
   return raw
-    // Strip markdown fences
     .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/gi, '')
     .replace(/\n?```\s*$/gi, '')
-    // Remove import statements (single-line and multi-line)
     .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
     .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
     .replace(/^import\s*\{[\s\S]*?\}\s*from\s+['"][^'"]+['"];?\s*$/gm, '')
-    // Remove export keywords
     .replace(/^export\s+default\s+/gm, '')
     .replace(/^export\s+/gm, '')
-    // Remove TypeScript interface and type alias declarations
     .replace(/^interface\s+\w+[\s\S]*?\n\}/gm, '')
     .replace(/^type\s+\w+\s*=[\s\S]*?;?\s*$/gm, '')
-    // Remove standalone TypeScript type annotations from function params (basic)
-    // (Babel with typescript preset handles remaining TS, so this is just extra safety)
     .trim();
 }
+
+// ── Component extraction helpers ────────────────────────────────────────────
+
+function extractComponentFunctions(code: string): Array<{ name: string; body: string }> {
+  const results: Array<{ name: string; body: string }> = [];
+  const funcPattern = /^function\s+([A-Z][a-zA-Z0-9]*)\s*\(\s*\)/gm;
+  const positions: Array<{ name: string; start: number }> = [];
+
+  let match: RegExpExecArray | null;
+  while ((match = funcPattern.exec(code)) !== null) {
+    positions.push({ name: match[1], start: match.index });
+  }
+
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].start;
+    const end = i + 1 < positions.length ? positions[i + 1].start : code.length;
+    const body = code.slice(start, end).trim();
+    results.push({ name: positions[i].name, body });
+  }
+
+  return results;
+}
+
+function convertHooksFromNamespaced(code: string): string {
+  return code
+    .replace(/React\.useState\b/g, 'useState')
+    .replace(/React\.useEffect\b/g, 'useEffect')
+    .replace(/React\.useRef\b/g, 'useRef')
+    .replace(/React\.useMemo\b/g, 'useMemo')
+    .replace(/React\.useCallback\b/g, 'useCallback')
+    .replace(/React\.useContext\b/g, 'useContext')
+    .replace(/React\.useReducer\b/g, 'useReducer');
+}
+
+function detectReactHooks(code: string): string[] {
+  const hooks: string[] = [];
+  if (/\buseState\b/.test(code)) hooks.push('useState');
+  if (/\buseEffect\b/.test(code)) hooks.push('useEffect');
+  if (/\buseRef\b/.test(code)) hooks.push('useRef');
+  if (/\buseMemo\b/.test(code)) hooks.push('useMemo');
+  if (/\buseCallback\b/.test(code)) hooks.push('useCallback');
+  if (/\buseContext\b/.test(code)) hooks.push('useContext');
+  if (/\buseReducer\b/.test(code)) hooks.push('useReducer');
+  return hooks;
+}
+
+// Common Lucide icon names to detect in code
+const LUCIDE_ICONS = [
+  'ChevronRight', 'ChevronLeft', 'ChevronDown', 'ChevronUp',
+  'ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp',
+  'Star', 'StarOff', 'Check', 'CheckCircle', 'X', 'XCircle',
+  'Zap', 'Shield', 'Globe', 'Users', 'User', 'UserCheck',
+  'BarChart', 'BarChart2', 'BarChart3', 'LineChart', 'PieChart',
+  'Code', 'Code2', 'Layers', 'Sparkles', 'Play', 'Pause',
+  'Menu', 'ExternalLink', 'Github', 'Twitter', 'Mail', 'Phone',
+  'MapPin', 'Clock', 'Calendar', 'Search', 'Filter', 'Settings',
+  'Heart', 'ThumbsUp', 'MessageCircle', 'Send', 'Share2',
+  'Download', 'Upload', 'Cloud', 'Lock', 'Unlock', 'Key',
+  'Eye', 'EyeOff', 'Info', 'AlertCircle', 'AlertTriangle',
+  'Rocket', 'Package', 'Box', 'Folder', 'File', 'FileText',
+  'Plus', 'Minus', 'Edit', 'Trash2', 'Copy', 'Clipboard',
+  'Link', 'Linkedin', 'Instagram', 'Facebook', 'Youtube',
+  'Monitor', 'Smartphone', 'Tablet', 'Laptop', 'Server',
+  'Database', 'Cpu', 'Wifi', 'Battery', 'Power',
+  'Sun', 'Moon', 'CloudRain', 'Wind', 'Leaf',
+  'DollarSign', 'CreditCard', 'TrendingUp', 'TrendingDown',
+  'Award', 'Target', 'Compass', 'Map', 'Navigation',
+  'Headphones', 'Music', 'Video', 'Image', 'Camera',
+  'Briefcase', 'Building', 'Building2', 'Home', 'Store',
+];
+
+function detectLucideIcons(code: string): string[] {
+  return LUCIDE_ICONS.filter(icon => {
+    const pattern = new RegExp(`<${icon}[\\s/>]`);
+    return pattern.test(code);
+  });
+}
+
+// ── Main file generator ──────────────────────────────────────────────────────
+
+export function generateProjectFiles(
+  code: string,
+  projectBlueprint?: ProjectBlueprint,
+  sectionOrder?: string[]
+): ProjectFile[] {
+  const sanitized = sanitizeCode(code);
+  const components = extractComponentFunctions(sanitized);
+
+  const appComponent = components.find(c => c.name === 'App');
+  const sectionComponents = components.filter(c => c.name !== 'App');
+
+  const files: ProjectFile[] = [];
+  const pages = projectBlueprint?.pages || ['Landing'];
+
+  // ── Component files ────────────────────────────────────────────────────────
+  for (const comp of sectionComponents) {
+    const convertedBody = convertHooksFromNamespaced(comp.body);
+    const hooks = detectReactHooks(convertedBody);
+    const usedIcons = detectLucideIcons(convertedBody);
+
+    const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
+    const lucideImport = usedIcons.length > 0
+      ? `\nimport { ${usedIcons.join(', ')} } from 'lucide-react';`
+      : '';
+
+    const content = `import React${hooksImport} from 'react';${lucideImport}\n\n${convertedBody}\n\nexport default ${comp.name};\n`;
+
+    const isPage = pages.some(p =>
+      comp.name.toLowerCase() === p.toLowerCase() ||
+      comp.name.toLowerCase().includes(p.toLowerCase()) ||
+      p.toLowerCase().includes(comp.name.toLowerCase().replace(/section|page/g, ''))
+    );
+
+    const folder = (isPage && pages.length > 1) ? 'src/pages/' : 'src/components/';
+
+    files.push({ path: folder, name: `${comp.name}.tsx`, lang: 'tsx', content });
+  }
+
+  // ── App.tsx with React Router ──────────────────────────────────────────────
+  const pageComponents = pages.length > 1
+    ? sectionComponents.filter(c => pages.some(p => c.name.toLowerCase().includes(p.toLowerCase())))
+    : [];
+  const sharedComponents = sectionComponents.filter(c => !pageComponents.includes(c));
+  const hasRouting = pageComponents.length > 1;
+
+  let appContent: string;
+
+  if (hasRouting) {
+    const pageImports = pageComponents.map(c => `import ${c.name} from './pages/${c.name}';`).join('\n');
+    const sharedImports = sharedComponents.map(c => `import ${c.name} from './components/${c.name}';`).join('\n');
+    const routes = pageComponents.map((c, i) => {
+      const routePath = i === 0 ? '/' : `/${c.name.toLowerCase()}`;
+      return `        <Route path="${routePath}" element={<${c.name} />} />`;
+    }).join('\n');
+
+    appContent = `import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+${pageImports}
+${sharedImports ? sharedImports + '\n' : ''}
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+${routes}
+      </Routes>
+    </Router>
+  );
+}
+`;
+  } else {
+    const allImports = sectionComponents.map(c => {
+      const isPage = pageComponents.includes(c);
+      const folder = isPage ? 'pages' : 'components';
+      return `import ${c.name} from './${folder}/${c.name}';`;
+    }).join('\n');
+    const rendered = sectionComponents.map(c => `    <${c.name} />`).join('\n');
+
+    appContent = `import React from 'react';
+${allImports}
+
+export default function App() {
+  return (
+    <div>
+${rendered}
+    </div>
+  );
+}
+`;
+  }
+
+  files.push({ path: 'src/', name: 'App.tsx', lang: 'tsx', content: appContent });
+
+  // ── src/types/index.ts ─────────────────────────────────────────────────────
+  const tableTypes = (projectBlueprint?.databaseTables || []).map(table => {
+    const TypeName = table.charAt(0).toUpperCase() + table.slice(1).replace(/s$/, '');
+    return `export interface ${TypeName} {\n  id: string;\n  createdAt: string;\n  updatedAt: string;\n}`;
+  }).join('\n\n');
+
+  files.push({
+    path: 'src/types/',
+    name: 'index.ts',
+    lang: 'ts',
+    content: `// Types for ${projectBlueprint?.projectType || 'project'}\n\nexport interface User {\n  id: string;\n  name: string;\n  email: string;\n  createdAt: string;\n}\n\n${tableTypes}\n`,
+  });
+
+  // ── src/lib/utils.ts ───────────────────────────────────────────────────────
+  files.push({
+    path: 'src/lib/',
+    name: 'utils.ts',
+    lang: 'ts',
+    content: `import { type ClassValue, clsx } from 'clsx';\nimport { twMerge } from 'tailwind-merge';\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n\nexport function formatDate(date: Date | string): string {\n  return new Intl.DateTimeFormat('en-US', {\n    year: 'numeric', month: 'long', day: 'numeric',\n  }).format(new Date(date));\n}\n\nexport function truncate(str: string, length: number): string {\n  return str.length > length ? \`\${str.slice(0, length)}...\` : str;\n}\n`,
+  });
+
+  // ── src/main.tsx ───────────────────────────────────────────────────────────
+  files.push({
+    path: 'src/',
+    name: 'main.tsx',
+    lang: 'tsx',
+    content: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n`,
+  });
+
+  // ── src/index.css ──────────────────────────────────────────────────────────
+  files.push({
+    path: 'src/',
+    name: 'index.css',
+    lang: 'css',
+    content: `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }\n`,
+  });
+
+  // ── index.html ─────────────────────────────────────────────────────────────
+  files.push({
+    path: '',
+    name: 'index.html',
+    lang: 'html',
+    content: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${projectBlueprint?.projectType || 'NexoGen App'}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n`,
+  });
+
+  // ── package.json ───────────────────────────────────────────────────────────
+  const deps: Record<string, string> = {
+    react: '^18.3.1',
+    'react-dom': '^18.3.1',
+    'lucide-react': '^0.400.0',
+    clsx: '^2.1.1',
+    'tailwind-merge': '^2.4.0',
+  };
+  if (hasRouting) deps['react-router-dom'] = '^6.26.0';
+  if (projectBlueprint?.authNeeded) {
+    deps['@supabase/supabase-js'] = '^2.45.0';
+  }
+
+  files.push({
+    path: '',
+    name: 'package.json',
+    lang: 'json',
+    content: JSON.stringify({
+      name: (projectBlueprint?.projectType || 'nexogen-app').toLowerCase().replace(/\s+/g, '-'),
+      private: true,
+      version: '0.0.0',
+      type: 'module',
+      scripts: { dev: 'vite', build: 'tsc && vite build', preview: 'vite preview' },
+      dependencies: deps,
+      devDependencies: {
+        '@types/react': '^18.3.3',
+        '@types/react-dom': '^18.3.0',
+        '@vitejs/plugin-react': '^4.3.1',
+        typescript: '^5.5.3',
+        vite: '^5.4.10',
+        tailwindcss: '^3.4.14',
+        autoprefixer: '^10.4.20',
+        postcss: '^8.4.47',
+      },
+    }, null, 2),
+  });
+
+  // ── vite.config.ts ─────────────────────────────────────────────────────────
+  files.push({
+    path: '',
+    name: 'vite.config.ts',
+    lang: 'ts',
+    content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  resolve: { alias: { '@': '/src' } },\n});\n`,
+  });
+
+  // ── tsconfig.json ──────────────────────────────────────────────────────────
+  files.push({
+    path: '',
+    name: 'tsconfig.json',
+    lang: 'json',
+    content: JSON.stringify({
+      compilerOptions: {
+        target: 'ES2020', useDefineForClassFields: true,
+        lib: ['ES2020', 'DOM', 'DOM.Iterable'], module: 'ESNext',
+        skipLibCheck: true, moduleResolution: 'bundler',
+        allowImportingTsExtensions: true, resolveJsonModule: true,
+        isolatedModules: true, noEmit: true, jsx: 'react-jsx',
+        strict: true, baseUrl: '.', paths: { '@/*': ['./src/*'] },
+      },
+      include: ['src'],
+    }, null, 2),
+  });
+
+  // ── tailwind.config.ts ─────────────────────────────────────────────────────
+  files.push({
+    path: '',
+    name: 'tailwind.config.ts',
+    lang: 'ts',
+    content: `import type { Config } from 'tailwindcss';\n\nexport default {\n  content: ['./index.html', './src/**/*.{ts,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n} satisfies Config;\n`,
+  });
+
+  // ── README.md ──────────────────────────────────────────────────────────────
+  const techStack = projectBlueprint?.techStack;
+  files.push({
+    path: '',
+    name: 'README.md',
+    lang: 'md',
+    content: `# ${projectBlueprint?.projectType || 'NexoGen App'}\n\n${projectBlueprint?.description || 'Generated by NexoGen AI Software Builder.'}\n\n## Tech Stack\n\n- **Frontend**: ${techStack?.frontend || 'React + TypeScript + Tailwind CSS'}\n- **UI**: ${techStack?.ui || 'shadcn/ui + Lucide Icons'}${hasRouting ? '\n- **Routing**: React Router v6' : ''}${projectBlueprint?.authNeeded ? '\n- **Auth**: Supabase Auth' : ''}\n- **Build**: Vite\n\n## Getting Started\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n\n## Project Structure\n\n\`\`\`\nsrc/\n  components/   # Reusable UI components\n  pages/        # Page components${projectBlueprint?.authNeeded ? '\n  lib/auth.ts   # Auth utilities' : ''}\n  lib/utils.ts  # Shared utilities\n  types/        # TypeScript types\n  App.tsx       # Root component${hasRouting ? ' with React Router' : ''}\n  main.tsx      # Entry point\n\`\`\`\n`,
+  });
+
+  return files;
+}
+
+// ── Preview HTML builder (with Lucide React CDN support) ────────────────────
 
 export function buildPreviewHtml(code: string): string {
   const sanitized = sanitizeCode(code);
@@ -229,6 +372,7 @@ export function buildPreviewHtml(code: string): string {
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide-react@latest/dist/umd/lucide-react.js"></script>
   <style>
     body { margin: 0; }
     #__error {
@@ -249,16 +393,25 @@ export function buildPreviewHtml(code: string): string {
       var el = document.getElementById('__error');
       el.style.display = 'flex';
       var msg = e.error ? (e.error.message || String(e.error)) : (e.message || 'Unknown error');
-      // Strip internal Babel/unpkg stack frames — just show the first meaningful line
       var lines = msg.split('\\n');
       var clean = lines.slice(0, 3).join('\\n');
-      el.innerHTML = '<div style="max-width:540px"><div style="font-size:28px;margin-bottom:12px">⚠</div><div style="font-size:15px;font-weight:700;color:#ff6b6b;margin-bottom:8px">Preview Render Error</div><pre style="font-size:12px;color:#fca5a5;background:#2a1515;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap;">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre><div style="font-size:11px;color:#666;margin-top:10px">The AI-generated code has a syntax error. Try regenerating the website.</div></div>';
+      el.innerHTML = '<div style="max-width:540px"><div style="font-size:28px;margin-bottom:12px">⚠</div><div style="font-size:15px;font-weight:700;color:#ff6b6b;margin-bottom:8px">Preview Render Error</div><pre style="font-size:12px;color:#fca5a5;background:#2a1515;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap;">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre><div style="font-size:11px;color:#666;margin-top:10px">The AI-generated code has a syntax error. Try regenerating.</div></div>';
     });
   </script>
 </head>
 <body>
   <div id="root"></div>
   <div id="__error"></div>
+  <script>
+    // Lucide React bridge — make all icons available as globals
+    if (window.lucideReact) {
+      Object.keys(window.lucideReact).forEach(function(key) {
+        if (/^[A-Z]/.test(key)) {
+          window[key] = window.lucideReact[key];
+        }
+      });
+    }
+  </script>
   <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">
     ${sanitized}
     try {

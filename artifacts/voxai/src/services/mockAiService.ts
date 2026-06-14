@@ -1,13 +1,14 @@
+import type { ProjectBlueprint } from './builderService';
+
 const API_BASE = "/api";
 
 export async function mockStreamResponse(
   prompt: string,
   onToken: (token: string) => void,
-  onDone: (fullText: string, code: string) => void,
+  onDone: (fullText: string, code: string, projectBlueprint?: ProjectBlueprint, sectionOrder?: string[]) => void,
   onError: (err: string) => void,
   onStep?: (step: number) => void
 ): Promise<void> {
-  // Start with step 0 — Planner Agent active
   onStep?.(0);
 
   try {
@@ -27,6 +28,8 @@ export async function mockStreamResponse(
     let buffer = "";
     let planText = "";
     let finalCode = "";
+    let finalProjectBlueprint: ProjectBlueprint | undefined;
+    let finalSectionOrder: string[] | undefined;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -47,7 +50,6 @@ export async function mockStreamResponse(
           }
 
           if (json.type === "step") {
-            // Map agent step index to UI step
             onStep?.(json.step);
           }
 
@@ -58,10 +60,12 @@ export async function mockStreamResponse(
 
           if (json.type === "done") {
             finalCode = json.code ?? "";
-            // Step 4 = Preparing Preview
-            onStep?.(4);
+            finalProjectBlueprint = json.projectBlueprint;
+            finalSectionOrder = json.sectionOrder;
+            // Step 5 = "Preparing Preview" (client-side step)
+            onStep?.(5);
             await new Promise((r) => setTimeout(r, 300));
-            onDone(planText || json.plan || "", finalCode);
+            onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder);
           }
         } catch {
           // skip malformed chunks
