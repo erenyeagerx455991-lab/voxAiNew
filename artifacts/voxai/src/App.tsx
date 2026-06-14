@@ -291,6 +291,7 @@ function AppContent() {
                   buildStep={store.buildStep}
                   projectBlueprint={store.projectBlueprint}
                   sectionOrder={store.sectionOrder}
+                  projectFiles={store.projectFiles}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

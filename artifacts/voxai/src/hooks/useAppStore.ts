@@ -2,11 +2,11 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse } from '../services/mockAiService';
-import type { ProjectBlueprint } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
-export type { ProjectBlueprint };
+export type { ProjectBlueprint, ProjectFile };
 
 interface AppState {
   view: View;
@@ -25,6 +25,7 @@ interface AppState {
   buildStep: number;
   projectBlueprint: ProjectBlueprint | null;
   sectionOrder: string[] | undefined;
+  projectFiles: ProjectFile[];
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -100,6 +101,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [buildStep, setBuildStep] = useState(-1);
   const [projectBlueprint, setProjectBlueprint] = useState<ProjectBlueprint | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[] | undefined>(undefined);
+  const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -197,6 +199,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setBuildStep(-1);
     setProjectBlueprint(null);
     setSectionOrder(undefined);
+    setProjectFiles([]);
     if (id) {
       loadMessages(id);
       const cached = localStorage.getItem(CODE_KEY(id));
@@ -232,6 +235,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setBuildStep(-1);
     setProjectBlueprint(null);
     setSectionOrder(undefined);
+    setProjectFiles([]);
     setView('chat');
     closeSidebar();
   }, [closeSidebar]);
@@ -294,7 +298,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         await mockStreamResponse(
           content,
           (token) => setStreamingContent((prev) => prev + token),
-          async (fullText, code, pb?, so?) => {
+          async (fullText, code, pb?, so?, serverFiles?) => {
             let assistantMsg: Message;
             try {
               assistantMsg = await addMessage(chatId!, 'assistant', fullText);
@@ -321,6 +325,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             setGeneratedCode(code);
             if (pb) setProjectBlueprint(pb);
             if (so) setSectionOrder(so);
+            if (serverFiles && serverFiles.length > 0) setProjectFiles(serverFiles);
             setBuildStep(5);
             loadingRef.current = false;
             onCreditsChange?.();
@@ -361,6 +366,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         setBuildStep(-1);
         setProjectBlueprint(null);
         setSectionOrder(undefined);
+        setProjectFiles([]);
       }
     },
     [activeChatId]
@@ -391,6 +397,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     buildStep,
     projectBlueprint,
     sectionOrder,
+    projectFiles,
     handleSend,
     handleNewChat,
     handleDeleteChat,

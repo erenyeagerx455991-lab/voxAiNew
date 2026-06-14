@@ -1,11 +1,17 @@
-import type { ProjectBlueprint } from './builderService';
+import type { ProjectBlueprint, ProjectFile } from './builderService';
 
 const API_BASE = "/api";
 
 export async function mockStreamResponse(
   prompt: string,
   onToken: (token: string) => void,
-  onDone: (fullText: string, code: string, projectBlueprint?: ProjectBlueprint, sectionOrder?: string[]) => void,
+  onDone: (
+    fullText: string,
+    code: string,
+    projectBlueprint?: ProjectBlueprint,
+    sectionOrder?: string[],
+    files?: ProjectFile[]
+  ) => void,
   onError: (err: string) => void,
   onStep?: (step: number) => void
 ): Promise<void> {
@@ -30,6 +36,7 @@ export async function mockStreamResponse(
     let finalCode = "";
     let finalProjectBlueprint: ProjectBlueprint | undefined;
     let finalSectionOrder: string[] | undefined;
+    let finalFiles: ProjectFile[] | undefined;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -62,10 +69,12 @@ export async function mockStreamResponse(
             finalCode = json.code ?? "";
             finalProjectBlueprint = json.projectBlueprint;
             finalSectionOrder = json.sectionOrder;
-            // Step 5 = "Preparing Preview" (client-side step)
+            // Server-generated multi-file output (source of truth for Files tab)
+            finalFiles = Array.isArray(json.files) ? json.files : undefined;
+            // Step 5 = "Preparing Preview" (client-side only)
             onStep?.(5);
             await new Promise((r) => setTimeout(r, 300));
-            onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder);
+            onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder, finalFiles);
           }
         } catch {
           // skip malformed chunks

@@ -12,6 +12,8 @@ interface Props {
   buildStep: number;
   projectBlueprint?: ProjectBlueprint | null;
   sectionOrder?: string[];
+  /** Server-generated project files (source of truth). Falls back to client-side generation. */
+  projectFiles?: ProjectFile[];
 }
 
 function fileIcon(lang: string) {
@@ -78,16 +80,19 @@ function BuildingState({ buildStep }: { buildStep: number }) {
   );
 }
 
-export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, projectBlueprint, sectionOrder }: Props) {
+export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, projectBlueprint, sectionOrder, projectFiles: serverFiles }: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const files = useMemo(
-    () => (code ? generateProjectFiles(code, projectBlueprint ?? undefined, sectionOrder) : []),
-    [code, projectBlueprint, sectionOrder]
-  );
+  // Prefer server-generated files (blueprint-driven, proper TypeScript).
+  // Fall back to client-side generation only when server files aren't available.
+  const files = useMemo(() => {
+    if (serverFiles && serverFiles.length > 0) return serverFiles;
+    if (!code) return [];
+    return generateProjectFiles(code, projectBlueprint ?? undefined, sectionOrder);
+  }, [code, serverFiles, projectBlueprint, sectionOrder]);
   const filtered = search.trim()
     ? files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     : files;

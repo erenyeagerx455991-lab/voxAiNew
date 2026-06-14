@@ -656,6 +656,222 @@ const DEFAULT_DESIGN: DesignDNA = {
   mood: "Sharp",
 };
 
+// ── Server-side multi-file project builder ───────────────────────────────────
+// Splits a single-blob JSX string into proper TypeScript project files.
+// The `done` SSE event emits these alongside `code` (which stays for the
+// live preview iframe — a CDN+Babel runtime that cannot import modules).
+
+interface ProjectFileSSE {
+  path: string;
+  name: string;
+  lang: string;
+  content: string;
+}
+
+const SSE_LUCIDE_ICONS = [
+  'ChevronRight','ChevronLeft','ChevronDown','ChevronUp',
+  'ArrowRight','ArrowLeft','Star','Check','CheckCircle','X','XCircle',
+  'Zap','Shield','Globe','Users','User','UserCheck',
+  'BarChart','BarChart2','BarChart3','LineChart','PieChart',
+  'Code','Code2','Layers','Sparkles','Play','Pause','Menu',
+  'ExternalLink','Github','Twitter','Mail','Phone',
+  'MapPin','Clock','Calendar','Search','Filter','Settings',
+  'Heart','ThumbsUp','MessageCircle','Send','Share2',
+  'Download','Upload','Cloud','Lock','Unlock','Key',
+  'Eye','EyeOff','Info','AlertCircle','AlertTriangle',
+  'Rocket','Package','Box','Folder','File','FileText',
+  'Plus','Minus','Edit','Trash2','Copy','Clipboard',
+  'Link','Linkedin','Instagram','Facebook','Youtube',
+  'Monitor','Smartphone','Tablet','Laptop','Server',
+  'Database','Cpu','Wifi','Battery','Power',
+  'DollarSign','CreditCard','TrendingUp','TrendingDown',
+  'Award','Target','Compass','Map','Navigation',
+  'Building','Building2','Home','Store','Briefcase',
+];
+
+function sseExtractFunctions(code: string): Array<{ name: string; body: string }> {
+  const funcPattern = /^function\s+([A-Z][a-zA-Z0-9]*)\s*\(\s*\)/gm;
+  const positions: Array<{ name: string; start: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = funcPattern.exec(code)) !== null) {
+    positions.push({ name: m[1], start: m.index });
+  }
+  return positions.map((p, i) => ({
+    name: p.name,
+    body: code.slice(p.start, i + 1 < positions.length ? positions[i + 1].start : code.length).trim(),
+  }));
+}
+
+function sseToTsxFile(name: string, rawBody: string): string {
+  const body = rawBody
+    .replace(/React\.useState\b/g, 'useState')
+    .replace(/React\.useEffect\b/g, 'useEffect')
+    .replace(/React\.useRef\b/g, 'useRef')
+    .replace(/React\.useMemo\b/g, 'useMemo')
+    .replace(/React\.useCallback\b/g, 'useCallback');
+
+  const hooks: string[] = [];
+  if (/\buseState\b/.test(body)) hooks.push('useState');
+  if (/\buseEffect\b/.test(body)) hooks.push('useEffect');
+  if (/\buseRef\b/.test(body)) hooks.push('useRef');
+  if (/\buseMemo\b/.test(body)) hooks.push('useMemo');
+  if (/\buseCallback\b/.test(body)) hooks.push('useCallback');
+
+  const icons = SSE_LUCIDE_ICONS.filter(icon => new RegExp(`<${icon}[\\s/>]`).test(body));
+
+  const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
+  const lucideImport = icons.length > 0 ? `\nimport { ${icons.join(', ')} } from 'lucide-react';` : '';
+
+  return `import React${hooksImport} from 'react';${lucideImport}\n\n${body}\n\nexport default ${name};\n`;
+}
+
+function buildServerProjectFiles(
+  code: string,
+  pb: ProjectBlueprint,
+  sectionOrder: string[]
+): ProjectFileSSE[] {
+  const files: ProjectFileSSE[] = [];
+  const allFuncs = sseExtractFunctions(code);
+  const sectionFuncs = allFuncs.filter(f => f.name !== 'App');
+
+  // Blueprint-driven page classification: a function is a "page" if its
+  // lowercase name matches any entry in pb.pages (supports suffix stripping).
+  const pages = (pb.pages && pb.pages.length > 0) ? pb.pages : ['Landing'];
+  const hasMultiplePages = pages.length > 1;
+  const pageNameSet = new Set(pages.map(p => p.toLowerCase()));
+
+  const isPageComponent = (name: string) => {
+    if (!hasMultiplePages) return false;
+    const n = name.toLowerCase();
+    return pageNameSet.has(n) ||
+      pageNameSet.has(n.replace(/page$/, '').replace(/view$/, '').replace(/screen$/, ''));
+  };
+
+  const pageComponents: string[] = [];
+  const sharedComponents: string[] = [];
+
+  for (const f of sectionFuncs) {
+    (isPageComponent(f.name) ? pageComponents : sharedComponents).push(f.name);
+  }
+
+  // Per-component files (blueprint-driven folder placement)
+  for (const f of sectionFuncs) {
+    const folder = pageComponents.includes(f.name) ? 'src/pages/' : 'src/components/';
+    files.push({ path: folder, name: `${f.name}.tsx`, lang: 'tsx', content: sseToTsxFile(f.name, f.body) });
+  }
+
+  // App.tsx — use React Router when multiple blueprint pages are resolved
+  const useRouter = hasMultiplePages && pageComponents.length > 0;
+  let appContent: string;
+
+  if (useRouter) {
+    const pageImports = pageComponents.map(n => `import ${n} from './pages/${n}';`).join('\n');
+    const sharedImports = sharedComponents.map(n => `import ${n} from './components/${n}';`).join('\n');
+    const routes = pageComponents.map((n, i) => {
+      const path = i === 0 ? '/' : `/${n.toLowerCase()}`;
+      return `        <Route path="${path}" element={<${n} />} />`;
+    }).join('\n');
+    appContent = `import React from 'react';\nimport { BrowserRouter as Router, Routes, Route } from 'react-router-dom';\n${pageImports}\n${sharedImports ? '\n' + sharedImports : ''}\n\nexport default function App() {\n  return (\n    <Router>\n      <Routes>\n${routes}\n      </Routes>\n    </Router>\n  );\n}\n`;
+  } else {
+    const allImports = sectionFuncs.map(f => {
+      const folder = pageComponents.includes(f.name) ? 'pages' : 'components';
+      return `import ${f.name} from './${folder}/${f.name}';`;
+    }).join('\n');
+    const rendered = sectionFuncs.map(f => `    <${f.name} />`).join('\n');
+    appContent = `import React from 'react';\n${allImports}\n\nexport default function App() {\n  return (\n    <div>\n${rendered}\n    </div>\n  );\n}\n`;
+  }
+
+  files.push({ path: 'src/', name: 'App.tsx', lang: 'tsx', content: appContent });
+
+  // src/main.tsx
+  files.push({
+    path: 'src/', name: 'main.tsx', lang: 'tsx',
+    content: `import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport App from './App';\nimport './index.css';\n\nReactDOM.createRoot(document.getElementById('root')!).render(\n  <React.StrictMode><App /></React.StrictMode>\n);\n`,
+  });
+
+  // src/index.css
+  files.push({
+    path: 'src/', name: 'index.css', lang: 'css',
+    content: `@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n* { box-sizing: border-box; }\nbody { margin: 0; }\n`,
+  });
+
+  // src/lib/utils.ts — shadcn-compatible cn() utility
+  files.push({
+    path: 'src/lib/', name: 'utils.ts', lang: 'ts',
+    content: `import { type ClassValue, clsx } from 'clsx';\nimport { twMerge } from 'tailwind-merge';\n\n/** shadcn/ui-compatible class merge utility */\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n\nexport function formatDate(date: Date | string): string {\n  return new Intl.DateTimeFormat('en-US', {\n    year: 'numeric', month: 'long', day: 'numeric',\n  }).format(new Date(date));\n}\n`,
+  });
+
+  // src/types/index.ts
+  const tableTypes = (pb.databaseTables || []).map(t => {
+    const T = t.charAt(0).toUpperCase() + t.slice(1).replace(/s$/, '');
+    return `export interface ${T} {\n  id: string;\n  createdAt: string;\n  updatedAt: string;\n}`;
+  }).join('\n\n');
+  files.push({
+    path: 'src/types/', name: 'index.ts', lang: 'ts',
+    content: `// Types for ${pb.projectType || 'project'}\n\nexport interface User {\n  id: string;\n  name: string;\n  email: string;\n  createdAt: string;\n}\n\n${tableTypes}\n`,
+  });
+
+  // index.html
+  files.push({
+    path: '', name: 'index.html', lang: 'html',
+    content: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${pb.projectType || 'NexoGen App'}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n`,
+  });
+
+  // package.json
+  const deps: Record<string, string> = {
+    react: '^18.3.1', 'react-dom': '^18.3.1',
+    'lucide-react': '^0.400.0', clsx: '^2.1.1', 'tailwind-merge': '^2.4.0',
+  };
+  if (useRouter) deps['react-router-dom'] = '^6.26.0';
+  if (pb.authNeeded) deps['@supabase/supabase-js'] = '^2.45.0';
+
+  files.push({
+    path: '', name: 'package.json', lang: 'json',
+    content: JSON.stringify({
+      name: (pb.projectType || 'nexogen-app').toLowerCase().replace(/\s+/g, '-'),
+      private: true, version: '0.0.0', type: 'module',
+      scripts: { dev: 'vite', build: 'tsc && vite build', preview: 'vite preview' },
+      dependencies: deps,
+      devDependencies: {
+        '@types/react': '^18.3.3', '@types/react-dom': '^18.3.0',
+        '@vitejs/plugin-react': '^4.3.1', typescript: '^5.5.3',
+        vite: '^5.4.10', tailwindcss: '^3.4.14',
+        autoprefixer: '^10.4.20', postcss: '^8.4.47',
+      },
+    }, null, 2),
+  });
+
+  // vite.config.ts
+  files.push({
+    path: '', name: 'vite.config.ts', lang: 'ts',
+    content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  resolve: { alias: { '@': '/src' } },\n});\n`,
+  });
+
+  // tsconfig.json
+  files.push({
+    path: '', name: 'tsconfig.json', lang: 'json',
+    content: JSON.stringify({
+      compilerOptions: {
+        target: 'ES2020', useDefineForClassFields: true,
+        lib: ['ES2020', 'DOM', 'DOM.Iterable'], module: 'ESNext',
+        skipLibCheck: true, moduleResolution: 'bundler',
+        allowImportingTsExtensions: true, resolveJsonModule: true,
+        isolatedModules: true, noEmit: true, jsx: 'react-jsx',
+        strict: true, baseUrl: '.', paths: { '@/*': ['./src/*'] },
+      },
+      include: ['src'],
+    }, null, 2),
+  });
+
+  // tailwind.config.ts
+  files.push({
+    path: '', name: 'tailwind.config.ts', lang: 'ts',
+    content: `import type { Config } from 'tailwindcss';\n\nexport default {\n  content: ['./index.html', './src/**/*.{ts,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n} satisfies Config;\n`,
+  });
+
+  return files;
+}
+
 router.post("/agents/build", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
@@ -980,8 +1196,15 @@ router.post("/agents/build", async (req, res) => {
 
     sse(res, { type: "step", step: 4, agent: "Code Fix Agent", status: "done" });
 
+    // ── BUILD PROJECT FILES ───────────────────────────────────────────────────
+    // The preview iframe requires a single CDN+Babel blob (no module imports),
+    // so `code` stays as-is for the preview. `files` is the true multi-file
+    // TypeScript project output, driven by projectBlueprint.pages/components.
+    const projectFiles = buildServerProjectFiles(fixedCode, projectBlueprint, blueprint.sectionOrder);
+    console.log(`[ProjectFiles] Generated ${projectFiles.length} files (${projectFiles.filter(f => f.lang === 'tsx').length} TSX, ${projectFiles.filter(f => f.lang === 'ts').length} TS)`);
+
     // ── DONE ──────────────────────────────────────────────────────────────────
-    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder });
+    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: projectFiles });
 
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });
