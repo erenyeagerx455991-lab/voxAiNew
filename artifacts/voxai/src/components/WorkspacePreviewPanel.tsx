@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import {
   Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
-  FileCode2, FileJson, FileText, Globe, X, Monitor, Folder,
+  FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
 import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
+import { exportProjectZip } from '../services/mockAiService';
 
 interface Props {
   code: string;
@@ -181,10 +182,26 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
     ? files.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
     : files;
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const handleCopy = async (content: string) => {
     await navigator.clipboard.writeText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleExport = async () => {
+    if (!files.length || isExporting) return;
+    setIsExporting(true);
+    try {
+      const projectName = (projectBlueprint?.projectType || 'nexogen-project')
+        .toLowerCase().replace(/\s+/g, '-');
+      await exportProjectZip(files, projectName);
+    } catch (e) {
+      console.error('ZIP export failed:', e);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // ── While building: no tabs, just animation ──────────────────────
@@ -254,16 +271,30 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
           Files
         </button>
 
-        {/* Right: copy button when viewing a file */}
-        {tab === 'files' && selectedFile && (
-          <button
-            onClick={() => handleCopy(selectedFile.content)}
-            className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
-          >
-            {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-            {copied ? 'Copied' : 'Copy'}
-          </button>
-        )}
+        {/* Right: copy (when viewing a file) + Export ZIP */}
+        <div className="ml-auto flex items-center gap-1">
+          {tab === 'files' && selectedFile && (
+            <button
+              onClick={() => handleCopy(selectedFile.content)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors"
+            >
+              {copied ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          )}
+          {files.length > 0 && (
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-40"
+            >
+              {isExporting
+                ? <div className="w-3 h-3 border border-gray-500 border-t-transparent rounded-full animate-spin" />
+                : <Download size={12} />}
+              {isExporting ? 'Exporting…' : 'Export'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Preview tab ── */}

@@ -569,3 +569,65 @@ export function buildPreviewHtml(code: string): string {
 </body>
 </html>`;
 }
+
+// ── PROJECT MEMORY SYSTEM (Phase 1) ──────────────────────────────────────────
+
+export interface FileDependencyGraph {
+  [filename: string]: string[];
+}
+
+export interface ProjectMemory {
+  projectType: string;
+  description: string;
+  pages: string[];
+  routes: string[];
+  entities: string[];
+  features: string[];
+  authProvider: string;
+  generatedFiles: string[];
+  dependencyGraph: FileDependencyGraph;
+  timestamp: number;
+}
+
+const MEMORY_KEY = (chatId: string) => `voxai_memory_${chatId}`;
+
+export function saveProjectMemory(chatId: string, memory: ProjectMemory): void {
+  try { localStorage.setItem(MEMORY_KEY(chatId), JSON.stringify(memory)); } catch {}
+}
+
+export function loadProjectMemory(chatId: string): ProjectMemory | null {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY(chatId));
+    return raw ? (JSON.parse(raw) as ProjectMemory) : null;
+  } catch { return null; }
+}
+
+export function clearProjectMemory(chatId: string): void {
+  try { localStorage.removeItem(MEMORY_KEY(chatId)); } catch {}
+}
+
+// ── FILE DEPENDENCY GRAPH (Phase 2) ──────────────────────────────────────────
+
+export function buildDependencyGraph(files: ProjectFile[]): FileDependencyGraph {
+  const graph: FileDependencyGraph = {};
+  const fileIndex = new Map<string, string>();
+  for (const f of files) {
+    const key = f.name.replace(/\.(tsx?|jsx?)$/, '');
+    fileIndex.set(key, f.path + f.name);
+  }
+  for (const file of files) {
+    if (!file.content || (file.lang !== 'tsx' && file.lang !== 'ts')) continue;
+    const deps: string[] = [];
+    const re = /from\s+['"]([^'"]+)['"]/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(file.content)) !== null) {
+      const imp = m[1];
+      if (!imp.startsWith('.')) continue;
+      const base = imp.split('/').pop() ?? '';
+      const dep = fileIndex.get(base);
+      if (dep && !deps.includes(dep)) deps.push(dep);
+    }
+    graph[file.path + file.name] = deps;
+  }
+  return graph;
+}

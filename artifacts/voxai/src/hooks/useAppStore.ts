@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
-import { mockStreamResponse } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
+import { mockStreamResponse, mockEditResponse } from '../services/mockAiService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
@@ -26,6 +27,7 @@ interface AppState {
   projectBlueprint: ProjectBlueprint | null;
   sectionOrder: string[] | undefined;
   projectFiles: ProjectFile[];
+  projectMemory: ProjectMemory | null;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -35,7 +37,8 @@ interface AppState {
   initialized: boolean;
 }
 
-const CODE_KEY = (id: string) => `voxai_code_${id}`;
+const CODE_KEY  = (id: string) => `voxai_code_${id}`;
+const FILES_KEY = (id: string) => `voxai_files_${id}`;
 const LOCAL_CHATS_KEY = 'voxai_local_chats';
 const LOCAL_MSGS_KEY = (id: string) => `voxai_msgs_${id}`;
 
@@ -102,12 +105,19 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [projectBlueprint, setProjectBlueprint] = useState<ProjectBlueprint | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[] | undefined>(undefined);
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
+  const [projectMemory, setProjectMemory] = useState<ProjectMemory | null>(null);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
+  const projectFilesRef = useRef<ProjectFile[]>([]);
+  const projectMemoryRef = useRef<ProjectMemory | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((o) => !o), []);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  // Keep refs in sync for stale-closure-safe access inside callbacks
+  useEffect(() => { projectFilesRef.current = projectFiles; }, [projectFiles]);
+  useEffect(() => { projectMemoryRef.current = projectMemory; }, [projectMemory]);
 
   const loadChats = useCallback(async () => {
     try {
@@ -200,10 +210,19 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setProjectBlueprint(null);
     setSectionOrder(undefined);
     setProjectFiles([]);
+    setProjectMemory(null);
     if (id) {
       loadMessages(id);
       const cached = localStorage.getItem(CODE_KEY(id));
       setGeneratedCode(cached ?? '');
+      // Restore persisted project files
+      try {
+        const cachedFiles = localStorage.getItem(FILES_KEY(id));
+        if (cachedFiles) setProjectFiles(JSON.parse(cachedFiles));
+      } catch {}
+      // Restore project memory
+      const mem = loadProjectMemory(id);
+      if (mem) setProjectMemory(mem);
     } else {
       setGeneratedCode('');
     }
@@ -236,6 +255,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setProjectBlueprint(null);
     setSectionOrder(undefined);
     setProjectFiles([]);
+    setProjectMemory(null);
     setView('chat');
     closeSidebar();
   }, [closeSidebar]);
@@ -295,50 +315,107 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         setIsTyping(true);
         setStreamingContent('');
 
-        await mockStreamResponse(
-          content,
-          (token) => setStreamingContent((prev) => prev + token),
-          async (fullText, code, pb?, so?, serverFiles?) => {
-            let assistantMsg: Message;
-            try {
-              assistantMsg = await addMessage(chatId!, 'assistant', fullText);
-            } catch {
-              assistantMsg = {
-                id: crypto.randomUUID(),
-                chat_id: chatId!,
-                role: 'assistant',
-                content: fullText,
-                created_at: new Date().toISOString(),
-              };
-            }
-            addLocalMessage(assistantMsg);
-            setActiveChatMessages((prev) =>
-              prev.some((m) => m.id === assistantMsg.id) ? prev : [...prev, assistantMsg]
-            );
+        // Snapshot refs so the closures below don't go stale
+        const currentFiles  = projectFilesRef.current;
+        const currentMemory = projectMemoryRef.current;
+        const isEditMode    = currentFiles.length > 0;
 
-            if (code && chatId) {
-              localStorage.setItem(CODE_KEY(chatId), code);
-            }
+        // ── Shared callbacks ─────────────────────────────────────────────────
+        const handleDone = async (
+          fullText: string,
+          code: string,
+          pb?: ProjectBlueprint,
+          so?: string[],
+          serverFiles?: ProjectFile[]
+        ) => {
+          let assistantMsg: Message;
+          try {
+            assistantMsg = await addMessage(chatId!, 'assistant', fullText || 'Done');
+          } catch {
+            assistantMsg = {
+              id: crypto.randomUUID(),
+              chat_id: chatId!,
+              role: 'assistant',
+              content: fullText || 'Done',
+              created_at: new Date().toISOString(),
+            };
+          }
+          addLocalMessage(assistantMsg);
+          setActiveChatMessages((prev) =>
+            prev.some((m) => m.id === assistantMsg.id) ? prev : [...prev, assistantMsg]
+          );
 
-            setStreamingContent('');
-            setIsTyping(false);
-            setGeneratedCode(code);
-            if (pb) setProjectBlueprint(pb);
-            if (so) setSectionOrder(so);
-            if (serverFiles && serverFiles.length > 0) setProjectFiles(serverFiles);
-            setBuildStep(8);
-            loadingRef.current = false;
-            onCreditsChange?.();
-          },
-          (err) => {
-            setChatError(err);
-            setStreamingContent('');
-            setIsTyping(false);
-            setBuildStep(-1);
-            loadingRef.current = false;
-          },
-          (step) => setBuildStep(step)
-        );
+          if (code && chatId) localStorage.setItem(CODE_KEY(chatId), code);
+
+          setStreamingContent('');
+          setIsTyping(false);
+          setGeneratedCode(code);
+          if (pb) setProjectBlueprint(pb);
+          if (so) setSectionOrder(so);
+
+          if (serverFiles && serverFiles.length > 0) {
+            setProjectFiles(serverFiles);
+            try { localStorage.setItem(FILES_KEY(chatId!), JSON.stringify(serverFiles)); } catch {}
+
+            // Persist ProjectMemory
+            const mem: ProjectMemory = isEditMode && currentMemory
+              ? {
+                  ...currentMemory,
+                  generatedFiles: serverFiles.map(f => f.path + f.name),
+                  dependencyGraph: buildDependencyGraph(serverFiles),
+                  timestamp: Date.now(),
+                }
+              : {
+                  projectType:     pb?.projectType    ?? 'App',
+                  description:     pb?.description    ?? '',
+                  pages:           pb?.pages          ?? [],
+                  routes:          (pb?.pages ?? []).map((p: string) => `/${p.toLowerCase().replace(/\s+/g, '-')}`),
+                  entities:        pb?.entities       ?? [],
+                  features:        pb?.features       ?? [],
+                  authProvider:    pb?.authProvider   ?? '',
+                  generatedFiles:  serverFiles.map(f => f.path + f.name),
+                  dependencyGraph: buildDependencyGraph(serverFiles),
+                  timestamp:       Date.now(),
+                };
+            setProjectMemory(mem);
+            saveProjectMemory(chatId!, mem);
+          }
+
+          setBuildStep(8);
+          loadingRef.current = false;
+          onCreditsChange?.();
+        };
+
+        const handleError = (err: string) => {
+          setChatError(err);
+          setStreamingContent('');
+          setIsTyping(false);
+          setBuildStep(-1);
+          loadingRef.current = false;
+        };
+
+        const handleStep = (step: number) => setBuildStep(step);
+
+        // ── Route: edit existing project OR full build ────────────────────────
+        if (isEditMode) {
+          await mockEditResponse(
+            content,
+            currentFiles,
+            currentMemory,
+            (token) => setStreamingContent((prev) => prev + token),
+            handleDone,
+            handleError,
+            handleStep
+          );
+        } else {
+          await mockStreamResponse(
+            content,
+            (token) => setStreamingContent((prev) => prev + token),
+            handleDone,
+            handleError,
+            handleStep
+          );
+        }
       } catch (err) {
         console.error('handleSend error:', err);
         setChatError('Something went wrong. Please try again.');
@@ -357,6 +434,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       } catch {}
       removeLocalChat(id);
       localStorage.removeItem(CODE_KEY(id));
+      localStorage.removeItem(FILES_KEY(id));
+      clearProjectMemory(id);
       setChats((prev) => prev.filter((c) => c.id !== id));
       if (activeChatId === id) {
         setActiveChatIdState(null);
@@ -367,6 +446,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         setProjectBlueprint(null);
         setSectionOrder(undefined);
         setProjectFiles([]);
+        setProjectMemory(null);
       }
     },
     [activeChatId]
@@ -398,6 +478,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     projectBlueprint,
     sectionOrder,
     projectFiles,
+    projectMemory,
     handleSend,
     handleNewChat,
     handleDeleteChat,

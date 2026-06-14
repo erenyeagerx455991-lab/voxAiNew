@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { selectTemplatesForPrompt, buildContextFromTemplates, getTemplatesByCategory } from "../components/registry";
+import { strToU8, zipSync } from "fflate";
 
 const router: Router = Router();
 
@@ -753,6 +754,115 @@ Rules:
 - .tsx files: NO import/export (they render in CDN+Babel sandbox)
 - .tsx files: Use React.useState, React.useEffect (namespaced)
 - Write complete, working implementations — no placeholder comments`;
+
+// ── EDIT AGENT ────────────────────────────────────────────────────────────────
+const EDIT_SYSTEM = `You are an Edit Agent for an AI software builder. You receive an edit request and the current project files.
+
+Your job: identify ONLY the files that need to change and output their COMPLETE new content.
+
+OUTPUT FORMAT — use FILE delimiter comments exactly:
+// === FILE: src/components/Pricing.tsx ===
+[complete new file content here]
+
+To delete a file:
+// === DELETE: src/pages/OldPage.tsx ===
+
+IDENTIFICATION RULES — be surgical:
+- "Change pricing section" → Pricing.tsx only
+- "Add dark mode" → index.css + tailwind.config.ts (or theme file)
+- "Add new page X" → X.tsx (new file) + App.tsx (updated routes)
+- "Fix navigation" → Navbar.tsx only
+- "Change color scheme" → index.css or design tokens file
+- "Add feature Y to dashboard" → Dashboard.tsx + any relevant component
+
+CRITICAL RULES:
+1. Output ONLY files that changed — never unchanged files
+2. Each modified file MUST be COMPLETE (no truncation, no "// ... rest stays same")
+3. Match the exact code style and import patterns of the existing codebase
+4. For TSX files (src/): use proper React named imports (import React, { useState } from 'react')
+5. For .ts files: use proper ES module exports
+6. If adding a new page, also update App.tsx to include the new route
+7. If changing shared types, update ALL files that use those types
+8. Lucide icons: import { IconName } from 'lucide-react'`;
+
+// ── QUALITY GATE V2 ───────────────────────────────────────────────────────────
+interface QualityGateResult {
+  score: number;
+  passed: boolean;
+  issues: string[];
+}
+
+function computeQualityScore(pb: ProjectBlueprint): QualityGateResult {
+  const issues: string[] = [];
+  let score = 100;
+
+  if (!pb.description || pb.description.length < 5)    { issues.push('Missing description');            score -= 5; }
+  if (!pb.projectType)                                  { issues.push('Missing project type');           score -= 10; }
+  if (pb.pages.length === 0)                            { issues.push('No pages defined');               score -= 15; }
+  if (!pb.techStack?.frontend)                          { issues.push('Missing frontend tech stack');    score -= 10; }
+  if (pb.authNeeded && !pb.authProvider)                { issues.push('Auth needed but no provider');   score -= 10; }
+  if (pb.databaseTables.length > 0 && pb.entities.length === 0) { issues.push('Tables defined but no entities'); score -= 10; }
+  if (pb.databaseTables.length > 0 && pb.apis.length === 0)     { issues.push('Database tables without API routes'); score -= 10; }
+  if (pb.authNeeded && !pb.apis.some(a => a.toLowerCase().includes('auth'))) { issues.push('Auth needed but no auth API route'); score -= 5; }
+  if (pb.entities.length > 1 && pb.relationships.length === 0)  { issues.push('Multiple entities but no relationships'); score -= 5; }
+
+  const finalScore = Math.max(0, Math.min(100, score));
+  return { score: finalScore, passed: finalScore >= 70, issues };
+}
+
+// ── EDIT AGENT HELPERS ────────────────────────────────────────────────────────
+function extractEditFiles(raw: string): ProjectFileSSE[] {
+  const files: ProjectFileSSE[] = [];
+  const delimPattern = /\/\/\s*===\s*FILE:\s*([^=\n]+?)\s*===/g;
+  const positions: Array<{ fullPath: string; start: number; headerEnd: number }> = [];
+  let m: RegExpExecArray | null;
+
+  while ((m = delimPattern.exec(raw)) !== null) {
+    positions.push({ fullPath: m[1].trim(), start: m.index, headerEnd: m.index + m[0].length });
+  }
+
+  for (let i = 0; i < positions.length; i++) {
+    const { fullPath, headerEnd } = positions[i];
+    const rawContent = raw.slice(headerEnd, i + 1 < positions.length ? positions[i + 1].start : raw.length).trim();
+    const content = rawContent
+      .replace(/^```(?:tsx?|jsx?|typescript|javascript|json|sql|css|html)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      .trim();
+    if (content.length === 0) continue;
+
+    const lastSlash = fullPath.lastIndexOf('/');
+    const path = lastSlash >= 0 ? fullPath.slice(0, lastSlash + 1) : '';
+    const name = lastSlash >= 0 ? fullPath.slice(lastSlash + 1) : fullPath;
+    const ext = name.split('.').pop() ?? 'ts';
+    const lang = (ext === 'tsx' || ext === 'jsx') ? 'tsx' : ext === 'json' ? 'json' : ext === 'html' ? 'html' : ext === 'css' ? 'css' : 'ts';
+
+    files.push({ path, name, lang, content });
+  }
+
+  return files;
+}
+
+function extractDeletedPaths(raw: string): string[] {
+  const paths: string[] = [];
+  const deletePattern = /\/\/\s*===\s*DELETE:\s*([^=\n]+?)\s*===/g;
+  let m: RegExpExecArray | null;
+  while ((m = deletePattern.exec(raw)) !== null) paths.push(m[1].trim());
+  return paths;
+}
+
+function mergeProjectFiles(
+  existing: ProjectFileSSE[],
+  modified: ProjectFileSSE[],
+  deleted: string[]
+): ProjectFileSSE[] {
+  let result = existing.filter(f => !deleted.includes(f.path + f.name));
+  for (const mf of modified) {
+    const idx = result.findIndex(f => f.path === mf.path && f.name === mf.name);
+    if (idx >= 0) result[idx] = mf;
+    else result.push(mf);
+  }
+  return result;
+}
 
 const DEFAULT_DESIGN: DesignDNA = {
   designLanguage: "monochrome",
@@ -1565,6 +1675,36 @@ router.post("/agents/build", async (req, res) => {
     }
 
     console.log(`[Architecture V2] projectType=${projectBlueprint.projectType} pages=[${projectBlueprint.pages.join(', ')}] apis=[${projectBlueprint.apis.join(', ')}] tables=[${projectBlueprint.databaseTables.join(', ')}] auth=${projectBlueprint.authNeeded}(${projectBlueprint.authProvider}) entities=[${(projectBlueprint.entities || []).join(', ')}]`);
+
+    // ── QUALITY GATE V2 ───────────────────────────────────────────────────────
+    const qg = computeQualityScore(projectBlueprint);
+    console.log(`[QualityGate V2] score=${qg.score} passed=${qg.passed}${qg.issues.length ? ' — ' + qg.issues.join('; ') : ''}`);
+    sse(res, { type: "quality_gate", score: qg.score, passed: qg.passed, issues: qg.issues });
+
+    if (!qg.passed) {
+      console.warn(`[QualityGate V2] Score ${qg.score} < 70 — retrying Architecture Agent to resolve issues...`);
+      try {
+        const qgRetry = await callGroq(
+          groqKey, PLANNER_MODEL,
+          [
+            { role: "system", content: ARCHITECTURE_SYSTEM },
+            { role: "user", content: `QUALITY FIX — Resolve these issues: ${qg.issues.join('; ')}\n\nOriginal prompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}\n\nPrevious blueprint scored ${qg.score}/100. Produce a corrected, complete blueprint that fixes all issues.` }
+          ],
+          false, 2000
+        );
+        const qgJson = qgRetry.match(/\{[\s\S]*\}/);
+        if (qgJson) {
+          const qgParsed = JSON.parse(qgJson[0]);
+          projectBlueprint = { ...projectBlueprint, ...qgParsed };
+          const qg2 = computeQualityScore(projectBlueprint);
+          console.log(`[QualityGate V2] Retry score=${qg2.score}`);
+          sse(res, { type: "quality_gate_retry", score: qg2.score, passed: qg2.passed });
+        }
+      } catch (e) {
+        console.error('[QualityGate V2] Retry failed:', e);
+      }
+    }
+
     sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "done", projectBlueprint });
 
     // ── AGENT 3: DESIGN DNA ───────────────────────────────────────────────────
@@ -2205,6 +2345,129 @@ router.post("/agents/audit", async (req, res) => {
   }
 
   res.json(audit);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 6 — ZIP EXPORT
+// POST /agents/export → returns a downloadable project.zip
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/agents/export", (req, res) => {
+  try {
+    const { files, projectName = "nexogen-project" } = req.body as {
+      files: Array<{ path: string; name: string; content: string }>;
+      projectName?: string;
+    };
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No files provided" });
+    }
+
+    const safeName = projectName.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const zipData: Record<string, Uint8Array> = {};
+
+    for (const file of files) {
+      const key = `${safeName}/${file.path || ""}${file.name}`.replace(/\/\//g, "/");
+      zipData[key] = strToU8(file.content || "");
+    }
+
+    const zipped = zipSync(zipData, { level: 6 });
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeName}.zip"`);
+    res.send(Buffer.from(zipped));
+  } catch (e: any) {
+    console.error("[Export] ZIP error:", e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 3 — EDIT AGENT
+// POST /agents/edit → SSE stream; patches only affected files
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/agents/edit", async (req, res) => {
+  const groqKey = process.env["GROQ_API_KEY"];
+  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+
+  const { prompt, projectFiles = [], projectMemory } = req.body as {
+    prompt: string;
+    projectFiles: ProjectFileSSE[];
+    projectMemory?: Record<string, any>;
+  };
+
+  if (!prompt) return res.status(400).json({ error: "prompt required" });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
+    sse(res, { type: "step", step: 0, agent: "Edit Agent", status: "active" });
+
+    // ── Build compact file context (TSX/TS only, max 3000 chars each) ─────────
+    const srcFiles = projectFiles.filter(
+      (f) => (f.lang === "tsx" || f.lang === "ts") && !f.name.includes(".min.")
+    );
+
+    const fileContext = srcFiles
+      .map((f) => {
+        const body = f.content.length > 3000
+          ? f.content.slice(0, 3000) + "\n// ... [truncated for context]"
+          : f.content;
+        return `// === CURRENT FILE: ${f.path}${f.name} ===\n${body}`;
+      })
+      .join("\n\n");
+
+    const projectSummary = projectMemory
+      ? `Project: ${projectMemory.projectType || "App"}\nPages: ${(projectMemory.pages || []).join(", ")}\nEntities: ${(projectMemory.entities || []).join(", ")}\n`
+      : `Project files: ${projectFiles.map((f) => f.path + f.name).join(", ")}\n`;
+
+    const userMessage = `${projectSummary}\nEDIT REQUEST: ${prompt}\n\nCURRENT PROJECT FILES:\n${fileContext}`;
+
+    // ── Call Edit Agent ──────────────────────────────────────────────────────
+    const editRaw = await callGroq(
+      groqKey, BACKEND_MODEL,
+      [
+        { role: "system", content: EDIT_SYSTEM },
+        { role: "user", content: userMessage },
+      ],
+      false, 4000
+    );
+
+    sse(res, { type: "step", step: 0, agent: "Edit Agent", status: "done" });
+
+    // ── Parse modified/deleted files ─────────────────────────────────────────
+    const modifiedFiles = extractEditFiles(editRaw);
+    const deletedPaths  = extractDeletedPaths(editRaw);
+
+    console.log(`[EditAgent] modified=${modifiedFiles.length} deleted=${deletedPaths.length}`);
+    sse(res, {
+      type: "edit_identified",
+      modifiedCount: modifiedFiles.length,
+      deletedCount:  deletedPaths.length,
+      files: modifiedFiles.map((f) => f.path + f.name),
+    });
+
+    // ── Merge with existing files ────────────────────────────────────────────
+    const mergedFiles = mergeProjectFiles(projectFiles, modifiedFiles, deletedPaths);
+
+    sse(res, {
+      type: "edit_done",
+      files: mergedFiles,
+      modifiedFiles,
+      deletedFiles: deletedPaths,
+      addedFiles: modifiedFiles.filter(
+        (mf) => !projectFiles.some((pf) => pf.path === mf.path && pf.name === mf.name)
+      ),
+    });
+
+    res.end();
+  } catch (e: any) {
+    console.error("[EditAgent] Error:", e);
+    sse(res, { type: "error", error: e.message });
+    res.end();
+  }
 });
 
 export default router;
