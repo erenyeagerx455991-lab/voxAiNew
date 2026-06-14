@@ -3,7 +3,7 @@ import {
   Eye, Files, Copy, Check, Search, ChevronRight,
   FileCode2, FileJson, FileText, Globe, X, Monitor,
 } from 'lucide-react';
-import { buildPreviewHtml, generateProjectFiles } from '../services/builderService';
+import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
 import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
 
 interface Props {
@@ -185,8 +185,12 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
       {/* ── Preview tab ── */}
       {tab === 'preview' && (
         <iframe
-          key={code}
-          srcDoc={buildPreviewHtml(code)}
+          key={serverFiles && serverFiles.length > 0 ? serverFiles.length : code}
+          srcDoc={
+            serverFiles && serverFiles.length > 0
+              ? buildPreviewHtmlFromFiles(serverFiles)
+              : buildPreviewHtml(code)
+          }
           title="Live preview"
           sandbox="allow-scripts allow-same-origin"
           className="flex-1 w-full border-0"

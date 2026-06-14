@@ -702,14 +702,42 @@ function sseExtractFunctions(code: string): Array<{ name: string; body: string }
   }));
 }
 
+/**
+ * Per-file sanitization pass — runs on each extracted function body before
+ * wrapping it in proper TypeScript module syntax. This is the per-file
+ * "Code Fix" step: it strips any stray TypeScript type declarations,
+ * import/export remnants, and JSX fragment syntax that the Code Fix Agent
+ * may have missed in the monolithic blob.
+ */
+function sanitizeFunctionBody(body: string): string {
+  return body
+    // Strip top-level interface/type declarations that leaked inside function bodies
+    .replace(/^\s*(?:interface|type)\s+\w[\s\S]*?\n\}/gm, '')
+    // Strip any lingering import/export statements inside the body
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^export\s+default\s+/gm, '')
+    .replace(/^export\s+/gm, '')
+    // Strip TypeScript parameter annotations in arrow functions (e.g. (x: string) => …)
+    // but only outside JSX — use a conservative pattern
+    .replace(/:\s*(?:string|number|boolean|any|void|never|undefined|null)\b(?=\s*[,)=])/g, '')
+    .trim();
+}
+
 function sseToTsxFile(name: string, rawBody: string): string {
-  const body = rawBody
+  // 1. Per-file sanitization (strips TypeScript remnants from the function body)
+  const sanitized = sanitizeFunctionBody(rawBody);
+
+  // 2. Convert React.useState → useState etc. (CDN blob uses namespaced hooks;
+  //    the generated TSX file uses named imports instead)
+  const body = sanitized
     .replace(/React\.useState\b/g, 'useState')
     .replace(/React\.useEffect\b/g, 'useEffect')
     .replace(/React\.useRef\b/g, 'useRef')
     .replace(/React\.useMemo\b/g, 'useMemo')
     .replace(/React\.useCallback\b/g, 'useCallback');
 
+  // 3. Detect which hooks and Lucide icons are actually used
   const hooks: string[] = [];
   if (/\buseState\b/.test(body)) hooks.push('useState');
   if (/\buseEffect\b/.test(body)) hooks.push('useEffect');
@@ -719,6 +747,7 @@ function sseToTsxFile(name: string, rawBody: string): string {
 
   const icons = SSE_LUCIDE_ICONS.filter(icon => new RegExp(`<${icon}[\\s/>]`).test(body));
 
+  // 4. Build proper TypeScript module with explicit named imports
   const hooksImport = hooks.length > 0 ? `, { ${hooks.join(', ')} }` : '';
   const lucideImport = icons.length > 0 ? `\nimport { ${icons.join(', ')} } from 'lucide-react';` : '';
 

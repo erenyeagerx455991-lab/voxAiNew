@@ -359,6 +359,74 @@ ${rendered}
   return files;
 }
 
+// ── Preview assembler from ProjectFile[] ────────────────────────────────────
+// Makes ProjectFile[] the runtime source of truth for the preview iframe.
+// Strips import/export wrappers from each file, adds a React hooks preamble
+// so de-namespaced hooks (useState vs React.useState) work in the CDN+Babel
+// environment, then concatenates components → App.tsx and renders the result.
+//
+// Note: the preview iframe uses CDN+Babel (no bundler), so true ES module
+// imports cannot be resolved at runtime. This assembler inlines all components
+// in dependency order to achieve the equivalent behaviour.
+
+export function buildPreviewHtmlFromFiles(files: ProjectFile[]): string {
+  const tsxFiles = files.filter(
+    (f) => (f.lang === 'tsx' || f.lang === 'jsx') && f.name !== 'main.tsx'
+  );
+  const appFile = tsxFiles.find((f) => f.name === 'App.tsx');
+  const components = tsxFiles.filter((f) => f.name !== 'App.tsx');
+
+  if (!appFile && components.length === 0) {
+    return buildPreviewHtml('function App() { return <div>No content</div>; }');
+  }
+
+  // Strip import/export wrappers added by sseToTsxFile / generateProjectFiles.
+  // The function definitions are kept intact.
+  const stripForInline = (content: string): string =>
+    content
+      .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+      .replace(/^import\s*\{[^}]+\}\s*from\s+['"][^'"]+['"];?\s*$/gm, '')
+      .replace(/^import\s+['"][^'"]+['"];?\s*$/gm, '')
+      .replace(/^export\s+default\s+function\s/gm, 'function ')
+      .replace(/^export\s+default\s+/gm, '')
+      .replace(/^export\s+function\s/gm, 'function ')
+      .replace(/^export\s+/gm, '')
+      .trim();
+
+  const parts: string[] = [
+    // Preamble: make de-namespaced hooks available globally.
+    // Files from sseToTsxFile use useState (not React.useState) after hook conversion.
+    'const { useState, useEffect, useRef, useMemo, useCallback, useContext, useReducer } = React;',
+  ];
+
+  // Shared components first (pages depend on them), then App.tsx last
+  for (const f of components) {
+    const cleaned = stripForInline(f.content);
+    if (cleaned.length > 10) parts.push(cleaned);
+  }
+
+  if (appFile) {
+    // App.tsx may use BrowserRouter — strip router wrappers since the preview
+    // is a self-contained iframe that doesn't need URL-based routing.
+    let appCleaned = stripForInline(appFile.content);
+    // Replace Router/BrowserRouter wrapper with a simple div so routing JSX renders
+    appCleaned = appCleaned
+      .replace(/<Router>\s*/g, '<div>')
+      .replace(/<BrowserRouter[^>]*>\s*/g, '<div>')
+      .replace(/\s*<\/Router>/g, '</div>')
+      .replace(/\s*<\/BrowserRouter>/g, '</div>')
+      // Replace <Routes>/<Route> with the first page component rendered directly
+      .replace(/<Routes>([\s\S]*?)<\/Routes>/g, (_, inner) => {
+        const firstRoute = inner.match(/element=\{<(\w+)\s*\/>\}/);
+        return firstRoute ? `<${firstRoute[1]} />` : inner;
+      });
+    parts.push(appCleaned);
+  }
+
+  const assembled = parts.join('\n\n');
+  return buildPreviewHtml(assembled);
+}
+
 // ── Preview HTML builder (with Lucide React CDN support) ────────────────────
 
 export function buildPreviewHtml(code: string): string {
