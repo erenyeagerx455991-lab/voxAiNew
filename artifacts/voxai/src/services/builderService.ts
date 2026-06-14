@@ -405,22 +405,65 @@ export function buildPreviewHtmlFromFiles(files: ProjectFile[]): string {
     if (cleaned.length > 10) parts.push(cleaned);
   }
 
+  // Detect page components (files in src/pages/) for tab navigation
+  const pageFiles = files.filter(
+    (f) => (f.lang === 'tsx' || f.lang === 'jsx') && f.path.includes('pages/') && f.name !== 'App.tsx'
+  );
+  const hasMultiplePages = pageFiles.length > 1;
+
   if (appFile) {
-    // App.tsx may use BrowserRouter — strip router wrappers since the preview
-    // is a self-contained iframe that doesn't need URL-based routing.
     let appCleaned = stripForInline(appFile.content);
-    // Replace Router/BrowserRouter wrapper with a simple div so routing JSX renders
-    appCleaned = appCleaned
-      .replace(/<Router>\s*/g, '<div>')
-      .replace(/<BrowserRouter[^>]*>\s*/g, '<div>')
-      .replace(/\s*<\/Router>/g, '</div>')
-      .replace(/\s*<\/BrowserRouter>/g, '</div>')
-      // Replace <Routes>/<Route> with the first page component rendered directly
-      .replace(/<Routes>([\s\S]*?)<\/Routes>/g, (_, inner) => {
-        const firstRoute = inner.match(/element=\{<(\w+)\s*\/>\}/);
-        return firstRoute ? `<${firstRoute[1]} />` : inner;
-      });
-    parts.push(appCleaned);
+
+    if (hasMultiplePages) {
+      // Multi-page: inject a RouterCompat tab nav so all routes are navigable
+      // in the preview iframe (BrowserRouter doesn't work in sandboxed iframes).
+      const routeList = pageFiles
+        .map((f) => {
+          const name = f.name.replace('.tsx', '');
+          return `{ name: "${name}", component: ${name} }`;
+        })
+        .join(', ');
+
+      const routerCompat = `
+function RouterCompat() {
+  const [current, setCurrent] = React.useState(0);
+  const routes = [${routeList}];
+  const Page = routes[current].component;
+  return (
+    <div>
+      <div style={{display:'flex',gap:'4px',padding:'8px 12px',background:'rgba(0,0,0,0.6)',borderBottom:'1px solid rgba(255,255,255,0.08)',position:'sticky',top:0,zIndex:50}}>
+        {routes.map(function(r,i){return React.createElement('button',{key:r.name,onClick:function(){setCurrent(i)},style:{padding:'4px 12px',borderRadius:'6px',border:'none',cursor:'pointer',fontSize:'12px',fontWeight:500,background:i===current?'rgba(255,255,255,0.15)':'transparent',color:i===current?'#fff':'rgba(255,255,255,0.5)',transition:'all 0.15s'}},r.name);})}
+      </div>
+      <Page />
+    </div>
+  );
+}`;
+
+      // Replace the BrowserRouter-based App return with RouterCompat
+      appCleaned = appCleaned
+        .replace(/<Router>[\s\S]*?<\/Router>/g, '<RouterCompat />')
+        .replace(/<BrowserRouter[^>]*>[\s\S]*?<\/BrowserRouter>/g, '<RouterCompat />');
+
+      // If no router wrapper found, replace App body to use RouterCompat
+      if (!appCleaned.includes('<RouterCompat />')) {
+        appCleaned = `function App() { return <RouterCompat />; }`;
+      }
+
+      parts.push(routerCompat);
+      parts.push(appCleaned);
+    } else {
+      // Single-page or single-route: collapse any router wrapper to a plain div
+      appCleaned = appCleaned
+        .replace(/<Router>\s*/g, '<div>')
+        .replace(/<BrowserRouter[^>]*>\s*/g, '<div>')
+        .replace(/\s*<\/Router>/g, '</div>')
+        .replace(/\s*<\/BrowserRouter>/g, '</div>')
+        .replace(/<Routes>([\s\S]*?)<\/Routes>/g, (_, inner) => {
+          const firstRoute = inner.match(/element=\{<(\w+)\s*\/>\}/);
+          return firstRoute ? `<${firstRoute[1]} />` : inner;
+        });
+      parts.push(appCleaned);
+    }
   }
 
   const assembled = parts.join('\n\n');
@@ -474,11 +517,36 @@ export function buildPreviewHtml(code: string): string {
     // Lucide React bridge — make all icons available as globals
     if (window.lucideReact) {
       Object.keys(window.lucideReact).forEach(function(key) {
-        if (/^[A-Z]/.test(key)) {
-          window[key] = window.lucideReact[key];
-        }
+        if (/^[A-Z]/.test(key)) { window[key] = window.lucideReact[key]; }
       });
     }
+    // shadcn/ui-compatible component stubs — available as globals
+    // Matches the API surface the Frontend Agent is instructed to use.
+    (function() {
+      function cx() { return Array.from(arguments).filter(Boolean).join(' '); }
+      window.cn = cx;
+      window.Button = function(p) {
+        var v = {default:'bg-white text-black hover:bg-gray-100',outline:'border border-current text-current hover:opacity-80 bg-transparent',ghost:'text-current hover:bg-white/10 bg-transparent',secondary:'bg-white/10 text-white hover:bg-white/20',destructive:'bg-red-600 text-white hover:bg-red-700'}[p.variant||'default']||'bg-white text-black';
+        var s = {default:'px-4 py-2 text-sm h-9',sm:'px-3 py-1.5 text-xs h-8',lg:'px-6 py-3 text-base h-11',icon:'h-9 w-9 p-0 justify-center'}[p.size||'default']||'px-4 py-2 text-sm h-9';
+        var cls = cx('inline-flex items-center gap-1.5 rounded-lg font-medium transition-colors cursor-pointer border-0',v,s,p.className||'');
+        return React.createElement('button', Object.assign({},p,{className:cls}), p.children);
+      };
+      window.Card = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('rounded-xl border border-white/10 bg-white/5',p.className)}),p.children); };
+      window.CardHeader = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('p-6 pb-2',p.className)}),p.children); };
+      window.CardContent = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('p-6 pt-0',p.className)}),p.children); };
+      window.CardFooter = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('p-6 pt-0 flex items-center',p.className)}),p.children); };
+      window.CardTitle = function(p) { return React.createElement('h3',Object.assign({},p,{className:cx('text-xl font-semibold',p.className)}),p.children); };
+      window.CardDescription = function(p) { return React.createElement('p',Object.assign({},p,{className:cx('text-sm opacity-60',p.className)}),p.children); };
+      window.Input = function(p) { return React.createElement('input',Object.assign({},p,{className:cx('flex h-9 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-sm placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-white/30',p.className)})); };
+      window.Badge = function(p) {
+        var v = {default:'bg-white/10 text-white',secondary:'bg-white/5 text-gray-300',outline:'border border-current text-current bg-transparent',destructive:'bg-red-600/20 text-red-400'}[p.variant||'default']||'bg-white/10 text-white';
+        return React.createElement('div',Object.assign({},p,{className:cx('inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold',v,p.className)}),p.children);
+      };
+      window.Avatar = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full',p.className)}),p.children); };
+      window.AvatarImage = function(p) { return React.createElement('img',Object.assign({},p,{className:cx('aspect-square h-full w-full object-cover',p.className)})); };
+      window.AvatarFallback = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('flex h-full w-full items-center justify-center rounded-full bg-white/10 text-sm font-medium',p.className)}),p.children); };
+      window.Separator = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('h-px w-full bg-white/10',p.className)})); };
+    })();
   </script>
   <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">
     ${sanitized}

@@ -364,7 +364,7 @@ Output ONLY this JSON (no markdown, no explanation, no code fences):
   "mood": "one word"
 }`;
 
-function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentContext?: string) {
+function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentContext?: string, projectBlueprint?: ProjectBlueprint | null) {
   const sectionList = blueprint.sectionOrder.map((s, i) => `${i + 1}. ${s}`).join('\n');
   const functionNames = blueprint.sectionOrder.map(s => `${s}()`).join(', ');
   const appReturn = blueprint.sectionOrder.map(s => `<${s}/>`).join('');
@@ -562,6 +562,31 @@ LAYOUT RULES (apply per section type):
 ${layoutStyleRules}
 ${structureVariationRules}
 
+═══ SHADCN/UI COMPONENTS ═══
+The following components are available as globals (no import needed). Use them for interactive UI elements:
+- <Button variant="default|outline|ghost|secondary|destructive" size="default|sm|lg">...</Button>
+- <Card className="..."><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>...</CardContent></Card>
+- <Input placeholder="..." className="..." type="text|email|password" />
+- <Badge variant="default|secondary|outline">Status</Badge>
+- <Avatar><AvatarImage src="..." /><AvatarFallback>AB</AvatarFallback></Avatar>
+Prefer these over raw <button> / <input> / <div> for form elements and action buttons.
+
+═══ MULTI-FILE STRUCTURE ═══
+Each section function will be extracted into its own TypeScript file. Mark file boundaries with delimiter comments:
+// === FILE: src/components/Navbar.tsx ===
+function Navbar() { ... }
+
+// === FILE: src/components/Hero.tsx ===
+function Hero() { ... }
+
+// === FILE: src/App.tsx ===
+function App() { ... }
+
+Rules:
+- Component/section files: src/components/
+- App.tsx: src/
+- Write each function as self-contained (no cross-function variable sharing)
+
 ═══ SVG ILLUSTRATIONS ═══
 When a section needs a visual but no image is specified — create an inline SVG:
 - Product/dashboard screenshot: SVG browser frame (rounded rect + 3 dot circles) containing simplified rect grid rows
@@ -583,7 +608,9 @@ ABSOLUTE TECHNICAL RULES (breaking these crashes the preview):
 9. Use bg-[#hexcode] syntax for custom colors from the design DNA above.
 
 CODE STRUCTURE — required pattern:
-[one function per section in blueprint order]
+// === FILE: src/components/SectionName.tsx ===
+[one function per section, each preceded by its FILE delimiter]
+// === FILE: src/App.tsx ===
 function App() { return (<div>${appReturn}</div>); }
 
 The App() function must render all ${blueprint.sectionOrder.length} sections: ${functionNames}
@@ -689,10 +716,39 @@ const SSE_LUCIDE_ICONS = [
   'Building','Building2','Home','Store','Briefcase',
 ];
 
+/**
+ * Extract component functions from the LLM output.
+ *
+ * Primary path: parse `// === FILE: src/components/Name.tsx ===` delimiter
+ * comments that the Frontend Agent is instructed to emit. This is
+ * blueprint-driven and gives the LLM control over file boundaries.
+ *
+ * Fallback: heuristic function-boundary regex for outputs that omit delimiters.
+ */
 function sseExtractFunctions(code: string): Array<{ name: string; body: string }> {
+  // Primary: delimiter-based extraction (blueprint-driven multi-file output)
+  const delimPattern = /\/\/\s*===\s*FILE:\s*(?:src\/(?:components|pages|)\/)?([A-Z][a-zA-Z0-9]*)\.tsx\s*===/g;
+  const delimPositions: Array<{ name: string; start: number; headerEnd: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = delimPattern.exec(code)) !== null) {
+    const headerEnd = m.index + m[0].length;
+    delimPositions.push({ name: m[1], start: m.index, headerEnd });
+  }
+
+  if (delimPositions.length >= 2) {
+    // At least 2 file markers found — use delimiter-based splitting
+    return delimPositions.map((p, i) => ({
+      name: p.name,
+      body: code.slice(
+        p.headerEnd,
+        i + 1 < delimPositions.length ? delimPositions[i + 1].start : code.length
+      ).trim(),
+    }));
+  }
+
+  // Fallback: regex-based function boundary detection
   const funcPattern = /^function\s+([A-Z][a-zA-Z0-9]*)\s*\(\s*\)/gm;
   const positions: Array<{ name: string; start: number }> = [];
-  let m: RegExpExecArray | null;
   while ((m = funcPattern.exec(code)) !== null) {
     positions.push({ name: m[1], start: m.index });
   }
@@ -754,6 +810,35 @@ function sseToTsxFile(name: string, rawBody: string): string {
   return `import React${hooksImport} from 'react';${lucideImport}\n\n${body}\n\nexport default ${name};\n`;
 }
 
+// ── Per-file deterministic validator ────────────────────────────────────────
+// Runs on every extracted TSX file body after sseToTsxFile() wraps it in
+// proper TypeScript module syntax. This is the per-file Code Fix stage:
+// no LLM call needed for clean files; problems are logged so callers can
+// optionally trigger a targeted repair pass.
+
+interface TsxValidation { valid: boolean; issues: string[]; }
+
+function validateTsxFile(name: string, content: string): TsxValidation {
+  const issues: string[] = [];
+  // Strip known wrapper lines (imports / export) before checking the body
+  const body = content
+    .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
+    .replace(/^export\s.*/gm, '');
+
+  // 1. Must contain a capitalized function definition
+  if (!/function\s+[A-Z]/.test(body)) issues.push('missing capitalized function definition');
+  // 2. Must have a JSX return statement
+  if (!/\breturn\s*[(<]/.test(body)) issues.push('missing JSX return statement');
+  // 3. JSX fragments are banned (CDN+Babel preview requires wrapper divs)
+  if (/<>|<\/>/.test(body)) issues.push('JSX fragment syntax (<> </>) — use a wrapper div');
+  // 4. Stray TypeScript-only syntax that crashes Babel strict mode
+  if (/:\s*React\.FC\b|:\s*JSX\.Element\b/.test(body)) issues.push('React.FC / JSX.Element type annotation');
+  // 5. Stray import left over in the body (would cause ReferenceError)
+  if (/\nimport\s/.test(body)) issues.push('stray import statement inside function body');
+
+  return { valid: issues.length === 0, issues };
+}
+
 function buildServerProjectFiles(
   code: string,
   pb: ProjectBlueprint,
@@ -783,10 +868,15 @@ function buildServerProjectFiles(
     (isPageComponent(f.name) ? pageComponents : sharedComponents).push(f.name);
   }
 
-  // Per-component files (blueprint-driven folder placement)
+  // Per-component files (blueprint-driven folder placement) + per-file validation
   for (const f of sectionFuncs) {
     const folder = pageComponents.includes(f.name) ? 'src/pages/' : 'src/components/';
-    files.push({ path: folder, name: `${f.name}.tsx`, lang: 'tsx', content: sseToTsxFile(f.name, f.body) });
+    const content = sseToTsxFile(f.name, f.body);
+    const validation = validateTsxFile(f.name, content);
+    if (!validation.valid) {
+      console.warn(`[FileValidation] ${f.name}.tsx: ${validation.issues.join('; ')}`);
+    }
+    files.push({ path: folder, name: `${f.name}.tsx`, lang: 'tsx', content });
   }
 
   // App.tsx — use React Router when multiple blueprint pages are resolved
@@ -1178,7 +1268,7 @@ router.post("/agents/build", async (req, res) => {
     try {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
-          { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
           { role: "user", content: `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Use component templates as structural reference — replace ALL placeholder text with real, specific content for this site. Apply the design DNA precisely. Do not truncate.` },
         ],
         8000
@@ -1187,7 +1277,7 @@ router.post("/agents/build", async (req, res) => {
       console.error("OpenRouter codegen failed, falling back to Groq:", e);
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
-          { role: "system", content: buildCodeSystem(design, blueprint, componentContext) },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
           { role: "user", content: `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.` },
         ],
         false, 8000
