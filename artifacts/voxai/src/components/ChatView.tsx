@@ -8,6 +8,9 @@ const AGENT_STEPS = [
   { label: 'Design Agent',        colors: 'from-pink-500 to-rose-500' },
   { label: 'Frontend Agent',      colors: 'from-blue-500 to-cyan-500' },
   { label: 'Code Fix Agent',      colors: 'from-emerald-500 to-teal-500' },
+  { label: 'Backend Agent',       colors: 'from-indigo-500 to-blue-600' },
+  { label: 'Database Agent',      colors: 'from-cyan-500 to-sky-600' },
+  { label: 'Auth Agent',          colors: 'from-lime-500 to-green-600' },
   { label: 'Preparing Preview',   colors: 'from-amber-500 to-orange-500' },
 ];
 

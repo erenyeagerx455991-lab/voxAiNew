@@ -5,7 +5,12 @@ export interface ProjectBlueprint {
   databaseTables: string[];
   apis: string[];
   authNeeded: boolean;
+  authProvider: string;
   dashboardNeeded: boolean;
+  entities: string[];
+  relationships: string[];
+  navigation: string[];
+  features: string[];
   techStack: {
     frontend: string;
     routing: string;

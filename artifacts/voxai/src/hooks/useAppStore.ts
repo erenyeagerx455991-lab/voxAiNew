@@ -326,7 +326,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             if (pb) setProjectBlueprint(pb);
             if (so) setSectionOrder(so);
             if (serverFiles && serverFiles.length > 0) setProjectFiles(serverFiles);
-            setBuildStep(5);
+            setBuildStep(8);
             loadingRef.current = false;
             onCreditsChange?.();
           },

@@ -10,6 +10,7 @@ const PLANNER_MODEL = "llama-3.3-70b-versatile";
 const DESIGN_MODEL = "google/gemini-2.5-flash-lite";
 const CODEGEN_MODEL = "deepseek/deepseek-chat";
 const CODEFIX_MODEL = "llama-3.3-70b-versatile";
+const BACKEND_MODEL = "llama-3.3-70b-versatile";
 
 interface PageBlueprint {
   websiteType: string;
@@ -23,7 +24,12 @@ interface ProjectBlueprint {
   databaseTables: string[];
   apis: string[];
   authNeeded: boolean;
+  authProvider: string;
   dashboardNeeded: boolean;
+  entities: string[];
+  relationships: string[];
+  navigation: string[];
+  features: string[];
   techStack: {
     frontend: string;
     routing: string;
@@ -184,17 +190,22 @@ Available sections (use only what fits the site type):
 - Footer          — site footer
 `.trim();
 
-const ARCHITECTURE_SYSTEM = `You are an Architecture Agent for an AI software builder. Analyze the user's prompt and output a precise project blueprint as JSON.
+const ARCHITECTURE_SYSTEM = `You are an Architecture Agent V2 for an AI software builder. Analyze the user's prompt and output a complete, precise project blueprint as JSON. Blueprint is the single source of truth — every field drives downstream code generation.
 
 Output ONLY valid JSON (no markdown, no code fences, no explanation):
 {
-  "projectType": "one of: Landing Page, SaaS, E-commerce, Portfolio, Restaurant, Agency, Blog, Dashboard App, AI Tool, Developer Tool",
-  "pages": ["array of page names, e.g. Landing, Dashboard, Login, Signup, Settings, Pricing, Blog, About, Contact"],
-  "components": ["reusable component names, e.g. Navbar, Hero, PricingCard, FeatureGrid, Footer, Testimonials"],
-  "databaseTables": ["database entities, e.g. users, projects, subscriptions, posts — empty array for simple landing pages"],
-  "apis": ["API route domains, e.g. auth, users, projects, billing, ai — empty array for simple landing pages"],
+  "projectType": "one of: Landing Page, SaaS, E-commerce, Portfolio, Restaurant, Agency, Blog, Dashboard App, AI Tool, Developer Tool, CRM, Project Management Tool",
+  "pages": ["exact page names that will become files, e.g. Landing, Dashboard, Login, Signup, Settings, Pricing, Customers, Deals, Analytics, Profile"],
+  "components": ["shared reusable component names, e.g. Navbar, Footer, Sidebar, PricingCard, FeatureGrid, StatsCard"],
+  "databaseTables": ["snake_case table names, e.g. users, customers, deals, projects, subscriptions, posts — empty array for simple landing pages"],
+  "apis": ["API route domains matching databaseTables, e.g. auth, users, customers, deals, projects, billing — empty array for simple landing pages"],
   "authNeeded": false,
+  "authProvider": "JWT | Supabase | Clerk — only set when authNeeded is true, else empty string",
   "dashboardNeeded": false,
+  "entities": ["PascalCase entity names matching tables, e.g. User, Customer, Deal, Project, Subscription"],
+  "relationships": ["e.g. User has many Projects, Project belongs to User, Customer has many Deals"],
+  "navigation": ["nav items the app needs, e.g. Dashboard, Customers, Deals, Settings, Profile"],
+  "features": ["specific feature names, e.g. Customer List, Deal Pipeline, Revenue Analytics, CSV Export, Email Notifications"],
   "techStack": {
     "frontend": "React + TypeScript + Tailwind CSS",
     "routing": "React Router v6",
@@ -202,14 +213,20 @@ Output ONLY valid JSON (no markdown, no code fences, no explanation):
     "backend": "Express.js + TypeScript",
     "database": "PostgreSQL + Prisma"
   },
-  "description": "one sentence describing what this software does"
+  "description": "one sentence describing what this software does and who it is for"
 }
 
-Rules:
-- Simple landing page/portfolio/restaurant: authNeeded false, dashboardNeeded false, pages ["Landing"], databaseTables [], apis []
-- SaaS/app with user accounts: authNeeded true, dashboardNeeded true, multiple pages including Login/Signup/Dashboard
-- E-commerce: authNeeded true, pages include Landing/Products/Cart/Checkout
-- Be realistic — don't add unnecessary complexity for simple marketing sites`;
+Detection rules:
+- Simple landing page/portfolio/restaurant: authNeeded false, pages ["Landing"], databaseTables [], apis [], entities [], relationships []
+- SaaS / Dashboard App: authNeeded true, authProvider "JWT", dashboardNeeded true, pages include Login/Signup/Dashboard + domain pages, full databaseTables and apis
+- CRM: pages [Landing, Dashboard, Customers, Deals, Settings], apis [auth, customers, deals], databaseTables [users, customers, deals], authNeeded true
+- E-commerce: authNeeded true, pages include Landing/Products/Cart/Checkout/Orders, databaseTables [users, products, orders, cart_items]
+- Blog: pages [Landing, Blog, Post, About], databaseTables [users, posts, categories], authNeeded true (for admin)
+- Every api must correspond to a databaseTable. Every entity must correspond to a table.
+- authProvider defaults to "JWT" when authNeeded is true and no specific provider is mentioned
+- Be precise: relationships MUST be inferred from pages + tables (e.g. if users and projects exist: "User has many Projects")
+- navigation MUST match the pages array entries that are primary nav destinations
+- features MUST list concrete features visible in the UI (not generic descriptions)`;
 
 const PLANNER_SYSTEM = `You are a Planner Agent for an AI website builder. Analyze the user's request and produce TWO things:
 
@@ -639,6 +656,104 @@ const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX code and
 3. Return ONLY the corrected raw JSX code. No markdown, no explanation.
    Start with the first section function (not App).`;
 
+const BACKEND_SYSTEM = `You are a Backend Agent generating Express.js TypeScript API route files.
+
+Generate EACH API route file using FILE delimiter comments:
+// === FILE: src/api/routeName.ts ===
+
+Each generated file MUST include:
+1. Import { Router, Request, Response } from 'express' and { z } from 'zod'
+2. Zod validation schemas for request bodies (CreateSchema, UpdateSchema)
+3. TypeScript interfaces for the entity
+4. Express Router with GET /, POST /, GET /:id, PUT /:id, DELETE /:id routes
+5. Async handlers with try/catch and proper HTTP status codes (200, 201, 400, 404, 500)
+6. export default router at the end
+
+Also generate:
+// === FILE: src/server.ts ===
+Express app with all routers mounted at /api/:routeName
+
+// === FILE: src/middleware/errorHandler.ts ===
+Global error handler middleware
+
+Rules:
+- Write complete, realistic CRUD stubs (not placeholder comments)
+- Use meaningful field names inferred from entity names
+- TypeScript strict mode: all types explicit
+- Return JSON responses with { data } or { error } shape
+- No hardcoded data — comment where DB calls will go
+- Every file must compile without errors`;
+
+const DATABASE_SYSTEM = `You are a Database Agent generating PostgreSQL and Prisma schema files.
+
+Generate EXACTLY two files using FILE delimiter comments:
+
+// === FILE: schema.sql ===
+Complete PostgreSQL DDL
+
+// === FILE: prisma/schema.prisma ===
+Complete Prisma schema
+
+Requirements for schema.sql:
+- CREATE TABLE IF NOT EXISTS for every table
+- id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+- Foreign key constraints with ON DELETE CASCADE or SET NULL
+- created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW()
+- CREATE INDEX ON frequently queried columns (foreign keys, email, status)
+- NOT NULL constraints where logically required
+
+Requirements for prisma/schema.prisma:
+- datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+- generator client { provider = "prisma-client-js" }
+- Model for EVERY table with matching fields
+- @id @default(uuid())
+- @relation() decorators matching SQL foreign keys
+- createdAt DateTime @default(now()), updatedAt DateTime @updatedAt
+- @unique on email fields
+
+Rules:
+- camelCase field names in Prisma, snake_case column names in SQL
+- Infer column types from entity names and context
+- All relationships must have both sides defined in Prisma models
+- Write complete schemas — do not truncate`;
+
+const AUTH_SYSTEM = `You are an Auth Agent generating authentication implementation files.
+
+Generate these files using FILE delimiter comments:
+
+// === FILE: src/lib/auth.ts ===
+JWT utility functions: signToken(payload), verifyToken(token), hashPassword(password), comparePassword(plain, hash)
+Use jsonwebtoken and bcryptjs. Export named functions.
+
+// === FILE: src/middleware/authMiddleware.ts ===
+Express middleware: verifyAuth(req, res, next)
+Extract Bearer token from Authorization header, verify with verifyToken, attach user to req.user.
+Export as default and named.
+
+// === FILE: src/api/auth.ts ===
+Express Router with POST /login, POST /signup, POST /logout, GET /me routes.
+Use Zod for input validation. Return JWT token on success.
+
+// === FILE: src/pages/Login.tsx ===
+React login form. IMPORTANT: NO import/export statements (CDN environment).
+Use React.useState for form state (email, password, loading, error).
+POST to /api/auth/login, store token in localStorage, redirect on success.
+Styled with Tailwind — dark theme, centered card layout.
+
+// === FILE: src/pages/Signup.tsx ===
+React signup form. SAME rules as Login.tsx — no imports/exports.
+Fields: name, email, password. POST to /api/auth/signup.
+
+// === FILE: src/components/ProtectedRoute.tsx ===
+React component. NO imports/exports (CDN environment).
+Check localStorage for token, render children if present, show login prompt if not.
+
+Rules:
+- .ts files: use proper ES module imports/exports
+- .tsx files: NO import/export (they render in CDN+Babel sandbox)
+- .tsx files: Use React.useState, React.useEffect (namespaced)
+- Write complete, working implementations — no placeholder comments`;
+
 const DEFAULT_DESIGN: DesignDNA = {
   designLanguage: "monochrome",
   layoutStyle: "flat-ui",
@@ -682,6 +797,290 @@ const DEFAULT_DESIGN: DesignDNA = {
   cardStyleTokens: "bg-[#141414] border border-[#2a2a2a] rounded-xl",
   mood: "Sharp",
 };
+
+// ── Phase 2: Blueprint Validation Layer ─────────────────────────────────────
+
+interface BlueprintValidation {
+  valid: boolean;
+  errors: string[];
+}
+
+function validateProjectBlueprint(bp: ProjectBlueprint): BlueprintValidation {
+  const errors: string[] = [];
+  if (!bp.projectType || bp.projectType.trim() === '') errors.push('projectType is missing');
+  if (!bp.pages || bp.pages.length === 0) errors.push('pages array is empty');
+  if (!Array.isArray(bp.apis)) errors.push('apis must be an array');
+  if (!Array.isArray(bp.databaseTables)) errors.push('databaseTables must be an array');
+  // Auto-fix: if auth is needed but auth API is missing, add it
+  if (bp.authNeeded && Array.isArray(bp.apis) && !bp.apis.includes('auth')) {
+    bp.apis = ['auth', ...bp.apis];
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+// ── Phase 3/4/5: TS/SQL/Prisma file delimiter extractor ─────────────────────
+// Parses "// === FILE: path/to/file.ext ===" delimiters produced by
+// Backend, Database, and Auth agents.
+
+interface ExtractedFile {
+  name: string;
+  path: string;
+  content: string;
+}
+
+function extractBackendFiles(code: string): ExtractedFile[] {
+  const delimPattern = /\/\/\s*===\s*FILE:\s*([\w\/.-]+\.(?:ts|tsx|sql|prisma))\s*===/g;
+  const positions: Array<{ filePath: string; start: number; headerEnd: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = delimPattern.exec(code)) !== null) {
+    positions.push({ filePath: m[1], start: m.index, headerEnd: m.index + m[0].length });
+  }
+  if (positions.length === 0) return [];
+  return positions.map((p, i) => {
+    const content = code.slice(
+      p.headerEnd,
+      i + 1 < positions.length ? positions[i + 1].start : code.length
+    ).trim();
+    const parts = p.filePath.split('/');
+    const fileName = parts[parts.length - 1];
+    const folder = parts.length > 1 ? parts.slice(0, -1).join('/') + '/' : '';
+    return { name: fileName, path: folder, content };
+  });
+}
+
+// ── Phase 4: Backend Agent ────────────────────────────────────────────────────
+
+async function generateBackendFiles(
+  apis: string[],
+  entities: string[],
+  projectType: string,
+  groqKey: string
+): Promise<ProjectFileSSE[]> {
+  if (apis.length === 0) return [];
+
+  const apiFileDelimiters = apis.map(a => `// === FILE: src/api/${a}.ts ===`).join('\n');
+  const userPrompt = `Generate Express.js TypeScript API route files for a ${projectType}.
+
+APIs to generate:
+${apis.map(a => `- ${a}`).join('\n')}
+
+Entity context: ${entities.join(', ') || 'infer from API names'}
+
+Required file delimiters:
+${apiFileDelimiters}
+// === FILE: src/server.ts ===
+// === FILE: src/middleware/errorHandler.ts ===
+
+Generate all files now. Do not truncate.`;
+
+  try {
+    const raw = await callGroq(
+      groqKey, BACKEND_MODEL,
+      [
+        { role: 'system', content: BACKEND_SYSTEM },
+        { role: 'user', content: userPrompt },
+      ],
+      false, 4000
+    );
+    const extracted = extractBackendFiles(raw);
+    console.log(`[BackendAgent] Extracted ${extracted.length} files from output`);
+    return extracted.map(f => ({
+      path: f.path,
+      name: f.name,
+      lang: f.name.endsWith('.tsx') ? 'tsx' : 'ts',
+      content: f.content,
+    }));
+  } catch (e) {
+    console.error('[BackendAgent] Generation failed:', e);
+    return [];
+  }
+}
+
+// ── Phase 5: Database Agent ───────────────────────────────────────────────────
+
+async function generateDatabaseFiles(
+  tables: string[],
+  relationships: string[],
+  entities: string[],
+  groqKey: string
+): Promise<ProjectFileSSE[]> {
+  if (tables.length === 0) return [];
+
+  const userPrompt = `Generate complete PostgreSQL and Prisma schemas.
+
+Tables:
+${tables.map(t => `- ${t}`).join('\n')}
+
+Entities: ${entities.join(', ')}
+
+Relationships:
+${relationships.length > 0 ? relationships.map(r => `- ${r}`).join('\n') : '(infer from table names)'}
+
+Required files:
+// === FILE: schema.sql ===
+// === FILE: prisma/schema.prisma ===
+
+Generate both files completely. Do not truncate.`;
+
+  try {
+    const raw = await callGroq(
+      groqKey, BACKEND_MODEL,
+      [
+        { role: 'system', content: DATABASE_SYSTEM },
+        { role: 'user', content: userPrompt },
+      ],
+      false, 3000
+    );
+    const extracted = extractBackendFiles(raw);
+    console.log(`[DatabaseAgent] Extracted ${extracted.length} files from output`);
+    return extracted.map(f => ({
+      path: f.path,
+      name: f.name,
+      lang: f.name.endsWith('.sql') ? 'sql' : f.name.endsWith('.prisma') ? 'prisma' : 'ts',
+      content: f.content,
+    }));
+  } catch (e) {
+    console.error('[DatabaseAgent] Generation failed:', e);
+    return [];
+  }
+}
+
+// ── Phase 6: Auth Agent ───────────────────────────────────────────────────────
+
+async function generateAuthFiles(
+  authProvider: string,
+  groqKey: string
+): Promise<ProjectFileSSE[]> {
+  const provider = (authProvider || 'JWT').toUpperCase();
+
+  const userPrompt = `Generate authentication files for provider: ${provider}.
+
+Required files:
+// === FILE: src/lib/auth.ts ===
+// === FILE: src/middleware/authMiddleware.ts ===
+// === FILE: src/api/auth.ts ===
+// === FILE: src/pages/Login.tsx ===
+// === FILE: src/pages/Signup.tsx ===
+// === FILE: src/components/ProtectedRoute.tsx ===
+
+Provider: ${provider}
+${provider === 'SUPABASE' ? 'Use @supabase/supabase-js for all auth operations.' : ''}
+${provider === 'CLERK' ? 'Use @clerk/clerk-react. ClerkProvider wraps the app.' : ''}
+${!['SUPABASE', 'CLERK'].includes(provider) ? 'Use jsonwebtoken + bcryptjs. Store JWT in localStorage.' : ''}
+
+Generate all files now. Do not truncate.`;
+
+  try {
+    const raw = await callGroq(
+      groqKey, BACKEND_MODEL,
+      [
+        { role: 'system', content: AUTH_SYSTEM },
+        { role: 'user', content: userPrompt },
+      ],
+      false, 4000
+    );
+    const extracted = extractBackendFiles(raw);
+    console.log(`[AuthAgent] Extracted ${extracted.length} files from output`);
+    return extracted.map(f => ({
+      path: f.path,
+      name: f.name,
+      lang: f.name.endsWith('.tsx') ? 'tsx' : 'ts',
+      content: f.content,
+    }));
+  } catch (e) {
+    console.error('[AuthAgent] Generation failed:', e);
+    return [];
+  }
+}
+
+// ── Phase 9: .env.example generator ──────────────────────────────────────────
+
+function generateEnvExample(pb: ProjectBlueprint): ProjectFileSSE {
+  const lines: string[] = [
+    '# Environment Variables — copy to .env and fill in values',
+    '',
+    '# Server',
+    'PORT=3001',
+    'NODE_ENV=development',
+    '',
+  ];
+
+  if (pb.databaseTables.length > 0) {
+    lines.push('# Database', 'DATABASE_URL=postgresql://user:password@localhost:5432/dbname', '');
+  }
+
+  if (pb.authNeeded) {
+    const provider = (pb.authProvider || 'JWT').toLowerCase();
+    if (provider === 'supabase') {
+      lines.push('# Supabase Auth', 'VITE_SUPABASE_URL=https://your-project.supabase.co', 'VITE_SUPABASE_ANON_KEY=your-anon-key', '');
+    } else if (provider === 'clerk') {
+      lines.push('# Clerk Auth', 'VITE_CLERK_PUBLISHABLE_KEY=pk_test_your-key-here', '');
+    } else {
+      lines.push('# JWT Auth', 'JWT_SECRET=change-this-to-a-long-random-secret', 'JWT_EXPIRES_IN=7d', '');
+    }
+  }
+
+  return {
+    path: '',
+    name: '.env.example',
+    lang: 'env',
+    content: lines.join('\n'),
+  };
+}
+
+// ── Phase 9: README generator ─────────────────────────────────────────────────
+
+function generateReadme(pb: ProjectBlueprint): ProjectFileSSE {
+  const hasBackend = pb.apis.length > 0;
+  const hasDb = pb.databaseTables.length > 0;
+
+  const content = [
+    `# ${pb.projectType}`,
+    '',
+    pb.description || `Generated by NexoGen AI Software Builder.`,
+    '',
+    '## Tech Stack',
+    '',
+    `- **Frontend**: ${pb.techStack.frontend}`,
+    `- **UI**: ${pb.techStack.ui}`,
+    `- **Routing**: ${pb.techStack.routing}`,
+    hasBackend ? `- **Backend**: ${pb.techStack.backend}` : '',
+    hasDb ? `- **Database**: ${pb.techStack.database}` : '',
+    pb.authNeeded ? `- **Auth**: ${pb.authProvider || 'JWT'}` : '',
+    '',
+    '## Project Structure',
+    '',
+    '```',
+    'src/',
+    '  components/     # Shared UI components',
+    '  pages/          # Page components',
+    hasBackend ? '  api/            # Express API routes' : '',
+    pb.authNeeded ? '  middleware/     # Auth middleware' : '',
+    pb.authNeeded ? '  lib/auth.ts     # Auth utilities' : '',
+    '  lib/utils.ts    # Utilities',
+    '  types/          # TypeScript types',
+    '  App.tsx         # Root component',
+    '  main.tsx        # Entry point',
+    '```',
+    '',
+    hasDb ? `## Database\n\nTables: ${pb.databaseTables.join(', ')}\n\nSee \`schema.sql\` and \`prisma/schema.prisma\`.\n` : '',
+    pb.authNeeded ? `## Auth\n\nProvider: ${pb.authProvider || 'JWT'}. Copy \`.env.example\` to \`.env\` and configure.\n` : '',
+    '## Getting Started',
+    '',
+    '```bash',
+    'npm install',
+    hasDb ? 'npx prisma migrate dev' : '',
+    'npm run dev',
+    '```',
+  ].filter(line => line !== null && line !== undefined).join('\n');
+
+  return {
+    path: '',
+    name: 'README.md',
+    lang: 'md',
+    content,
+  };
+}
 
 // ── Server-side multi-file project builder ───────────────────────────────────
 // Splits a single-blob JSX string into proper TypeScript project files.
@@ -1099,7 +1498,12 @@ router.post("/agents/build", async (req, res) => {
       databaseTables: [],
       apis: [],
       authNeeded: false,
+      authProvider: "",
       dashboardNeeded: false,
+      entities: [],
+      relationships: [],
+      navigation: [],
+      features: [],
       techStack: {
         frontend: "React + TypeScript + Tailwind CSS",
         routing: "React Router v6",
@@ -1117,7 +1521,7 @@ router.post("/agents/build", async (req, res) => {
           { role: "system", content: ARCHITECTURE_SYSTEM },
           { role: "user", content: `Prompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}` },
         ],
-        false, 1000
+        false, 2000
       );
       const archJsonMatch = archResult.match(/\{[\s\S]*\}/);
       if (archJsonMatch) {
@@ -1128,7 +1532,39 @@ router.post("/agents/build", async (req, res) => {
       console.error("[ArchitectureAgent] Failed (using defaults):", e);
     }
 
-    console.log(`[Architecture] projectType=${projectBlueprint.projectType} pages=[${projectBlueprint.pages.join(', ')}] auth=${projectBlueprint.authNeeded} dashboard=${projectBlueprint.dashboardNeeded}`);
+    // ── Phase 2: Blueprint Validation (with retry) ────────────────────────────
+    let bpValidation = validateProjectBlueprint(projectBlueprint);
+
+    if (!bpValidation.valid) {
+      console.warn(`[BlueprintValidation] FAILED: ${bpValidation.errors.join('; ')}. Retrying Architecture Agent...`);
+      sse(res, { type: "blueprint_validation_retry", errors: bpValidation.errors });
+      try {
+        const archRetry = await callGroq(
+          groqKey, PLANNER_MODEL,
+          [
+            { role: "system", content: ARCHITECTURE_SYSTEM },
+            { role: "user", content: `RETRY — previous blueprint was invalid (${bpValidation.errors.join(', ')}). Generate a complete valid blueprint.\n\nPrompt: ${prompt}\nWebsite type: ${blueprint.websiteType}` },
+          ],
+          false, 2000
+        );
+        const retryJsonMatch = archRetry.match(/\{[\s\S]*\}/);
+        if (retryJsonMatch) {
+          const retryParsed = JSON.parse(retryJsonMatch[0]);
+          projectBlueprint = { ...projectBlueprint, ...retryParsed };
+          bpValidation = validateProjectBlueprint(projectBlueprint);
+        }
+      } catch (e) {
+        console.error('[BlueprintValidation] Retry failed:', e);
+      }
+
+      if (!bpValidation.valid) {
+        sse(res, { type: "error", error: `Blueprint validation failed after retry: ${bpValidation.errors.join(', ')}` });
+        res.end();
+        return;
+      }
+    }
+
+    console.log(`[Architecture V2] projectType=${projectBlueprint.projectType} pages=[${projectBlueprint.pages.join(', ')}] apis=[${projectBlueprint.apis.join(', ')}] tables=[${projectBlueprint.databaseTables.join(', ')}] auth=${projectBlueprint.authNeeded}(${projectBlueprint.authProvider}) entities=[${(projectBlueprint.entities || []).join(', ')}]`);
     sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "done", projectBlueprint });
 
     // ── AGENT 3: DESIGN DNA ───────────────────────────────────────────────────
@@ -1401,8 +1837,94 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       await Promise.all(repairJobs);
     }
 
+    // ── AGENTS 6-8: BACKEND / DATABASE / AUTH (parallel) ─────────────────────
+    // Each agent runs only when the blueprint declares it is needed.
+    // All three run in parallel — total latency = slowest single agent.
+    let backendFiles: ProjectFileSSE[] = [];
+    let dbFiles: ProjectFileSSE[] = [];
+    let authFiles: ProjectFileSSE[] = [];
+
+    const hasApis    = projectBlueprint.apis.length > 0;
+    const hasTables  = projectBlueprint.databaseTables.length > 0;
+    const needsAuth  = projectBlueprint.authNeeded;
+
+    if (hasApis || hasTables || needsAuth) {
+      const fullStackTasks: Promise<void>[] = [];
+
+      if (hasApis) {
+        sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "active", apis: projectBlueprint.apis });
+        fullStackTasks.push(
+          generateBackendFiles(
+            projectBlueprint.apis,
+            projectBlueprint.entities || [],
+            projectBlueprint.projectType,
+            groqKey
+          ).then(files => {
+            backendFiles = files;
+            console.log(`[BackendAgent] Generated ${files.length} backend files`);
+            sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
+          }).catch(e => {
+            console.error('[BackendAgent] Failed:', e);
+            sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "error", error: e.message });
+          })
+        );
+      }
+
+      if (hasTables) {
+        sse(res, { type: "step", step: 6, agent: "Database Agent", status: "active", tables: projectBlueprint.databaseTables });
+        fullStackTasks.push(
+          generateDatabaseFiles(
+            projectBlueprint.databaseTables,
+            projectBlueprint.relationships || [],
+            projectBlueprint.entities || [],
+            groqKey
+          ).then(files => {
+            dbFiles = files;
+            console.log(`[DatabaseAgent] Generated ${files.length} database files`);
+            sse(res, { type: "step", step: 6, agent: "Database Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
+          }).catch(e => {
+            console.error('[DatabaseAgent] Failed:', e);
+            sse(res, { type: "step", step: 6, agent: "Database Agent", status: "error", error: e.message });
+          })
+        );
+      }
+
+      if (needsAuth) {
+        sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "active", provider: projectBlueprint.authProvider });
+        fullStackTasks.push(
+          generateAuthFiles(projectBlueprint.authProvider || 'JWT', groqKey).then(files => {
+            authFiles = files;
+            console.log(`[AuthAgent] Generated ${files.length} auth files`);
+            sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
+          }).catch(e => {
+            console.error('[AuthAgent] Failed:', e);
+            sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "error", error: e.message });
+          })
+        );
+      }
+
+      await Promise.all(fullStackTasks);
+    }
+
+    // ── PHASE 8-9: MERGE ALL FILES INTO UNIFIED PROJECT TREE ─────────────────
+    const extraFiles: ProjectFileSSE[] = [
+      ...backendFiles,
+      ...dbFiles,
+      ...authFiles,
+      ...(hasApis || hasTables || needsAuth ? [generateEnvExample(projectBlueprint)] : []),
+      generateReadme(projectBlueprint),
+    ];
+
+    // Replace the basic README.md that buildServerProjectFiles added
+    const allFiles = [
+      ...projectFiles.filter(f => f.name !== 'README.md'),
+      ...extraFiles,
+    ];
+
+    console.log(`[Pipeline] Total files: ${allFiles.length} (frontend: ${projectFiles.length}, backend: ${backendFiles.length}, db: ${dbFiles.length}, auth: ${authFiles.length})`);
+
     // ── DONE ──────────────────────────────────────────────────────────────────
-    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: projectFiles });
+    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles });
 
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });

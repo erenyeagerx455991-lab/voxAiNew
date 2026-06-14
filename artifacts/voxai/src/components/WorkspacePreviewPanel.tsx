@@ -29,6 +29,9 @@ const BUILD_STEP_LABELS = [
   'Crafting design system...',
   'Writing components...',
   'Polishing code...',
+  'Building API routes...',
+  'Generating database schema...',
+  'Setting up authentication...',
   'Preparing preview...',
 ];
 
@@ -37,7 +40,7 @@ function BuildingState({ buildStep }: { buildStep: number }) {
     buildStep >= 0 && buildStep < BUILD_STEP_LABELS.length
       ? BUILD_STEP_LABELS[buildStep]
       : 'Building...';
-  const progress = Math.max(8, ((buildStep + 1) / 6) * 100);
+  const progress = Math.max(8, ((buildStep + 1) / BUILD_STEP_LABELS.length) * 100);
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-10 gap-8">

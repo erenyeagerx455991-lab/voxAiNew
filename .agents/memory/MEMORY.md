@@ -4,3 +4,4 @@
 - [VoxAI Reference Routing V3](voxai-reference-routing-v3.md) — primaryReference direct lookup in hero selector; industry fallback before DNA fallback; heroStyle fixed for Linear/Vercel; all 5 tests pass.
 - [VoxAI Section Architecture V2](voxai-section-arch-v2.md) — 16 new templates (features/dashboard/pricing), reference maps, category-aware routing, audit upgrade; all 4 audits score 100.
 - [VoxAI Multi-File Foundation](voxai-multifile-foundation.md) — Architecture Agent + generateProjectFiles + Lucide CDN bridge; 6-step pipeline; preview uses UMD globals pattern.
+- [VoxAI NexoGen V3 Pipeline](voxai-nexogen-v3-pipeline.md) — 9-step pipeline; Backend/DB/Auth agents parallel at steps 5-7; "Preparing Preview" locked to index 8; setBuildStep(8) on done.
