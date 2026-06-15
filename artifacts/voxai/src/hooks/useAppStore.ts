@@ -2,12 +2,13 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData } from '../services/builderService';
-import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
+export type { EditOperation, EditDiff, ComponentRegistry };
 
 interface AppState {
   view: View;
@@ -32,6 +33,15 @@ interface AppState {
   sectionOwnership: Record<string, string> | null;
   themeTokens: ThemeTokens | null;
   motionProfile: MotionProfile | null;
+  editHistory: EditOperation[];
+  lastEditDiff: EditDiff | null;
+  canUndo: boolean;
+  canRedo: boolean;
+  editIntentType: string;
+  editTargetFiles: string[];
+  editQualityScore: number;
+  undoEdit: () => void;
+  redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -114,12 +124,20 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [sectionOwnership, setSectionOwnership] = useState<Record<string, string> | null>(null);
   const [themeTokens, setThemeTokens]           = useState<ThemeTokens | null>(null);
   const [motionProfile, setMotionProfile]       = useState<MotionProfile | null>(null);
+  const [editHistory, setEditHistory] = useState<EditOperation[]>([]);
+  const [lastEditDiff, setLastEditDiff] = useState<EditDiff | null>(null);
+  const [editIntentType, setEditIntentType] = useState('');
+  const [editTargetFiles, setEditTargetFiles] = useState<string[]>([]);
+  const [editQualityScore, setEditQualityScore] = useState(100);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const projectFilesRef = useRef<ProjectFile[]>([]);
   const projectMemoryRef = useRef<ProjectMemory | null>(null);
   const dnaCompositionRef = useRef<DNAComposition | null>(null);
+  const themeTokensRef = useRef<ThemeTokens | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const undoStackRef = useRef<ProjectFile[][]>([]);
+  const redoStackRef = useRef<ProjectFile[][]>([]);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((o) => !o), []);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
@@ -127,6 +145,31 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   // Keep refs in sync for stale-closure-safe access inside callbacks
   useEffect(() => { projectFilesRef.current = projectFiles; }, [projectFiles]);
   useEffect(() => { projectMemoryRef.current = projectMemory; }, [projectMemory]);
+  useEffect(() => { themeTokensRef.current = themeTokens; }, [themeTokens]);
+
+  const undoEdit = useCallback(() => {
+    const snapshot = undoStackRef.current.pop();
+    if (!snapshot) return;
+    redoStackRef.current.push([...projectFilesRef.current]);
+    setProjectFiles(snapshot);
+    projectFilesRef.current = snapshot;
+    const chatId = activeChatId;
+    if (chatId) {
+      try { localStorage.setItem(FILES_KEY(chatId), JSON.stringify(snapshot)); } catch {}
+    }
+  }, [activeChatId]);
+
+  const redoEdit = useCallback(() => {
+    const snapshot = redoStackRef.current.pop();
+    if (!snapshot) return;
+    undoStackRef.current.push([...projectFilesRef.current]);
+    setProjectFiles(snapshot);
+    projectFilesRef.current = snapshot;
+    const chatId = activeChatId;
+    if (chatId) {
+      try { localStorage.setItem(FILES_KEY(chatId), JSON.stringify(snapshot)); } catch {}
+    }
+  }, [activeChatId]);
 
   const loadChats = useCallback(async () => {
     try {
@@ -335,7 +378,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           code: string,
           pb?: ProjectBlueprint,
           so?: string[],
-          serverFiles?: ProjectFile[]
+          serverFiles?: ProjectFile[],
+          diff?: EditDiff
         ) => {
           let assistantMsg: Message;
           try {
@@ -363,32 +407,58 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           if (so) setSectionOrder(so);
 
           if (serverFiles && serverFiles.length > 0) {
+            // For edit mode: save snapshot to undo stack before applying
+            if (isEditMode && currentFiles.length > 0) {
+              undoStackRef.current.push([...currentFiles]);
+              redoStackRef.current = [];
+            }
+
             setProjectFiles(serverFiles);
+            if (diff) setLastEditDiff(diff);
             try { localStorage.setItem(FILES_KEY(chatId!), JSON.stringify(serverFiles)); } catch {}
 
+            // Build component registry from new files
+            const newRegistry = buildComponentRegistry(serverFiles);
+
             // Persist ProjectMemory
+            const prevHistory = isEditMode && currentMemory ? (currentMemory.editHistory ?? []) : [];
+            const editOp: EditOperation | null = isEditMode && diff ? {
+              id: crypto.randomUUID(),
+              prompt: content,
+              timestamp: Date.now(),
+              changedFiles: diff.changedFiles,
+              createdFiles: diff.createdFiles,
+              deletedFiles: diff.deletedFiles,
+              snapshotFiles: currentFiles,
+            } : null;
+
             const mem: ProjectMemory = isEditMode && currentMemory
               ? {
                   ...currentMemory,
                   generatedFiles: serverFiles.map(f => f.path + f.name),
                   dependencyGraph: buildDependencyGraph(serverFiles),
+                  componentRegistry: newRegistry,
+                  editHistory: editOp ? [...prevHistory.slice(-49), editOp] : prevHistory,
                   referenceComposition: dnaCompositionRef.current ?? currentMemory?.referenceComposition,
                   timestamp: Date.now(),
                 }
               : {
-                  projectType:     pb?.projectType    ?? 'App',
-                  description:     pb?.description    ?? '',
-                  pages:           pb?.pages          ?? [],
-                  routes:          (pb?.pages ?? []).map((p: string) => `/${p.toLowerCase().replace(/\s+/g, '-')}`),
-                  entities:        pb?.entities       ?? [],
-                  features:        pb?.features       ?? [],
-                  authProvider:    pb?.authProvider   ?? '',
-                  generatedFiles:  serverFiles.map(f => f.path + f.name),
-                  dependencyGraph: buildDependencyGraph(serverFiles),
+                  projectType:      pb?.projectType    ?? 'App',
+                  description:      pb?.description    ?? '',
+                  pages:            pb?.pages          ?? [],
+                  routes:           (pb?.pages ?? []).map((p: string) => `/${p.toLowerCase().replace(/\s+/g, '-')}`),
+                  entities:         pb?.entities       ?? [],
+                  features:         pb?.features       ?? [],
+                  authProvider:     pb?.authProvider   ?? '',
+                  generatedFiles:   serverFiles.map(f => f.path + f.name),
+                  dependencyGraph:  buildDependencyGraph(serverFiles),
+                  componentRegistry: newRegistry,
+                  editHistory:      [],
                   referenceComposition: dnaCompositionRef.current ?? undefined,
-                  timestamp:       Date.now(),
+                  timestamp:        Date.now(),
                 };
             setProjectMemory(mem);
+            if (editOp) setEditHistory(prev => [...prev.slice(-49), editOp]);
             saveProjectMemory(chatId!, mem);
           }
 
@@ -409,6 +479,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
 
         // ── Route: edit existing project OR full build ────────────────────────
         if (isEditMode) {
+          const registry = currentMemory?.componentRegistry ?? buildComponentRegistry(currentFiles);
+          const themeTokensSnapshot = themeTokensRef.current;
           await mockEditResponse(
             content,
             currentFiles,
@@ -416,7 +488,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             (token) => setStreamingContent((prev) => prev + token),
             handleDone,
             handleError,
-            handleStep
+            handleStep,
+            (editType, targetFiles, _reason) => {
+              setEditIntentType(editType);
+              setEditTargetFiles(targetFiles);
+            },
+            (files) => { setEditTargetFiles(files); },
+            (score, _passed, _issues) => { setEditQualityScore(score); },
+            registry,
+            themeTokensSnapshot as Record<string, unknown> | null
           );
         } else {
           await mockStreamResponse(
@@ -501,6 +581,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     sectionOwnership,
     themeTokens,
     motionProfile,
+    editHistory,
+    lastEditDiff,
+    canUndo: undoStackRef.current.length > 0,
+    canRedo: redoStackRef.current.length > 0,
+    editIntentType,
+    editTargetFiles,
+    editQualityScore,
+    undoEdit,
+    redoEdit,
     handleSend,
     handleNewChat,
     handleDeleteChat,

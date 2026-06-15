@@ -1,4 +1,6 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff } from './builderService';
+
+export type { EditDiff };
 
 const API_BASE = "/api";
 
@@ -85,7 +87,7 @@ export async function mockStreamResponse(
   }
 }
 
-// ── EDIT (Phase 3 — file-level editing) ──────────────────────────────────────
+// ── EDIT (V5 — file-level surgical editing) ───────────────────────────────────
 export async function mockEditResponse(
   prompt: string,
   projectFiles: ProjectFile[],
@@ -96,10 +98,16 @@ export async function mockEditResponse(
     code: string,
     projectBlueprint?: ProjectBlueprint,
     sectionOrder?: string[],
-    files?: ProjectFile[]
+    files?: ProjectFile[],
+    diff?: EditDiff
   ) => void,
   onError: (err: string) => void,
-  onStep?: (step: number) => void
+  onStep?: (step: number) => void,
+  onIntentDetected?: (editType: string, targetFiles: string[], reason: string) => void,
+  onFileTargets?: (files: string[]) => void,
+  onQualityCheck?: (score: number, passed: boolean, issues: string[]) => void,
+  componentRegistry?: Record<string, string>,
+  themeTokens?: Record<string, unknown> | null
 ): Promise<void> {
   onStep?.(0);
 
@@ -107,7 +115,7 @@ export async function mockEditResponse(
     const res = await fetch(`${API_BASE}/agents/edit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, projectFiles, projectMemory }),
+      body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens }),
     });
 
     if (!res.ok || !res.body) {
@@ -119,6 +127,7 @@ export async function mockEditResponse(
     const decoder = new TextDecoder();
     let buffer = "";
     let finalFiles: ProjectFile[] | undefined;
+    let finalDiff: EditDiff | undefined;
     let editSummary = "";
 
     while (true) {
@@ -138,18 +147,31 @@ export async function mockEditResponse(
           if (json.type === "error") return onError(json.error);
           if (json.type === "step") onStep?.(json.step ?? 0);
 
+          if (json.type === "intent_detected") {
+            onIntentDetected?.(json.editType, json.targetFiles ?? [], json.reason ?? "");
+          }
+
+          if (json.type === "file_targets") {
+            onFileTargets?.(json.files ?? []);
+          }
+
+          if (json.type === "quality_check") {
+            onQualityCheck?.(json.score ?? 100, json.passed ?? true, json.issues ?? []);
+          }
+
           if (json.type === "edit_identified") {
             const count = json.modifiedCount ?? 0;
-            const names = (json.files ?? []).join(", ");
-            editSummary = `✏️ Modified ${count} file${count !== 1 ? "s" : ""}${names ? `: ${names}` : ""}`;
+            const names = (json.files ?? []).map((fp: string) => fp.split('/').pop()).join(", ");
+            editSummary = `✏️ ${count} file${count !== 1 ? "s" : ""} updated${names ? `: ${names}` : ""}`;
             onToken(editSummary);
           }
 
           if (json.type === "edit_done") {
             finalFiles = Array.isArray(json.files) ? json.files : undefined;
-            onStep?.(9); // "Preparing Preview"
+            finalDiff = json.diff as EditDiff | undefined;
+            onStep?.(9);
             await new Promise((r) => setTimeout(r, 300));
-            onDone(editSummary || "Edit complete", "", undefined, undefined, finalFiles);
+            onDone(editSummary || "Edit complete", "", undefined, undefined, finalFiles, finalDiff);
           }
         } catch {
           // skip

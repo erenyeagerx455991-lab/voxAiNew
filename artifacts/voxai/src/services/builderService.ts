@@ -601,6 +601,24 @@ export interface FileDependencyGraph {
   [filename: string]: string[];
 }
 
+export type ComponentRegistry = Record<string, string>;
+
+export interface EditOperation {
+  id: string;
+  prompt: string;
+  timestamp: number;
+  changedFiles: string[];
+  createdFiles: string[];
+  deletedFiles: string[];
+  snapshotFiles: ProjectFile[];
+}
+
+export interface EditDiff {
+  changedFiles: string[];
+  createdFiles: string[];
+  deletedFiles: string[];
+}
+
 export interface ProjectMemory {
   projectType: string;
   description: string;
@@ -611,6 +629,8 @@ export interface ProjectMemory {
   authProvider: string;
   generatedFiles: string[];
   dependencyGraph: FileDependencyGraph;
+  componentRegistry: ComponentRegistry;
+  editHistory: EditOperation[];
   referenceComposition?: DNAComposition;
   timestamp: number;
 }
@@ -656,4 +676,19 @@ export function buildDependencyGraph(files: ProjectFile[]): FileDependencyGraph 
     graph[file.path + file.name] = deps;
   }
   return graph;
+}
+
+export function buildComponentRegistry(files: ProjectFile[]): ComponentRegistry {
+  const registry: ComponentRegistry = {};
+  for (const f of files) {
+    if (f.lang !== 'tsx' && f.lang !== 'jsx') continue;
+    const componentName = f.name.replace(/\.(tsx|jsx)$/, '');
+    const path = f.path + f.name;
+    const templateHint =
+      path.includes('pages/') ? `page-${componentName.toLowerCase()}` :
+      path.includes('components/') ? `component-${componentName.toLowerCase()}` :
+      componentName.toLowerCase();
+    registry[componentName] = templateHint;
+  }
+  return registry;
 }

@@ -265,6 +265,8 @@ function AppContent() {
                   streamingContent={store.streamingContent}
                   chatError={store.chatError}
                   buildStep={store.buildStep}
+                  isEditMode={store.projectFiles.length > 0}
+                  lastEditDiff={store.lastEditDiff}
                 />
                 <MessageInput onSend={store.handleSend} disabled={store.isTyping} />
               </div>
@@ -296,6 +298,11 @@ function AppContent() {
                   sectionOwnership={store.sectionOwnership}
                   themeTokens={store.themeTokens}
                   motionProfile={store.motionProfile}
+                  lastEditDiff={store.lastEditDiff}
+                  canUndo={store.canUndo}
+                  canRedo={store.canRedo}
+                  onUndo={store.undoEdit}
+                  onRedo={store.redoEdit}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

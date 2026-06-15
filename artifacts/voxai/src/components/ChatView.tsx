@@ -1,8 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
+import type { EditDiff } from '../services/builderService';
 
-const AGENT_STEPS = [
+// ── Build pipeline (10 steps) ────────────────────────────────────────────────
+const BUILD_STEPS = [
   { label: 'Planner Agent',       colors: 'from-violet-500 to-purple-600' },
   { label: 'Architecture Agent',  colors: 'from-fuchsia-500 to-pink-600' },
   { label: 'Design Agent',        colors: 'from-pink-500 to-rose-500' },
@@ -15,7 +17,16 @@ const AGENT_STEPS = [
   { label: 'Preparing Preview',   colors: 'from-amber-500 to-orange-500' },
 ];
 
-function AgentIcon({ idx, isActive, isDone, colors }: { idx: number; isActive: boolean; isDone: boolean; colors: string }) {
+// ── Edit pipeline (5 steps) ──────────────────────────────────────────────────
+const EDIT_STEPS = [
+  { label: 'Intent Detector',  colors: 'from-violet-500 to-purple-600' },
+  { label: 'File Resolver',    colors: 'from-blue-500 to-cyan-500' },
+  { label: 'Patch Generator',  colors: 'from-orange-500 to-amber-400' },
+  { label: 'Quality Gate',     colors: 'from-emerald-500 to-teal-500' },
+  { label: 'Merge Engine',     colors: 'from-indigo-500 to-blue-600' },
+];
+
+function AgentIcon({ isActive, isDone, colors }: { isActive: boolean; isDone: boolean; colors: string }) {
   if (isDone) {
     return (
       <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${colors} flex items-center justify-center shrink-0`}>
@@ -42,8 +53,38 @@ function AgentIcon({ idx, isActive, isDone, colors }: { idx: number; isActive: b
   );
 }
 
-function AgentPipeline({ buildStep }: { buildStep: number }) {
+function AgentPipeline({ buildStep, isEditMode }: { buildStep: number; isEditMode: boolean }) {
   if (buildStep < 0) return null;
+
+  if (isEditMode) {
+    const steps = EDIT_STEPS;
+    const activeStep = buildStep <= 4 ? buildStep : 4;
+    const isDone = buildStep >= 9;
+
+    return (
+      <div className="flex justify-start mb-3">
+        <div className="bg-gray-900/90 border border-gray-700/50 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col gap-2.5 min-w-[220px]">
+          <div className="flex items-center gap-2 mb-0.5">
+            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Edit Pipeline V5</span>
+          </div>
+          {steps.map(({ label, colors }, i) => {
+            const stepDone = isDone || activeStep > i;
+            const stepActive = !isDone && activeStep === i;
+            return (
+              <div key={label} className={`flex items-center gap-2.5 transition-all duration-300 ${activeStep < i && !isDone ? 'opacity-35' : 'opacity-100'}`}>
+                <AgentIcon isActive={stepActive} isDone={stepDone} colors={colors} />
+                <span className={`text-[13px] font-semibold leading-none ${stepDone ? 'text-gray-300' : stepActive ? 'text-white' : 'text-gray-500'}`}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-start mb-3">
       <div className="bg-gray-900/90 border border-gray-700/50 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col gap-2.5 min-w-[240px]">
@@ -51,18 +92,57 @@ function AgentPipeline({ buildStep }: { buildStep: number }) {
           <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
           <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Multi-Agent Pipeline</span>
         </div>
-        {AGENT_STEPS.map(({ label, colors }, i) => {
+        {BUILD_STEPS.map(({ label, colors }, i) => {
           const isDone = buildStep > i;
           const isActive = buildStep === i;
           return (
             <div key={label} className={`flex items-center gap-2.5 transition-all duration-300 ${buildStep < i ? 'opacity-35' : 'opacity-100'}`}>
-              <AgentIcon idx={i} isActive={isActive} isDone={isDone} colors={colors} />
+              <AgentIcon isActive={isActive} isDone={isDone} colors={colors} />
               <span className={`text-[13px] font-semibold leading-none ${isDone ? 'text-gray-300' : isActive ? 'text-white' : 'text-gray-500'}`}>
                 {label}
               </span>
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function EditDiffPanel({ diff }: { diff: EditDiff }) {
+  const total = diff.changedFiles.length + diff.createdFiles.length + diff.deletedFiles.length;
+  if (total === 0) return null;
+
+  return (
+    <div className="flex justify-start mb-3">
+      <div className="bg-gray-900/90 border border-gray-700/50 rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col gap-2 min-w-[240px] max-w-[320px]">
+        <div className="flex items-center gap-2 mb-0.5">
+          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Changes Applied</span>
+        </div>
+        {diff.changedFiles.map((f) => (
+          <div key={f} className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-yellow-400 w-3">~</span>
+            <span className="text-[12px] text-gray-300 truncate">{f.split('/').pop()}</span>
+          </div>
+        ))}
+        {diff.createdFiles.map((f) => (
+          <div key={f} className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-emerald-400 w-3">+</span>
+            <span className="text-[12px] text-gray-300 truncate">{f.split('/').pop()}</span>
+          </div>
+        ))}
+        {diff.deletedFiles.map((f) => (
+          <div key={f} className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-red-400 w-3">−</span>
+            <span className="text-[12px] text-gray-400 line-through truncate">{f.split('/').pop()}</span>
+          </div>
+        ))}
+        <div className="mt-1 pt-1.5 border-t border-gray-700/50">
+          <span className="text-[11px] text-gray-500">
+            {total} file{total !== 1 ? 's' : ''} affected — no other files touched
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -135,6 +215,8 @@ interface ChatViewProps {
   streamingContent: string;
   chatError: string;
   buildStep: number;
+  isEditMode?: boolean;
+  lastEditDiff?: EditDiff | null;
 }
 
 function MessageBubble({ message }: { message: Message }) {
@@ -175,7 +257,7 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep }: ChatViewProps) {
+export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep, isEditMode, lastEditDiff }: ChatViewProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -191,14 +273,32 @@ export default function ChatView({ messages, isTyping, streamingContent, chatErr
   const hasPlanItems = parsePlanItems(streamingContent).length > 0;
   const planIsComplete = buildStep > 0 && hasPlanItems;
 
+  // Find the last assistant message to know where to show the diff
+  const lastAssistantIdx = [...messages].reverse().findIndex(m => m.role === 'assistant');
+  const lastAssistantId = lastAssistantIdx >= 0 ? messages[messages.length - 1 - lastAssistantIdx]?.id : null;
+
   return (
     <div className="flex-1 overflow-y-auto px-4 py-6 bg-white dark:bg-[#181817] md:bg-[#181817]">
       <div className="max-w-2xl mx-auto">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
+        {messages.map((msg, idx) => (
+          <div key={msg.id}>
+            <MessageBubble message={msg} />
+            {/* Show diff panel right after the last assistant message (only when not still typing) */}
+            {!isTyping && lastEditDiff && msg.id === lastAssistantId && idx === messages.length - 1 && (
+              <EditDiffPanel diff={lastEditDiff} />
+            )}
+          </div>
         ))}
 
-        {isTyping && hasPlanItems && (
+        {isTyping && isEditMode && buildStep >= 0 && buildStep < 9 && (
+          <AgentPipeline buildStep={buildStep} isEditMode={true} />
+        )}
+
+        {isTyping && !isEditMode && buildStep >= 0 && (
+          <AgentPipeline buildStep={buildStep} isEditMode={false} />
+        )}
+
+        {isTyping && hasPlanItems && !isEditMode && (
           <PlanChecklist content={streamingContent} isComplete={planIsComplete} />
         )}
 

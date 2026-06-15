@@ -7,3 +7,4 @@
 - [VoxAI NexoGen V3 Pipeline](voxai-nexogen-v3-pipeline.md) — 9-step pipeline; Backend/DB/Auth agents parallel at steps 5-7; "Preparing Preview" locked to index 8; setBuildStep(8) on done.
 - [VoxAI V3.5 Edit System](voxai-v35-edit-system.md) — EDIT_SYSTEM + extractEditFiles + mergeProjectFiles pattern; edit mode detected via projectFilesRef.current.length > 0; FILES_KEY persists files; memory saved to localStorage.
 - [VoxAI V4.5 DNA Composition Engine](voxai-v45-dna-engine.md) — multi-brand DNA fusion replaces winner-takes-all reference routing; section ownership resolves algorithmically; dna_composition SSE fires between step 0 and step 1.
+- [VoxAI V5 Edit Pipeline](voxai-v5-edit-pipeline.md) — 5-step surgical edit (Intent→Resolver→Patch→Quality Gate→Merge); diff tracking, undo/redo stacks, visual diff badges in file tree.

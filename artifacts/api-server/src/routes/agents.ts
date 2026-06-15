@@ -785,6 +785,79 @@ CRITICAL RULES:
 7. If changing shared types, update ALL files that use those types
 8. Lucide icons: import { IconName } from 'lucide-react'`;
 
+const INTENT_SYSTEM = `You are an Intent Detector for a React TypeScript project editor. Analyze the edit request and output the MINIMAL set of files that need to change.
+
+Output ONLY valid JSON (no markdown, no code fences):
+{
+  "editType": "component|route|theme|layout|style|api",
+  "targetFiles": ["list of EXISTING file paths to modify"],
+  "newFiles": ["list of NEW file paths to create, if any"],
+  "reason": "brief reason"
+}
+
+Targeting rules:
+- "Change pricing section" -> targetFiles: ["src/components/Pricing.tsx"]
+- "Move navbar" -> targetFiles: ["src/App.tsx"]
+- "Add dark mode" -> targetFiles: ["src/index.css"]
+- "Add Settings page" -> newFiles: ["src/pages/Settings.tsx"], targetFiles: ["src/App.tsx"]
+- "Remove Blog page" -> targetFiles: ["src/App.tsx"]
+- "Fix navigation" -> match the navbar file
+- "Update hero" -> the hero component file
+- Be SURGICAL: only include files that DEFINITELY change.`;
+
+function resolveAffectedFiles(
+  targetFiles: string[],
+  depGraph: Record<string, string[]>,
+  allFiles: Array<{ path: string; name: string }>
+): string[] {
+  const resolved = new Set<string>(targetFiles);
+  for (const [file, deps] of Object.entries(depGraph)) {
+    for (const dep of deps) {
+      const depBase = dep.split("/").pop()?.replace(/\.(tsx?|jsx?)$/, "") ?? "";
+      if (targetFiles.some((t) => {
+        const tBase = t.split("/").pop()?.replace(/\.(tsx?|jsx?)$/, "") ?? "";
+        return tBase === depBase;
+      })) {
+        resolved.add(file);
+      }
+    }
+  }
+  const hasPageChange = targetFiles.some((f) => f.includes("/pages/") || f.includes("router"));
+  if (hasPageChange) {
+    const appFile = allFiles.find((f) => f.name === "App.tsx");
+    if (appFile) resolved.add(appFile.path + appFile.name);
+  }
+  return Array.from(resolved);
+}
+
+function validateEditFiles(
+  modifiedFiles: Array<{ path: string; name: string; lang: string; content: string }>,
+  existingFiles: Array<{ path: string; name: string }>,
+  targetFiles: string[]
+): { score: number; passed: boolean; issues: string[]; warnings: string[] } {
+  const issues: string[] = [];
+  const warnings: string[] = [];
+  let score = 100;
+  if (modifiedFiles.length === 0) { issues.push("No files modified"); score -= 60; }
+  for (const f of modifiedFiles) {
+    if (!f.content || f.content.length < 20) { issues.push(`${f.name}: empty`); score -= 20; continue; }
+    if ((f.lang === "tsx" || f.lang === "jsx") && !f.content.includes("export default")) {
+      issues.push(`${f.name}: missing default export`); score -= 15;
+    }
+    if (f.content.includes("// ... rest stays same") || f.content.includes("// rest of")) {
+      issues.push(`${f.name}: truncated — not a complete file`); score -= 30;
+    }
+  }
+  const existingPaths = new Set(existingFiles.map((f) => f.path + f.name));
+  for (const f of modifiedFiles) {
+    const fp = f.path + f.name;
+    if (existingPaths.has(fp) && !targetFiles.some((t) => fp.includes(t) || t.includes(fp.split("/").pop() ?? ""))) {
+      warnings.push(`${f.name}: outside original target scope`);
+    }
+  }
+  return { score: Math.max(0, Math.min(100, score)), passed: score >= 60, issues, warnings };
+}
+
 // ── QUALITY GATE V2 ───────────────────────────────────────────────────────────
 interface QualityGateResult {
   score: number;
@@ -2865,10 +2938,12 @@ router.post("/agents/edit", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
 
-  const { prompt, projectFiles = [], projectMemory } = req.body as {
+  const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens } = req.body as {
     prompt: string;
     projectFiles: ProjectFileSSE[];
     projectMemory?: Record<string, any>;
+    componentRegistry?: Record<string, string>;
+    themeTokens?: Record<string, any>;
   };
 
   if (!prompt) return res.status(400).json({ error: "prompt required" });
@@ -2879,68 +2954,128 @@ router.post("/agents/edit", async (req, res) => {
   res.flushHeaders();
 
   try {
-    sse(res, { type: "step", step: 0, agent: "Edit Agent", status: "active" });
+    // ── STEP 0: Intent Detection ────────────────────────────────────────────
+    sse(res, { type: "step", step: 0, agent: "Intent Detector", status: "active" });
 
-    // ── Build compact file context (TSX/TS only, max 3000 chars each) ─────────
-    const srcFiles = projectFiles.filter(
-      (f) => (f.lang === "tsx" || f.lang === "ts") && !f.name.includes(".min.")
+    const fileList = projectFiles.map((f) => f.path + f.name).join("\n");
+    let intentResult = { editType: "component", targetFiles: [] as string[], newFiles: [] as string[], reason: prompt };
+
+    try {
+      const intentRaw = await callGroq(
+        groqKey, PLANNER_MODEL,
+        [
+          { role: "system", content: INTENT_SYSTEM },
+          { role: "user", content: `PROJECT FILES:\n${fileList}\n\nEDIT REQUEST: ${prompt}` },
+        ],
+        false, 600
+      );
+      const cleaned = intentRaw.replace(/```json\n?|\n?```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+      intentResult = { ...intentResult, ...parsed };
+    } catch { /* keep defaults */ }
+
+    sse(res, { type: "intent_detected", ...intentResult });
+    sse(res, { type: "step", step: 0, agent: "Intent Detector", status: "done" });
+
+    // ── STEP 1: File Resolution ─────────────────────────────────────────────
+    sse(res, { type: "step", step: 1, agent: "File Resolver", status: "active" });
+
+    const depGraph = (projectMemory?.dependencyGraph as Record<string, string[]>) ?? {};
+    const resolvedFiles = resolveAffectedFiles(intentResult.targetFiles, depGraph, projectFiles);
+
+    sse(res, { type: "file_targets", files: resolvedFiles, originalTargets: intentResult.targetFiles });
+    sse(res, { type: "step", step: 1, agent: "File Resolver", status: "done" });
+
+    // ── STEP 2: Patch Generation ────────────────────────────────────────────
+    sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "active" });
+
+    // Build focused context: only the files that need to change + App.tsx for routing context
+    const targetSet = new Set([...resolvedFiles, ...(intentResult.newFiles ?? [])]);
+    const appFile = projectFiles.find((f) => f.name === "App.tsx");
+    const contextFiles = projectFiles.filter(
+      (f) => targetSet.has(f.path + f.name) || (appFile && f.name === "App.tsx")
     );
 
-    const fileContext = srcFiles
+    const fileContext = contextFiles
       .map((f) => {
-        const body = f.content.length > 3000
-          ? f.content.slice(0, 3000) + "\n// ... [truncated for context]"
-          : f.content;
+        const body = f.content.length > 5000 ? f.content.slice(0, 5000) + "\n// ... [truncated]" : f.content;
         return `// === CURRENT FILE: ${f.path}${f.name} ===\n${body}`;
       })
       .join("\n\n");
 
     const projectSummary = projectMemory
-      ? `Project: ${projectMemory.projectType || "App"}\nPages: ${(projectMemory.pages || []).join(", ")}\nEntities: ${(projectMemory.entities || []).join(", ")}\n`
-      : `Project files: ${projectFiles.map((f) => f.path + f.name).join(", ")}\n`;
+      ? `Project: ${projectMemory.projectType || "App"} | Pages: ${(projectMemory.pages || []).join(", ")} | Entities: ${(projectMemory.entities || []).join(", ")}\n`
+      : `Files: ${projectFiles.map((f) => f.path + f.name).join(", ")}\n`;
 
-    const userMessage = `${projectSummary}\nEDIT REQUEST: ${prompt}\n\nCURRENT PROJECT FILES:\n${fileContext}`;
+    const designCtx = themeTokens
+      ? `\nDesign tokens (PRESERVE): primary=${themeTokens.primary}, surface=${themeTokens.surface}, isDark=${themeTokens.isDark}`
+      : "";
+    const registryCtx = componentRegistry
+      ? `\nComponent registry: ${JSON.stringify(componentRegistry)}`
+      : "";
 
-    // ── Call Edit Agent ──────────────────────────────────────────────────────
+    const userMessage = `${projectSummary}${designCtx}${registryCtx}
+EDIT REQUEST: ${prompt}
+INTENT: ${intentResult.editType} — ${intentResult.reason}
+TARGET FILES: ${resolvedFiles.join(", ")}${intentResult.newFiles?.length ? `\nNEW FILES: ${intentResult.newFiles.join(", ")}` : ""}
+ALL PROJECT FILES (do not regenerate): ${projectFiles.map((f) => f.path + f.name).join(", ")}
+
+CURRENT FILE CONTEXT:
+${fileContext}`;
+
     const editRaw = await callGroq(
       groqKey, BACKEND_MODEL,
       [
         { role: "system", content: EDIT_SYSTEM },
         { role: "user", content: userMessage },
       ],
-      false, 4000
+      false, 8000
     );
 
-    sse(res, { type: "step", step: 0, agent: "Edit Agent", status: "done" });
+    sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "done" });
 
-    // ── Parse modified/deleted files ─────────────────────────────────────────
+    // ── STEP 3: Quality Gate ────────────────────────────────────────────────
+    sse(res, { type: "step", step: 3, agent: "Quality Gate", status: "active" });
+
     const modifiedFiles = extractEditFiles(editRaw);
-    const deletedPaths  = extractDeletedPaths(editRaw);
+    const deletedPaths = extractDeletedPaths(editRaw);
+    const qualityResult = validateEditFiles(modifiedFiles, projectFiles, resolvedFiles);
 
-    console.log(`[EditAgent] modified=${modifiedFiles.length} deleted=${deletedPaths.length}`);
+    console.log(`[EditAgent V5] modified=${modifiedFiles.length} deleted=${deletedPaths.length} quality=${qualityResult.score}`);
+    sse(res, { type: "quality_check", ...qualityResult });
+    sse(res, { type: "step", step: 3, agent: "Quality Gate", status: qualityResult.passed ? "done" : "warn" });
+
+    // ── STEP 4: Merge Engine ────────────────────────────────────────────────
+    sse(res, { type: "step", step: 4, agent: "Merge Engine", status: "active" });
+
+    const mergedFiles = mergeProjectFiles(projectFiles, modifiedFiles, deletedPaths);
+
+    const existingPaths = new Set(projectFiles.map((f) => f.path + f.name));
+    const diff = {
+      changedFiles: modifiedFiles.filter((f) => existingPaths.has(f.path + f.name)).map((f) => f.path + f.name),
+      createdFiles: modifiedFiles.filter((f) => !existingPaths.has(f.path + f.name)).map((f) => f.path + f.name),
+      deletedFiles: deletedPaths,
+    };
+
     sse(res, {
       type: "edit_identified",
       modifiedCount: modifiedFiles.length,
-      deletedCount:  deletedPaths.length,
+      deletedCount: deletedPaths.length,
       files: modifiedFiles.map((f) => f.path + f.name),
     });
 
-    // ── Merge with existing files ────────────────────────────────────────────
-    const mergedFiles = mergeProjectFiles(projectFiles, modifiedFiles, deletedPaths);
+    sse(res, { type: "step", step: 4, agent: "Merge Engine", status: "done" });
 
     sse(res, {
       type: "edit_done",
       files: mergedFiles,
-      modifiedFiles,
-      deletedFiles: deletedPaths,
-      addedFiles: modifiedFiles.filter(
-        (mf) => !projectFiles.some((pf) => pf.path === mf.path && pf.name === mf.name)
-      ),
+      diff,
+      intentResult,
     });
 
     res.end();
   } catch (e: any) {
-    console.error("[EditAgent] Error:", e);
+    console.error("[EditAgent V5] Error:", e);
     sse(res, { type: "error", error: e.message });
     res.end();
   }

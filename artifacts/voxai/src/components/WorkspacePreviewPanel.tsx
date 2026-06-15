@@ -2,9 +2,10 @@ import { useState, useMemo } from 'react';
 import {
   Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
+  Undo2, Redo2,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff } from '../services/builderService';
 import { exportProjectZip } from '../services/mockAiService';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
@@ -21,6 +22,11 @@ interface Props {
   sectionOwnership?: SectionOwnership | null;
   themeTokens?: ThemeTokens | null;
   motionProfile?: MotionProfile | null;
+  lastEditDiff?: EditDiff | null;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 function fileIcon(lang: string) {
@@ -108,9 +114,27 @@ interface FileTreeProps {
   files: ProjectFile[];
   selectedFile: ProjectFile | null;
   onSelect: (f: ProjectFile) => void;
+  diff?: EditDiff | null;
 }
 
-function FileTreeView({ files, selectedFile, onSelect }: FileTreeProps) {
+function fileDiffStatus(file: ProjectFile, diff?: EditDiff | null): 'changed' | 'created' | 'deleted' | null {
+  if (!diff) return null;
+  const fp = file.path + file.name;
+  if (diff.createdFiles.some(p => p === fp || fp.endsWith(p))) return 'created';
+  if (diff.changedFiles.some(p => p === fp || fp.endsWith(p))) return 'changed';
+  if (diff.deletedFiles.some(p => p === fp || fp.endsWith(p))) return 'deleted';
+  return null;
+}
+
+function DiffBadge({ status }: { status: 'changed' | 'created' | 'deleted' | null }) {
+  if (!status) return null;
+  if (status === 'created') return <span className="text-[10px] font-bold text-emerald-400 px-1 rounded bg-emerald-400/10">+</span>;
+  if (status === 'changed') return <span className="text-[10px] font-bold text-yellow-400 px-1 rounded bg-yellow-400/10">~</span>;
+  if (status === 'deleted') return <span className="text-[10px] font-bold text-red-400 px-1 rounded bg-red-400/10">−</span>;
+  return null;
+}
+
+function FileTreeView({ files, selectedFile, onSelect, diff }: FileTreeProps) {
   const tree = useMemo(() => buildFileTree(files), [files]);
   const sortedFolders = useMemo(
     () => Object.keys(tree).sort((a, b) => {
@@ -153,18 +177,22 @@ function FileTreeView({ files, selectedFile, onSelect }: FileTreeProps) {
                 <span className="text-[11px] text-gray-500 font-medium tracking-wide">{label}</span>
               </button>
             )}
-            {(isRoot || isExpanded) && folderFiles.map(f => (
-              <button
-                key={f.path + f.name}
-                onClick={() => onSelect(f)}
-                className={`flex items-center gap-2 w-full text-left transition-colors py-1.5 pr-3 ${!isRoot ? 'pl-7' : 'pl-3'} ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'bg-white/10' : 'hover:bg-white/5'}`}
-              >
-                {fileIcon(f.lang)}
-                <span className={`text-[12px] truncate ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'text-white' : 'text-gray-300'}`}>
-                  {f.name}
-                </span>
-              </button>
-            ))}
+            {(isRoot || isExpanded) && folderFiles.map(f => {
+              const status = fileDiffStatus(f, diff);
+              return (
+                <button
+                  key={f.path + f.name}
+                  onClick={() => onSelect(f)}
+                  className={`flex items-center gap-2 w-full text-left transition-colors py-1.5 pr-3 ${!isRoot ? 'pl-7' : 'pl-3'} ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                >
+                  {fileIcon(f.lang)}
+                  <span className={`text-[12px] truncate flex-1 ${selectedFile?.name === f.name && selectedFile?.path === f.path ? 'text-white' : status ? 'text-gray-200' : 'text-gray-300'}`}>
+                    {f.name}
+                  </span>
+                  <DiffBadge status={status} />
+                </button>
+              );
+            })}
           </div>
         );
       })}
@@ -176,6 +204,7 @@ export default function WorkspacePreviewPanel({
   code, isBuilding, buildStep,
   projectBlueprint, sectionOrder, projectFiles: serverFiles,
   dnaComposition, sectionOwnership, themeTokens, motionProfile,
+  lastEditDiff, canUndo, canRedo, onUndo, onRedo,
 }: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
@@ -295,8 +324,29 @@ export default function WorkspacePreviewPanel({
           Files
         </button>
 
-        {/* Right: copy (when viewing a file) + Export ZIP */}
+        {/* Right: undo/redo + copy (when viewing a file) + Export ZIP */}
         <div className="ml-auto flex items-center gap-1">
+          {(canUndo || canRedo) && (
+            <>
+              <button
+                onClick={onUndo}
+                disabled={!canUndo}
+                title="Undo last edit"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Undo2 size={12} />
+              </button>
+              <button
+                onClick={onRedo}
+                disabled={!canRedo}
+                title="Redo last edit"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[12px] font-medium text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Redo2 size={12} />
+              </button>
+              <div className="w-px h-4 bg-white/10 mx-1" />
+            </>
+          )}
           {tab === 'files' && selectedFile && (
             <button
               onClick={() => handleCopy(selectedFile.content)}
@@ -379,6 +429,7 @@ export default function WorkspacePreviewPanel({
                 files={files}
                 selectedFile={selectedFile}
                 onSelect={setSelectedFile}
+                diff={lastEditDiff}
               />
             )}
           </div>
