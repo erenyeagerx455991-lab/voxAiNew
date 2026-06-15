@@ -1,6 +1,6 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph } from './builderService';
 
-export type { EditDiff, BuildHealth };
+export type { EditDiff, BuildHealth, ProjectKnowledgeGraph };
 
 const API_BASE = "/api";
 
@@ -18,7 +18,8 @@ export async function mockStreamResponse(
   onError: (err: string) => void,
   onStep?: (step: number) => void,
   onDnaComposition?: (data: DNABuildData) => void,
-  onBuildHealth?: (health: BuildHealth) => void
+  onBuildHealth?: (health: BuildHealth) => void,
+  onKnowledgeGraph?: (graph: ProjectKnowledgeGraph) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -88,11 +89,17 @@ export async function mockStreamResponse(
             });
           }
 
+          if (json.type === "graph_build_done" && json.graph) {
+            onKnowledgeGraph?.(json.graph as ProjectKnowledgeGraph);
+          }
+
           if (json.type === "done") {
             finalCode = json.code ?? "";
             finalProjectBlueprint = json.projectBlueprint;
             finalSectionOrder = json.sectionOrder;
             finalFiles = Array.isArray(json.files) ? json.files : undefined;
+            // If graph wasn't emitted separately, check done payload
+            if (json.knowledgeGraph && onKnowledgeGraph) onKnowledgeGraph(json.knowledgeGraph);
             onStep?.(9); // index 9 = "Preparing Preview"
             await new Promise((r) => setTimeout(r, 300));
             onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder, finalFiles);
@@ -127,7 +134,9 @@ export async function mockEditResponse(
   onFileTargets?: (files: string[]) => void,
   onQualityCheck?: (score: number, passed: boolean, issues: string[]) => void,
   componentRegistry?: Record<string, string>,
-  themeTokens?: Record<string, unknown> | null
+  themeTokens?: Record<string, unknown> | null,
+  knowledgeGraph?: ProjectKnowledgeGraph | null,
+  onGraphContext?: (ctx: { filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] }) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -135,7 +144,7 @@ export async function mockEditResponse(
     const res = await fetch(`${API_BASE}/agents/edit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens }),
+      body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens, knowledgeGraph }),
     });
 
     if (!res.ok || !res.body) {
@@ -173,6 +182,10 @@ export async function mockEditResponse(
 
           if (json.type === "file_targets") {
             onFileTargets?.(json.files ?? []);
+          }
+
+          if (json.type === "graph_context") {
+            onGraphContext?.({ filesLoaded: json.filesLoaded ?? 0, filesSkipped: json.filesSkipped ?? 0, tokensSaved: json.tokensSaved ?? 0, resolvedNodes: json.resolvedNodes ?? [] });
           }
 
           if (json.type === "quality_check") {

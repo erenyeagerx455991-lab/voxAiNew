@@ -10,4 +10,5 @@
 - [VoxAI V5 Edit Pipeline](voxai-v5-edit-pipeline.md) — 5-step surgical edit (Intent→Resolver→Patch→Quality Gate→Merge); diff tracking, undo/redo stacks, visual diff badges in file tree.
 - [VoxAI Context Compression](voxai-context-compression.md) — Groq TPM guard: callGroq() auto-truncates, buildMinimalEditContext() for edits, compressProjectMemory() strips heavy fields.
 - [VoxAI V5.1 Stability Release](voxai-v51-stability.md) — 12-check validator, 3-pass repair loop, build_health SSE+UI panel, NAMED_COMPONENTS aliases, token reductions.
+- [VoxAI V5.3 Knowledge Graph System](voxai-v53-knowledge-graph.md) — graph built after every project build; edit agent uses it to load fewer files; Graph tab in UI; persisted via localStorage.
 - [VoxAI V5.2 Runtime Reliability Layer](voxai-v52-runtime-reliability.md) — 6-phase runtime safety: static validator, React Error Boundary, postMessage capture, auto runtime-repair endpoint, safe coding rules in codegen prompt, extended BuildHealth panel.

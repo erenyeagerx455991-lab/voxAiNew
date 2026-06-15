@@ -2,13 +2,13 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth } from '../services/builderService';
-import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
-export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth };
+export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph };
 
 interface AppState {
   view: View;
@@ -41,6 +41,8 @@ interface AppState {
   editTargetFiles: string[];
   editQualityScore: number;
   buildHealth: BuildHealth | null;
+  knowledgeGraph: ProjectKnowledgeGraph | null;
+  graphContext: { filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] } | null;
   runtimeErrors: { file: string; message: string; stack?: string; component?: string }[];
   runtimeRepairAttempt: number;
   onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => void;
@@ -134,6 +136,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [editTargetFiles, setEditTargetFiles] = useState<string[]>([]);
   const [editQualityScore, setEditQualityScore] = useState(100);
   const [buildHealth, setBuildHealth] = useState<BuildHealth | null>(null);
+  const [knowledgeGraph, setKnowledgeGraph] = useState<ProjectKnowledgeGraph | null>(null);
+  const [graphContext, setGraphContext] = useState<{ filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] } | null>(null);
   const [runtimeErrors, setRuntimeErrors] = useState<{ file: string; message: string; stack?: string; component?: string }[]>([]);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
   const [initialized, setInitialized] = useState(false);
@@ -282,8 +286,12 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       // Restore project memory
       const mem = loadProjectMemory(id);
       if (mem) setProjectMemory(mem);
+      // Restore knowledge graph
+      const graph = loadKnowledgeGraph(id);
+      if (graph) setKnowledgeGraph(graph);
     } else {
       setGeneratedCode('');
+      setKnowledgeGraph(null);
     }
   }, [loadMessages]);
 
@@ -315,6 +323,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setSectionOrder(undefined);
     setProjectFiles([]);
     setProjectMemory(null);
+    setKnowledgeGraph(null);
+    setGraphContext(null);
     setView('chat');
     closeSidebar();
   }, [closeSidebar]);
@@ -427,6 +437,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             // Build component registry from new files
             const newRegistry = buildComponentRegistry(serverFiles);
 
+            // V5.3: If this is a full build (not edit), graph was already received via onKnowledgeGraph callback.
+            // On edit, rebuild graph from updated files to keep it in sync.
+            if (isEditMode) {
+              const { buildKnowledgeGraph } = await import('../services/builderService');
+              const updatedGraph = buildKnowledgeGraph(serverFiles, pb ?? undefined);
+              setKnowledgeGraph(updatedGraph);
+              if (chatId) saveKnowledgeGraph(chatId, updatedGraph);
+            }
+
             // Persist ProjectMemory
             const prevHistory = isEditMode && currentMemory ? (currentMemory.editHistory ?? []) : [];
             const editOp: EditOperation | null = isEditMode && diff ? {
@@ -488,6 +507,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         if (isEditMode) {
           const registry = currentMemory?.componentRegistry ?? buildComponentRegistry(currentFiles);
           const themeTokensSnapshot = themeTokensRef.current;
+          const graphSnapshot = knowledgeGraph;
           await mockEditResponse(
             content,
             currentFiles,
@@ -503,7 +523,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             (files) => { setEditTargetFiles(files); },
             (score, _passed, _issues) => { setEditQualityScore(score); },
             registry,
-            themeTokensSnapshot as Record<string, unknown> | null
+            themeTokensSnapshot as Record<string, unknown> | null,
+            graphSnapshot,
+            (ctx) => setGraphContext(ctx)
           );
         } else {
           await mockStreamResponse(
@@ -519,7 +541,12 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
               setMotionProfile(dna.motionProfile);
               dnaCompositionRef.current = dna.composition;
             },
-            (health: BuildHealth) => setBuildHealth(health)
+            (health: BuildHealth) => setBuildHealth(health),
+            (graph: ProjectKnowledgeGraph) => {
+              setKnowledgeGraph(graph);
+              const cid = activeChatId;
+              if (cid) saveKnowledgeGraph(cid, graph);
+            }
           );
         }
       } catch (err) {
@@ -542,6 +569,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       localStorage.removeItem(CODE_KEY(id));
       localStorage.removeItem(FILES_KEY(id));
       clearProjectMemory(id);
+      clearKnowledgeGraph(id);
       setChats((prev) => prev.filter((c) => c.id !== id));
       if (activeChatId === id) {
         setActiveChatIdState(null);
@@ -553,6 +581,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
         setSectionOrder(undefined);
         setProjectFiles([]);
         setProjectMemory(null);
+        setKnowledgeGraph(null);
+        setGraphContext(null);
       }
     },
     [activeChatId]
@@ -597,6 +627,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     editTargetFiles,
     editQualityScore,
     buildHealth,
+    knowledgeGraph,
+    graphContext,
     runtimeErrors,
     runtimeRepairAttempt,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {

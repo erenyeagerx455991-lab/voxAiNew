@@ -3,9 +3,10 @@ import {
   Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
   Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu, Zap, Route,
+  Network, LayoutDashboard, Component, Database, GitBranch, Package,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph } from '../services/builderService';
 import { exportProjectZip } from '../services/mockAiService';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
@@ -29,6 +30,157 @@ interface Props {
   onRedo?: () => void;
   buildHealth?: BuildHealth | null;
   onRuntimeError?: (err: { file: string; message: string; stack?: string; component?: string }) => void;
+  knowledgeGraph?: ProjectKnowledgeGraph | null;
+}
+
+// ── V5.3: Knowledge Graph Panel ────────────────────────────────────────────────
+
+function KGSection({ title, icon, count, children }: { title: string; icon: React.ReactNode; count: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="border-b border-white/5 last:border-0">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-white/4 transition-colors"
+      >
+        {open ? <ChevronDown size={11} className="text-gray-500 shrink-0" /> : <ChevronRight size={11} className="text-gray-500 shrink-0" />}
+        <span className="text-gray-500 shrink-0">{icon}</span>
+        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider flex-1">{title}</span>
+        <span className="text-[10px] text-gray-600 bg-white/5 px-1.5 py-0.5 rounded-full">{count}</span>
+      </button>
+      {open && <div className="pb-1">{children}</div>}
+    </div>
+  );
+}
+
+function KGBadge({ label, color }: { label: string; color: string }) {
+  return <span className={`text-[9px] font-bold px-1 rounded ${color}`}>{label}</span>;
+}
+
+function KnowledgeGraphPanel({ graph }: { graph: ProjectKnowledgeGraph }) {
+  const scoreColor = graph.graphHealthScore >= 90 ? 'text-emerald-400' : graph.graphHealthScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+  const scoreBg   = graph.graphHealthScore >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' : graph.graphHealthScore >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+
+  return (
+    <div className="flex-1 overflow-auto">
+      {/* Header */}
+      <div className={`mx-3 my-2 rounded-lg border px-3 py-2 ${scoreBg}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Network size={12} className={scoreColor} />
+            <span className="text-[11px] font-semibold text-gray-300">Knowledge Graph</span>
+            <span className="text-[10px] text-gray-500">· {graph.projectType}</span>
+          </div>
+          <span className={`text-[14px] font-bold ${scoreColor}`}>{graph.graphHealthScore}%</span>
+        </div>
+        <div className="mt-1.5 grid grid-cols-4 gap-1 text-center">
+          {[['Pages', graph.pages.length], ['Comps', graph.components.length], ['APIs', graph.apis.length], ['Routes', graph.routes.length]].map(([label, val]) => (
+            <div key={String(label)} className="bg-white/5 rounded px-1 py-0.5">
+              <div className="text-[13px] font-bold text-gray-200">{val}</div>
+              <div className="text-[9px] text-gray-500">{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pages */}
+      {graph.pages.length > 0 && (
+        <KGSection title="Pages" icon={<LayoutDashboard size={11} />} count={graph.pages.length}>
+          {graph.pages.map(page => (
+            <div key={page.name} className="px-4 py-1.5 hover:bg-white/3 transition-colors">
+              <div className="flex items-center gap-1.5">
+                <LayoutDashboard size={10} className="text-indigo-400 shrink-0" />
+                <span className="text-[12px] text-gray-300 font-medium">{page.name}</span>
+                {page.route && <span className="text-[10px] text-gray-600 font-mono">{page.route}</span>}
+              </div>
+              {page.components.length > 0 && (
+                <div className="mt-0.5 pl-4 flex flex-wrap gap-1">
+                  {page.components.slice(0, 5).map(c => (
+                    <span key={c} className="text-[9px] text-gray-500 bg-white/4 px-1 rounded">{c}</span>
+                  ))}
+                  {page.components.length > 5 && <span className="text-[9px] text-gray-600">+{page.components.length - 5}</span>}
+                </div>
+              )}
+            </div>
+          ))}
+        </KGSection>
+      )}
+
+      {/* Components */}
+      {graph.components.length > 0 && (
+        <KGSection title="Components" icon={<Component size={11} />} count={graph.components.length}>
+          {graph.components.map(comp => (
+            <div key={comp.name} className="px-4 py-1 hover:bg-white/3 transition-colors flex items-center gap-1.5">
+              <Component size={10} className="text-sky-400 shrink-0" />
+              <span className="text-[12px] text-gray-300 flex-1">{comp.name}</span>
+              {comp.section && (
+                <KGBadge label={comp.section}
+                  color={comp.section === 'hero' ? 'text-purple-400 bg-purple-400/10' : comp.section === 'pricing' ? 'text-emerald-400 bg-emerald-400/10' : comp.section === 'navigation' ? 'text-blue-400 bg-blue-400/10' : comp.section === 'auth' ? 'text-orange-400 bg-orange-400/10' : comp.section === 'dashboard' ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-400 bg-gray-400/10'}
+                />
+              )}
+            </div>
+          ))}
+        </KGSection>
+      )}
+
+      {/* Routes */}
+      {graph.routes.length > 0 && (
+        <KGSection title="Routes" icon={<GitBranch size={11} />} count={graph.routes.length}>
+          {graph.routes.map(route => (
+            <div key={route} className="px-4 py-1 flex items-center gap-1.5 hover:bg-white/3 transition-colors">
+              <Route size={10} className="text-green-400 shrink-0" />
+              <span className="text-[12px] text-gray-400 font-mono">{route}</span>
+            </div>
+          ))}
+        </KGSection>
+      )}
+
+      {/* APIs */}
+      {graph.apis.length > 0 && (
+        <KGSection title="APIs" icon={<Zap size={11} />} count={graph.apis.length}>
+          {graph.apis.map(api => (
+            <div key={api.name} className="px-4 py-1 flex items-center gap-1.5 hover:bg-white/3 transition-colors">
+              <Zap size={10} className="text-amber-400 shrink-0" />
+              <span className="text-[12px] text-gray-300">{api.name}</span>
+              {api.methods && api.methods.length > 0 && (
+                <div className="flex gap-0.5">
+                  {api.methods.map(m => <KGBadge key={m} label={m} color="text-gray-400 bg-gray-400/10" />)}
+                </div>
+              )}
+            </div>
+          ))}
+        </KGSection>
+      )}
+
+      {/* Database Tables */}
+      {graph.databaseTables.length > 0 && (
+        <KGSection title="Database" icon={<Database size={11} />} count={graph.databaseTables.length}>
+          {graph.databaseTables.map(table => (
+            <div key={table.name} className="px-4 py-1 flex items-center gap-1.5 hover:bg-white/3 transition-colors">
+              <Database size={10} className="text-rose-400 shrink-0" />
+              <span className="text-[12px] text-gray-300">{table.name}</span>
+              {table.relationships.length > 0 && (
+                <span className="text-[10px] text-gray-600">→ {table.relationships.join(', ')}</span>
+              )}
+            </div>
+          ))}
+        </KGSection>
+      )}
+
+      {/* Dependencies */}
+      {graph.dependencies.length > 0 && (
+        <KGSection title="Dependencies" icon={<Package size={11} />} count={graph.dependencies.length}>
+          <div className="px-4 py-1 flex flex-wrap gap-1">
+            {graph.dependencies.map(dep => (
+              <span key={dep} className="text-[10px] text-gray-500 bg-white/4 border border-white/8 px-1.5 py-0.5 rounded font-mono">{dep}</span>
+            ))}
+          </div>
+        </KGSection>
+      )}
+
+      <div className="pb-4" />
+    </div>
+  );
 }
 
 // ── Build Health Panel (V5.2) ──────────────────────────────────────────────
@@ -289,9 +441,9 @@ export default function WorkspacePreviewPanel({
   projectBlueprint, sectionOrder, projectFiles: serverFiles,
   dnaComposition, sectionOwnership, themeTokens, motionProfile,
   lastEditDiff, canUndo, canRedo, onUndo, onRedo,
-  buildHealth, onRuntimeError,
+  buildHealth, onRuntimeError, knowledgeGraph,
 }: Props) {
-  const [tab, setTab] = useState<'preview' | 'files'>('preview');
+  const [tab, setTab] = useState<'preview' | 'files' | 'graph'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
@@ -422,6 +574,19 @@ export default function WorkspacePreviewPanel({
           <Files size={13} />
           Files
         </button>
+        {knowledgeGraph && (
+          <button
+            onClick={() => { setTab('graph'); setSelectedFile(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+              tab === 'graph'
+                ? 'bg-white/10 text-white'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+            }`}
+          >
+            <Network size={13} />
+            Graph
+          </button>
+        )}
 
         {/* Right: undo/redo + copy (when viewing a file) + Export ZIP */}
         <div className="ml-auto flex items-center gap-1">
@@ -472,6 +637,11 @@ export default function WorkspacePreviewPanel({
 
       {/* ── Build Health Panel (V5.1) — always visible when health data exists ── */}
       {buildHealth && <BuildHealthPanel health={buildHealth} />}
+
+      {/* ── Knowledge Graph tab (V5.3) ── */}
+      {tab === 'graph' && knowledgeGraph && (
+        <KnowledgeGraphPanel graph={knowledgeGraph} />
+      )}
 
       {/* ── Preview tab ── */}
       {tab === 'preview' && (

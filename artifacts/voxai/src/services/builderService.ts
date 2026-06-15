@@ -757,6 +757,332 @@ export interface BuildHealth {
   routesValid: boolean;          // whether all routes resolve to existing components
 }
 
+// ── V5.3: PROJECT KNOWLEDGE GRAPH ─────────────────────────────────────────────
+
+export interface KGPage {
+  name: string;
+  path: string;
+  route?: string;
+  components: string[];
+}
+
+export interface KGComponent {
+  name: string;
+  file: string;
+  usedBy: string[];
+  section?: string; // hero, pricing, features, navigation, footer, dashboard, chart, auth
+}
+
+export interface KGApi {
+  name: string;
+  file: string;
+  methods?: string[];
+}
+
+export interface KGDatabaseTable {
+  name: string;
+  relationships: string[];
+}
+
+export interface ProjectKnowledgeGraph {
+  projectType: string;
+  generatedAt: number;
+  pages: KGPage[];
+  components: KGComponent[];
+  apis: KGApi[];
+  databaseTables: KGDatabaseTable[];
+  routes: string[];
+  dependencies: string[];
+  graphHealthScore: number;  // 0-100
+  editContextHint?: string;  // quick summary for the edit LLM
+}
+
+// ── PHASE 2: GRAPH GENERATOR ──────────────────────────────────────────────────
+
+export function buildKnowledgeGraph(files: ProjectFile[], blueprint?: ProjectBlueprint): ProjectKnowledgeGraph {
+  const pages: KGPage[] = [];
+  const components: KGComponent[] = [];
+  const apis: KGApi[] = [];
+  const databaseTables: KGDatabaseTable[] = [];
+  const routes: string[] = [];
+  const dependencies: string[] = [];
+
+  // Component → page usage tracking
+  const compUsedBy = new Map<string, Set<string>>();
+
+  const tsxFiles = files.filter(f => f.lang === 'tsx' || f.lang === 'jsx');
+  const pageFiles   = tsxFiles.filter(f => f.path.includes('pages/'));
+  const compFiles   = tsxFiles.filter(f => f.path.includes('components/'));
+  const appFile     = tsxFiles.find(f => f.name === 'App.tsx');
+
+  // ── Pages ──
+  for (const pf of pageFiles) {
+    const pageName = pf.name.replace(/\.(tsx|jsx)$/, '');
+    const used = compFiles
+      .map(c => c.name.replace(/\.(tsx|jsx)$/, ''))
+      .filter(cn => pf.content.includes(cn));
+    for (const c of used) {
+      if (!compUsedBy.has(c)) compUsedBy.set(c, new Set());
+      compUsedBy.get(c)!.add(pageName);
+    }
+    // Extract route
+    let route: string | undefined;
+    if (appFile) {
+      const routeRe = new RegExp(`path=["']([^"']+)["'][^>]*element=\\{<${pageName}`, 'g');
+      const m = routeRe.exec(appFile.content);
+      if (m) route = m[1];
+    }
+    pages.push({ name: pageName, path: pf.path + pf.name, route, components: used });
+  }
+
+  // ── Components ──
+  for (const cf of compFiles) {
+    const compName = cf.name.replace(/\.(tsx|jsx)$/, '');
+    const usedBy = Array.from(compUsedBy.get(compName) || []);
+    if (appFile && appFile.content.includes(compName) && !usedBy.includes('App')) usedBy.push('App');
+
+    // Detect section type from name
+    const lower = compName.toLowerCase();
+    const section =
+      lower.includes('hero')   ? 'hero' :
+      lower.includes('pric') || lower.includes('plan') ? 'pricing' :
+      lower.includes('nav')  || lower.includes('header') ? 'navigation' :
+      lower.includes('footer')   ? 'footer' :
+      lower.includes('dash')     ? 'dashboard' :
+      lower.includes('chart') || lower.includes('analyt') ? 'chart' :
+      lower.includes('auth') || lower.includes('login') || lower.includes('signup') ? 'auth' :
+      lower.includes('feat')     ? 'features' :
+      lower.includes('test') || lower.includes('review') ? 'testimonials' :
+      lower.includes('cta')      ? 'cta' :
+      lower.includes('faq')      ? 'faq' :
+      undefined;
+
+    components.push({ name: compName, file: cf.path + cf.name, usedBy, section });
+  }
+
+  // ── Single-page fallback (no pages/ folder) ──
+  if (pages.length === 0 && appFile) {
+    const usedComps = compFiles
+      .map(f => f.name.replace(/\.(tsx|jsx)$/, ''))
+      .filter(cn => appFile.content.includes(cn));
+    if (usedComps.length > 0 || compFiles.length === 0) {
+      pages.push({ name: 'Landing', path: 'src/App.tsx', route: '/', components: usedComps });
+    }
+  }
+
+  // ── Routes from App.tsx ──
+  if (appFile) {
+    const pathRe = /path=["']([^"']+)["']/g;
+    let m: RegExpExecArray | null;
+    while ((m = pathRe.exec(appFile.content)) !== null) {
+      if (!routes.includes(m[1])) routes.push(m[1]);
+    }
+    if (routes.length === 0) routes.push('/');
+  }
+
+  // ── APIs ──
+  const apiFiles = files.filter(f => f.path.includes('api/') && (f.lang === 'ts' || f.lang === 'js'));
+  for (const af of apiFiles) {
+    const apiName = af.name.replace(/\.(ts|js)$/, '');
+    const methods: string[] = [];
+    if (af.content.includes('.get('))    methods.push('GET');
+    if (af.content.includes('.post('))   methods.push('POST');
+    if (af.content.includes('.put('))    methods.push('PUT');
+    if (af.content.includes('.delete(')) methods.push('DELETE');
+    apis.push({ name: apiName, file: af.path + af.name, methods });
+  }
+
+  // ── Database tables ──
+  const schemaFile = files.find(f => f.name.includes('schema') || f.name.includes('prisma'));
+  if (schemaFile) {
+    const modelRe = /model\s+(\w+)\s*\{/g;
+    let m: RegExpExecArray | null;
+    while ((m = modelRe.exec(schemaFile.content)) !== null) {
+      databaseTables.push({ name: m[1], relationships: [] });
+    }
+  } else if (blueprint?.databaseTables) {
+    for (const t of blueprint.databaseTables) {
+      databaseTables.push({ name: t, relationships: blueprint.relationships?.filter(r => r.includes(t)) ?? [] });
+    }
+  }
+
+  // ── Dependencies ──
+  const pkgFile = files.find(f => f.name === 'package.json');
+  if (pkgFile) {
+    try {
+      const pkg = JSON.parse(pkgFile.content);
+      dependencies.push(...Object.keys({ ...pkg.dependencies }).slice(0, 20));
+    } catch {}
+  }
+  if (blueprint?.dependencies) {
+    for (const d of blueprint.dependencies) {
+      if (!dependencies.includes(d)) dependencies.push(d);
+    }
+  }
+
+  // ── Graph health ──
+  const issues: string[] = [];
+  for (const page of pages) {
+    for (const c of page.components) {
+      if (!components.some(k => k.name === c)) issues.push(`${page.name} refs missing component ${c}`);
+    }
+  }
+  const graphHealthScore = Math.max(0, 100 - issues.length * 10);
+
+  // ── Edit context hint ──
+  const compSummary = components.slice(0, 8).map(c => `${c.name}${c.section ? `(${c.section})` : ''}`).join(', ');
+  const editContextHint = `${blueprint?.projectType || 'Web App'} — Pages: ${pages.map(p => p.name).join(', ')} — Components: ${compSummary}`;
+
+  return { projectType: blueprint?.projectType || 'Web App', generatedAt: Date.now(), pages, components, apis, databaseTables, routes, dependencies, graphHealthScore, editContextHint };
+}
+
+// ── PHASE 3: GRAPH STORAGE ────────────────────────────────────────────────────
+
+const GRAPH_KEY = (id: string) => `voxai_graph_${id}`;
+
+export function saveKnowledgeGraph(chatId: string, graph: ProjectKnowledgeGraph): void {
+  try { localStorage.setItem(GRAPH_KEY(chatId), JSON.stringify(graph)); } catch {}
+}
+
+export function loadKnowledgeGraph(chatId: string): ProjectKnowledgeGraph | null {
+  try {
+    const raw = localStorage.getItem(GRAPH_KEY(chatId));
+    return raw ? (JSON.parse(raw) as ProjectKnowledgeGraph) : null;
+  } catch { return null; }
+}
+
+export function clearKnowledgeGraph(chatId: string): void {
+  try { localStorage.removeItem(GRAPH_KEY(chatId)); } catch {}
+}
+
+// ── PHASE 3: GRAPH INDEXERS ───────────────────────────────────────────────────
+
+export function findPage(graph: ProjectKnowledgeGraph, name: string): KGPage | null {
+  const lower = name.toLowerCase();
+  return graph.pages.find(p => p.name.toLowerCase().includes(lower) || (p.route ?? '').includes(lower)) ?? null;
+}
+export function findComponent(graph: ProjectKnowledgeGraph, name: string): KGComponent | null {
+  const lower = name.toLowerCase();
+  return graph.components.find(c => c.name.toLowerCase().includes(lower) || c.section === lower) ?? null;
+}
+export function findApi(graph: ProjectKnowledgeGraph, name: string): KGApi | null {
+  const lower = name.toLowerCase();
+  return graph.apis.find(a => a.name.toLowerCase().includes(lower)) ?? null;
+}
+export function findDatabaseTable(graph: ProjectKnowledgeGraph, name: string): KGDatabaseTable | null {
+  const lower = name.toLowerCase();
+  return graph.databaseTables.find(t => t.name.toLowerCase().includes(lower)) ?? null;
+}
+export function findRoute(graph: ProjectKnowledgeGraph, path: string): string | null {
+  return graph.routes.find(r => r.includes(path)) ?? null;
+}
+export function findDependency(graph: ProjectKnowledgeGraph, name: string): string | null {
+  const lower = name.toLowerCase();
+  return graph.dependencies.find(d => d.toLowerCase().includes(lower)) ?? null;
+}
+
+// ── PHASE 4: EDIT TARGET RESOLUTION ──────────────────────────────────────────
+
+export interface EditTargetResult {
+  targetFiles: ProjectFile[];
+  graphNodes: string[];
+  resolved: boolean;
+  filesLoaded: number;
+  filesSkipped: number;
+  tokensSaved: number;
+}
+
+export function resolveEditTargets(
+  graph: ProjectKnowledgeGraph,
+  editPrompt: string,
+  files: ProjectFile[]
+): EditTargetResult {
+  const prompt = editPrompt.toLowerCase();
+  const targetPaths = new Set<string>();
+  const graphNodes: string[] = [];
+
+  // 1. Exact component name match
+  for (const comp of graph.components) {
+    if (prompt.includes(comp.name.toLowerCase())) {
+      targetPaths.add(comp.file);
+      graphNodes.push(comp.name);
+      // Also include pages that use this component
+      for (const page of graph.pages) {
+        if (page.components.includes(comp.name)) targetPaths.add(page.path);
+      }
+    }
+  }
+
+  // 2. Section keyword matching → find all components of that section
+  const SECTION_KEYWORDS: Record<string, string> = {
+    hero: 'hero', banner: 'hero', landing: 'hero',
+    pric: 'pricing', plan: 'pricing', tier: 'pricing', subscription: 'pricing',
+    nav: 'navigation', header: 'navigation', menu: 'navigation',
+    footer: 'footer',
+    dash: 'dashboard', analyt: 'dashboard', metric: 'dashboard',
+    chart: 'chart', graph: 'chart', visual: 'chart',
+    auth: 'auth', 'sign in': 'auth', 'sign up': 'auth', login: 'auth', signup: 'auth',
+    feature: 'features', benefit: 'features',
+    testimonial: 'testimonials', review: 'testimonials',
+    cta: 'cta',
+    faq: 'faq',
+  };
+  for (const [kw, section] of Object.entries(SECTION_KEYWORDS)) {
+    if (prompt.includes(kw)) {
+      for (const comp of graph.components) {
+        if (comp.section === section) { targetPaths.add(comp.file); if (!graphNodes.includes(comp.name)) graphNodes.push(comp.name); }
+      }
+    }
+  }
+
+  // 3. Page name match
+  for (const page of graph.pages) {
+    if (prompt.includes(page.name.toLowerCase())) {
+      targetPaths.add(page.path); graphNodes.push(page.name);
+      for (const cn of page.components) {
+        const comp = graph.components.find(c => c.name === cn);
+        if (comp) targetPaths.add(comp.file);
+      }
+    }
+  }
+
+  // 4. API match
+  for (const api of graph.apis) {
+    if (prompt.includes(api.name.toLowerCase())) { targetPaths.add(api.file); graphNodes.push(api.name); }
+  }
+
+  // 5. Theme / global style → App.tsx
+  const themeKws = ['dark', 'light', 'theme', 'color', 'font', 'brand', 'design', 'style'];
+  if (themeKws.some(kw => prompt.includes(kw))) {
+    const appFile = files.find(f => f.name === 'App.tsx');
+    if (appFile) { targetPaths.add(appFile.path + appFile.name); if (!graphNodes.includes('App.tsx')) graphNodes.push('App.tsx'); }
+    const themeFile = files.find(f => f.name.toLowerCase().includes('theme'));
+    if (themeFile) targetPaths.add(themeFile.path + themeFile.name);
+  }
+
+  // 6. Route changes → App.tsx
+  const routeKws = ['route', 'redirect', 'link', 'navigation', 'page'];
+  if (routeKws.some(kw => prompt.includes(kw))) {
+    const appFile = files.find(f => f.name === 'App.tsx');
+    if (appFile) { targetPaths.add(appFile.path + appFile.name); if (!graphNodes.includes('App.tsx')) graphNodes.push('App.tsx'); }
+  }
+
+  // 7. Resolve paths → actual file objects
+  const targetFiles = files.filter(f => {
+    const fp = f.path + f.name;
+    return targetPaths.has(fp) || targetPaths.has(f.name) || [...targetPaths].some(p => fp.endsWith(p) || p.endsWith(f.name));
+  });
+
+  if (targetFiles.length === 0) {
+    return { targetFiles: [], graphNodes, resolved: false, filesLoaded: 0, filesSkipped: 0, tokensSaved: 0 };
+  }
+
+  const filesLoaded  = targetFiles.length;
+  const filesSkipped = Math.max(0, files.length - filesLoaded);
+  const tokensSaved  = filesSkipped * 150; // ~150 tokens/file average
+  return { targetFiles, graphNodes, resolved: true, filesLoaded, filesSkipped, tokensSaved };
+}
+
 export function buildComponentRegistry(files: ProjectFile[]): ComponentRegistry {
   const registry: ComponentRegistry = {};
   for (const f of files) {
