@@ -678,6 +678,19 @@ export function buildDependencyGraph(files: ProjectFile[]): FileDependencyGraph 
   return graph;
 }
 
+// ── BUILD HEALTH METRICS (V5.1) ───────────────────────────────────────────────
+
+export interface BuildHealth {
+  validationScore: number;       // 0-100 percentage of TSX files passing validation
+  compileSuccessRate: number;    // 0-100 percentage estimated compile success
+  repairAttempts: number;        // total LLM repair calls made
+  filesRepaired: number;         // files successfully repaired
+  totalFiles: number;            // total project files generated
+  passedFiles: number;           // TSX files passing all validation checks
+  failedFiles: number;           // TSX files still failing after max repair passes
+  tokenEstimate: number;         // rough token count estimate of generated code
+}
+
 export function buildComponentRegistry(files: ProjectFile[]): ComponentRegistry {
   const registry: ComponentRegistry = {};
   for (const f of files) {

@@ -9,3 +9,4 @@
 - [VoxAI V4.5 DNA Composition Engine](voxai-v45-dna-engine.md) — multi-brand DNA fusion replaces winner-takes-all reference routing; section ownership resolves algorithmically; dna_composition SSE fires between step 0 and step 1.
 - [VoxAI V5 Edit Pipeline](voxai-v5-edit-pipeline.md) — 5-step surgical edit (Intent→Resolver→Patch→Quality Gate→Merge); diff tracking, undo/redo stacks, visual diff badges in file tree.
 - [VoxAI Context Compression](voxai-context-compression.md) — Groq TPM guard: callGroq() auto-truncates, buildMinimalEditContext() for edits, compressProjectMemory() strips heavy fields.
+- [VoxAI V5.1 Stability Release](voxai-v51-stability.md) — 12-check validator, 3-pass repair loop, build_health SSE+UI panel, NAMED_COMPONENTS aliases, token reductions.

@@ -1555,4 +1555,43 @@ export function buildContextFromTemplates(templates: ComponentTemplate[]): strin
   ).join('\n\n---\n\n');
 }
 
+// ── V5.1 Named Component Aliases ──────────────────────────────────────────────
+// Maps human-readable canonical names to registry template IDs.
+// Used by codegen context injection so the LLM can reference components by name.
+export const NAMED_COMPONENTS: Record<string, string> = {
+  HeroLinear:          'hero-asymmetric-v1',   // Asymmetric split — Linear/monochrome DNA
+  HeroStripe:          'hero-saas-v1',          // Centered gradient — Stripe DNA
+  HeroFramer:          'hero-editorial-v1',     // Editorial bold type — Framer DNA
+  PricingStripe:       'pricing-horizontal-v1', // Horizontal cards — Stripe/Vercel DNA
+  PricingLinear:       'pricing-minimal-v1',    // Minimal clean — Linear DNA
+  NavbarMinimal:       'navbar-minimal-v1',     // Ultra-minimal, no bg
+  NavbarFloating:      'navbar-modern-v1',      // Floating pill / frosted
+  DashboardAnalytics:  'dashboard-revenue-v1', // Revenue + chart metrics
+  DashboardSaaS:       'dashboard-kanban-v1',  // Kanban board — Linear/SaaS DNA
+};
+
+/**
+ * Returns a compact component catalogue string for injection into codegen prompts.
+ * Tells the LLM which named components are available so it references them
+ * rather than generating from scratch.
+ */
+export function getRegistryCatalogue(): string {
+  const lines = Object.entries(NAMED_COMPONENTS).map(([name, id]) => {
+    const tpl = COMPONENT_TEMPLATES.find(t => t.id === id);
+    return tpl
+      ? `• ${name} — ${tpl.description.slice(0, 80)}`
+      : `• ${name} — registry alias: ${id}`;
+  });
+  return `## Available Component Registry (prefer these over generating from scratch)\n${lines.join('\n')}`;
+}
+
+/**
+ * Resolves a named component (e.g. "HeroLinear") to its full template, or null.
+ */
+export function getNamedComponent(name: string): ComponentTemplate | null {
+  const id = NAMED_COMPONENTS[name];
+  if (!id) return null;
+  return COMPONENT_TEMPLATES.find(t => t.id === id) ?? null;
+}
+
 export { COMPONENT_TEMPLATES };

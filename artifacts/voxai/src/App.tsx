@@ -303,6 +303,7 @@ function AppContent() {
                   canRedo={store.canRedo}
                   onUndo={store.undoEdit}
                   onRedo={store.redoEdit}
+                  buildHealth={store.buildHealth}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

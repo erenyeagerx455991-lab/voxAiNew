@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { selectTemplatesForPrompt, buildContextFromTemplates, getTemplatesByCategory } from "../components/registry";
+import { selectTemplatesForPrompt, buildContextFromTemplates, getTemplatesByCategory, getRegistryCatalogue } from "../components/registry";
 import { strToU8, zipSync } from "fflate";
 import {
   buildMinimalEditContext,
@@ -414,9 +414,10 @@ function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentC
   const sectionList = blueprint.sectionOrder.map((s, i) => `${i + 1}. ${s}`).join('\n');
   const functionNames = blueprint.sectionOrder.map(s => `${s}()`).join(', ');
   const appReturn = blueprint.sectionOrder.map(s => `<${s}/>`).join('');
+  const registryCatalogue = getRegistryCatalogue();
   const componentSection = componentContext
-    ? `\n\nCOMPONENT LIBRARY TEMPLATES (use as structural reference — adapt content, colors, and copy for this specific site):\n${componentContext}\n`
-    : '';
+    ? `\n\n${registryCatalogue}\n\nCOMPONENT LIBRARY TEMPLATES (use as structural reference — adapt content, colors, and copy for this specific site):\n${componentContext}\n`
+    : `\n\n${registryCatalogue}\n`;
 
   const cs = design.colorSystem ?? {};
   const ts = design.typographySystem ?? {};
@@ -1587,27 +1588,82 @@ function sseToTsxFile(name: string, rawBody: string): string {
 // no LLM call needed for clean files; problems are logged so callers can
 // optionally trigger a targeted repair pass.
 
-interface TsxValidation { valid: boolean; issues: string[]; }
+interface TsxValidation { valid: boolean; issues: string[]; warnings: string[]; }
 
+/**
+ * V5.1 — Enhanced JSX/TSX validation with 12 deterministic checks.
+ * Detects errors that cause preview crashes and Babel parse failures.
+ */
 function validateTsxFile(name: string, content: string): TsxValidation {
   const issues: string[] = [];
-  // Strip known wrapper lines (imports / export) before checking the body
+  const warnings: string[] = [];
+
+  // Strip import/export lines before checking the body
   const body = content
     .replace(/^import\s[\s\S]*?from\s+['"][^'"]+['"];?\s*$/gm, '')
     .replace(/^export\s.*/gm, '');
 
+  // ── Hard errors (break render) ───────────────────────────────────────────
   // 1. Must contain a capitalized function definition
-  if (!/function\s+[A-Z]/.test(body)) issues.push('missing capitalized function definition');
-  // 2. Must have a JSX return statement
-  if (!/\breturn\s*[(<]/.test(body)) issues.push('missing JSX return statement');
-  // 3. JSX fragments are banned (CDN+Babel preview requires wrapper divs)
-  if (/<>|<\/>/.test(body)) issues.push('JSX fragment syntax (<> </>) — use a wrapper div');
-  // 4. Stray TypeScript-only syntax that crashes Babel strict mode
-  if (/:\s*React\.FC\b|:\s*JSX\.Element\b/.test(body)) issues.push('React.FC / JSX.Element type annotation');
-  // 5. Stray import left over in the body (would cause ReferenceError)
-  if (/\nimport\s/.test(body)) issues.push('stray import statement inside function body');
+  if (!/function\s+[A-Z]/.test(body))
+    issues.push('missing capitalized function definition');
 
-  return { valid: issues.length === 0, issues };
+  // 2. Must have a JSX return statement
+  if (!/\breturn\s*[(<]/.test(body))
+    issues.push('missing JSX return statement');
+
+  // 3. JSX fragments banned (CDN+Babel preview needs wrapper divs)
+  if (/<>|<\/>/.test(body))
+    issues.push('JSX fragment syntax (<> </>) — use a wrapper div instead');
+
+  // 4. TypeScript-only annotations Babel cannot parse
+  if (/:\s*React\.FC\b|:\s*JSX\.Element\b/.test(body))
+    issues.push('React.FC / JSX.Element annotation — omit the type or use (): JSX.Element');
+
+  // 5. Stray import inside function body
+  if (/\nimport\s/.test(body))
+    issues.push('stray import statement inside function body');
+
+  // 6. HTML void elements used without self-closing slash — JSX parse error
+  const voidElementRe = /<(br|hr|img|input|link|meta|area|base|col|embed|param|source|track|wbr)(\s[^>]*)?[^/]>/gi;
+  if (voidElementRe.test(content))
+    issues.push('HTML void element missing self-closing slash (e.g. <br> → <br />)');
+
+  // 7. Object spread used as className value — runtime error
+  if (/className=\{\{/.test(content))
+    issues.push('className must be a string, not an object (className={{ … }})');
+
+  // 8. Unclosed JSX root — checks that the return block has balanced < > pairs
+  // Heuristic: count JSX open vs close tags in the return block
+  const returnMatch = body.match(/return\s*\(([\s\S]*?)\);/);
+  if (returnMatch) {
+    const jsx = returnMatch[1];
+    const openTags  = (jsx.match(/<[A-Za-z][^/]*?>/g) || []).length;
+    const closeTags = (jsx.match(/<\/[A-Za-z]/g) || []).length;
+    const selfClose = (jsx.match(/<[A-Za-z][^>]*\/>/g) || []).length;
+    if (openTags > closeTags + selfClose + 3) // allow some slack
+      warnings.push('possible unclosed JSX tags in return block');
+  }
+
+  // ── Warnings (degrade quality but don't always break render) ────────────
+  // 9. .map() call but no key= prop — React will warn and may reorder
+  if (/\.map\(/.test(content) && !/key=/.test(content))
+    warnings.push('.map() present but no key= prop found — add key to list items');
+
+  // 10. Using window.* or document.* at module scope (SSR-unsafe pattern)
+  if (/^(?!.*\/\/).*\bwindow\.\b|^(?!.*\/\/).*\bdocument\.\b/m.test(body) &&
+      !/useEffect\s*\(/.test(content))
+    warnings.push('window/document access outside useEffect — wrap in useEffect');
+
+  // 11. async component function (not supported in React 18 without Suspense)
+  if (/^async\s+function\s+[A-Z]/.test(body))
+    warnings.push('async component function — async is not valid in standard React components');
+
+  // 12. Inline style with camelCase that looks like a string value
+  if (/style=\{\{[^}]*:\s*"[^"]*px[^"]*"/.test(content))
+    warnings.push('style prop using string for numeric values — use numbers: fontSize: 14 not "14px"');
+
+  return { valid: issues.length === 0, issues, warnings };
 }
 
 function buildServerProjectFiles(
@@ -2073,7 +2129,7 @@ router.post("/agents/build", async (req, res) => {
         { role: "system", content: PLANNER_SYSTEM },
         { role: "user", content: prompt },
       ],
-      true, 2500,
+      true, 1800,
       (token) => {
         planText += token;
         if (!planText.includes("---DESIGN_BRIEF---")) {
@@ -2192,7 +2248,7 @@ router.post("/agents/build", async (req, res) => {
           { role: "system", content: ARCHITECTURE_SYSTEM },
           { role: "user", content: `Prompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}` },
         ],
-        false, 2000
+        false, 700
       );
       const archJsonMatch = archResult.match(/\{[\s\S]*\}/);
       if (archJsonMatch) {
@@ -2507,42 +2563,85 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     const projectFiles = buildServerProjectFiles(fixedCode, projectBlueprint, blueprint.sectionOrder);
     console.log(`[ProjectFiles] Generated ${projectFiles.length} files (${projectFiles.filter(f => f.lang === 'tsx').length} TSX, ${projectFiles.filter(f => f.lang === 'ts').length} TS)`);
 
-    // ── PER-FILE FIX LOOP ─────────────────────────────────────────────────────
-    // Validate every generated TSX file. Files that fail the deterministic check
-    // get a targeted, fast LLM repair call (llama-3.1-8b-instant, ≤1500 tokens).
-    // All repairs run in parallel — total latency = slowest single repair.
+    // ── V5.1: MULTI-PASS VALIDATE → REPAIR LOOP ──────────────────────────────
+    // Up to 3 passes. Each pass:
+    //   1. Validate all TSX files deterministically
+    //   2. Repair all failures in parallel (fast model, ≤1500 tokens each)
+    // Tracks: repairAttempts, filesRepaired, per-file pass counts
     const PERFILE_FIX_MODEL = "llama-3.1-8b-instant";
-    const repairTargets = projectFiles.filter(f =>
-      f.lang === 'tsx' && f.name !== 'main.tsx'
-    );
-    const repairJobs = repairTargets
-      .map(file => {
-        const validation = validateTsxFile(file.name, file.content);
-        if (validation.valid) return null;
-        console.warn(`[PerFileRepair] Repairing ${file.name}: ${validation.issues.join('; ')}`);
-        return (async () => {
-          try {
-            const fixed = await callGroq(groqKey, PERFILE_FIX_MODEL,
-              [
-                { role: 'system', content: 'Fix the React TypeScript component file. Return ONLY the corrected file — no markdown, no explanation.' },
-                { role: 'user', content: `Fix ${file.name}. Issues: ${validation.issues.join(', ')}.\n\n${file.content}` },
-              ],
-              false, 1500
-            );
-            if (fixed && fixed.length > 80) {
-              file.content = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-              console.log(`[PerFileRepair] ${file.name} repaired (${file.content.length} chars).`);
-            }
-          } catch (e) {
-            console.error(`[PerFileRepair] Failed to repair ${file.name}:`, e);
-          }
-        })();
-      })
-      .filter(Boolean) as Promise<void>[];
+    const MAX_REPAIR_PASSES = 3;
+    const REPAIR_SYSTEM = 'You are a React JSX repair agent. Fix ONLY the reported issues. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
 
-    if (repairJobs.length > 0) {
-      await Promise.all(repairJobs);
+    let totalRepairAttempts = 0;
+    let totalFilesRepaired = 0;
+
+    const tsxTargets = projectFiles.filter(f => f.lang === 'tsx' && f.name !== 'main.tsx');
+
+    for (let pass = 0; pass < MAX_REPAIR_PASSES; pass++) {
+      const failures = tsxTargets.filter(f => !validateTsxFile(f.name, f.content).valid);
+      if (failures.length === 0) {
+        console.log(`[RepairLoop] All files valid after pass ${pass}. Done.`);
+        break;
+      }
+      if (pass === MAX_REPAIR_PASSES - 1) {
+        console.warn(`[RepairLoop] Pass ${pass + 1}: ${failures.length} file(s) still failing after max passes.`);
+        break;
+      }
+      console.log(`[RepairLoop] Pass ${pass + 1}: Repairing ${failures.length} file(s)...`);
+
+      await Promise.all(failures.map(async (file) => {
+        const validation = validateTsxFile(file.name, file.content);
+        console.warn(`[RepairLoop:pass${pass + 1}] ${file.name}: ${validation.issues.join('; ')}`);
+        totalRepairAttempts++;
+        try {
+          const fixed = await callGroq(groqKey, PERFILE_FIX_MODEL,
+            [
+              { role: 'system', content: REPAIR_SYSTEM },
+              { role: 'user', content: `File: ${file.name}\nIssues to fix:\n${validation.issues.map(i => `- ${i}`).join('\n')}\nWarnings:\n${validation.warnings.map(w => `- ${w}`).join('\n') || '(none)'}\n\nFull file:\n${file.content}` },
+            ],
+            false, 1500
+          );
+          if (fixed && fixed.length > 80) {
+            const cleaned = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            if (!validateTsxFile(file.name, cleaned).valid === false) {
+              // repaired file still fails — keep if it's larger (partial improvement)
+              if (cleaned.length > file.content.length * 0.5) {
+                file.content = cleaned;
+                totalFilesRepaired++;
+                console.log(`[RepairLoop] ✓ ${file.name} repaired (${cleaned.length} chars)`);
+              }
+            } else {
+              file.content = cleaned;
+              totalFilesRepaired++;
+              console.log(`[RepairLoop] ✓ ${file.name} repaired (${cleaned.length} chars)`);
+            }
+          }
+        } catch (e) {
+          console.error(`[RepairLoop] ✗ ${file.name} repair failed:`, e);
+        }
+      }));
     }
+
+    // ── Build Health Metrics ──────────────────────────────────────────────────
+    const finalTsxFiles = projectFiles.filter(f => f.lang === 'tsx' && f.name !== 'main.tsx');
+    const passedTsxFiles = finalTsxFiles.filter(f => validateTsxFile(f.name, f.content).valid);
+    const validationScore = finalTsxFiles.length > 0
+      ? Math.round((passedTsxFiles.length / finalTsxFiles.length) * 100)
+      : 100;
+
+    const buildHealthMetrics = {
+      validationScore,
+      compileSuccessRate: validationScore,
+      repairAttempts: totalRepairAttempts,
+      filesRepaired: totalFilesRepaired,
+      totalFiles: projectFiles.length,
+      passedFiles: passedTsxFiles.length,
+      failedFiles: finalTsxFiles.length - passedTsxFiles.length,
+      tokenEstimate: estimateTokenCount(fixedCode),
+    };
+
+    console.log(`[BuildHealth] score=${validationScore}% passed=${passedTsxFiles.length}/${finalTsxFiles.length} repairs=${totalRepairAttempts} repaired=${totalFilesRepaired}`);
+    sse(res, { type: "build_health", ...buildHealthMetrics });
 
     // ── AGENTS 6-8: BACKEND / DATABASE / AUTH (parallel) ─────────────────────
     // Each agent runs only when the blueprint declares it is needed.

@@ -1,6 +1,6 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth } from './builderService';
 
-export type { EditDiff };
+export type { EditDiff, BuildHealth };
 
 const API_BASE = "/api";
 
@@ -17,7 +17,8 @@ export async function mockStreamResponse(
   ) => void,
   onError: (err: string) => void,
   onStep?: (step: number) => void,
-  onDnaComposition?: (data: DNABuildData) => void
+  onDnaComposition?: (data: DNABuildData) => void,
+  onBuildHealth?: (health: BuildHealth) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -66,6 +67,19 @@ export async function mockStreamResponse(
               themeTokens:      json.themeTokens ?? {},
               motionProfile:    json.motionProfile ?? {},
             } as DNABuildData);
+          }
+
+          if (json.type === "build_health") {
+            onBuildHealth?.({
+              validationScore:    json.validationScore    ?? 100,
+              compileSuccessRate: json.compileSuccessRate ?? 100,
+              repairAttempts:     json.repairAttempts     ?? 0,
+              filesRepaired:      json.filesRepaired      ?? 0,
+              totalFiles:         json.totalFiles         ?? 0,
+              passedFiles:        json.passedFiles        ?? 0,
+              failedFiles:        json.failedFiles        ?? 0,
+              tokenEstimate:      json.tokenEstimate      ?? 0,
+            });
           }
 
           if (json.type === "done") {

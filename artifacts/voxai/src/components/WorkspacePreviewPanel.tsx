@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react';
 import {
   Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
-  Undo2, Redo2,
+  Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth } from '../services/builderService';
 import { exportProjectZip } from '../services/mockAiService';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
@@ -27,6 +27,60 @@ interface Props {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  buildHealth?: BuildHealth | null;
+}
+
+// ── Build Health Panel (V5.1) ──────────────────────────────────────────────
+function BuildHealthPanel({ health }: { health: BuildHealth }) {
+  const score = health.validationScore;
+  const scoreColor =
+    score >= 90 ? 'text-emerald-400' :
+    score >= 70 ? 'text-yellow-400' :
+    'text-red-400';
+  const scoreBg =
+    score >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' :
+    score >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' :
+    'border-red-500/30 bg-red-500/5';
+  const ScoreIcon = score >= 90 ? ShieldCheck : score >= 70 ? AlertTriangle : AlertTriangle;
+
+  return (
+    <div className={`mx-3 mb-2 rounded-lg border px-3 py-2 ${scoreBg}`}>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          <ScoreIcon size={13} className={scoreColor} />
+          <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Build Health</span>
+        </div>
+        <span className={`text-[15px] font-bold ${scoreColor}`}>{score}%</span>
+      </div>
+      <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Files</span>
+          <span className="text-[12px] font-medium text-gray-300">{health.passedFiles}/{health.totalFiles > 0 ? health.passedFiles + health.failedFiles : '–'}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Repairs</span>
+          <span className="text-[12px] font-medium text-gray-300 flex items-center gap-0.5">
+            <Wrench size={10} className="text-gray-500" />{health.filesRepaired}
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Passes</span>
+          <span className="text-[12px] font-medium text-gray-300">{health.repairAttempts}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Tokens</span>
+          <span className="text-[12px] font-medium text-gray-300 flex items-center gap-0.5">
+            <Cpu size={10} className="text-gray-500" />{(health.tokenEstimate / 1000).toFixed(1)}k
+          </span>
+        </div>
+      </div>
+      {health.failedFiles > 0 && (
+        <p className="mt-1.5 text-[10px] text-red-400">
+          {health.failedFiles} file{health.failedFiles > 1 ? 's' : ''} failed validation — preview may have issues
+        </p>
+      )}
+    </div>
+  );
 }
 
 function fileIcon(lang: string) {
@@ -205,6 +259,7 @@ export default function WorkspacePreviewPanel({
   projectBlueprint, sectionOrder, projectFiles: serverFiles,
   dnaComposition, sectionOwnership, themeTokens, motionProfile,
   lastEditDiff, canUndo, canRedo, onUndo, onRedo,
+  buildHealth,
 }: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
@@ -370,6 +425,9 @@ export default function WorkspacePreviewPanel({
           )}
         </div>
       </div>
+
+      {/* ── Build Health Panel (V5.1) — always visible when health data exists ── */}
+      {buildHealth && <BuildHealthPanel health={buildHealth} />}
 
       {/* ── Preview tab ── */}
       {tab === 'preview' && (

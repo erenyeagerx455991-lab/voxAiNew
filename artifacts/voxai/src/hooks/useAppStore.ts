@@ -2,13 +2,13 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
-export type { EditOperation, EditDiff, ComponentRegistry };
+export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth };
 
 interface AppState {
   view: View;
@@ -40,6 +40,7 @@ interface AppState {
   editIntentType: string;
   editTargetFiles: string[];
   editQualityScore: number;
+  buildHealth: BuildHealth | null;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -129,6 +130,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [editIntentType, setEditIntentType] = useState('');
   const [editTargetFiles, setEditTargetFiles] = useState<string[]>([]);
   const [editQualityScore, setEditQualityScore] = useState(100);
+  const [buildHealth, setBuildHealth] = useState<BuildHealth | null>(null);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const projectFilesRef = useRef<ProjectFile[]>([]);
@@ -511,7 +513,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
               setThemeTokens(dna.themeTokens);
               setMotionProfile(dna.motionProfile);
               dnaCompositionRef.current = dna.composition;
-            }
+            },
+            (health: BuildHealth) => setBuildHealth(health)
           );
         }
       } catch (err) {
@@ -588,6 +591,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     editIntentType,
     editTargetFiles,
     editQualityScore,
+    buildHealth,
     undoEdit,
     redoEdit,
     handleSend,
