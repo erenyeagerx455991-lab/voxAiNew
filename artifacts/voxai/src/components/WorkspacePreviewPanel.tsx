@@ -4,8 +4,10 @@ import {
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile } from '../services/builderService';
 import { exportProjectZip } from '../services/mockAiService';
+import DNACompositionPanel from './DNACompositionPanel';
+import type { SectionOwnership } from '../lib/componentOwnership';
 
 interface Props {
   code: string;
@@ -15,6 +17,10 @@ interface Props {
   sectionOrder?: string[];
   /** Server-generated project files (source of truth). Falls back to client-side generation. */
   projectFiles?: ProjectFile[];
+  dnaComposition?: DNAComposition | null;
+  sectionOwnership?: SectionOwnership | null;
+  themeTokens?: ThemeTokens | null;
+  motionProfile?: MotionProfile | null;
 }
 
 function fileIcon(lang: string) {
@@ -166,7 +172,11 @@ function FileTreeView({ files, selectedFile, onSelect }: FileTreeProps) {
   );
 }
 
-export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, projectBlueprint, sectionOrder, projectFiles: serverFiles }: Props) {
+export default function WorkspacePreviewPanel({
+  code, isBuilding, buildStep,
+  projectBlueprint, sectionOrder, projectFiles: serverFiles,
+  dnaComposition, sectionOwnership, themeTokens, motionProfile,
+}: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
@@ -221,7 +231,20 @@ export default function WorkspacePreviewPanel({ code, isBuilding, buildStep, pro
             <div className="h-2 bg-white/8 rounded-full animate-pulse w-32" />
           </div>
         </div>
-        <BuildingState buildStep={buildStep} />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <BuildingState buildStep={buildStep} />
+          {dnaComposition && sectionOwnership && themeTokens && motionProfile && (
+            <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-none">
+              <DNACompositionPanel
+                dna={dnaComposition}
+                ownership={sectionOwnership}
+                theme={themeTokens}
+                motion={motionProfile}
+                compact
+              />
+            </div>
+          )}
+        </div>
       </div>
     );
   }

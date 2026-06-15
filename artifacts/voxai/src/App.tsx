@@ -292,6 +292,10 @@ function AppContent() {
                   projectBlueprint={store.projectBlueprint}
                   sectionOrder={store.sectionOrder}
                   projectFiles={store.projectFiles}
+                  dnaComposition={store.dnaComposition}
+                  sectionOwnership={store.sectionOwnership}
+                  themeTokens={store.themeTokens}
+                  motionProfile={store.motionProfile}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

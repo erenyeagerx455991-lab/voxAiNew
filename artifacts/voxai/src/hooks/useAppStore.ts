@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
@@ -28,6 +28,10 @@ interface AppState {
   sectionOrder: string[] | undefined;
   projectFiles: ProjectFile[];
   projectMemory: ProjectMemory | null;
+  dnaComposition: DNAComposition | null;
+  sectionOwnership: Record<string, string> | null;
+  themeTokens: ThemeTokens | null;
+  motionProfile: MotionProfile | null;
   handleSend: (content: string) => Promise<void>;
   handleNewChat: () => Promise<void>;
   handleDeleteChat: (id: string) => Promise<void>;
@@ -106,10 +110,15 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [sectionOrder, setSectionOrder] = useState<string[] | undefined>(undefined);
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
   const [projectMemory, setProjectMemory] = useState<ProjectMemory | null>(null);
+  const [dnaComposition, setDnaComposition]     = useState<DNAComposition | null>(null);
+  const [sectionOwnership, setSectionOwnership] = useState<Record<string, string> | null>(null);
+  const [themeTokens, setThemeTokens]           = useState<ThemeTokens | null>(null);
+  const [motionProfile, setMotionProfile]       = useState<MotionProfile | null>(null);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const projectFilesRef = useRef<ProjectFile[]>([]);
   const projectMemoryRef = useRef<ProjectMemory | null>(null);
+  const dnaCompositionRef = useRef<DNAComposition | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const toggleSidebar = useCallback(() => setSidebarOpen((o) => !o), []);
@@ -363,6 +372,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
                   ...currentMemory,
                   generatedFiles: serverFiles.map(f => f.path + f.name),
                   dependencyGraph: buildDependencyGraph(serverFiles),
+                  referenceComposition: dnaCompositionRef.current ?? currentMemory?.referenceComposition,
                   timestamp: Date.now(),
                 }
               : {
@@ -375,6 +385,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
                   authProvider:    pb?.authProvider   ?? '',
                   generatedFiles:  serverFiles.map(f => f.path + f.name),
                   dependencyGraph: buildDependencyGraph(serverFiles),
+                  referenceComposition: dnaCompositionRef.current ?? undefined,
                   timestamp:       Date.now(),
                 };
             setProjectMemory(mem);
@@ -413,7 +424,14 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             (token) => setStreamingContent((prev) => prev + token),
             handleDone,
             handleError,
-            handleStep
+            handleStep,
+            (dna: DNABuildData) => {
+              setDnaComposition(dna.composition);
+              setSectionOwnership(dna.sectionOwnership);
+              setThemeTokens(dna.themeTokens);
+              setMotionProfile(dna.motionProfile);
+              dnaCompositionRef.current = dna.composition;
+            }
           );
         }
       } catch (err) {
@@ -479,6 +497,10 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     sectionOrder,
     projectFiles,
     projectMemory,
+    dnaComposition,
+    sectionOwnership,
+    themeTokens,
+    motionProfile,
     handleSend,
     handleNewChat,
     handleDeleteChat,

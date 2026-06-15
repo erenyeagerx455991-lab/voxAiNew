@@ -28,6 +28,31 @@ export interface ProjectFile {
   content: string;
 }
 
+export interface DNAComposition {
+  stripe: number; linear: number; framer: number; vercel: number;
+  notion: number; cursor: number; raycast: number;
+}
+
+export interface ThemeTokens {
+  primary: string; surface: string; accent: string;
+  border: string; card: string; text: string; textMuted: string;
+  isDark: boolean; primaryBrand: string; surfaceBrand: string; accentBrand: string;
+}
+
+export interface MotionProfile {
+  level: 'minimal' | 'standard' | 'advanced';
+  hoverLift: boolean; staggerAnimation: boolean; revealTransitions: boolean;
+  motionCards: boolean; bentoInteractions: boolean; advancedMode: boolean;
+  dominantSource: string;
+}
+
+export interface DNABuildData {
+  composition: DNAComposition;
+  sectionOwnership: Record<string, string>;
+  themeTokens: ThemeTokens;
+  motionProfile: MotionProfile;
+}
+
 const TEMPLATES: Record<string, string> = {
   default: `function App() {
   return (
@@ -586,6 +611,7 @@ export interface ProjectMemory {
   authProvider: string;
   generatedFiles: string[];
   dependencyGraph: FileDependencyGraph;
+  referenceComposition?: DNAComposition;
   timestamp: number;
 }
 

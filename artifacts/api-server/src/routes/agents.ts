@@ -1755,6 +1755,199 @@ function buildServerProjectFiles(
   return files;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// V4.5 — DNA COMPOSITION ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface DNAComposition {
+  stripe: number; linear: number; framer: number; vercel: number;
+  notion: number; cursor: number; raycast: number;
+}
+
+const DNA_BRAND_KEYS: (keyof DNAComposition)[] = ['stripe','linear','framer','vercel','notion','cursor','raycast'];
+
+const EMPTY_DNA: DNAComposition = { stripe:0,linear:0,framer:0,vercel:0,notion:0,cursor:0,raycast:0 };
+
+const BRAND_STRENGTHS_V45: Record<string, Record<string, number>> = {
+  stripe:  { pricing:10, trust:10, cta:9, navbar:8, footer:8, testimonials:8, dashboard:6, hero:5, features:6, bento:4, animations:3, typography:5, changelog:3 },
+  linear:  { hero:10, dashboard:10, typography:10, features:8, navbar:8, footer:6, cta:7, changelog:10, bento:6, animations:6, pricing:6, trust:5, testimonials:5 },
+  framer:  { features:10, bento:10, animations:10, storytelling:10, hero:9, trust:6, footer:6, navbar:6, pricing:5, dashboard:5, typography:7, cta:6 },
+  vercel:  { hero:8, features:7, navbar:7, footer:7, pricing:6, dashboard:7, bento:7, cta:6, trust:6, typography:7, changelog:7, animations:5 },
+  notion:  { hero:5, features:6, navbar:6, footer:6, pricing:5, dashboard:7, typography:9, changelog:8, cta:4, trust:5, bento:5, animations:2 },
+  cursor:  { hero:9, features:8, animations:8, bento:8, navbar:7, footer:6, pricing:6, dashboard:7, cta:7, trust:6, typography:6, changelog:6 },
+  raycast: { hero:9, features:9, bento:9, animations:8, navbar:7, footer:6, pricing:5, cta:7, dashboard:6, trust:6, typography:6, changelog:7 },
+};
+
+const BRAND_TOKENS_V45: Record<string, { primary:string; surface:string; accent:string; border:string; card:string; text:string; textMuted:string }> = {
+  stripe:  { primary:'#635BFF', surface:'#0A2540', accent:'#00D4FF', border:'rgba(255,255,255,0.1)', card:'#0F3460',  text:'#FFFFFF', textMuted:'#A8B4C0' },
+  linear:  { primary:'#5E6AD2', surface:'#0F0F0F', accent:'#F7C948', border:'#2A2A2A',               card:'#111111',  text:'#FFFFFF', textMuted:'#8A8A8A' },
+  framer:  { primary:'#FF3D57', surface:'#0B0B0B', accent:'#FF6B35', border:'#222222',               card:'#141414',  text:'#FFFFFF', textMuted:'#666666' },
+  vercel:  { primary:'#FFFFFF', surface:'#000000', accent:'#0070F3', border:'#333333',               card:'#111111',  text:'#FFFFFF', textMuted:'#888888' },
+  notion:  { primary:'#37352F', surface:'#FFFFFF', accent:'#2F80ED', border:'#E9E9E7',               card:'#F7F6F3',  text:'#37352F', textMuted:'#9B9B9B' },
+  cursor:  { primary:'#00FF9D', surface:'#0D0D0D', accent:'#00CC7A', border:'#252525',               card:'#161616',  text:'#FFFFFF', textMuted:'#555555' },
+  raycast: { primary:'#FF5F57', surface:'#0C0C0C', accent:'#FF8B50', border:'#1C1C1C',               card:'#111111',  text:'#FFFFFF', textMuted:'#666666' },
+};
+
+const DNA_MIXER_SYSTEM = `You are the NexoGen DNA Mixer Agent. Extract product/brand references and their design weight from the user's prompt.
+
+Output ONLY valid JSON — no markdown, no explanation, ONLY the JSON object:
+{ "stripe":0, "linear":0, "framer":0, "vercel":0, "notion":0, "cursor":0, "raycast":0 }
+
+Rules:
+1. Only include brands explicitly mentioned (others stay 0).
+2. If explicit percentages given (e.g. "40% Stripe"), use those exact values.
+3. If no percentages: first-mentioned brand gets a ~10% bonus; equal-split otherwise.
+4. All non-zero values must sum to 100 after normalization.
+5. "heavily inspired by X" → X gets ~65–70%.
+6. "X with some Y" → X ~65%, Y ~35%.
+7. "X + Y + Z" (equal) → roughly equal thirds (~34/33/33).
+8. If no brands detected, return all zeros.`;
+
+function normalizeDNAServer(raw: Partial<DNAComposition>): DNAComposition {
+  const total = DNA_BRAND_KEYS.reduce((s, k) => s + (raw[k] ?? 0), 0);
+  if (total === 0) return { ...EMPTY_DNA };
+  const scale = 100 / total;
+  return DNA_BRAND_KEYS.reduce((out, k) => {
+    out[k] = Math.round((raw[k] ?? 0) * scale);
+    return out;
+  }, {} as DNAComposition);
+}
+
+function resolveSectionOwnershipServer(dna: DNAComposition, sections: string[]): Record<string, string> {
+  const brands = (Object.entries(dna) as [string, number][]).filter(([, pct]) => pct > 0);
+  if (brands.length === 0) return {};
+  const ownership: Record<string, string> = {};
+  for (const section of sections) {
+    let best = brands[0][0];
+    let bestScore = -1;
+    for (const [brand, pct] of brands) {
+      const strength = BRAND_STRENGTHS_V45[brand]?.[section] ?? 5;
+      const score = (pct / 100) * strength;
+      if (score > bestScore) { bestScore = score; best = brand; }
+    }
+    ownership[section] = best;
+  }
+  return ownership;
+}
+
+function pickOwnerServer(dna: DNAComposition, strengthKey: string): string {
+  const brands = (Object.entries(dna) as [string, number][]).filter(([, pct]) => pct > 0);
+  if (brands.length === 0) return 'linear';
+  let best = brands[0][0]; let bestScore = -1;
+  for (const [brand, pct] of brands) {
+    const score = (pct / 100) * (BRAND_STRENGTHS_V45[brand]?.[strengthKey] ?? 5);
+    if (score > bestScore) { bestScore = score; best = brand; }
+  }
+  return best;
+}
+
+function generateThemeTokensServer(dna: DNAComposition) {
+  const primaryBrand  = pickOwnerServer(dna, 'cta');
+  const surfaceBrand  = pickOwnerServer(dna, 'hero');
+  const accentBrand   = pickOwnerServer(dna, 'animations');
+  const pt = BRAND_TOKENS_V45[primaryBrand] ?? BRAND_TOKENS_V45.linear;
+  const st = BRAND_TOKENS_V45[surfaceBrand] ?? BRAND_TOKENS_V45.linear;
+  const at = BRAND_TOKENS_V45[accentBrand]  ?? BRAND_TOKENS_V45.linear;
+  return {
+    primary: pt.primary, surface: st.surface, accent: at.accent,
+    border: st.border,   card: st.card,       text: st.text,   textMuted: st.textMuted,
+    isDark: surfaceBrand !== 'notion',
+    primaryBrand, surfaceBrand, accentBrand,
+  };
+}
+
+function generateMotionProfileServer(dna: DNAComposition) {
+  const score = (dna.framer ?? 0) + (dna.cursor ?? 0) * 0.7 + (dna.raycast ?? 0) * 0.7;
+  return {
+    level: score > 50 ? 'advanced' : score > 20 ? 'standard' : 'minimal',
+    hoverLift: score > 20, staggerAnimation: score > 20, revealTransitions: score > 20,
+    motionCards: score > 30, bentoInteractions: score > 20, advancedMode: score > 50,
+    dominantSource: dna.framer >= dna.cursor && dna.framer >= dna.raycast
+      ? (dna.framer > 0 ? 'framer' : 'none')
+      : dna.cursor >= dna.raycast ? (dna.cursor > 0 ? 'cursor' : 'none')
+      : (dna.raycast > 0 ? 'raycast' : 'none'),
+  };
+}
+
+function buildDNAContextString(dna: DNAComposition, ownership: Record<string, string>, theme: ReturnType<typeof generateThemeTokensServer>): string {
+  const active = DNA_BRAND_KEYS.filter(k => dna[k] > 0).map(k => `${k.charAt(0).toUpperCase()+k.slice(1)} ${dna[k]}%`);
+  if (active.length === 0) return '';
+  const ownerLines = Object.entries(ownership).slice(0, 8).map(([s, b]) => `  ${s} → ${b}`).join('\n');
+  return `\n\n## DNA COMPOSITION (V4.5 Fusion Mode)\nComposition: ${active.join(' + ')}\nSection Ownership:\n${ownerLines}\nTheme: primary=${theme.primary} surface=${theme.surface} accent=${theme.accent}\nMode: ${theme.isDark ? 'dark' : 'light'}`;
+}
+
+async function extractDNAComposition(
+  userPrompt: string,
+  referenceSites: string,
+  primaryRef: string,
+  secondaryRefs: string[],
+  groqKey: string
+): Promise<DNAComposition> {
+  // 1. Try explicit percentage extraction first (regex, no LLM)
+  const percentPattern = /(\d+)\s*%?\s*(stripe|linear|framer|vercel|notion|cursor|raycast)/gi;
+  const rawPct: Partial<DNAComposition> = {};
+  let hasExplicitPct = false;
+  for (const m of userPrompt.matchAll(percentPattern)) {
+    (rawPct as Record<string, number>)[m[2].toLowerCase()] = parseInt(m[1]);
+    hasExplicitPct = true;
+  }
+  if (hasExplicitPct) return normalizeDNAServer(rawPct);
+
+  // 2. Use planner-detected references with position weighting (no LLM)
+  const allRefs = [primaryRef, ...secondaryRefs]
+    .filter(r => r && r !== 'none')
+    .map(r => r.toLowerCase().trim())
+    .filter(r => DNA_BRAND_KEYS.includes(r as keyof DNAComposition));
+
+  if (allRefs.length > 0) {
+    const hasWeightWords = /heavily|mostly|primarily|dominated|mainly|strongly|slight|little|mostly/i.test(userPrompt);
+    if (!hasWeightWords) {
+      // Equal distribution with first-position bonus
+      const base = Math.floor(100 / allRefs.length);
+      const bonus = 100 - base * allRefs.length;
+      const rawEq: Partial<DNAComposition> = {};
+      allRefs.forEach((r, i) => { (rawEq as Record<string,number>)[r] = base + (i === 0 ? bonus : 0); });
+      return normalizeDNAServer(rawEq);
+    }
+  }
+
+  // 3. Fall back to AI extraction for complex weighting language
+  try {
+    const extraction = await callGroq(groqKey, 'llama-3.1-8b-instant',
+      [
+        { role: 'system', content: DNA_MIXER_SYSTEM },
+        { role: 'user', content: userPrompt },
+      ],
+      false, 300
+    );
+    if (extraction) {
+      const jsonMatch = extraction.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const extracted: Partial<DNAComposition> = {};
+        for (const k of DNA_BRAND_KEYS) {
+          if (typeof parsed[k] === 'number' && parsed[k] > 0) extracted[k] = parsed[k];
+        }
+        if (Object.keys(extracted).length > 0) return normalizeDNAServer(extracted);
+      }
+    }
+  } catch (e) {
+    console.error('[DNAMixer] AI extraction failed, using reference fallback:', e);
+  }
+
+  // 4. Final fallback: reference sites from planner
+  if (allRefs.length > 0) {
+    const rawFb: Partial<DNAComposition> = {};
+    allRefs.forEach((r, i) => { (rawFb as Record<string,number>)[r] = i === 0 ? 50 : Math.floor(50 / (allRefs.length - 1)); });
+    return normalizeDNAServer(rawFb);
+  }
+
+  return { ...EMPTY_DNA };
+}
+
+// ─── V4.5 SECTIONS used for composition-based ownership ──────────────────────
+const COMPOSITION_SECTIONS = ['hero','navbar','features','pricing','testimonials','trust','cta','footer','dashboard','bento','animations','typography','changelog'];
+
 router.post("/agents/build", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
@@ -1834,6 +2027,36 @@ router.post("/agents/build", async (req, res) => {
     console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
     console.log(`[Design] referenceSites="${referenceSites}" primaryReference="${primaryReference}"`);
     sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
+
+    // ── V4.5: DNA COMPOSITION ENGINE ──────────────────────────────────────────
+    let dnaComposition: DNAComposition = { ...EMPTY_DNA };
+    let dnaOwnership: Record<string, string> = {};
+    let dnaTheme: ReturnType<typeof generateThemeTokensServer> | null = null;
+    let dnaMotion: ReturnType<typeof generateMotionProfileServer> | null = null;
+
+    try {
+      dnaComposition = await extractDNAComposition(prompt, referenceSites, primaryReference, secondaryReferences, groqKey);
+      const activeBrands = DNA_BRAND_KEYS.filter(k => dnaComposition[k] > 0);
+      if (activeBrands.length > 0) {
+        const sectionList = [...new Set([
+          ...COMPOSITION_SECTIONS,
+          ...(blueprint.sectionOrder || []).map(s => s.toLowerCase()),
+        ])];
+        dnaOwnership = resolveSectionOwnershipServer(dnaComposition, sectionList);
+        dnaTheme     = generateThemeTokensServer(dnaComposition);
+        dnaMotion    = generateMotionProfileServer(dnaComposition);
+        console.log(`[DNAMixer V4.5] ${activeBrands.map(k => `${k}:${dnaComposition[k]}%`).join(' + ')}`);
+        sse(res, {
+          type: "dna_composition",
+          composition:    dnaComposition,
+          sectionOwnership: dnaOwnership,
+          themeTokens:    dnaTheme,
+          motionProfile:  dnaMotion,
+        });
+      }
+    } catch (e) {
+      console.error('[DNAMixer] Failed (continuing without composition):', e);
+    }
 
     // ── AGENT 2: ARCHITECTURE ─────────────────────────────────────────────────
     sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "active" });
@@ -1989,10 +2212,14 @@ router.post("/agents/build", async (req, res) => {
     let designAgentStatus: "success" | "failed" | "retry_success" | "retry_failed" = "failed";
     let designAgentError: string | null = null;
 
+    const dnaContextStr = dnaTheme
+      ? buildDNAContextString(dnaComposition, dnaOwnership, dnaTheme)
+      : '';
     const designPrompt = [
       `Website brief:\n${briefText || prompt}`,
       `Website type: ${blueprint.websiteType}`,
       referenceSites !== "none" ? `Design references: ${referenceSites}` : "",
+      dnaContextStr,
       `\nGenerate the complete design DNA JSON for this site.`,
     ].filter(Boolean).join('\n');
 
@@ -2313,7 +2540,7 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     sse(res, { type: "step", step: 8, agent: "Scaffold Agent", status: "done", fileCount: allFiles.length });
 
     // ── DONE ──────────────────────────────────────────────────────────────────
-    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles });
+    sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles, dnaComposition, sectionOwnership: dnaOwnership, themeTokens: dnaTheme, motionProfile: dnaMotion });
 
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });

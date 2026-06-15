@@ -1,4 +1,4 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData } from './builderService';
 
 const API_BASE = "/api";
 
@@ -14,7 +14,8 @@ export async function mockStreamResponse(
     files?: ProjectFile[]
   ) => void,
   onError: (err: string) => void,
-  onStep?: (step: number) => void
+  onStep?: (step: number) => void,
+  onDnaComposition?: (data: DNABuildData) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -56,6 +57,14 @@ export async function mockStreamResponse(
           if (json.type === "error") return onError(json.error);
           if (json.type === "step") onStep?.(json.step);
           if (json.type === "token") { planText += json.token; onToken(json.token); }
+          if (json.type === "dna_composition" && json.composition) {
+            onDnaComposition?.({
+              composition:      json.composition,
+              sectionOwnership: json.sectionOwnership ?? {},
+              themeTokens:      json.themeTokens ?? {},
+              motionProfile:    json.motionProfile ?? {},
+            } as DNABuildData);
+          }
 
           if (json.type === "done") {
             finalCode = json.code ?? "";
