@@ -8,3 +8,4 @@
 - [VoxAI V3.5 Edit System](voxai-v35-edit-system.md) — EDIT_SYSTEM + extractEditFiles + mergeProjectFiles pattern; edit mode detected via projectFilesRef.current.length > 0; FILES_KEY persists files; memory saved to localStorage.
 - [VoxAI V4.5 DNA Composition Engine](voxai-v45-dna-engine.md) — multi-brand DNA fusion replaces winner-takes-all reference routing; section ownership resolves algorithmically; dna_composition SSE fires between step 0 and step 1.
 - [VoxAI V5 Edit Pipeline](voxai-v5-edit-pipeline.md) — 5-step surgical edit (Intent→Resolver→Patch→Quality Gate→Merge); diff tracking, undo/redo stacks, visual diff badges in file tree.
+- [VoxAI Context Compression](voxai-context-compression.md) — Groq TPM guard: callGroq() auto-truncates, buildMinimalEditContext() for edits, compressProjectMemory() strips heavy fields.

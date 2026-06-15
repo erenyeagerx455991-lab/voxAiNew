@@ -1,6 +1,14 @@
 import { Router } from "express";
 import { selectTemplatesForPrompt, buildContextFromTemplates, getTemplatesByCategory } from "../components/registry";
 import { strToU8, zipSync } from "fflate";
+import {
+  buildMinimalEditContext,
+  compressProjectMemory,
+  truncateForGroq,
+  estimateTokenCount,
+  logCompressionReport,
+  GROQ_TOKEN_BUDGET,
+} from "../contextManager";
 
 const router: Router = Router();
 
@@ -99,6 +107,26 @@ async function callGroq(
   maxTokens = 4000,
   onToken?: (t: string) => void
 ): Promise<string> {
+  // ── Context safety net ────────────────────────────────────────────────────
+  // Auto-compress if the combined prompt would exceed the Groq TPM window.
+  // This protects every call site without requiring individual truncation logic.
+  if (messages.length >= 2) {
+    const sysMsg  = messages.find((m: any) => m.role === "system");
+    const userMsg = messages.find((m: any) => m.role === "user");
+    if (sysMsg && userMsg && typeof sysMsg.content === "string" && typeof userMsg.content === "string") {
+      const { system: compSys, user: compUser, truncated } =
+        truncateForGroq(sysMsg.content, userMsg.content, maxTokens);
+      if (truncated) {
+        console.warn(`[callGroq:auto-compress] model=${model} truncated prompt to fit ${GROQ_TOKEN_BUDGET} tok budget`);
+        messages = messages.map((m: any) => {
+          if (m.role === "system") return { ...m, content: compSys };
+          if (m.role === "user")   return { ...m, content: compUser };
+          return m;
+        });
+      }
+    }
+  }
+
   const resp = await fetch(GROQ_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -2451,12 +2479,14 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
 
     let fixedCode = generatedCode;
     try {
+      const codeFix_userRaw = `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}`;
+      const { system: cfSystem, user: cfUser } = truncateForGroq(CODEFIX_SYSTEM, codeFix_userRaw, 5_000);
       const fixed = await callGroq(groqKey, CODEFIX_MODEL,
         [
-          { role: "system", content: CODEFIX_SYSTEM },
-          { role: "user", content: `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}` },
+          { role: "system", content: cfSystem },
+          { role: "user", content: cfUser },
         ],
-        false, 8192
+        false, 5_000
       );
       if (fixed && fixed.length > 200) {
         fixedCode = fixed
@@ -2961,11 +2991,16 @@ router.post("/agents/edit", async (req, res) => {
     let intentResult = { editType: "component", targetFiles: [] as string[], newFiles: [] as string[], reason: prompt };
 
     try {
+      const { system: intentSys, user: intentUser } = truncateForGroq(
+        INTENT_SYSTEM,
+        `PROJECT FILES:\n${fileList}\n\nEDIT REQUEST: ${prompt}`,
+        600
+      );
       const intentRaw = await callGroq(
         groqKey, PLANNER_MODEL,
         [
-          { role: "system", content: INTENT_SYSTEM },
-          { role: "user", content: `PROJECT FILES:\n${fileList}\n\nEDIT REQUEST: ${prompt}` },
+          { role: "system", content: intentSys },
+          { role: "user", content: intentUser },
         ],
         false, 600
       );
@@ -2989,47 +3024,67 @@ router.post("/agents/edit", async (req, res) => {
     // ── STEP 2: Patch Generation ────────────────────────────────────────────
     sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "active" });
 
-    // Build focused context: only the files that need to change + App.tsx for routing context
-    const targetSet = new Set([...resolvedFiles, ...(intentResult.newFiles ?? [])]);
-    const appFile = projectFiles.find((f) => f.name === "App.tsx");
-    const contextFiles = projectFiles.filter(
-      (f) => targetSet.has(f.path + f.name) || (appFile && f.name === "App.tsx")
+    // ── Compressed context build ──────────────────────────────────────────
+    // Budget: GROQ_TOKEN_BUDGET - system_prompt - response - header overhead
+    const EDIT_RESPONSE_TOKENS = 4_000;
+    const sysTokens = estimateTokenCount(EDIT_SYSTEM);
+    const fileContextBudget = GROQ_TOKEN_BUDGET - EDIT_RESPONSE_TOKENS - sysTokens - 400;
+
+    // Always include App.tsx as context reference for routing
+    const allTargets = [
+      ...resolvedFiles,
+      ...(intentResult.newFiles ?? []),
+      "App.tsx",
+    ];
+
+    const { context: fileContext, meta: ctxMeta } = buildMinimalEditContext(
+      projectFiles,
+      allTargets,
+      fileContextBudget
     );
+    logCompressionReport("EditPatch", ctxMeta);
 
-    const fileContext = contextFiles
-      .map((f) => {
-        const body = f.content.length > 5000 ? f.content.slice(0, 5000) + "\n// ... [truncated]" : f.content;
-        return `// === CURRENT FILE: ${f.path}${f.name} ===\n${body}`;
-      })
-      .join("\n\n");
+    // Compress memory — strip editHistory, componentRegistry etc.
+    const compressedMem = projectMemory ? compressProjectMemory(projectMemory) : null;
 
-    const projectSummary = projectMemory
-      ? `Project: ${projectMemory.projectType || "App"} | Pages: ${(projectMemory.pages || []).join(", ")} | Entities: ${(projectMemory.entities || []).join(", ")}\n`
+    const projectSummary = compressedMem
+      ? `Project: ${compressedMem["projectType"] || "App"} | Pages: ${(compressedMem["pages"] as string[] || []).join(", ")} | Entities: ${(compressedMem["entities"] as string[] || []).join(", ")}\n`
       : `Files: ${projectFiles.map((f) => f.path + f.name).join(", ")}\n`;
 
     const designCtx = themeTokens
       ? `\nDesign tokens (PRESERVE): primary=${themeTokens.primary}, surface=${themeTokens.surface}, isDark=${themeTokens.isDark}`
       : "";
-    const registryCtx = componentRegistry
-      ? `\nComponent registry: ${JSON.stringify(componentRegistry)}`
+
+    // Trim componentRegistry to just names (not full signatures) to save tokens
+    const registryCtx = componentRegistry && Object.keys(componentRegistry).length > 0
+      ? `\nComponents: ${Object.keys(componentRegistry).slice(0, 20).join(", ")}`
       : "";
 
-    const userMessage = `${projectSummary}${designCtx}${registryCtx}
+    const userMessageRaw = `${projectSummary}${designCtx}${registryCtx}
 EDIT REQUEST: ${prompt}
 INTENT: ${intentResult.editType} — ${intentResult.reason}
 TARGET FILES: ${resolvedFiles.join(", ")}${intentResult.newFiles?.length ? `\nNEW FILES: ${intentResult.newFiles.join(", ")}` : ""}
-ALL PROJECT FILES (do not regenerate): ${projectFiles.map((f) => f.path + f.name).join(", ")}
+ALL PROJECT FILES (do not modify unless listed above): ${projectFiles.map((f) => f.path + f.name).join(", ")}
 
 CURRENT FILE CONTEXT:
 ${fileContext}`;
 
+    // Final safety net — truncate if anything still exceeds budget
+    const { system: editSystem, user: userMessage, truncated: wasTruncated } =
+      truncateForGroq(EDIT_SYSTEM, userMessageRaw, EDIT_RESPONSE_TOKENS);
+
+    if (wasTruncated) {
+      console.warn("[EditPatch] Context was truncated by safety net");
+      sse(res, { type: "debug", message: "context_compressed" });
+    }
+
     const editRaw = await callGroq(
       groqKey, BACKEND_MODEL,
       [
-        { role: "system", content: EDIT_SYSTEM },
+        { role: "system", content: editSystem },
         { role: "user", content: userMessage },
       ],
-      false, 8000
+      false, EDIT_RESPONSE_TOKENS
     );
 
     sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "done" });
