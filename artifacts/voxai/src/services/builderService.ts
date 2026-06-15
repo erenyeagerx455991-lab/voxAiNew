@@ -518,25 +518,50 @@ export function buildPreviewHtml(code: string): string {
     body { margin: 0; }
     #__error {
       display: none;
-      align-items: center;
-      justify-content: center;
+      align-items: flex-start;
+      justify-content: flex-start;
       padding: 40px 24px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #0f0f0f;
       color: #ff6b6b;
       min-height: 100vh;
-      text-align: left;
     }
   </style>
   <script>
-    window.addEventListener('error', function(e) {
+    // ── V5.2 Runtime Error Capture ──────────────────────────────────────────
+    function __reportRuntimeError(msg, stack, file, component) {
+      try {
+        window.parent.postMessage({
+          type: 'runtime_error',
+          message: msg,
+          stack: stack || '',
+          file: file || '',
+          component: component || ''
+        }, '*');
+      } catch(e) {}
       document.getElementById('root').style.display = 'none';
       var el = document.getElementById('__error');
       el.style.display = 'flex';
+      var clean = (msg || 'Unknown error').split('\\n').slice(0, 4).join('\\n');
+      el.innerHTML = '<div style="max-width:560px"><div style="font-size:24px;margin-bottom:12px">⚠</div>'
+        + '<div style="font-size:14px;font-weight:700;color:#ff6b6b;margin-bottom:6px">Runtime Error</div>'
+        + (file ? '<div style="font-size:11px;color:#f87171;margin-bottom:8px;font-family:monospace">' + file.replace(/</g,'&lt;') + '</div>' : '')
+        + '<pre style="font-size:11px;color:#fca5a5;background:#2a1515;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap;max-height:220px">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre>'
+        + (stack ? '<pre style="font-size:10px;color:#666;background:#1a1a1a;padding:8px;border-radius:6px;overflow:auto;white-space:pre-wrap;margin-top:6px;max-height:120px">' + stack.replace(/</g,'&lt;').slice(0,600) + '</pre>' : '')
+        + '<div style="font-size:11px;color:#555;margin-top:10px">NexoGen Runtime Repair will attempt to fix this automatically.</div></div>';
+    }
+
+    window.addEventListener('error', function(e) {
       var msg = e.error ? (e.error.message || String(e.error)) : (e.message || 'Unknown error');
-      var lines = msg.split('\\n');
-      var clean = lines.slice(0, 3).join('\\n');
-      el.innerHTML = '<div style="max-width:540px"><div style="font-size:28px;margin-bottom:12px">⚠</div><div style="font-size:15px;font-weight:700;color:#ff6b6b;margin-bottom:8px">Preview Render Error</div><pre style="font-size:12px;color:#fca5a5;background:#2a1515;padding:12px;border-radius:8px;overflow:auto;white-space:pre-wrap;">' + clean.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</pre><div style="font-size:11px;color:#666;margin-top:10px">The AI-generated code has a syntax error. Try regenerating.</div></div>';
+      var stack = e.error ? (e.error.stack || '') : '';
+      __reportRuntimeError(msg, stack, e.filename || '', '');
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+      var reason = e.reason;
+      var msg = reason ? (reason.message || String(reason)) : 'Unhandled Promise rejection';
+      var stack = reason ? (reason.stack || '') : '';
+      __reportRuntimeError(msg, stack, '', '');
     });
   </script>
 </head>
@@ -579,16 +604,51 @@ export function buildPreviewHtml(code: string): string {
     })();
   </script>
   <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">
+    // V5.2 React Error Boundary — catches render-time crashes and reports to parent
+    class __NexoErrorBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+      }
+      static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+      }
+      componentDidCatch(error, info) {
+        __reportRuntimeError(
+          error ? error.message : 'React render error',
+          error ? error.stack : '',
+          '',
+          info && info.componentStack ? info.componentStack.slice(0, 400) : ''
+        );
+      }
+      render() {
+        if (this.state.hasError) {
+          return React.createElement('div', {
+            style: { padding: '40px', fontFamily: 'monospace', background: '#0f0f0f', color: '#ff6b6b', minHeight: '100vh' }
+          },
+            React.createElement('div', { style: { fontSize: '24px', marginBottom: '12px' } }, '⚠'),
+            React.createElement('div', { style: { fontSize: '14px', fontWeight: 700, marginBottom: '8px' } }, 'Component Render Error'),
+            React.createElement('pre', {
+              style: { fontSize: '11px', background: '#2a1515', padding: '12px', borderRadius: '8px', overflow: 'auto', whiteSpace: 'pre-wrap', color: '#fca5a5', maxHeight: '200px' }
+            }, this.state.error ? this.state.error.message : 'Unknown error'),
+            React.createElement('div', { style: { fontSize: '11px', color: '#555', marginTop: '10px' } }, 'NexoGen Runtime Repair will attempt to fix this automatically.')
+          );
+        }
+        return this.props.children;
+      }
+    }
+
     ${sanitized}
     try {
       const rootEl = document.getElementById('root');
       const appRoot = ReactDOM.createRoot(rootEl);
-      appRoot.render(React.createElement(App));
+      appRoot.render(React.createElement(__NexoErrorBoundary, null, React.createElement(App)));
     } catch(e) {
-      document.getElementById('root').style.display = 'none';
-      var err = document.getElementById('__error');
-      err.style.display = 'block';
-      err.textContent = '⚠ Render error:\\n\\n' + (e && e.message ? e.message : String(e));
+      __reportRuntimeError(
+        e && e.message ? e.message : String(e),
+        e && e.stack ? e.stack : '',
+        '', ''
+      );
     }
   </script>
 </body>
@@ -678,10 +738,10 @@ export function buildDependencyGraph(files: ProjectFile[]): FileDependencyGraph 
   return graph;
 }
 
-// ── BUILD HEALTH METRICS (V5.1) ───────────────────────────────────────────────
+// ── BUILD HEALTH METRICS (V5.2) ───────────────────────────────────────────────
 
 export interface BuildHealth {
-  validationScore: number;       // 0-100 percentage of TSX files passing validation
+  validationScore: number;       // 0-100 percentage of TSX files passing compile validation
   compileSuccessRate: number;    // 0-100 percentage estimated compile success
   repairAttempts: number;        // total LLM repair calls made
   filesRepaired: number;         // files successfully repaired
@@ -689,6 +749,12 @@ export interface BuildHealth {
   passedFiles: number;           // TSX files passing all validation checks
   failedFiles: number;           // TSX files still failing after max repair passes
   tokenEstimate: number;         // rough token count estimate of generated code
+  // V5.2 Runtime fields
+  runtimeScore: number;          // 0-100 runtime safety score from static analysis
+  runtimeErrors: number;         // count of runtime error issues detected
+  filesValidated: number;        // count of files put through runtime validator
+  runtimeRepairAttempts: number; // count of runtime repair attempts made
+  routesValid: boolean;          // whether all routes resolve to existing components
 }
 
 export function buildComponentRegistry(files: ProjectFile[]): ComponentRegistry {

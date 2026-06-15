@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
-import { mockStreamResponse, mockEditResponse } from '../services/mockAiService';
+import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
 import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
@@ -41,6 +41,9 @@ interface AppState {
   editTargetFiles: string[];
   editQualityScore: number;
   buildHealth: BuildHealth | null;
+  runtimeErrors: { file: string; message: string; stack?: string; component?: string }[];
+  runtimeRepairAttempt: number;
+  onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => void;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -131,6 +134,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [editTargetFiles, setEditTargetFiles] = useState<string[]>([]);
   const [editQualityScore, setEditQualityScore] = useState(100);
   const [buildHealth, setBuildHealth] = useState<BuildHealth | null>(null);
+  const [runtimeErrors, setRuntimeErrors] = useState<{ file: string; message: string; stack?: string; component?: string }[]>([]);
+  const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const projectFilesRef = useRef<ProjectFile[]>([]);
@@ -592,6 +597,32 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     editTargetFiles,
     editQualityScore,
     buildHealth,
+    runtimeErrors,
+    runtimeRepairAttempt,
+    onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
+      setRuntimeErrors(prev => [...prev.slice(-9), err]);
+      // Auto-trigger runtime repair (max 3 attempts)
+      setRuntimeRepairAttempt(prev => {
+        const attempt = prev;
+        if (attempt >= 3) return prev;
+        const currentFiles = projectFilesRef.current;
+        if (currentFiles.length === 0) return prev;
+        runtimeRepair(
+          currentFiles, err, attempt,
+          (repairedFiles, repairedFile) => {
+            console.log(`[RuntimeRepair] Applied repair to ${repairedFile}`);
+            setProjectFiles(repairedFiles);
+            projectFilesRef.current = repairedFiles;
+            try {
+              const chatId = activeChatId;
+              if (chatId) localStorage.setItem(`voxai_files_${chatId}`, JSON.stringify(repairedFiles));
+            } catch {}
+          },
+          (reason) => console.warn(`[RuntimeRepair] Attempt ${attempt + 1} failed: ${reason}`)
+        );
+        return prev + 1;
+      });
+    },
     undoEdit,
     redoEdit,
     handleSend,

@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import {
   Eye, Files, Copy, Check, Search, ChevronRight, ChevronDown,
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
-  Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu,
+  Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu, Zap, Route,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
 import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth } from '../services/builderService';
@@ -28,20 +28,23 @@ interface Props {
   onUndo?: () => void;
   onRedo?: () => void;
   buildHealth?: BuildHealth | null;
+  onRuntimeError?: (err: { file: string; message: string; stack?: string; component?: string }) => void;
 }
 
-// ── Build Health Panel (V5.1) ──────────────────────────────────────────────
+// ── Build Health Panel (V5.2) ──────────────────────────────────────────────
 function BuildHealthPanel({ health }: { health: BuildHealth }) {
   const score = health.validationScore;
+  const rtScore = health.runtimeScore ?? 100;
+  const overallScore = Math.round((score + rtScore) / 2);
   const scoreColor =
-    score >= 90 ? 'text-emerald-400' :
-    score >= 70 ? 'text-yellow-400' :
+    overallScore >= 90 ? 'text-emerald-400' :
+    overallScore >= 70 ? 'text-yellow-400' :
     'text-red-400';
   const scoreBg =
-    score >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' :
-    score >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' :
+    overallScore >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' :
+    overallScore >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' :
     'border-red-500/30 bg-red-500/5';
-  const ScoreIcon = score >= 90 ? ShieldCheck : score >= 70 ? AlertTriangle : AlertTriangle;
+  const ScoreIcon = overallScore >= 90 ? ShieldCheck : AlertTriangle;
 
   return (
     <div className={`mx-3 mb-2 rounded-lg border px-3 py-2 ${scoreBg}`}>
@@ -50,7 +53,7 @@ function BuildHealthPanel({ health }: { health: BuildHealth }) {
           <ScoreIcon size={13} className={scoreColor} />
           <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Build Health</span>
         </div>
-        <span className={`text-[15px] font-bold ${scoreColor}`}>{score}%</span>
+        <span className={`text-[15px] font-bold ${scoreColor}`}>{overallScore}%</span>
       </div>
       <div className="grid grid-cols-4 gap-x-3 gap-y-0.5">
         <div className="flex flex-col">
@@ -58,14 +61,36 @@ function BuildHealthPanel({ health }: { health: BuildHealth }) {
           <span className="text-[12px] font-medium text-gray-300">{health.passedFiles}/{health.totalFiles > 0 ? health.passedFiles + health.failedFiles : '–'}</span>
         </div>
         <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Compile</span>
+          <span className={`text-[12px] font-medium flex items-center gap-0.5 ${score >= 90 ? 'text-emerald-400' : score >= 70 ? 'text-yellow-400' : 'text-red-400'}`}>
+            <ShieldCheck size={10} />{score}%
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Runtime</span>
+          <span className={`text-[12px] font-medium flex items-center gap-0.5 ${rtScore >= 90 ? 'text-emerald-400' : rtScore >= 70 ? 'text-yellow-400' : 'text-red-400'}`}>
+            <Zap size={10} />{rtScore}%
+          </span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[10px] text-gray-500">Routes</span>
+          <span className={`text-[12px] font-medium flex items-center gap-0.5 ${(health.routesValid ?? true) ? 'text-emerald-400' : 'text-red-400'}`}>
+            <Route size={10} />{(health.routesValid ?? true) ? 'ok' : 'err'}
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-x-3 gap-y-0.5 mt-0.5">
+        <div className="flex flex-col">
           <span className="text-[10px] text-gray-500">Repairs</span>
           <span className="text-[12px] font-medium text-gray-300 flex items-center gap-0.5">
             <Wrench size={10} className="text-gray-500" />{health.filesRepaired}
           </span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[10px] text-gray-500">Passes</span>
-          <span className="text-[12px] font-medium text-gray-300">{health.repairAttempts}</span>
+          <span className="text-[10px] text-gray-500">RT Issues</span>
+          <span className={`text-[12px] font-medium flex items-center gap-0.5 ${(health.runtimeErrors ?? 0) > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+            <AlertTriangle size={10} />{health.runtimeErrors ?? 0}
+          </span>
         </div>
         <div className="flex flex-col">
           <span className="text-[10px] text-gray-500">Tokens</span>
@@ -76,7 +101,12 @@ function BuildHealthPanel({ health }: { health: BuildHealth }) {
       </div>
       {health.failedFiles > 0 && (
         <p className="mt-1.5 text-[10px] text-red-400">
-          {health.failedFiles} file{health.failedFiles > 1 ? 's' : ''} failed validation — preview may have issues
+          {health.failedFiles} file{health.failedFiles > 1 ? 's' : ''} failed compile — preview may have issues
+        </p>
+      )}
+      {(health.runtimeErrors ?? 0) > 0 && (
+        <p className="mt-0.5 text-[10px] text-amber-400">
+          {health.runtimeErrors} runtime issue{health.runtimeErrors !== 1 ? 's' : ''} detected — Runtime Repair will auto-fix on crash
         </p>
       )}
     </div>
@@ -259,12 +289,26 @@ export default function WorkspacePreviewPanel({
   projectBlueprint, sectionOrder, projectFiles: serverFiles,
   dnaComposition, sectionOwnership, themeTokens, motionProfile,
   lastEditDiff, canUndo, canRedo, onUndo, onRedo,
-  buildHealth,
+  buildHealth, onRuntimeError,
 }: Props) {
   const [tab, setTab] = useState<'preview' | 'files'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
+  const [runtimeError, setRuntimeError] = useState<{ message: string; file?: string; stack?: string } | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // V5.2: Listen for runtime_error messages from the preview iframe
+  useEffect(() => {
+    function handleMessage(e: MessageEvent) {
+      if (!e.data || e.data.type !== 'runtime_error') return;
+      const err = { file: e.data.file || '', message: e.data.message || 'Unknown runtime error', stack: e.data.stack || '', component: e.data.component || '' };
+      setRuntimeError(err);
+      onRuntimeError?.(err);
+    }
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onRuntimeError]);
 
   // Prefer server-generated files (blueprint-driven, proper TypeScript).
   // Fall back to client-side generation only when server files aren't available.
@@ -431,17 +475,41 @@ export default function WorkspacePreviewPanel({
 
       {/* ── Preview tab ── */}
       {tab === 'preview' && (
-        <iframe
-          key={serverFiles && serverFiles.length > 0 ? serverFiles.length : code}
-          srcDoc={
-            serverFiles && serverFiles.length > 0
-              ? buildPreviewHtmlFromFiles(serverFiles)
-              : buildPreviewHtml(code)
-          }
-          title="Live preview"
-          sandbox="allow-scripts allow-same-origin"
-          className="flex-1 w-full border-0"
-        />
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* V5.2 Runtime Error Banner */}
+          {runtimeError && (
+            <div className="mx-3 mt-2 mb-1 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2 shrink-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2 min-w-0">
+                  <AlertTriangle size={13} className="text-red-400 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-red-400">Runtime Error detected</p>
+                    <p className="text-[11px] text-red-300/80 truncate mt-0.5">{runtimeError.message}</p>
+                    {runtimeError.file && (
+                      <p className="text-[10px] text-gray-500 mt-0.5 font-mono truncate">{runtimeError.file}</p>
+                    )}
+                    <p className="text-[10px] text-gray-600 mt-1">NexoGen Runtime Repair is attempting to fix this…</p>
+                  </div>
+                </div>
+                <button onClick={() => setRuntimeError(null)} className="shrink-0 text-gray-600 hover:text-gray-400 transition-colors">
+                  <X size={11} />
+                </button>
+              </div>
+            </div>
+          )}
+          <iframe
+            ref={iframeRef}
+            key={serverFiles && serverFiles.length > 0 ? serverFiles.length : code}
+            srcDoc={
+              serverFiles && serverFiles.length > 0
+                ? buildPreviewHtmlFromFiles(serverFiles)
+                : buildPreviewHtml(code)
+            }
+            title="Live preview"
+            sandbox="allow-scripts allow-same-origin"
+            className="flex-1 w-full border-0"
+          />
+        </div>
       )}
 
       {/* ── Files tab: collapsible folder tree ── */}

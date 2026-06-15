@@ -71,14 +71,20 @@ export async function mockStreamResponse(
 
           if (json.type === "build_health") {
             onBuildHealth?.({
-              validationScore:    json.validationScore    ?? 100,
-              compileSuccessRate: json.compileSuccessRate ?? 100,
-              repairAttempts:     json.repairAttempts     ?? 0,
-              filesRepaired:      json.filesRepaired      ?? 0,
-              totalFiles:         json.totalFiles         ?? 0,
-              passedFiles:        json.passedFiles        ?? 0,
-              failedFiles:        json.failedFiles        ?? 0,
-              tokenEstimate:      json.tokenEstimate      ?? 0,
+              validationScore:       json.validationScore       ?? 100,
+              compileSuccessRate:    json.compileSuccessRate    ?? 100,
+              repairAttempts:        json.repairAttempts        ?? 0,
+              filesRepaired:         json.filesRepaired         ?? 0,
+              totalFiles:            json.totalFiles            ?? 0,
+              passedFiles:           json.passedFiles           ?? 0,
+              failedFiles:           json.failedFiles           ?? 0,
+              tokenEstimate:         json.tokenEstimate         ?? 0,
+              // V5.2 Runtime fields
+              runtimeScore:          json.runtimeScore          ?? 100,
+              runtimeErrors:         json.runtimeErrors         ?? 0,
+              filesValidated:        json.filesValidated        ?? 0,
+              runtimeRepairAttempts: json.runtimeRepairAttempts ?? 0,
+              routesValid:           json.routesValid           ?? true,
             });
           }
 
@@ -194,6 +200,61 @@ export async function mockEditResponse(
     }
   } catch (err) {
     return onError(err instanceof Error ? err.message : "Edit Agent failed");
+  }
+}
+
+// ── V5.2: RUNTIME REPAIR ─────────────────────────────────────────────────────
+// Called when the iframe reports a runtime_error via postMessage.
+// Streams SSE from /agents/runtime-repair and returns the repaired files.
+
+export async function runtimeRepair(
+  files: ProjectFile[],
+  error: { file: string; message: string; stack?: string; component?: string },
+  repairAttempt: number,
+  onRepaired: (repairedFiles: ProjectFile[], repairedFile: string) => void,
+  onFailed: (reason: string) => void
+): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/agents/runtime-repair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ files, error, repairAttempt }),
+    });
+
+    if (!res.ok || !res.body) {
+      onFailed(`Runtime repair request failed: ${res.status}`);
+      return;
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value);
+      for (const line of text.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        try {
+          const json = JSON.parse(trimmed.slice(5).trim());
+          if (json.type === 'runtime_repair_done') {
+            if (json.repaired && Array.isArray(json.files)) {
+              onRepaired(json.files as ProjectFile[], json.repairedFile ?? '');
+            } else {
+              onFailed(json.message ?? 'Repair returned no changes');
+            }
+          }
+          if (json.type === 'error') {
+            onFailed(json.error ?? 'Runtime repair failed');
+          }
+        } catch {
+          // skip malformed chunks
+        }
+      }
+    }
+  } catch (err) {
+    onFailed(err instanceof Error ? err.message : 'Runtime repair network error');
   }
 }
 

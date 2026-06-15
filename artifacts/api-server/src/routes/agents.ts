@@ -18,8 +18,9 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const PLANNER_MODEL = "llama-3.3-70b-versatile";
 const DESIGN_MODEL = "google/gemini-2.5-flash-lite";
 const CODEGEN_MODEL = "deepseek/deepseek-chat";
-const CODEFIX_MODEL = "llama-3.3-70b-versatile";
-const BACKEND_MODEL = "llama-3.3-70b-versatile";
+const CODEFIX_MODEL  = "llama-3.3-70b-versatile";
+const BACKEND_MODEL  = "llama-3.3-70b-versatile";
+const REPAIR_MODEL   = "llama-3.1-8b-instant";    // V5.2: fast surgical runtime repair
 
 interface PageBlueprint {
   websiteType: string;
@@ -663,6 +664,23 @@ function App() { return (<div>${appReturn}</div>); }
 The App() function must render all ${blueprint.sectionOrder.length} sections: ${functionNames}
 
 Use .map() for all repeated elements. Replace ALL placeholder text with real, specific content for this site.
+
+═══ SAFE CODING RULES (V5.2) — MANDATORY to prevent runtime crashes ═══
+10. ALWAYS use Array.isArray() before .map() on any variable that might not be an array:
+    BAD:  items.map(item => ...)
+    GOOD: Array.isArray(items) ? items.map(item => ...) : []
+11. ALWAYS use optional chaining for nested property access:
+    BAD:  user.profile.avatar
+    GOOD: user?.profile?.avatar
+12. ALWAYS provide initial values in useState() that match the expected type:
+    BAD:  const [items, setItems] = React.useState()
+    GOOD: const [items, setItems] = React.useState([])
+    GOOD: const [user, setUser] = React.useState(null)
+13. NEVER call hooks inside conditionals, loops, or nested functions.
+14. ALWAYS add default values for props that could be undefined:
+    BAD:  function Card({ items }) { return items.map(...) }
+    GOOD: function Card({ items = [] }) { return items.map(...) }
+
 OUTPUT: Raw JSX only. No markdown. Start with the first section function.`;
 }
 
@@ -1666,6 +1684,140 @@ function validateTsxFile(name: string, content: string): TsxValidation {
   return { valid: issues.length === 0, issues, warnings };
 }
 
+// ── V5.2: RUNTIME VALIDATOR ───────────────────────────────────────────────────
+// Static analysis pass that runs AFTER compile validation.
+// Detects runtime crash patterns: unsafe .map(), hook misuse, missing null guards,
+// route mismatches, and import resolution failures.
+
+interface RuntimeValidationIssue {
+  file: string;
+  severity: 'error' | 'warning';
+  type: 'unsafe_array' | 'invalid_hook' | 'missing_null_guard' | 'route_mismatch' | 'missing_import' | 'undefined_state';
+  message: string;
+}
+
+interface RuntimeValidationResult {
+  issues: RuntimeValidationIssue[];
+  runtimeScore: number;
+  filesValidated: number;
+  runtimeErrors: number;
+}
+
+function runRuntimeValidator(files: ProjectFileSSE[]): RuntimeValidationResult {
+  const issues: RuntimeValidationIssue[] = [];
+  const tsxFiles = files.filter(f => (f.lang === 'tsx' || f.lang === 'jsx') && f.name !== 'main.tsx');
+
+  // Build set of all defined component names
+  const definedComponents = new Set<string>();
+  for (const file of tsxFiles) {
+    const funcRe = /(?:export\s+default\s+)?function\s+([A-Z][a-zA-Z0-9]*)\s*\(/g;
+    let m: RegExpExecArray | null;
+    while ((m = funcRe.exec(file.content)) !== null) definedComponents.add(m[1]);
+  }
+
+  for (const file of tsxFiles) {
+    const content = file.content;
+    const lines = content.split('\n');
+
+    // 1. Unsafe .map() without Array.isArray guard or optional chaining
+    const mapRe = /\b([a-z][a-zA-Z0-9_]*?)\.map\s*\(/g;
+    let mapMatch: RegExpExecArray | null;
+    while ((mapMatch = mapRe.exec(content)) !== null) {
+      const varName = mapMatch[1];
+      if (['Object','Array','String','Math','window','document','console','el','ref'].includes(varName)) continue;
+      const lineIdx = content.slice(0, mapMatch.index).split('\n').length - 1;
+      const ctx = lines.slice(Math.max(0, lineIdx - 3), lineIdx + 3).join('\n');
+      if (!ctx.includes(`Array.isArray(${varName})`) && !ctx.includes(`${varName}?.map`) && !ctx.includes(`|| []`)) {
+        issues.push({ file: file.name, severity: 'warning', type: 'unsafe_array',
+          message: `${varName}.map() without Array.isArray guard — use Array.isArray(${varName}) ? ${varName}.map(...) : []` });
+      }
+    }
+
+    // 2. Hook called inside conditional
+    if (/if\s*\([^)]+\)\s*\{[^}]*use[A-Z]\w+\s*\(/.test(content)) {
+      issues.push({ file: file.name, severity: 'error', type: 'invalid_hook',
+        message: 'Hook called inside a conditional — hooks must be at component top level' });
+    }
+
+    // 3. useState() with no initial value for vars used in .map()
+    const stateRe = /const\s+\[([a-z][a-zA-Z0-9]*)[^\]]*\]\s*=\s*(?:React\.)?useState\s*\(\s*\)/g;
+    let stateMatch: RegExpExecArray | null;
+    while ((stateMatch = stateRe.exec(content)) !== null) {
+      const varName = stateMatch[1];
+      if (content.includes(`${varName}.map(`)) {
+        issues.push({ file: file.name, severity: 'error', type: 'undefined_state',
+          message: `${varName}.map() called but useState() has no initial value — use useState([])` });
+      }
+    }
+
+    // 4. Route/import validation in App.tsx
+    if (file.name === 'App.tsx') {
+      // Check route elements reference existing components
+      const routeRe = /element=\{<([A-Z][a-zA-Z0-9]*)\s*\/?>\}/g;
+      let routeMatch: RegExpExecArray | null;
+      while ((routeMatch = routeRe.exec(content)) !== null) {
+        const compName = routeMatch[1];
+        if (!definedComponents.has(compName)) {
+          issues.push({ file: 'App.tsx', severity: 'error', type: 'route_mismatch',
+            message: `Route references <${compName}> but no such component was generated` });
+        }
+      }
+      // Check imports resolve to actual files
+      const importRe = /import\s+(\w+)\s+from\s+['"]\.\/(?:pages|components)\/(\w+)['"]/g;
+      let importMatch: RegExpExecArray | null;
+      while ((importMatch = importRe.exec(content)) !== null) {
+        const importedName = importMatch[2];
+        if (!definedComponents.has(importedName)) {
+          issues.push({ file: 'App.tsx', severity: 'error', type: 'missing_import',
+            message: `Imports '${importedName}' but no matching component was generated` });
+        }
+      }
+    }
+  }
+
+  const errorCount = issues.filter(i => i.severity === 'error').length;
+  const warningCount = issues.filter(i => i.severity === 'warning').length;
+  const runtimeScore = tsxFiles.length > 0
+    ? Math.max(0, Math.min(100, Math.round(100 - (errorCount * 25) - (warningCount * 5))))
+    : 100;
+
+  return { issues, runtimeScore, filesValidated: tsxFiles.length, runtimeErrors: errorCount };
+}
+
+// ── V5.2: ROUTE VALIDATOR ─────────────────────────────────────────────────────
+function validateRoutes(files: ProjectFileSSE[]): { valid: boolean; issues: string[] } {
+  const appFile = files.find(f => f.name === 'App.tsx');
+  if (!appFile) return { valid: true, issues: [] };
+
+  const componentFiles = new Set(
+    files
+      .filter(f => (f.lang === 'tsx' || f.lang === 'jsx') && f.name !== 'App.tsx')
+      .map(f => f.name.replace(/\.(tsx|jsx)$/, ''))
+  );
+
+  const routeIssues: string[] = [];
+
+  // Check all imports in App.tsx resolve to actual files
+  const importRe = /import\s+\w+\s+from\s+['"]\.\/(?:pages|components)\/(\w+)['"]/g;
+  let importMatch: RegExpExecArray | null;
+  while ((importMatch = importRe.exec(appFile.content)) !== null) {
+    if (!componentFiles.has(importMatch[1])) {
+      routeIssues.push(`App.tsx imports "${importMatch[1]}" but no component file exists`);
+    }
+  }
+
+  // Check route elements reference existing components
+  const routeRe = /element=\{<([A-Z][a-zA-Z0-9]*)\s*\/?>\}/g;
+  let routeMatch: RegExpExecArray | null;
+  while ((routeMatch = routeRe.exec(appFile.content)) !== null) {
+    if (!componentFiles.has(routeMatch[1])) {
+      routeIssues.push(`Route uses <${routeMatch[1]}> but no component file was generated for it`);
+    }
+  }
+
+  return { valid: routeIssues.length === 0, issues: routeIssues };
+}
+
 function buildServerProjectFiles(
   code: string,
   pb: ProjectBlueprint,
@@ -2629,6 +2781,21 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       ? Math.round((passedTsxFiles.length / finalTsxFiles.length) * 100)
       : 100;
 
+    // ── V5.2: RUNTIME VALIDATION PASS ────────────────────────────────────────
+    const runtimeResult = runRuntimeValidator(projectFiles);
+    if (runtimeResult.issues.length > 0) {
+      console.log(`[RuntimeValidator] ${runtimeResult.runtimeErrors} errors, ${runtimeResult.issues.length - runtimeResult.runtimeErrors} warnings across ${runtimeResult.filesValidated} files`);
+      for (const issue of runtimeResult.issues.slice(0, 5)) {
+        console.warn(`[RuntimeValidator] ${issue.severity.toUpperCase()} ${issue.file}: ${issue.message}`);
+      }
+    }
+
+    // ── V5.2: ROUTE VALIDATOR ─────────────────────────────────────────────────
+    const routeValidation = validateRoutes(projectFiles);
+    if (!routeValidation.valid) {
+      console.warn(`[RouteValidator] ${routeValidation.issues.length} route issue(s): ${routeValidation.issues.join('; ')}`);
+    }
+
     const buildHealthMetrics = {
       validationScore,
       compileSuccessRate: validationScore,
@@ -2638,10 +2805,19 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       passedFiles: passedTsxFiles.length,
       failedFiles: finalTsxFiles.length - passedTsxFiles.length,
       tokenEstimate: estimateTokenCount(fixedCode),
+      // V5.2 Runtime fields
+      runtimeScore: runtimeResult.runtimeScore,
+      runtimeErrors: runtimeResult.runtimeErrors,
+      filesValidated: runtimeResult.filesValidated,
+      runtimeRepairAttempts: 0,
+      routesValid: routeValidation.valid,
     };
 
-    console.log(`[BuildHealth] score=${validationScore}% passed=${passedTsxFiles.length}/${finalTsxFiles.length} repairs=${totalRepairAttempts} repaired=${totalFilesRepaired}`);
+    console.log(`[BuildHealth] compile=${validationScore}% runtime=${runtimeResult.runtimeScore}% routes=${routeValidation.valid ? 'ok' : 'broken'} repairs=${totalRepairAttempts}`);
     sse(res, { type: "build_health", ...buildHealthMetrics });
+    if (runtimeResult.issues.length > 0) {
+      sse(res, { type: "runtime_validate", issues: runtimeResult.issues, runtimeScore: runtimeResult.runtimeScore, routeIssues: routeValidation.issues });
+    }
 
     // ── AGENTS 6-8: BACKEND / DATABASE / AUTH (parallel) ─────────────────────
     // Each agent runs only when the blueprint declares it is needed.
@@ -3231,6 +3407,110 @@ ${fileContext}`;
   } catch (e: any) {
     console.error("[EditAgent V5] Error:", e);
     sse(res, { type: "error", error: e.message });
+    res.end();
+  }
+});
+
+// ── V5.2: RUNTIME REPAIR ENDPOINT ────────────────────────────────────────────
+// Called by the frontend when the iframe posts a runtime_error message.
+// Attempts surgical repair of the failing component file (max 3 attempts).
+
+router.post("/agents/runtime-repair", async (req, res) => {
+  const groqKey = process.env["GROQ_API_KEY"];
+  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+
+  const { files, error, repairAttempt } = req.body as {
+    files: ProjectFileSSE[];
+    error: { file: string; message: string; stack?: string; component?: string };
+    repairAttempt: number;
+  };
+
+  if (!files || !error) return res.status(400).json({ error: "files and error required" });
+
+  if (repairAttempt >= 3) {
+    return res.status(200).json({ files, repaired: false, message: "Max repair attempts (3) reached" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    // Find the failing file (match by name or partial path)
+    const failingFile = files.find(f =>
+      f.name === error.file ||
+      (f.path + f.name).includes(error.file) ||
+      error.file.includes(f.name)
+    ) ?? files.find(f => f.name === 'App.tsx');
+
+    if (!failingFile) {
+      sse(res, { type: "runtime_repair_done", files, repaired: false, message: `File "${error.file}" not found` });
+      res.end();
+      return;
+    }
+
+    sse(res, { type: "step", step: 0, agent: "Runtime Repair Agent", status: "active" });
+
+    // Dependency context: up to 2 other component files (truncated) for cross-file awareness
+    const depContext = files
+      .filter(f => (f.lang === 'tsx' || f.lang === 'ts') && f !== failingFile)
+      .slice(0, 2)
+      .map(f => `// ${f.path}${f.name} (context)\n${f.content.slice(0, 400)}`)
+      .join('\n\n');
+
+    const RUNTIME_REPAIR_SYSTEM = `You are NexoGen Runtime Repair Agent. A React component crashed at runtime. Your ONLY job is to fix the exact runtime error reported.
+
+SAFE CODING RULES to apply in the fix:
+- Replace arr.map(...) with Array.isArray(arr) ? arr.map(...) : []
+- Replace obj.prop.deep with obj?.prop?.deep
+- Replace useState() with useState([]) for arrays, useState({}) for objects, useState(null) for nullable values
+- Add default values for props: function Comp({ items = [], title = '' })
+- NEVER call hooks conditionally or inside loops
+- Wrap state updates in useEffect if they depend on props
+
+Return ONLY the complete corrected file content. No markdown fences, no explanation, no truncation.`;
+
+    const repairPrompt = `Runtime error in component "${failingFile.name}":
+Error: ${error.message}
+${error.stack ? `\nStack trace:\n${error.stack.slice(0, 600)}` : ''}
+${error.component ? `\nComponent tree:\n${error.component.slice(0, 300)}` : ''}
+
+Complete failing file (${failingFile.name}):
+${failingFile.content}
+
+${depContext ? `\nContext from other files:\n${depContext}` : ''}
+
+Fix the runtime error and return the complete corrected file:`;
+
+    const repaired = await callGroq(
+      groqKey, REPAIR_MODEL,
+      [
+        { role: "system", content: RUNTIME_REPAIR_SYSTEM },
+        { role: "user", content: repairPrompt },
+      ],
+      false, 2500
+    );
+
+    sse(res, { type: "step", step: 1, agent: "Runtime Repair Agent", status: "done" });
+
+    if (repaired && repaired.trim().length > 80) {
+      const cleaned = repaired
+        .replace(/^```[a-z]*\r?\n?/im, '')
+        .replace(/\r?\n?```$/m, '')
+        .trim();
+
+      const repairedFiles = files.map(f => f === failingFile ? { ...f, content: cleaned } : f);
+
+      console.log(`[RuntimeRepair] Attempt ${repairAttempt + 1} — repaired ${failingFile.name} (${cleaned.length} chars)`);
+      sse(res, { type: "runtime_repair_done", files: repairedFiles, repaired: true, repairedFile: failingFile.name });
+    } else {
+      sse(res, { type: "runtime_repair_done", files, repaired: false, message: "Repair agent returned insufficient output" });
+    }
+
+    res.end();
+  } catch (e: any) {
+    console.error("[RuntimeRepair] Error:", e);
+    sse(res, { type: "error", error: e.message ?? "Runtime repair failed" });
     res.end();
   }
 });
