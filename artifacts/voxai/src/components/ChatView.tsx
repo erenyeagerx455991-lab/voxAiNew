@@ -11,6 +11,7 @@ const AGENT_STEPS = [
   { label: 'Backend Agent',       colors: 'from-indigo-500 to-blue-600' },
   { label: 'Database Agent',      colors: 'from-cyan-500 to-sky-600' },
   { label: 'Auth Agent',          colors: 'from-lime-500 to-green-600' },
+  { label: 'Scaffold Agent',      colors: 'from-orange-500 to-amber-400' },
   { label: 'Preparing Preview',   colors: 'from-amber-500 to-orange-500' },
 ];
 

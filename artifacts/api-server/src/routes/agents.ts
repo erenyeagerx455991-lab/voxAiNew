@@ -1105,6 +1105,163 @@ Generate all files now. Do not truncate.`;
 
 // ── Phase 9: .env.example generator ──────────────────────────────────────────
 
+// ── V4: DEPENDENCY RESOLVER ──────────────────────────────────────────────────
+function resolveDependencies(pb: ProjectBlueprint) {
+  const featureText = (pb.features || []).join(' ').toLowerCase();
+
+  const frontend: Record<string, string> = {
+    react: '^18.3.1', 'react-dom': '^18.3.1',
+    'react-router-dom': '^6.26.0',
+    'lucide-react': '^0.400.0',
+    clsx: '^2.1.1', 'tailwind-merge': '^2.4.0',
+  };
+  const frontendDev: Record<string, string> = {
+    '@types/react': '^18.3.3', '@types/react-dom': '^18.3.0',
+    '@vitejs/plugin-react': '^4.3.1', typescript: '^5.5.3',
+    vite: '^5.4.10', tailwindcss: '^3.4.14',
+    autoprefixer: '^10.4.20', postcss: '^8.4.47',
+  };
+  const backend: Record<string, string> = {
+    express: '^4.19.2', cors: '^2.8.5', dotenv: '^16.4.5', zod: '^3.23.8',
+  };
+  const backendDev: Record<string, string> = {
+    '@types/express': '^4.17.21', '@types/cors': '^2.8.17',
+    '@types/node': '^22.0.0', typescript: '^5.5.3',
+    tsx: '^4.17.0', nodemon: '^3.1.4',
+  };
+
+  // Auth
+  if (pb.authNeeded) {
+    const p = (pb.authProvider || '').toLowerCase();
+    if (p === 'clerk')          frontend['@clerk/clerk-react']    = '^5.7.0';
+    else if (p === 'supabase')  frontend['@supabase/supabase-js'] = '^2.45.0';
+    else {
+      backend.jsonwebtoken   = '^9.0.2'; backend.bcryptjs      = '^2.4.3';
+      backendDev['@types/jsonwebtoken'] = '^9.0.6';
+      backendDev['@types/bcryptjs']     = '^2.4.6';
+    }
+  }
+
+  // Database / Prisma
+  if ((pb.databaseTables || []).length > 0) {
+    backend['@prisma/client'] = '^5.19.0';
+    backendDev.prisma         = '^5.19.0';
+  }
+
+  // Charts / analytics
+  if (/chart|graph|analytic|dashboard|metric|stat/.test(featureText))
+    frontend.recharts = '^2.12.0';
+
+  // Payments
+  if (/payment|stripe|billing|checkout|subscript/.test(featureText)) {
+    frontend['@stripe/stripe-js'] = '^4.6.0';
+    backend.stripe = '^16.12.0';
+  }
+
+  // File uploads
+  if (/upload|image|photo|media|file/.test(featureText)) {
+    backend.multer              = '^1.4.5-lts.1';
+    backendDev['@types/multer'] = '^1.4.12';
+  }
+
+  // Email / notifications
+  if (/email|newsletter|notification|mail/.test(featureText)) {
+    backend.nodemailer              = '^6.9.15';
+    backendDev['@types/nodemailer'] = '^6.4.16';
+  }
+
+  // Maps / geo
+  if (/map|location|geo|gps/.test(featureText)) {
+    frontend.leaflet             = '^1.9.4';
+    frontend['react-leaflet']    = '^4.2.1';
+    frontendDev['@types/leaflet'] = '^1.9.12';
+  }
+
+  return { frontend, frontendDev, backend, backendDev };
+}
+
+// ── V4: PROJECT VALIDATOR ─────────────────────────────────────────────────────
+function validateProject(files: ProjectFileSSE[], pb: ProjectBlueprint): QualityGateResult {
+  const issues: string[] = [];
+  let score = 100;
+
+  const allPaths = files.map(f => f.path + f.name);
+  const has  = (name: string) => allPaths.some(p => p.endsWith('/' + name) || p === name);
+  const hasSrc = (part: string) => allPaths.some(p => p.includes(part));
+
+  // Core frontend files
+  if (!has('package.json'))  { issues.push('package.json missing');  score -= 15; }
+  if (!has('index.html'))    { issues.push('index.html missing');     score -= 10; }
+  if (!has('main.tsx'))      { issues.push('main.tsx missing');       score -= 10; }
+  if (!has('App.tsx'))       { issues.push('App.tsx missing');        score -= 10; }
+  if (!has('index.css'))     { issues.push('index.css missing');      score -= 5; }
+  if (!has('vite.config.ts')){ issues.push('vite.config.ts missing'); score -= 5; }
+  if (!has('tsconfig.json')) { issues.push('tsconfig.json missing');  score -= 5; }
+  if (!hasSrc('src/'))       { issues.push('No src/ directory');      score -= 10; }
+  if (!hasSrc('components/') && !hasSrc('pages/'))
+    { issues.push('No components or pages generated'); score -= 10; }
+
+  // Backend requirements
+  if (pb.apis.length > 0 && !hasSrc('routes/'))
+    { issues.push('Backend routes missing'); score -= 5; }
+
+  // Database requirements
+  if ((pb.databaseTables || []).length > 0 && !has('schema.prisma') && !has('schema.sql'))
+    { issues.push('Database schema missing'); score -= 5; }
+
+  // Auth requirements
+  if (pb.authNeeded && !hasSrc('auth') && !hasSrc('Auth'))
+    { issues.push('Auth files missing despite authNeeded=true'); score -= 5; }
+
+  const finalScore = Math.max(0, Math.min(100, score));
+  return { score: finalScore, passed: finalScore >= 90, issues };
+}
+
+// ── V4: REPLIT CONFIG FILES ───────────────────────────────────────────────────
+function generateReplitConfig(pb: ProjectBlueprint): ProjectFileSSE {
+  const hasBackend = (pb.apis || []).length > 0;
+  const content = hasBackend
+    ? [
+        `run = "npm run dev"`,
+        ``,
+        `[nix]`,
+        `channel = "stable-24_05"`,
+        ``,
+        `[[ports]]`,
+        `localPort = 5173`,
+        `externalPort = 80`,
+        ``,
+        `[[ports]]`,
+        `localPort = 3001`,
+        `externalPort = 3001`,
+        ``,
+        `[env]`,
+        `NODE_ENV = "development"`,
+      ].join('\n')
+    : [
+        `run = "npm install && npm run dev"`,
+        ``,
+        `[nix]`,
+        `channel = "stable-24_05"`,
+        ``,
+        `[[ports]]`,
+        `localPort = 5173`,
+        `externalPort = 80`,
+        ``,
+        `[env]`,
+        `NODE_ENV = "development"`,
+      ].join('\n');
+
+  return { path: '', name: '.replit', lang: 'toml', content };
+}
+
+function generateReplitNix(): ProjectFileSSE {
+  return {
+    path: '', name: 'replit.nix', lang: 'nix',
+    content: `{ pkgs }: {\n  deps = [\n    pkgs.nodejs-22_x\n    pkgs.nodePackages.npm\n  ];\n}\n`,
+  };
+}
+
 function generateEnvExample(pb: ProjectBlueprint): ProjectFileSSE {
   const lines: string[] = [
     '# Environment Variables — copy to .env and fill in values',
@@ -1463,34 +1620,40 @@ function buildServerProjectFiles(
     content: `<!DOCTYPE html>\n<html lang="en">\n  <head>\n    <meta charset="UTF-8" />\n    <meta name="viewport" content="width=device-width, initial-scale=1.0" />\n    <title>${pb.projectType || 'NexoGen App'}</title>\n  </head>\n  <body>\n    <div id="root"></div>\n    <script type="module" src="/src/main.tsx"></script>\n  </body>\n</html>\n`,
   });
 
-  // package.json
-  const deps: Record<string, string> = {
-    react: '^18.3.1', 'react-dom': '^18.3.1',
-    'lucide-react': '^0.400.0', clsx: '^2.1.1', 'tailwind-merge': '^2.4.0',
+  // ── V4: Dependency Resolution ────────────────────────────────────────────────
+  const { frontend: resolvedDeps, frontendDev: resolvedDevDeps } = resolveDependencies(pb);
+  const hasBackend = pb.apis.length > 0 || pb.databaseTables.length > 0 || pb.authNeeded;
+
+  // package.json (frontend / root)
+  const pkgScripts: Record<string, string> = {
+    dev:     hasBackend ? 'concurrently "vite" "cd backend && npm run dev"' : 'vite',
+    build:   'tsc && vite build',
+    preview: 'vite preview',
   };
-  if (useRouter) deps['react-router-dom'] = '^6.26.0';
-  if (pb.authNeeded) deps['@supabase/supabase-js'] = '^2.45.0';
+  if (hasBackend) {
+    pkgScripts['dev:frontend'] = 'vite';
+    pkgScripts['install:all']  = 'npm install && npm install --prefix backend';
+    resolvedDeps.concurrently  = '^8.2.0';
+  }
 
   files.push({
     path: '', name: 'package.json', lang: 'json',
     content: JSON.stringify({
       name: (pb.projectType || 'nexogen-app').toLowerCase().replace(/\s+/g, '-'),
-      private: true, version: '0.0.0', type: 'module',
-      scripts: { dev: 'vite', build: 'tsc && vite build', preview: 'vite preview' },
-      dependencies: deps,
-      devDependencies: {
-        '@types/react': '^18.3.3', '@types/react-dom': '^18.3.0',
-        '@vitejs/plugin-react': '^4.3.1', typescript: '^5.5.3',
-        vite: '^5.4.10', tailwindcss: '^3.4.14',
-        autoprefixer: '^10.4.20', postcss: '^8.4.47',
-      },
+      private: true, version: '0.1.0', type: 'module',
+      scripts: pkgScripts,
+      dependencies: resolvedDeps,
+      devDependencies: resolvedDevDeps,
     }, null, 2),
   });
 
-  // vite.config.ts
+  // vite.config.ts — includes /api proxy to backend when needed
+  const viteProxyBlock = hasBackend
+    ? `,\n  server: {\n    proxy: {\n      '/api': {\n        target: 'http://localhost:3001',\n        changeOrigin: true,\n      },\n    },\n  }`
+    : '';
   files.push({
     path: '', name: 'vite.config.ts', lang: 'ts',
-    content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  resolve: { alias: { '@': '/src' } },\n});\n`,
+    content: `import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\n\nexport default defineConfig({\n  plugins: [react()],\n  resolve: { alias: { '@': '/src' } }${viteProxyBlock},\n});\n`,
   });
 
   // tsconfig.json
@@ -1514,6 +1677,80 @@ function buildServerProjectFiles(
     path: '', name: 'tailwind.config.ts', lang: 'ts',
     content: `import type { Config } from 'tailwindcss';\n\nexport default {\n  content: ['./index.html', './src/**/*.{ts,tsx}'],\n  theme: { extend: {} },\n  plugins: [],\n} satisfies Config;\n`,
   });
+
+  // postcss.config.js — required for Tailwind to work
+  files.push({
+    path: '', name: 'postcss.config.js', lang: 'js',
+    content: `export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n`,
+  });
+
+  // .gitignore
+  files.push({
+    path: '', name: '.gitignore', lang: 'text',
+    content: `# Dependencies\nnode_modules/\nbackend/node_modules/\n\n# Build output\ndist/\nbackend/dist/\n\n# Environment\n.env\n.env.local\n.env.*.local\n\n# Logs\n*.log\nnpm-debug.log*\n\n# OS\n.DS_Store\nThumbs.db\n\n# Prisma\nbackend/prisma/.env\n`,
+  });
+
+  // src/lib/api.ts — typed fetch wrapper for backend API calls
+  if (hasBackend) {
+    files.push({
+      path: 'src/lib/', name: 'api.ts', lang: 'ts',
+      content: `const API_BASE = import.meta.env.VITE_API_URL ?? '/api';\n\ntype FetchOptions = RequestInit & { data?: unknown };\n\nasync function request<T>(path: string, options: FetchOptions = {}): Promise<T> {\n  const { data, ...rest } = options;\n  const res = await fetch(\`\${API_BASE}\${path}\`, {\n    ...rest,\n    headers: { 'Content-Type': 'application/json', ...rest.headers },\n    body: data !== undefined ? JSON.stringify(data) : rest.body,\n  });\n  if (!res.ok) {\n    const err = await res.json().catch(() => ({ message: res.statusText }));\n    throw new Error(err.message ?? 'Request failed');\n  }\n  return res.json() as Promise<T>;\n}\n\nexport const api = {\n  get:    <T>(path: string, init?: RequestInit) => request<T>(path, { method: 'GET', ...init }),\n  post:   <T>(path: string, data: unknown, init?: RequestInit) => request<T>(path, { method: 'POST', data, ...init }),\n  put:    <T>(path: string, data: unknown, init?: RequestInit) => request<T>(path, { method: 'PUT', data, ...init }),\n  patch:  <T>(path: string, data: unknown, init?: RequestInit) => request<T>(path, { method: 'PATCH', data, ...init }),\n  delete: <T>(path: string, init?: RequestInit) => request<T>(path, { method: 'DELETE', ...init }),\n};\n`,
+    });
+  }
+
+  // src/hooks/useAuth.ts — if auth is needed and not using external provider
+  if (pb.authNeeded && !['clerk', 'supabase'].includes((pb.authProvider || '').toLowerCase())) {
+    files.push({
+      path: 'src/hooks/', name: 'useAuth.ts', lang: 'ts',
+      content: `import { useState, useEffect, useCallback } from 'react';\nimport { api } from '../lib/api';\n\ninterface User { id: string; name: string; email: string; }\ninterface AuthState { user: User | null; token: string | null; loading: boolean; }\n\nexport function useAuth() {\n  const [auth, setAuth] = useState<AuthState>({\n    user: null,\n    token: localStorage.getItem('auth_token'),\n    loading: true,\n  });\n\n  useEffect(() => {\n    if (!auth.token) { setAuth(s => ({ ...s, loading: false })); return; }\n    api.get<{ user: User }>('/auth/me')\n      .then(({ user }) => setAuth(s => ({ ...s, user, loading: false })))\n      .catch(() => { localStorage.removeItem('auth_token'); setAuth({ user: null, token: null, loading: false }); });\n  }, [auth.token]);\n\n  const login = useCallback(async (email: string, password: string) => {\n    const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });\n    localStorage.setItem('auth_token', token);\n    setAuth({ user, token, loading: false });\n  }, []);\n\n  const logout = useCallback(() => {\n    localStorage.removeItem('auth_token');\n    setAuth({ user: null, token: null, loading: false });\n  }, []);\n\n  const register = useCallback(async (name: string, email: string, password: string) => {\n    const { token, user } = await api.post<{ token: string; user: User }>('/auth/register', { name, email, password });\n    localStorage.setItem('auth_token', token);\n    setAuth({ user, token, loading: false });\n  }, []);\n\n  return { ...auth, login, logout, register };\n}\n`,
+    });
+  }
+
+  // backend/package.json — Express + TypeScript stack
+  if (hasBackend) {
+    const { backend: bDeps, backendDev: bDevDeps } = resolveDependencies(pb);
+    files.push({
+      path: 'backend/', name: 'package.json', lang: 'json',
+      content: JSON.stringify({
+        name: (pb.projectType || 'nexogen-backend').toLowerCase().replace(/\s+/g, '-') + '-backend',
+        private: true, version: '0.1.0',
+        scripts: {
+          dev:   'nodemon --exec tsx src/index.ts',
+          build: 'tsc',
+          start: 'node dist/index.js',
+        },
+        dependencies: bDeps,
+        devDependencies: bDevDeps,
+      }, null, 2),
+    });
+
+    // backend/tsconfig.json
+    files.push({
+      path: 'backend/', name: 'tsconfig.json', lang: 'json',
+      content: JSON.stringify({
+        compilerOptions: {
+          target: 'ES2020', module: 'CommonJS',
+          lib: ['ES2020'], outDir: './dist', rootDir: './src',
+          strict: true, esModuleInterop: true,
+          skipLibCheck: true, resolveJsonModule: true,
+          declaration: true, declarationMap: true, sourceMap: true,
+        },
+        include: ['src/**/*'],
+        exclude: ['node_modules', 'dist'],
+      }, null, 2),
+    });
+
+    // backend/src/index.ts — Express server entrypoint
+    const apiRouteImports = pb.apis.slice(0, 8).map(route => {
+      const name = route.replace(/[^a-zA-Z0-9]/g, '').replace(/^./, c => c.toLowerCase());
+      return `// import ${name}Router from './routes/${name}';`;
+    }).join('\n');
+
+    files.push({
+      path: 'backend/src/', name: 'index.ts', lang: 'ts',
+      content: `import express from 'express';\nimport cors from 'cors';\nimport dotenv from 'dotenv';\n${apiRouteImports ? '\n' + apiRouteImports : ''}\n\ndotenv.config();\n\nconst app = express();\nconst PORT = process.env.PORT ?? 3001;\n\n// ── Middleware ─────────────────────────────────────────────────────────────\napp.use(cors({ origin: process.env.FRONTEND_URL ?? 'http://localhost:5173' }));\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\n\n// ── Routes ─────────────────────────────────────────────────────────────────\napp.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));\n\n// ── Server ─────────────────────────────────────────────────────────────────\napp.listen(PORT, () => {\n  console.log(\`🚀 Server running on http://localhost:\${PORT}\`);\n});\n\nexport default app;\n`,
+    });
+  }
 
   return files;
 }
@@ -2046,22 +2283,34 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       await Promise.all(fullStackTasks);
     }
 
-    // ── PHASE 8-9: MERGE ALL FILES INTO UNIFIED PROJECT TREE ─────────────────
+    // ── AGENT 9: SCAFFOLD AGENT (programmatic file assembly + Replit config) ────
+    sse(res, { type: "step", step: 8, agent: "Scaffold Agent", status: "active" });
+
     const extraFiles: ProjectFileSSE[] = [
       ...backendFiles,
       ...dbFiles,
       ...authFiles,
       ...(hasApis || hasTables || needsAuth ? [generateEnvExample(projectBlueprint)] : []),
       generateReadme(projectBlueprint),
+      generateReplitConfig(projectBlueprint),
+      generateReplitNix(),
     ];
 
-    // Replace the basic README.md that buildServerProjectFiles added
+    // Merge, letting extra files win over buildServerProjectFiles duplicates
+    const reservedNames = new Set(['README.md', '.replit', 'replit.nix', '.env.example']);
     const allFiles = [
-      ...projectFiles.filter(f => f.name !== 'README.md'),
+      ...projectFiles.filter(f => !reservedNames.has(f.name)),
       ...extraFiles,
     ];
 
     console.log(`[Pipeline] Total files: ${allFiles.length} (frontend: ${projectFiles.length}, backend: ${backendFiles.length}, db: ${dbFiles.length}, auth: ${authFiles.length})`);
+
+    // ── PROJECT VALIDATOR V4 ──────────────────────────────────────────────────
+    const pv = validateProject(allFiles, projectBlueprint);
+    console.log(`[ProjectValidator] score=${pv.score} passed=${pv.passed}${pv.issues.length ? ' — ' + pv.issues.join('; ') : ''}`);
+    sse(res, { type: "project_validate", score: pv.score, passed: pv.passed, issues: pv.issues, fileCount: allFiles.length });
+
+    sse(res, { type: "step", step: 8, agent: "Scaffold Agent", status: "done", fileCount: allFiles.length });
 
     // ── DONE ──────────────────────────────────────────────────────────────────
     sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles });

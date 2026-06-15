@@ -381,7 +381,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             saveProjectMemory(chatId!, mem);
           }
 
-          setBuildStep(8);
+          setBuildStep(9);
           loadingRef.current = false;
           onCreditsChange?.();
         };

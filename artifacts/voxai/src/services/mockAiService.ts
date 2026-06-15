@@ -62,7 +62,7 @@ export async function mockStreamResponse(
             finalProjectBlueprint = json.projectBlueprint;
             finalSectionOrder = json.sectionOrder;
             finalFiles = Array.isArray(json.files) ? json.files : undefined;
-            onStep?.(8); // index 8 = "Preparing Preview"
+            onStep?.(9); // index 9 = "Preparing Preview"
             await new Promise((r) => setTimeout(r, 300));
             onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder, finalFiles);
           }
@@ -138,7 +138,7 @@ export async function mockEditResponse(
 
           if (json.type === "edit_done") {
             finalFiles = Array.isArray(json.files) ? json.files : undefined;
-            onStep?.(8); // "Preparing Preview"
+            onStep?.(9); // "Preparing Preview"
             await new Promise((r) => setTimeout(r, 300));
             onDone(editSummary || "Edit complete", "", undefined, undefined, finalFiles);
           }

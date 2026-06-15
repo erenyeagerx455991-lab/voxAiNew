@@ -33,6 +33,7 @@ const BUILD_STEP_LABELS = [
   'Building API routes...',
   'Generating database schema...',
   'Setting up authentication...',
+  'Scaffolding project...',
   'Preparing preview...',
 ];
 
