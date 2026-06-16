@@ -3538,6 +3538,68 @@ router.post("/agents/export", (req, res) => {
   }
 });
 
+// ── V5.5: DYNAMIC EDIT SYSTEM (locked component injection) ───────────────────
+function buildEditSystem(lockedComponents: string[], isRetry = false, prevViolations = ''): string {
+  if (lockedComponents.length === 0) return EDIT_SYSTEM;
+  const lockedList = lockedComponents.map(c => `  • ${c.toUpperCase()}`).join('\n');
+  const violationNote = prevViolations
+    ? `\nPREVIOUS ATTEMPT INCORRECTLY MODIFIED: ${prevViolations}\nDo NOT output FILE blocks for these.`
+    : '';
+  const strictNote = isRetry
+    ? '\nFINAL WARNING — any locked file output causes complete edit rejection.'
+    : '';
+  return EDIT_SYSTEM + `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPONENT LOCK ENFORCEMENT (V5.5)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOCKED SECTIONS — DO NOT TOUCH:
+${lockedList}
+${violationNote}
+ABSOLUTE RULES:
+1. DO NOT output a FILE block for any file that belongs to a locked section
+2. DO NOT refactor, rename, or restructure locked component files
+3. If the edit request targets a locked section, edit around it instead
+4. Only unlocked sections may appear in your output${strictNote}
+
+These rules override all other instructions. Violation = failed edit.`;
+}
+
+// ── V5.5: EDIT IMPACT ANALYZER ───────────────────────────────────────────────
+function analyzeEditImpactServer(
+  prompt: string,
+  registryFileMap: Record<string, string[]>,
+  lockedComponents: string[]
+): { affectedSections: string[]; affectedFiles: string[]; lockedConflicts: string[]; replacementMode: string | null } {
+  const p = prompt.toLowerCase();
+  const SECTION_KEYWORDS: Record<string, string[]> = {
+    hero:         ['hero', 'headline', 'banner', 'above the fold', 'main heading'],
+    pricing:      ['pricing', 'price', 'plan', 'billing', 'subscription', 'yearly', 'monthly', 'tier'],
+    navbar:       ['navbar', 'nav bar', 'navigation menu', 'top menu', 'header nav'],
+    features:     ['feature', 'benefit', 'what we offer', 'capability', 'functionality'],
+    faq:          ['faq', 'frequently asked', 'question'],
+    testimonials: ['testimonial', 'review', 'social proof', 'customer quote'],
+    cta:          ['call to action', ' cta', 'get started button', 'sign up button'],
+    footer:       ['footer', 'bottom section', 'bottom of page'],
+    dashboard:    ['dashboard', 'analytics page', 'metrics page', 'stats page'],
+    auth:         ['login page', 'signup page', 'auth page', 'sign in page'],
+  };
+  const replaceMatch = /\breplace\s+(?:the\s+)?(\w+)/i.exec(prompt);
+  const replacementMode = replaceMatch ? replaceMatch[1].toLowerCase() : null;
+  const affectedSections: string[] = [];
+  const affectedFiles: string[] = [];
+  for (const [section, keywords] of Object.entries(SECTION_KEYWORDS)) {
+    if (keywords.some(kw => p.includes(kw))) {
+      affectedSections.push(section);
+      affectedFiles.push(...(registryFileMap[section] ?? []));
+    }
+  }
+  if (replacementMode && !affectedSections.includes(replacementMode)) affectedSections.push(replacementMode);
+  const lockedConflicts = affectedSections.filter(s => lockedComponents.includes(s));
+  return { affectedSections, affectedFiles: [...new Set(affectedFiles)], lockedConflicts, replacementMode };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PHASE 3 — EDIT AGENT
 // POST /agents/edit → SSE stream; patches only affected files
@@ -3546,13 +3608,15 @@ router.post("/agents/edit", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
 
-  const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens, knowledgeGraph } = req.body as {
+  const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents = [], registryFileMap = {} } = req.body as {
     prompt: string;
     projectFiles: ProjectFileSSE[];
     projectMemory?: Record<string, any>;
     componentRegistry?: Record<string, string>;
     themeTokens?: Record<string, any>;
     knowledgeGraph?: ServerKnowledgeGraph;
+    lockedComponents?: string[];
+    registryFileMap?: Record<string, string[]>;
   };
 
   if (!prompt) return res.status(400).json({ error: "prompt required" });
@@ -3591,6 +3655,13 @@ router.post("/agents/edit", async (req, res) => {
     sse(res, { type: "intent_detected", ...intentResult });
     sse(res, { type: "step", step: 0, agent: "Intent Detector", status: "done" });
 
+    // ── V5.5: Edit Impact Analysis ──────────────────────────────────────────
+    const editImpact = analyzeEditImpactServer(prompt, registryFileMap, lockedComponents);
+    sse(res, { type: "edit_impact", affectedSections: editImpact.affectedSections, affectedFiles: editImpact.affectedFiles, lockedConflicts: editImpact.lockedConflicts, replacementMode: editImpact.replacementMode });
+    if (editImpact.lockedConflicts.length > 0) {
+      console.log(`[V5.5] Impact: locked conflicts detected — ${editImpact.lockedConflicts.join(', ')}`);
+    }
+
     // ── STEP 1: File Resolution ─────────────────────────────────────────────
     sse(res, { type: "step", step: 1, agent: "File Resolver", status: "active" });
 
@@ -3613,82 +3684,98 @@ router.post("/agents/edit", async (req, res) => {
     sse(res, { type: "file_targets", files: resolvedFiles, originalTargets: intentResult.targetFiles });
     sse(res, { type: "step", step: 1, agent: "File Resolver", status: "done" });
 
-    // ── STEP 2: Patch Generation ────────────────────────────────────────────
+    // ── V5.5: Locked Component Enforcement ──────────────────────────────────
+    const lockedFilePaths = new Set<string>();
+    for (const cat of lockedComponents) {
+      for (const fp of (registryFileMap[cat] ?? [])) lockedFilePaths.add(fp);
+    }
+    const filteredResolvedFiles = lockedFilePaths.size > 0
+      ? resolvedFiles.filter(fp => !lockedFilePaths.has(fp))
+      : resolvedFiles;
+    if (filteredResolvedFiles.length < resolvedFiles.length) {
+      const excluded = resolvedFiles.filter(fp => lockedFilePaths.has(fp));
+      sse(res, { type: "locked_excluded", excluded, preservedCategories: lockedComponents });
+      console.log(`[V5.5] Locked enforcement: excluded ${excluded.length} locked files from context`);
+    }
+
+    // ── STEP 2: Patch Generation (V5.5 — Diff Protection retry loop) ─────────
     sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "active" });
 
-    // ── Compressed context build ──────────────────────────────────────────
-    // Budget: GROQ_TOKEN_BUDGET - system_prompt - response - header overhead
     const EDIT_RESPONSE_TOKENS = 4_000;
     const sysTokens = estimateTokenCount(EDIT_SYSTEM);
     const fileContextBudget = GROQ_TOKEN_BUDGET - EDIT_RESPONSE_TOKENS - sysTokens - 400;
-
-    // Always include App.tsx as context reference for routing
-    const allTargets = [
-      ...resolvedFiles,
-      ...(intentResult.newFiles ?? []),
-      "App.tsx",
-    ];
-
-    const { context: fileContext, meta: ctxMeta } = buildMinimalEditContext(
-      projectFiles,
-      allTargets,
-      fileContextBudget
-    );
-    logCompressionReport("EditPatch", ctxMeta);
-
-    // Compress memory — strip editHistory, componentRegistry etc.
     const compressedMem = projectMemory ? compressProjectMemory(projectMemory) : null;
-
     const projectSummary = compressedMem
       ? `Project: ${compressedMem["projectType"] || "App"} | Pages: ${(compressedMem["pages"] as string[] || []).join(", ")} | Entities: ${(compressedMem["entities"] as string[] || []).join(", ")}\n`
       : `Files: ${projectFiles.map((f) => f.path + f.name).join(", ")}\n`;
-
     const designCtx = themeTokens
       ? `\nDesign tokens (PRESERVE): primary=${themeTokens.primary}, surface=${themeTokens.surface}, isDark=${themeTokens.isDark}`
       : "";
-
-    // Trim componentRegistry to just names (not full signatures) to save tokens
     const registryCtx = componentRegistry && Object.keys(componentRegistry).length > 0
       ? `\nComponents: ${Object.keys(componentRegistry).slice(0, 20).join(", ")}`
       : "";
 
-    const userMessageRaw = `${projectSummary}${designCtx}${registryCtx}
+    let modifiedFiles: ProjectFileSSE[] = [];
+    let deletedPaths: string[] = [];
+    let qualityResult: ReturnType<typeof validateEditFiles> = { score: 0, passed: false, issues: [], warnings: [] };
+
+    for (let diffAttempt = 0; diffAttempt < 3; diffAttempt++) {
+      const prevViolations = diffAttempt > 0
+        ? modifiedFiles.filter(f => lockedFilePaths.has(f.path + f.name)).map(f => f.name).join(', ')
+        : '';
+      const dynamicEditSystem = buildEditSystem(lockedComponents, diffAttempt > 0, prevViolations);
+
+      const allTargets = [...filteredResolvedFiles, ...(intentResult.newFiles ?? []), "App.tsx"];
+      const { context: fileContext, meta: ctxMeta } = buildMinimalEditContext(projectFiles, allTargets, fileContextBudget);
+      if (diffAttempt === 0) logCompressionReport("EditPatch", ctxMeta);
+
+      const userMessageRaw = `${projectSummary}${designCtx}${registryCtx}
 EDIT REQUEST: ${prompt}
 INTENT: ${intentResult.editType} — ${intentResult.reason}
-TARGET FILES: ${resolvedFiles.join(", ")}${intentResult.newFiles?.length ? `\nNEW FILES: ${intentResult.newFiles.join(", ")}` : ""}
+TARGET FILES: ${filteredResolvedFiles.join(", ")}${intentResult.newFiles?.length ? `\nNEW FILES: ${intentResult.newFiles.join(", ")}` : ""}
 ALL PROJECT FILES (do not modify unless listed above): ${projectFiles.map((f) => f.path + f.name).join(", ")}
 
 CURRENT FILE CONTEXT:
 ${fileContext}`;
 
-    // Final safety net — truncate if anything still exceeds budget
-    const { system: editSystem, user: userMessage, truncated: wasTruncated } =
-      truncateForGroq(EDIT_SYSTEM, userMessageRaw, EDIT_RESPONSE_TOKENS);
+      const { system: editSystem, user: userMessage, truncated: wasTruncated } =
+        truncateForGroq(dynamicEditSystem, userMessageRaw, EDIT_RESPONSE_TOKENS);
+      if (wasTruncated && diffAttempt === 0) {
+        console.warn("[EditPatch] Context truncated by safety net");
+        sse(res, { type: "debug", message: "context_compressed" });
+      }
 
-    if (wasTruncated) {
-      console.warn("[EditPatch] Context was truncated by safety net");
-      sse(res, { type: "debug", message: "context_compressed" });
+      const editRaw = await callGroq(
+        groqKey, BACKEND_MODEL,
+        [{ role: "system", content: editSystem }, { role: "user", content: userMessage }],
+        false, EDIT_RESPONSE_TOKENS
+      );
+
+      modifiedFiles = extractEditFiles(editRaw);
+      deletedPaths  = extractDeletedPaths(editRaw);
+      qualityResult = validateEditFiles(modifiedFiles, projectFiles, filteredResolvedFiles);
+
+      // V5.5: Diff Protection — check locked file violations
+      if (lockedFilePaths.size > 0) {
+        const violations = modifiedFiles.filter(f => lockedFilePaths.has(f.path + f.name));
+        if (violations.length > 0 && diffAttempt < 2) {
+          sse(res, { type: "locked_protection", retryAttempt: diffAttempt + 1, violations: violations.map(f => f.path + f.name) });
+          console.log(`[V5.5] Diff protection retry ${diffAttempt + 1}: ${violations.map(f => f.name).join(', ')} violated`);
+          continue;
+        }
+        // Strip any remaining locked modifications from final output
+        modifiedFiles = modifiedFiles.filter(f => !lockedFilePaths.has(f.path + f.name));
+        deletedPaths  = deletedPaths.filter(fp => !lockedFilePaths.has(fp));
+      }
+      break;
     }
-
-    const editRaw = await callGroq(
-      groqKey, BACKEND_MODEL,
-      [
-        { role: "system", content: editSystem },
-        { role: "user", content: userMessage },
-      ],
-      false, EDIT_RESPONSE_TOKENS
-    );
 
     sse(res, { type: "step", step: 2, agent: "Patch Generator", status: "done" });
 
     // ── STEP 3: Quality Gate ────────────────────────────────────────────────
     sse(res, { type: "step", step: 3, agent: "Quality Gate", status: "active" });
 
-    const modifiedFiles = extractEditFiles(editRaw);
-    const deletedPaths = extractDeletedPaths(editRaw);
-    const qualityResult = validateEditFiles(modifiedFiles, projectFiles, resolvedFiles);
-
-    console.log(`[EditAgent V5] modified=${modifiedFiles.length} deleted=${deletedPaths.length} quality=${qualityResult.score}`);
+    console.log(`[EditAgent V5.5] modified=${modifiedFiles.length} deleted=${deletedPaths.length} quality=${qualityResult.score}`);
     sse(res, { type: "quality_check", ...qualityResult });
     sse(res, { type: "step", step: 3, agent: "Quality Gate", status: qualityResult.passed ? "done" : "warn" });
 
@@ -3703,6 +3790,38 @@ ${fileContext}`;
       createdFiles: modifiedFiles.filter((f) => !existingPaths.has(f.path + f.name)).map((f) => f.path + f.name),
       deletedFiles: deletedPaths,
     };
+
+    // ── V5.5: Registry Health V2 ───────────────────────────────────────────
+    const preservedComponents = lockedComponents.filter(cat => {
+      const catFiles = registryFileMap[cat] ?? [];
+      return catFiles.length > 0 && catFiles.every(fp =>
+        !diff.changedFiles.includes(fp) && !diff.deletedFiles.includes(fp)
+      );
+    });
+    const replacedComponents = lockedComponents.filter(cat => {
+      const catFiles = registryFileMap[cat] ?? [];
+      return catFiles.some(fp => diff.changedFiles.includes(fp));
+    });
+    const editSafetyScore = lockedComponents.length > 0
+      ? Math.round((preservedComponents.length / lockedComponents.length) * 100)
+      : 100;
+    sse(res, {
+      type: "registry_health_v2",
+      registryCoverage: Object.keys(registryFileMap).length,
+      lockedComponents: lockedComponents.length,
+      preservedComponents: preservedComponents.length,
+      replacedComponents: replacedComponents.length,
+      editSafetyScore,
+      preservedList: preservedComponents,
+      replacedList: replacedComponents,
+      modifiedSections: diff.changedFiles.map(fp => {
+        for (const [cat, files] of Object.entries(registryFileMap)) {
+          if (files.includes(fp)) return cat;
+        }
+        return null;
+      }).filter(Boolean),
+    });
+    console.log(`[V5.5] Registry Health V2: safety=${editSafetyScore}% preserved=${preservedComponents.length} replaced=${replacedComponents.length}`);
 
     sse(res, {
       type: "edit_identified",

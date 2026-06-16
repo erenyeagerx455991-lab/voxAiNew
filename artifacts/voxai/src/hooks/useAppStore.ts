@@ -2,13 +2,14 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from '../services/builderService';
-import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
-export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth };
+export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory };
+export type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 
 interface AppState {
   view: View;
@@ -51,6 +52,10 @@ interface AppState {
   lockedComponents: string[];
   lockComponent: (cat: string) => void;
   unlockComponent: (cat: string) => void;
+  registryFileMap: RegistryFileMap | null;
+  componentHistory: ComponentHistory | null;
+  editSafetyScore: number;
+  lastEditImpact: { affectedSections: string[]; lockedConflicts: string[] } | null;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -147,6 +152,10 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [registrySelection, setRegistrySelection] = useState<RegistrySelection | null>(null);
   const [registryHealth, setRegistryHealth] = useState<RegistryHealth | null>(null);
   const [lockedComponents, setLockedComponents] = useState<string[]>([]);
+  const [registryFileMap, setRegistryFileMap] = useState<RegistryFileMap | null>(null);
+  const [componentHistory, setComponentHistory] = useState<ComponentHistory | null>(null);
+  const [editSafetyScore, setEditSafetyScore] = useState<number>(100);
+  const [lastEditImpact, setLastEditImpact] = useState<{ affectedSections: string[]; lockedConflicts: string[] } | null>(null);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
@@ -540,6 +549,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           const registry = currentMemory?.componentRegistry ?? buildComponentRegistry(currentFiles);
           const themeTokensSnapshot = themeTokensRef.current;
           const graphSnapshot = knowledgeGraph;
+          const currentLockedComponents = lockedComponents;
+          const currentRegistryFileMap = registryFileMap;
           await mockEditResponse(
             content,
             currentFiles,
@@ -557,7 +568,12 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             registry,
             themeTokensSnapshot as Record<string, unknown> | null,
             graphSnapshot,
-            (ctx) => setGraphContext(ctx)
+            (ctx) => setGraphContext(ctx),
+            currentLockedComponents,
+            currentRegistryFileMap ?? undefined,
+            (health) => setEditSafetyScore(health.editSafetyScore),
+            (impact) => setLastEditImpact({ affectedSections: impact.affectedSections, lockedConflicts: impact.lockedConflicts }),
+            (retryAttempt, violations) => console.log(`[V5.5] Locked protection retry=${retryAttempt} violations=${violations.join(',')}`)
           );
         } else {
           await mockStreamResponse(
@@ -584,6 +600,20 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
               setLockedComponents([]);
               const cid = activeChatId;
               if (cid) saveRegistrySelection(cid, sel, []);
+              // V5.5: build registryFileMap from new selection + current files
+              const files = projectFilesRef.current;
+              if (files.length > 0) {
+                const fileMap = buildRegistryFileMap(files, sel);
+                setRegistryFileMap(fileMap);
+              }
+              // V5.5: seed component history with generated entries
+              const hist: ComponentHistory = {};
+              for (const [cat, hint] of Object.entries(sel)) {
+                const name = (hint as string).split(' ')[0] ?? cat;
+                hist[cat] = [{ componentName: name, reason: 'generated', timestamp: Date.now() }];
+              }
+              setComponentHistory(hist);
+              if (cid) saveComponentHistory(cid, hist);
             },
             (health: RegistryHealth) => setRegistryHealth(health)
           );
@@ -675,6 +705,10 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     lockedComponents,
     lockComponent,
     unlockComponent,
+    registryFileMap,
+    componentHistory,
+    editSafetyScore,
+    lastEditImpact,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
       // Auto-trigger runtime repair (max 3 attempts)

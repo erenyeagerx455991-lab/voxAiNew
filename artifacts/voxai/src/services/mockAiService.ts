@@ -1,8 +1,26 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap } from './builderService';
 
-export type { RegistrySelection, RegistryHealth };
+export type { RegistrySelection, RegistryHealth, RegistryFileMap };
 
 export type { EditDiff, BuildHealth, ProjectKnowledgeGraph };
+
+export interface RegistryHealthV2 {
+  registryCoverage: number;
+  lockedComponents: number;
+  preservedComponents: number;
+  replacedComponents: number;
+  editSafetyScore: number;
+  preservedList: string[];
+  replacedList: string[];
+  modifiedSections: string[];
+}
+
+export interface EditImpact {
+  affectedSections: string[];
+  affectedFiles: string[];
+  lockedConflicts: string[];
+  replacementMode: string | null;
+}
 
 const API_BASE = "/api";
 
@@ -134,7 +152,7 @@ export async function mockStreamResponse(
   }
 }
 
-// ── EDIT (V5 — file-level surgical editing) ───────────────────────────────────
+// ── EDIT (V5.5 — Registry-Aware Surgical Editing) ────────────────────────────
 export async function mockEditResponse(
   prompt: string,
   projectFiles: ProjectFile[],
@@ -156,7 +174,12 @@ export async function mockEditResponse(
   componentRegistry?: Record<string, string>,
   themeTokens?: Record<string, unknown> | null,
   knowledgeGraph?: ProjectKnowledgeGraph | null,
-  onGraphContext?: (ctx: { filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] }) => void
+  onGraphContext?: (ctx: { filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] }) => void,
+  lockedComponents?: string[],
+  registryFileMap?: RegistryFileMap,
+  onRegistryHealthV2?: (health: RegistryHealthV2) => void,
+  onEditImpact?: (impact: EditImpact) => void,
+  onLockedProtection?: (retryAttempt: number, violations: string[]) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -164,7 +187,7 @@ export async function mockEditResponse(
     const res = await fetch(`${API_BASE}/agents/edit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens, knowledgeGraph }),
+      body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents: lockedComponents ?? [], registryFileMap: registryFileMap ?? {} }),
     });
 
     if (!res.ok || !res.body) {
@@ -200,8 +223,20 @@ export async function mockEditResponse(
             onIntentDetected?.(json.editType, json.targetFiles ?? [], json.reason ?? "");
           }
 
+          if (json.type === "edit_impact") {
+            onEditImpact?.({ affectedSections: json.affectedSections ?? [], affectedFiles: json.affectedFiles ?? [], lockedConflicts: json.lockedConflicts ?? [], replacementMode: json.replacementMode ?? null });
+          }
+
           if (json.type === "file_targets") {
             onFileTargets?.(json.files ?? []);
+          }
+
+          if (json.type === "locked_excluded") {
+            console.log(`[V5.5] Locked excluded: ${(json.excluded ?? []).join(', ')}`);
+          }
+
+          if (json.type === "locked_protection") {
+            onLockedProtection?.(json.retryAttempt ?? 1, json.violations ?? []);
           }
 
           if (json.type === "graph_context") {
@@ -210,6 +245,19 @@ export async function mockEditResponse(
 
           if (json.type === "quality_check") {
             onQualityCheck?.(json.score ?? 100, json.passed ?? true, json.issues ?? []);
+          }
+
+          if (json.type === "registry_health_v2") {
+            onRegistryHealthV2?.({
+              registryCoverage:    json.registryCoverage    ?? 0,
+              lockedComponents:    json.lockedComponents    ?? 0,
+              preservedComponents: json.preservedComponents ?? 0,
+              replacedComponents:  json.replacedComponents  ?? 0,
+              editSafetyScore:     json.editSafetyScore     ?? 100,
+              preservedList:       json.preservedList       ?? [],
+              replacedList:        json.replacedList        ?? [],
+              modifiedSections:    json.modifiedSections    ?? [],
+            });
           }
 
           if (json.type === "edit_identified") {

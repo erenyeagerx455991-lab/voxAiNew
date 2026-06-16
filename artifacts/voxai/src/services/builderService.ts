@@ -816,6 +816,57 @@ export interface RegistryHealth {
   mappedSections: number;
 }
 
+// ── V5.5: REGISTRY FILE MAP ───────────────────────────────────────────────────
+
+export type RegistryFileMap = Record<string, string[]>;
+
+export function buildRegistryFileMap(files: ProjectFile[], registrySelection: RegistrySelection): RegistryFileMap {
+  const map: RegistryFileMap = {};
+  for (const [cat] of Object.entries(registrySelection)) {
+    const lower = cat.toLowerCase();
+    const matched = files.filter(f => {
+      if (f.lang !== 'tsx' && f.lang !== 'jsx') return false;
+      const fname = f.name.replace(/\.(tsx|jsx)$/, '').toLowerCase();
+      return fname.includes(lower) || (f.path + f.name).toLowerCase().includes(lower);
+    });
+    if (matched.length > 0) map[cat] = matched.map(f => f.path + f.name);
+  }
+  return map;
+}
+
+// ── V5.5: COMPONENT HISTORY ───────────────────────────────────────────────────
+
+export interface ComponentHistoryEntry {
+  componentName: string;
+  timestamp: number;
+  reason: 'generated' | 'replaced' | 'edit';
+}
+
+export type ComponentHistory = Record<string, ComponentHistoryEntry[]>;
+
+const HISTORY_KEY = (chatId: string) => `voxai_comp_history_${chatId}`;
+
+export function saveComponentHistory(chatId: string, history: ComponentHistory): void {
+  try { localStorage.setItem(HISTORY_KEY(chatId), JSON.stringify(history)); } catch {}
+}
+
+export function loadComponentHistory(chatId: string): ComponentHistory | null {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY(chatId));
+    return raw ? (JSON.parse(raw) as ComponentHistory) : null;
+  } catch { return null; }
+}
+
+export function addComponentHistoryEntry(
+  history: ComponentHistory,
+  cat: string,
+  componentName: string,
+  reason: ComponentHistoryEntry['reason']
+): ComponentHistory {
+  const entries = history[cat] ?? [];
+  return { ...history, [cat]: [...entries.slice(-9), { componentName, timestamp: Date.now(), reason }] };
+}
+
 // ── PHASE 2: GRAPH GENERATOR ──────────────────────────────────────────────────
 
 export function buildKnowledgeGraph(files: ProjectFile[], blueprint?: ProjectBlueprint): ProjectKnowledgeGraph {

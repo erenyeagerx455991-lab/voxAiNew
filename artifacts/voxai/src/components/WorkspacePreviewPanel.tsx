@@ -7,7 +7,8 @@ import {
   Lock, LockOpen, BookOpen, PackageCheck,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
+import type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 import { exportProjectZip } from '../services/mockAiService';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
@@ -37,6 +38,10 @@ interface Props {
   lockedComponents?: string[];
   onLockComponent?: (cat: string) => void;
   onUnlockComponent?: (cat: string) => void;
+  registryFileMap?: RegistryFileMap | null;
+  componentHistory?: ComponentHistory | null;
+  editSafetyScore?: number;
+  lastEditImpact?: { affectedSections: string[]; lockedConflicts: string[] } | null;
 }
 
 // ── V5.4: Component Registry Panel ───────────────────────────────────────────
@@ -64,17 +69,38 @@ function RegistryPanel({
   lockedComponents,
   onLock,
   onUnlock,
+  lastEditDiff,
+  registryFileMap,
+  componentHistory,
+  editSafetyScore,
 }: {
   selection: RegistrySelection;
   health?: RegistryHealth | null;
   lockedComponents: string[];
   onLock: (cat: string) => void;
   onUnlock: (cat: string) => void;
+  lastEditDiff?: EditDiff | null;
+  registryFileMap?: RegistryFileMap | null;
+  componentHistory?: ComponentHistory | null;
+  editSafetyScore?: number;
 }) {
+  const [showHistory, setShowHistory] = useState<string | null>(null);
   const entries = Object.entries(selection) as [string, string][];
   const coverageScore = health?.coverageScore ?? Math.round((entries.length / Math.max(entries.length, 6)) * 100);
   const scoreColor = coverageScore >= 80 ? 'text-emerald-400' : coverageScore >= 50 ? 'text-yellow-400' : 'text-red-400';
   const scoreBg = coverageScore >= 80 ? 'border-emerald-500/30 bg-emerald-500/5' : coverageScore >= 50 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+  const safetyScore = editSafetyScore ?? 100;
+  const safetyColor = safetyScore >= 90 ? 'text-emerald-400' : safetyScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+
+  const getEditStatus = (cat: string): 'preserved' | 'modified' | 'replaced' | null => {
+    if (!lastEditDiff || !registryFileMap) return null;
+    const catFiles = registryFileMap[cat] ?? [];
+    if (catFiles.length === 0) return null;
+    if (catFiles.some(fp => lastEditDiff.changedFiles.includes(fp))) return 'modified';
+    if (catFiles.some(fp => lastEditDiff.deletedFiles.includes(fp))) return 'replaced';
+    if (lockedComponents.includes(cat) && lastEditDiff.changedFiles.length > 0) return 'preserved';
+    return null;
+  };
 
   return (
     <div className="flex-1 overflow-auto">
@@ -84,9 +110,14 @@ function RegistryPanel({
           <div className="flex items-center gap-1.5">
             <PackageCheck size={12} className={scoreColor} />
             <span className="text-[11px] font-semibold text-gray-300">Component Registry</span>
-            <span className="text-[10px] text-gray-500">V5.4</span>
+            <span className="text-[10px] text-gray-500">V5.5</span>
           </div>
-          <span className={`text-[14px] font-bold ${scoreColor}`}>{coverageScore}%</span>
+          <div className="flex items-center gap-2">
+            {lastEditDiff && (
+              <span className={`text-[10px] font-bold ${safetyColor}`} title="Edit Safety Score">🛡 {safetyScore}%</span>
+            )}
+            <span className={`text-[14px] font-bold ${scoreColor}`}>{coverageScore}%</span>
+          </div>
         </div>
         <div className="grid grid-cols-4 gap-1 text-center">
           {[
@@ -116,32 +147,72 @@ function RegistryPanel({
             const isLocked = lockedComponents.includes(cat);
             const descStart = hint.indexOf(' — ');
             const desc = descStart > -1 ? hint.slice(descStart + 3) : '';
+            const editStatus = getEditStatus(cat);
+            const historyEntries = componentHistory?.[cat] ?? [];
+            const isShowingHistory = showHistory === cat;
             return (
-              <div
-                key={cat}
-                className={`rounded-lg border px-2.5 py-2 flex items-start gap-2 transition-colors ${
-                  isLocked ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-white/6 bg-white/3 hover:bg-white/5'
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-14 shrink-0">{cat}</span>
-                    <span className={`text-[12px] font-semibold ${brandColor}`}>{compName}</span>
-                    {isLocked && <Lock size={9} className="text-indigo-400 shrink-0" />}
-                  </div>
-                  {desc && <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-1">{desc}</p>}
-                </div>
-                <button
-                  onClick={() => isLocked ? onUnlock(cat) : onLock(cat)}
-                  title={isLocked ? `Unlock ${cat}` : `Lock ${cat} — AI won't change this component on edits`}
-                  className={`shrink-0 mt-0.5 p-1 rounded transition-colors ${
-                    isLocked
-                      ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10'
-                      : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'
+              <div key={cat} className="rounded-lg border overflow-hidden">
+                <div
+                  className={`px-2.5 py-2 flex items-start gap-2 transition-colors ${
+                    isLocked ? 'border-indigo-500/30 bg-indigo-500/5' : 'bg-white/3 hover:bg-white/5'
                   }`}
                 >
-                  {isLocked ? <Lock size={11} /> : <LockOpen size={11} />}
-                </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                      <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-14 shrink-0">{cat}</span>
+                      <span className={`text-[12px] font-semibold ${brandColor}`}>{compName}</span>
+                      {isLocked && <Lock size={9} className="text-indigo-400 shrink-0" />}
+                      {editStatus === 'preserved' && (
+                        <span className="text-[9px] font-bold px-1 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">✓ Preserved</span>
+                      )}
+                      {editStatus === 'modified' && (
+                        <span className="text-[9px] font-bold px-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">~ Modified</span>
+                      )}
+                      {editStatus === 'replaced' && (
+                        <span className="text-[9px] font-bold px-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">↺ Replaced</span>
+                      )}
+                    </div>
+                    {desc && <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-1">{desc}</p>}
+                  </div>
+                  <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
+                    {historyEntries.length > 0 && (
+                      <button
+                        onClick={() => setShowHistory(isShowingHistory ? null : cat)}
+                        title="Component history"
+                        className="p-1 rounded text-gray-600 hover:text-gray-400 hover:bg-white/5 transition-colors"
+                      >
+                        <GitBranch size={10} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => isLocked ? onUnlock(cat) : onLock(cat)}
+                      title={isLocked ? `Unlock ${cat}` : `Lock ${cat} — AI won't change this on edits`}
+                      className={`p-1 rounded transition-colors ${
+                        isLocked
+                          ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10'
+                          : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'
+                      }`}
+                    >
+                      {isLocked ? <Lock size={11} /> : <LockOpen size={11} />}
+                    </button>
+                  </div>
+                </div>
+                {/* Component History */}
+                {isShowingHistory && historyEntries.length > 0 && (
+                  <div className="border-t border-white/5 bg-white/2 px-3 py-1.5">
+                    <p className="text-[9px] text-gray-600 uppercase tracking-wider mb-1">History</p>
+                    {[...historyEntries].reverse().map((entry, i) => (
+                      <div key={i} className="flex items-center gap-1.5 py-0.5">
+                        <span className={`text-[9px] font-bold w-12 shrink-0 ${
+                          entry.reason === 'replaced' ? 'text-blue-400' :
+                          entry.reason === 'generated' ? 'text-emerald-400' : 'text-amber-400'
+                        }`}>{entry.reason}</span>
+                        <span className="text-[10px] text-gray-400 font-medium">{entry.componentName}</span>
+                        <span className="text-[9px] text-gray-600 ml-auto">{new Date(entry.timestamp).toLocaleDateString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -799,6 +870,10 @@ export default function WorkspacePreviewPanel({
           lockedComponents={lockedComponents}
           onLock={onLockComponent ?? (() => {})}
           onUnlock={onUnlockComponent ?? (() => {})}
+          lastEditDiff={lastEditDiff}
+          registryFileMap={registryFileMap}
+          componentHistory={componentHistory}
+          editSafetyScore={editSafetyScore}
         />
       )}
 

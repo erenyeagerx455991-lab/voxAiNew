@@ -13,3 +13,4 @@
 - [VoxAI V5.4 Component Registry](voxai-v54-registry.md) — DNA-driven component selection engine; registry_selection/registry_health SSE; Registry tab with lock/unlock; Industry type expanded.
 - [VoxAI V5.3 Knowledge Graph System](voxai-v53-knowledge-graph.md) — graph built after every project build; edit agent uses it to load fewer files; Graph tab in UI; persisted via localStorage.
 - [VoxAI V5.2 Runtime Reliability Layer](voxai-v52-runtime-reliability.md) — 6-phase runtime safety: static validator, React Error Boundary, postMessage capture, auto runtime-repair endpoint, safe coding rules in codegen prompt, extended BuildHealth panel.
+- [VoxAI V5.5 Registry-Aware Editing](voxai-v55-registry-editing.md) — locked components survive all edits; RegistryFileMap/ComponentHistory types already in builderService.ts at line ~821; do NOT re-add them.

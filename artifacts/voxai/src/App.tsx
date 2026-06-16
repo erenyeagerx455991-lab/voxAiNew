@@ -311,6 +311,10 @@ function AppContent() {
                   lockedComponents={store.lockedComponents}
                   onLockComponent={store.lockComponent}
                   onUnlockComponent={store.unlockComponent}
+                  registryFileMap={store.registryFileMap}
+                  componentHistory={store.componentHistory}
+                  editSafetyScore={store.editSafetyScore}
+                  lastEditImpact={store.lastEditImpact}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}
