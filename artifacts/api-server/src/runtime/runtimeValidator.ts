@@ -154,6 +154,66 @@ export function extractImports(content: string): string[] {
   return [...new Set(imports)];
 }
 
+// ── V6.1: Repair Quality Gate ─────────────────────────────────────────────────
+
+export function computeRepairQuality(
+  repairedContent: string,
+  originalContent: string,
+  category: string
+): number {
+  if (!repairedContent || repairedContent.trim().length < 50) return 0;
+  if (repairedContent.trim() === originalContent.trim()) return 0;
+
+  let score = 100;
+
+  // Penalise leftover markdown fences
+  if (repairedContent.includes('```')) score -= 30;
+
+  // Must contain some code structure
+  const hasCode =
+    repairedContent.includes('function') ||
+    repairedContent.includes('const') ||
+    repairedContent.includes('=>') ||
+    repairedContent.includes('class ');
+  if (!hasCode) score -= 35;
+
+  // Must have a return statement for components
+  if (!repairedContent.includes('return') && (repairedContent.includes('function') || repairedContent.includes('=>'))) {
+    score -= 20;
+  }
+
+  // Category-specific checks
+  if (category === 'jsx') {
+    const openTags  = (repairedContent.match(/<[A-Z][a-zA-Z]*/g) ?? []).length;
+    const closeTags = (repairedContent.match(/<\/[A-Z][a-zA-Z]*/g) ?? []).length;
+    const selfClose = (repairedContent.match(/\/>/g) ?? []).length;
+    if (Math.abs(openTags - closeTags - selfClose) > 3) score -= 20;
+  }
+
+  if (category === 'import') {
+    if (!repairedContent.includes('import ') && originalContent.includes('import ')) {
+      score -= 25;
+    }
+  }
+
+  if (category === 'hook') {
+    // Penalise if hooks appear inside conditional blocks (rough check)
+    if (/if\s*\(.*\)\s*\{[^}]*use[A-Z]/.test(repairedContent)) score -= 20;
+  }
+
+  // Size sanity: repaired should not be <30% or >5× original
+  const ratio = repairedContent.length / Math.max(1, originalContent.length);
+  if (ratio < 0.3) score -= 25;
+  if (ratio > 5)   score -= 10;
+
+  // Reward improvement: fewer unsafe patterns than original
+  const unsafeBefore = (originalContent.match(/undefined\.|!\./g) ?? []).length;
+  const unsafeAfter  = (repairedContent.match(/undefined\.|!\./g) ?? []).length;
+  if (unsafeAfter < unsafeBefore) score += Math.min(10, (unsafeBefore - unsafeAfter) * 3);
+
+  return Math.max(0, Math.min(100, score));
+}
+
 export function detectMissingImports(
   files: Array<{ name: string; content: string; lang: string }>,
   resolvedPackages: string[]

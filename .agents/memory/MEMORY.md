@@ -15,3 +15,4 @@
 - [VoxAI V5.2 Runtime Reliability Layer](voxai-v52-runtime-reliability.md) — 6-phase runtime safety: static validator, React Error Boundary, postMessage capture, auto runtime-repair endpoint, safe coding rules in codegen prompt, extended BuildHealth panel.
 - [VoxAI V5.5 Registry-Aware Editing](voxai-v55-registry-editing.md) — locked components survive all edits; RegistryFileMap/ComponentHistory types already in builderService.ts at line ~821; do NOT re-add them.
 - [VoxAI V6.0 Runtime Engine](voxai-v60-runtime-engine.md) — static-only runtime engine (no subprocess); dep resolver, validator, health score; step 9 agent; Runtime tab with SSE; `pv` variable in scope for agents.ts runtime agent.
+- [VoxAI V6.1 Self-Healing Engine](voxai-v61-self-healing-engine.md) — 9-category error classifier, KG file targeting, self-healing loop (3 attempts), quality gate (≥80), 5-dim health, repair history/metrics, 9 SSE events; BUILD_STEP_LABELS now has 12 entries.

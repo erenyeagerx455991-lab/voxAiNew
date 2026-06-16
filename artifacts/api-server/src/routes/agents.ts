@@ -10,8 +10,9 @@ import {
   GROQ_TOKEN_BUDGET,
 } from "../contextManager";
 import { resolveDependencies } from "../runtime/dependencyResolver.js";
-import { validateFiles, computeHealthScore, detectMissingImports, parseStaticValidatorScore } from "../runtime/runtimeValidator.js";
+import { validateFiles, computeHealthScore, detectMissingImports, parseStaticValidatorScore, computeRepairQuality } from "../runtime/runtimeValidator.js";
 import * as runtimeManager from "../runtime/runtimeManager.js";
+import { classifyRuntimeError, REPAIR_PROMPTS } from "../runtime/repairStrategies.js";
 
 const router: Router = Router();
 
@@ -3996,18 +3997,65 @@ ${fileContext}`;
   }
 });
 
-// ── V5.2: RUNTIME REPAIR ENDPOINT ────────────────────────────────────────────
-// Called by the frontend when the iframe posts a runtime_error message.
-// Attempts surgical repair of the failing component file (max 3 attempts).
+// ── V6.1: RUNTIME REPAIR & SELF-HEALING ENGINE ───────────────────────────────
+// Full self-healing loop: classify → target via KG → patch → quality gate → rebuild
+// Max 3 total repair attempts. Registry-aware: locked components are protected.
+
+function resolveAffectedFilesFromGraph(
+  error: { file: string; message: string },
+  files: ProjectFileSSE[],
+  knowledgeGraph?: any
+): string[] {
+  const result: string[] = [];
+
+  // Always include the directly failing file
+  const directFile = files.find(f =>
+    f.name === error.file ||
+    (f.path + f.name).includes(error.file) ||
+    (error.file && error.file.includes(f.name))
+  );
+  if (directFile) result.push(directFile.path + directFile.name);
+
+  // Use knowledge graph to find dependent files (70-90% token reduction)
+  if (knowledgeGraph && directFile) {
+    const baseName = directFile.name.replace(/\.(tsx?|jsx?)$/, '');
+    // Find components that use the failing file
+    const usedBy = (knowledgeGraph.components ?? [])
+      .filter((c: any) => c.name === baseName || (c.usedBy ?? []).includes(baseName))
+      .flatMap((c: any) => [c.file, ...(c.usedBy ?? [])]);
+    for (const fp of usedBy) {
+      const f = files.find(fi => fi.path + fi.name === fp || fi.name === fp);
+      if (f && !result.includes(f.path + f.name)) result.push(f.path + f.name);
+    }
+  }
+
+  // Fallback: include App.tsx if nothing else found
+  if (result.length === 0) {
+    const appFile = files.find(f => f.name === 'App.tsx');
+    if (appFile) result.push(appFile.path + appFile.name);
+  }
+
+  return result;
+}
 
 router.post("/agents/runtime-repair", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
 
-  const { files, error, repairAttempt } = req.body as {
+  const {
+    files,
+    error,
+    repairAttempt = 0,
+    knowledgeGraph,
+    lockedComponents = [],
+    chatId,
+  } = req.body as {
     files: ProjectFileSSE[];
     error: { file: string; message: string; stack?: string; component?: string };
     repairAttempt: number;
+    knowledgeGraph?: any;
+    lockedComponents?: string[];
+    chatId?: string;
   };
 
   if (!files || !error) return res.status(400).json({ error: "files and error required" });
@@ -4020,84 +4068,238 @@ router.post("/agents/runtime-repair", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
+  const maxLoopAttempts = 3 - repairAttempt;
+  const startTime = Date.now();
+
   try {
-    // Find the failing file (match by name or partial path)
-    const failingFile = files.find(f =>
-      f.name === error.file ||
-      (f.path + f.name).includes(error.file) ||
-      error.file.includes(f.name)
-    ) ?? files.find(f => f.name === 'App.tsx');
+    // ── Phase 1: Start ─────────────────────────────────────────────────────
+    sse(res, {
+      type: "repair_start",
+      attempt: repairAttempt + 1,
+      maxAttempts: 3,
+      errorMessage: error.message?.slice(0, 200) ?? "Unknown error",
+    });
 
-    if (!failingFile) {
-      sse(res, { type: "runtime_repair_done", files, repaired: false, message: `File "${error.file}" not found` });
-      res.end();
-      return;
+    // ── Phase 2: Error Classification ──────────────────────────────────────
+    const classified = classifyRuntimeError(error);
+    sse(res, {
+      type: "repair_classify",
+      category: classified.category,
+      confidence: classified.confidence,
+      hint: classified.hint,
+    });
+    console.log(`[RuntimeRepair V6.1] category="${classified.category}" confidence=${classified.confidence}%`);
+
+    // ── Phase 3: KG-Targeted File Resolution ───────────────────────────────
+    const allAffected = resolveAffectedFilesFromGraph(error, files, knowledgeGraph);
+
+    // Build locked file path set (registry-aware protection)
+    const lockedFilePaths = new Set<string>();
+    for (const cat of lockedComponents) {
+      const catLower = cat.toLowerCase();
+      for (const f of files) {
+        const fp = f.path + f.name;
+        if (f.name.toLowerCase().includes(catLower) || fp.toLowerCase().includes(catLower)) {
+          lockedFilePaths.add(fp);
+        }
+      }
     }
 
-    sse(res, { type: "step", step: 0, agent: "Runtime Repair Agent", status: "active" });
+    const safeAffected = allAffected.filter(fp => !lockedFilePaths.has(fp));
+    sse(res, {
+      type: "repair_targets",
+      affectedFiles: safeAffected,
+      totalResolved: allAffected.length,
+      skippedLocked: allAffected.length - safeAffected.length,
+    });
+    console.log(`[RuntimeRepair V6.1] targets=${safeAffected.length} locked_skipped=${lockedFilePaths.size}`);
 
-    // Dependency context: up to 2 other component files (truncated) for cross-file awareness
-    const depContext = files
-      .filter(f => (f.lang === 'tsx' || f.lang === 'ts') && f !== failingFile)
-      .slice(0, 2)
-      .map(f => `// ${f.path}${f.name} (context)\n${f.content.slice(0, 400)}`)
-      .join('\n\n');
+    // ── Phase 4-7: Self-Healing Loop ───────────────────────────────────────
+    let currentFiles = [...files];
+    let repairedSuccessfully = false;
+    let lastRepairedFile = '';
+    let lastQualityScore = 0;
+    const repairStrategy = REPAIR_PROMPTS[classified.category];
 
-    const RUNTIME_REPAIR_SYSTEM = `You are NexoGen Runtime Repair Agent. A React component crashed at runtime. Your ONLY job is to fix the exact runtime error reported.
+    for (let loop = 0; loop < maxLoopAttempts && !repairedSuccessfully; loop++) {
+      const attemptNumber = repairAttempt + loop + 1;
 
-SAFE CODING RULES to apply in the fix:
-- Replace arr.map(...) with Array.isArray(arr) ? arr.map(...) : []
-- Replace obj.prop.deep with obj?.prop?.deep
-- Replace useState() with useState([]) for arrays, useState({}) for objects, useState(null) for nullable values
-- Add default values for props: function Comp({ items = [], title = '' })
+      sse(res, {
+        type: "repair_generate",
+        attempt: attemptNumber,
+        category: classified.category,
+        strategy: classified.hint ?? '',
+      });
+
+      // Locate primary failing file in current iteration
+      const failingFile = currentFiles.find(f =>
+        f.name === error.file ||
+        (f.path + f.name).includes(error.file) ||
+        (error.file && error.file.includes(f.name))
+      ) ?? currentFiles.find(f => f.name === 'App.tsx');
+
+      if (!failingFile) {
+        sse(res, { type: "repair_failed", reason: `File "${error.file}" not found`, attempt: attemptNumber });
+        break;
+      }
+
+      if (lockedFilePaths.has(failingFile.path + failingFile.name)) {
+        sse(res, { type: "repair_failed", reason: `"${failingFile.name}" is locked`, attempt: attemptNumber });
+        break;
+      }
+
+      // Build minimal context from affected files only (token reduction)
+      const depContext = currentFiles
+        .filter(f =>
+          (f.lang === 'tsx' || f.lang === 'ts') &&
+          f !== failingFile &&
+          (safeAffected.includes(f.path + f.name) || f.name === 'App.tsx')
+        )
+        .slice(0, 3)
+        .map(f => `// ${f.path}${f.name}\n${f.content.slice(0, 500)}`)
+        .join('\n\n');
+
+      const repairSystem = `You are NexoGen Runtime Repair Agent V6.1 — precision surgical code repair.
+Error Category: ${classified.category.toUpperCase()} (attempt ${loop + 1}/${maxLoopAttempts})
+
+REPAIR STRATEGY:
+${repairStrategy}
+
+MANDATORY SAFE CODING RULES:
+- Replace arr.map(…) with (Array.isArray(arr) ? arr : []).map(…)
+- Replace obj.prop with obj?.prop for all nullable access
+- Replace useState() with typed defaults: useState([]), useState({}), useState(null)
+- Add prop defaults: function Comp({ items = [], title = '' })
 - NEVER call hooks conditionally or inside loops
-- Wrap state updates in useEffect if they depend on props
 
-Return ONLY the complete corrected file content. No markdown fences, no explanation, no truncation.`;
+Return ONLY the complete corrected file. No markdown, no explanation, no truncation.`;
 
-    const repairPrompt = `Runtime error in component "${failingFile.name}":
-Error: ${error.message}
-${error.stack ? `\nStack trace:\n${error.stack.slice(0, 600)}` : ''}
-${error.component ? `\nComponent tree:\n${error.component.slice(0, 300)}` : ''}
+      const repairPrompt = `Error (${classified.category}): "${error.message}"
+${error.stack ? `Stack: ${error.stack.slice(0, 500)}` : ''}
+${error.component ? `Component: ${error.component.slice(0, 200)}` : ''}
 
-Complete failing file (${failingFile.name}):
+FILE TO REPAIR (${failingFile.name}):
 ${failingFile.content}
+${depContext ? `\nCONTEXT FILES:\n${depContext}` : ''}
 
-${depContext ? `\nContext from other files:\n${depContext}` : ''}
+Return the complete repaired file:`;
 
-Fix the runtime error and return the complete corrected file:`;
+      const repairedRaw = await callGroq(
+        groqKey, REPAIR_MODEL,
+        [{ role: "system", content: repairSystem }, { role: "user", content: repairPrompt }],
+        false, 3000
+      );
 
-    const repaired = await callGroq(
-      groqKey, REPAIR_MODEL,
-      [
-        { role: "system", content: RUNTIME_REPAIR_SYSTEM },
-        { role: "user", content: repairPrompt },
-      ],
-      false, 2500
-    );
+      sse(res, { type: "repair_apply", attempt: attemptNumber, file: failingFile.name });
 
-    sse(res, { type: "step", step: 1, agent: "Runtime Repair Agent", status: "done" });
+      if (repairedRaw && repairedRaw.trim().length > 80) {
+        const cleaned = repairedRaw
+          .replace(/^```[a-z]*\r?\n?/im, '')
+          .replace(/\r?\n?```$/m, '')
+          .trim();
 
-    if (repaired && repaired.trim().length > 80) {
-      const cleaned = repaired
-        .replace(/^```[a-z]*\r?\n?/im, '')
-        .replace(/\r?\n?```$/m, '')
-        .trim();
+        // Update files for this iteration
+        currentFiles = currentFiles.map(f => f === failingFile ? { ...f, content: cleaned } : f);
+        lastRepairedFile = failingFile.name;
 
-      const repairedFiles = files.map(f => f === failingFile ? { ...f, content: cleaned } : f);
+        // ── Phase 7: Repair Quality Gate ──────────────────────────────────
+        const qualityScore = computeRepairQuality(cleaned, failingFile.content, classified.category);
+        lastQualityScore = qualityScore;
 
-      console.log(`[RuntimeRepair] Attempt ${repairAttempt + 1} — repaired ${failingFile.name} (${cleaned.length} chars)`);
-      sse(res, { type: "runtime_repair_done", files: repairedFiles, repaired: true, repairedFile: failingFile.name });
-    } else {
-      sse(res, { type: "runtime_repair_done", files, repaired: false, message: "Repair agent returned insufficient output" });
+        sse(res, {
+          type: "repair_validate",
+          score: qualityScore,
+          passed: qualityScore >= 80,
+          attempt: attemptNumber,
+          file: failingFile.name,
+          checks: {
+            hasCode: cleaned.includes('function') || cleaned.includes('const') || cleaned.includes('=>'),
+            noMarkdown: !cleaned.includes('```'),
+            hasReturn: cleaned.includes('return'),
+            sizeRatio: Math.round((cleaned.length / Math.max(1, failingFile.content.length)) * 100),
+          },
+        });
+        console.log(`[RuntimeRepair V6.1] attempt=${attemptNumber} quality=${qualityScore} file=${failingFile.name}`);
+
+        if (qualityScore >= 80) {
+          repairedSuccessfully = true;
+          sse(res, {
+            type: "repair_success",
+            attempt: attemptNumber,
+            file: failingFile.name,
+            score: qualityScore,
+            duration: Date.now() - startTime,
+            category: classified.category,
+          });
+        } else {
+          sse(res, {
+            type: "repair_failed",
+            reason: `Quality score ${qualityScore} below 80 threshold`,
+            attempt: attemptNumber,
+          });
+        }
+      } else {
+        sse(res, { type: "repair_failed", reason: "Repair agent returned insufficient output", attempt: attemptNumber });
+      }
     }
+
+    // ── Phase 8: Store Repair Record ───────────────────────────────────────
+    if (chatId) {
+      runtimeManager.addRepairRecord(chatId, {
+        id: `repair-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        timestamp: startTime,
+        errorType: classified.category,
+        errorMessage: (error.message ?? '').slice(0, 200),
+        filesChanged: repairedSuccessfully ? [lastRepairedFile] : [],
+        attempt: repairAttempt + 1,
+        success: repairedSuccessfully,
+        qualityScore: lastQualityScore,
+        duration: Date.now() - startTime,
+      });
+    }
+
+    // ── Phase 9: Complete ──────────────────────────────────────────────────
+    const repairMetrics = chatId ? runtimeManager.getRepairMetrics(chatId) : null;
+
+    sse(res, {
+      type: "repair_complete",
+      repaired: repairedSuccessfully,
+      totalAttempts: repairAttempt + 1,
+      category: classified.category,
+      file: lastRepairedFile,
+      qualityScore: lastQualityScore,
+      duration: Date.now() - startTime,
+      metrics: repairMetrics,
+    });
+
+    // Backward-compat event consumed by existing frontend
+    sse(res, {
+      type: "runtime_repair_done",
+      files: currentFiles,
+      repaired: repairedSuccessfully,
+      repairedFile: lastRepairedFile,
+      category: classified.category,
+      qualityScore: lastQualityScore,
+      message: repairedSuccessfully
+        ? `Repaired ${lastRepairedFile} (quality: ${lastQualityScore})`
+        : "Repair unsuccessful after all attempts",
+    });
 
     res.end();
   } catch (e: any) {
-    console.error("[RuntimeRepair] Error:", e);
+    console.error("[RuntimeRepair V6.1] Error:", e);
     sse(res, { type: "error", error: e.message ?? "Runtime repair failed" });
     res.end();
   }
+});
+
+// GET /agents/repair-history/:chatId — fetch repair history + metrics for a chat
+router.get("/agents/repair-history/:chatId", (req, res) => {
+  const { chatId } = req.params;
+  const history = runtimeManager.getRepairHistory(chatId);
+  const metrics = runtimeManager.getRepairMetrics(chatId);
+  const healthV2 = runtimeManager.computeHealthV2(runtimeManager.getState(chatId));
+  res.json({ history, metrics, healthV2 });
 });
 
 // ── NexoGen V5.6: Template Marketplace API ────────────────────────────────────

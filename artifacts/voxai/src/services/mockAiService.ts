@@ -366,22 +366,53 @@ export async function mockEditResponse(
   }
 }
 
-// ── V5.2: RUNTIME REPAIR ─────────────────────────────────────────────────────
-// Called when the iframe reports a runtime_error via postMessage.
-// Streams SSE from /agents/runtime-repair and returns the repaired files.
+// ── V6.1: RUNTIME REPAIR (Self-Healing Engine) ────────────────────────────────
+// Streams the full V6.1 repair pipeline: classify → target → patch → quality gate
+// Backward-compatible: onRepaired/onFailed still work; new callbacks for rich UI.
+
+export interface RepairStepEvent {
+  type:
+    | 'repair_start' | 'repair_classify' | 'repair_targets'
+    | 'repair_generate' | 'repair_apply' | 'repair_validate'
+    | 'repair_success' | 'repair_failed' | 'repair_complete';
+  attempt?: number;
+  maxAttempts?: number;
+  category?: string;
+  confidence?: number;
+  hint?: string;
+  affectedFiles?: string[];
+  skippedLocked?: number;
+  file?: string;
+  score?: number;
+  passed?: boolean;
+  reason?: string;
+  duration?: number;
+  metrics?: unknown;
+}
 
 export async function runtimeRepair(
   files: ProjectFile[],
   error: { file: string; message: string; stack?: string; component?: string },
   repairAttempt: number,
-  onRepaired: (repairedFiles: ProjectFile[], repairedFile: string) => void,
-  onFailed: (reason: string) => void
+  onRepaired: (repairedFiles: ProjectFile[], repairedFile: string, category?: string, qualityScore?: number) => void,
+  onFailed: (reason: string) => void,
+  knowledgeGraph?: unknown,
+  lockedComponents?: string[],
+  chatId?: string,
+  onRepairStep?: (event: RepairStepEvent) => void
 ): Promise<void> {
   try {
     const res = await fetch(`${API_BASE}/agents/runtime-repair`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ files, error, repairAttempt }),
+      body: JSON.stringify({
+        files,
+        error,
+        repairAttempt,
+        knowledgeGraph: knowledgeGraph ?? null,
+        lockedComponents: lockedComponents ?? [],
+        chatId: chatId ?? null,
+      }),
     });
 
     if (!res.ok || !res.body) {
@@ -391,23 +422,41 @@ export async function runtimeRepair(
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const text = decoder.decode(value);
-      for (const line of text.split('\n')) {
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data:')) continue;
         try {
           const json = JSON.parse(trimmed.slice(5).trim());
+
+          // V6.1 rich SSE events — forward to caller
+          if (
+            json.type === 'repair_start' || json.type === 'repair_classify' ||
+            json.type === 'repair_targets' || json.type === 'repair_generate' ||
+            json.type === 'repair_apply' || json.type === 'repair_validate' ||
+            json.type === 'repair_success' || json.type === 'repair_failed' ||
+            json.type === 'repair_complete'
+          ) {
+            onRepairStep?.(json as RepairStepEvent);
+          }
+
+          // Backward-compat: legacy done event
           if (json.type === 'runtime_repair_done') {
             if (json.repaired && Array.isArray(json.files)) {
-              onRepaired(json.files as ProjectFile[], json.repairedFile ?? '');
+              onRepaired(json.files as ProjectFile[], json.repairedFile ?? '', json.category, json.qualityScore);
             } else {
               onFailed(json.message ?? 'Repair returned no changes');
             }
           }
+
           if (json.type === 'error') {
             onFailed(json.error ?? 'Runtime repair failed');
           }

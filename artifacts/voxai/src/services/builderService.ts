@@ -880,7 +880,95 @@ export interface RuntimeState {
   filesValidated?: number;
   filesTotal?: number;
   missingImports?: Array<{ file: string; missingPackage: string }>;
+  repairedFiles?: number;
   chatId?: string;
+}
+
+// ── V6.1: SELF-HEALING ENGINE TYPES ──────────────────────────────────────────
+
+export interface RuntimeRepairRecord {
+  id: string;
+  timestamp: number;
+  errorType: string;
+  errorMessage: string;
+  filesChanged: string[];
+  attempt: number;
+  success: boolean;
+  qualityScore: number;
+  duration: number;
+}
+
+export interface RepairMetrics {
+  totalRepairs: number;
+  successfulRepairs: number;
+  failedRepairs: number;
+  averageAttempts: number;
+  successRate: number;
+  mostCommonErrorType: string;
+  averageQualityScore: number;
+}
+
+export interface RuntimeHealthV2 {
+  overall: number;
+  compile: number;
+  runtime: number;
+  repair: number;
+  dependency: number;
+  route: number;
+}
+
+export interface SelfHealingState {
+  active: boolean;
+  currentAttempt: number;
+  maxAttempts: number;
+  category: string;
+  targetFile: string;
+  phase: 'classify' | 'target' | 'generate' | 'validate' | 'done' | 'idle';
+  lastQualityScore: number;
+}
+
+// ── V6.1: Repair history persistence ─────────────────────────────────────────
+
+const REPAIR_HISTORY_KEY = (chatId: string) => `voxai_repair_history_${chatId}`;
+
+export function saveRepairHistory(chatId: string, history: RuntimeRepairRecord[]): void {
+  try { localStorage.setItem(REPAIR_HISTORY_KEY(chatId), JSON.stringify(history.slice(-50))); } catch {}
+}
+
+export function loadRepairHistory(chatId: string): RuntimeRepairRecord[] {
+  try {
+    const raw = localStorage.getItem(REPAIR_HISTORY_KEY(chatId));
+    return raw ? (JSON.parse(raw) as RuntimeRepairRecord[]) : [];
+  } catch { return []; }
+}
+
+export function clearRepairHistory(chatId: string): void {
+  try { localStorage.removeItem(REPAIR_HISTORY_KEY(chatId)); } catch {}
+}
+
+export function computeRepairMetrics(history: RuntimeRepairRecord[]): RepairMetrics {
+  if (history.length === 0) {
+    return { totalRepairs: 0, successfulRepairs: 0, failedRepairs: 0, averageAttempts: 0, successRate: 0, mostCommonErrorType: 'none', averageQualityScore: 0 };
+  }
+  const successful = history.filter(r => r.success);
+  const typeCounts: Record<string, number> = {};
+  let totalAttempts = 0;
+  let totalQuality = 0;
+  for (const r of history) {
+    typeCounts[r.errorType] = (typeCounts[r.errorType] ?? 0) + 1;
+    totalAttempts += r.attempt;
+    totalQuality += r.qualityScore;
+  }
+  const mostCommonErrorType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'none';
+  return {
+    totalRepairs: history.length,
+    successfulRepairs: successful.length,
+    failedRepairs: history.length - successful.length,
+    averageAttempts: Math.round((totalAttempts / history.length) * 10) / 10,
+    successRate: Math.round((successful.length / history.length) * 100),
+    mostCommonErrorType,
+    averageQualityScore: Math.round(totalQuality / history.length),
+  };
 }
 
 export interface ComponentHistoryEntry {

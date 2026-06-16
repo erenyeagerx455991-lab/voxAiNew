@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState } from '../services/builderService';
-import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry, saveRepairHistory, loadRepairHistory, computeRepairMetrics, clearRepairHistory } from '../services/builderService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
 import { TEMPLATE_LIBRARY, saveSelectedTemplate, loadSelectedTemplate, saveTemplateHistory, loadTemplateHistory, clearTemplateData } from '../services/templateMarketplace';
 import type { View, Chat, Message } from '../lib/types';
@@ -14,6 +14,7 @@ export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKn
 export type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 export type { ProjectTemplate };
 export type { RuntimeState };
+export type { RuntimeRepairRecord, RepairMetrics, SelfHealingState };
 
 interface AppState {
   view: View;
@@ -65,6 +66,9 @@ interface AppState {
   autoMatchedTemplate: { templateId: string; templateName: string; confidence: number } | null;
   templateHistory: ProjectTemplate[];
   runtimeState: RuntimeState | null;
+  repairHistory: RuntimeRepairRecord[];
+  repairMetrics: RepairMetrics | null;
+  selfHealingState: SelfHealingState | null;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -170,6 +174,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [templateHistory, setTemplateHistory] = useState<ProjectTemplate[]>([]);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
   const [runtimeState, setRuntimeState] = useState<RuntimeState | null>(null);
+  const [repairHistory, setRepairHistory] = useState<RuntimeRepairRecord[]>([]);
+  const [repairMetrics, setRepairMetrics] = useState<RepairMetrics | null>(null);
+  const [selfHealingState, setSelfHealingState] = useState<SelfHealingState | null>(null);
 
   const setSelectedTemplate = useCallback((t: ProjectTemplate | null) => {
     setSelectedTemplateState(t);
@@ -751,26 +758,66 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     autoMatchedTemplate,
     templateHistory,
     runtimeState,
+    repairHistory,
+    repairMetrics,
+    selfHealingState,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
-      // Auto-trigger runtime repair (max 3 attempts)
+      // Auto-trigger V6.1 self-healing loop (max 3 attempts)
       setRuntimeRepairAttempt(prev => {
         const attempt = prev;
         if (attempt >= 3) return prev;
         const currentFiles = projectFilesRef.current;
         if (currentFiles.length === 0) return prev;
+        const chatId = activeChatId;
+        const kgSnapshot = knowledgeGraph;
+        const lockedSnapshot = lockedComponents;
+
+        setSelfHealingState({ active: true, currentAttempt: attempt + 1, maxAttempts: 3, category: 'unknown', targetFile: err.file, phase: 'classify', lastQualityScore: 0 });
+
         runtimeRepair(
           currentFiles, err, attempt,
-          (repairedFiles, repairedFile) => {
-            console.log(`[RuntimeRepair] Applied repair to ${repairedFile}`);
+          (repairedFiles, repairedFile, category, qualityScore) => {
+            console.log(`[RuntimeRepair V6.1] Repaired ${repairedFile} (${category}, quality=${qualityScore})`);
             setProjectFiles(repairedFiles);
             projectFilesRef.current = repairedFiles;
             try {
-              const chatId = activeChatId;
               if (chatId) localStorage.setItem(`voxai_files_${chatId}`, JSON.stringify(repairedFiles));
             } catch {}
+            // Update repair history from localStorage
+            if (chatId) {
+              const hist = loadRepairHistory(chatId);
+              setRepairHistory(hist);
+              setRepairMetrics(computeRepairMetrics(hist));
+            }
+            setSelfHealingState(prev => prev ? { ...prev, active: false, phase: 'done' } : null);
           },
-          (reason) => console.warn(`[RuntimeRepair] Attempt ${attempt + 1} failed: ${reason}`)
+          (reason) => {
+            console.warn(`[RuntimeRepair V6.1] Attempt ${attempt + 1} failed: ${reason}`);
+            setSelfHealingState(prev => prev ? { ...prev, active: false, phase: 'done' } : null);
+          },
+          kgSnapshot,
+          lockedSnapshot,
+          chatId ?? undefined,
+          (event) => {
+            setSelfHealingState(prev => {
+              if (!prev) return prev;
+              const phase =
+                event.type === 'repair_classify'  ? 'classify' :
+                event.type === 'repair_targets'   ? 'target' :
+                event.type === 'repair_generate'  ? 'generate' :
+                event.type === 'repair_validate'  ? 'validate' :
+                event.type === 'repair_complete'  ? 'done' : prev.phase;
+              return {
+                ...prev,
+                phase,
+                category: event.category ?? prev.category,
+                targetFile: event.file ?? prev.targetFile,
+                lastQualityScore: event.score ?? prev.lastQualityScore,
+                currentAttempt: event.attempt ?? prev.currentAttempt,
+              };
+            });
+          }
         );
         return prev + 1;
       });

@@ -8,7 +8,7 @@ import {
   XCircle, Circle, PackagePlus, TerminalSquare,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState } from '../services/builderService';
 import type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 import { exportProjectZip } from '../services/mockAiService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
@@ -50,6 +50,9 @@ interface Props {
   onClearTemplate?: () => void;
   autoMatchedTemplate?: { templateId: string; templateName: string; confidence: number } | null;
   runtimeState?: RuntimeState | null;
+  repairHistory?: RuntimeRepairRecord[];
+  repairMetrics?: RepairMetrics | null;
+  selfHealingState?: SelfHealingState | null;
 }
 
 // ── V5.4: Component Registry Panel ───────────────────────────────────────────
@@ -478,7 +481,7 @@ function BuildHealthPanel({ health }: { health: BuildHealth }) {
   );
 }
 
-// ── V6.0: Runtime Engine Panel ───────────────────────────────────────────────
+// ── V6.1: Runtime Engine Panel (Self-Healing) ────────────────────────────────
 
 function RuntimeStatusBadge({ status }: { status: RuntimeState['status'] }) {
   const MAP: Record<RuntimeState['status'], { label: string; color: string; dot: string }> = {
@@ -498,20 +501,203 @@ function RuntimeStatusBadge({ status }: { status: RuntimeState['status'] }) {
   );
 }
 
-function RuntimeHealthBar({ score }: { score: number }) {
-  const color = score >= 90 ? 'bg-emerald-500' : score >= 70 ? 'bg-yellow-500' : 'bg-red-500';
-  const textColor = score >= 90 ? 'text-emerald-400' : score >= 70 ? 'text-yellow-400' : 'text-red-400';
+function DimHealthBar({ label, score, icon }: { label: string; score: number; icon: React.ReactNode }) {
+  const bar  = score >= 90 ? 'bg-emerald-500' : score >= 70 ? 'bg-yellow-500' : 'bg-red-500';
+  const text = score >= 90 ? 'text-emerald-400' : score >= 70 ? 'text-yellow-400' : 'text-red-400';
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${score}%` }} />
+    <div className="flex items-center gap-2 py-0.5">
+      <span className="text-gray-600 w-3 shrink-0">{icon}</span>
+      <span className="text-[10px] text-gray-500 w-16 shrink-0">{label}</span>
+      <div className="flex-1 h-1 bg-white/6 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${bar}`} style={{ width: `${score}%` }} />
       </div>
-      <span className={`text-[12px] font-bold ${textColor} w-8 text-right`}>{score}%</span>
+      <span className={`text-[11px] font-bold ${text} w-7 text-right`}>{score}</span>
     </div>
   );
 }
 
-function RuntimeEnginePanel({ state }: { state: RuntimeState }) {
+const REPAIR_PHASE_LABELS: Record<string, string> = {
+  classify: 'Classifying error',
+  target:   'Targeting files',
+  generate: 'Generating patch',
+  validate: 'Quality gate',
+  done:     'Repair complete',
+  idle:     'Idle',
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  import: 'bg-blue-500/15 text-blue-300 border-blue-500/25',
+  jsx: 'bg-orange-500/15 text-orange-300 border-orange-500/25',
+  typescript: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/25',
+  hook: 'bg-pink-500/15 text-pink-300 border-pink-500/25',
+  route: 'bg-violet-500/15 text-violet-300 border-violet-500/25',
+  api: 'bg-teal-500/15 text-teal-300 border-teal-500/25',
+  dependency: 'bg-amber-500/15 text-amber-300 border-amber-500/25',
+  runtime: 'bg-red-500/15 text-red-300 border-red-500/25',
+  unknown: 'bg-gray-500/15 text-gray-400 border-gray-500/25',
+};
+
+function CategoryBadge({ category }: { category: string }) {
+  const cls = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.unknown;
+  return (
+    <span className={`text-[9px] font-bold border px-1 py-0.5 rounded ${cls}`}>
+      {category.toUpperCase()}
+    </span>
+  );
+}
+
+function SelfHealingPanel({ healing }: { healing: SelfHealingState }) {
+  const isActive = healing.active;
+  const phaseLabel = REPAIR_PHASE_LABELS[healing.phase] ?? healing.phase;
+  const phases = ['classify', 'target', 'generate', 'validate', 'done'] as const;
+  const currentIdx = phases.indexOf(healing.phase as typeof phases[number]);
+  return (
+    <div className={`rounded-xl border px-3 py-2.5 ${isActive ? 'border-purple-500/30 bg-purple-500/5' : 'border-emerald-500/20 bg-emerald-500/4'}`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {isActive
+            ? <Wrench size={12} className="text-purple-400 animate-spin" style={{ animationDuration: '2s' }} />
+            : <CheckCircle2 size={12} className="text-emerald-400" />}
+          <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">
+            {isActive ? 'Self-Healing Active' : 'Last Repair'}
+          </span>
+        </div>
+        {isActive && (
+          <span className="text-[10px] text-purple-300 font-mono">
+            Attempt {healing.currentAttempt}/{healing.maxAttempts}
+          </span>
+        )}
+      </div>
+
+      {/* Phase steps */}
+      <div className="flex items-center gap-0.5 mb-2">
+        {phases.map((p, i) => {
+          const done = i < currentIdx || healing.phase === 'done';
+          const active = i === currentIdx && isActive;
+          return (
+            <div key={p} className="flex items-center gap-0.5 flex-1">
+              <div className={`flex-1 h-1 rounded-full transition-all duration-500 ${
+                done ? 'bg-purple-500' : active ? 'bg-purple-500/50 animate-pulse' : 'bg-white/8'
+              }`} />
+              {i < phases.length - 1 && <div className="w-0.5 h-1.5 bg-transparent" />}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`text-[11px] font-medium ${isActive ? 'text-purple-300' : 'text-emerald-300'}`}>
+            {phaseLabel}
+          </p>
+          {healing.category && healing.category !== 'unknown' && (
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <CategoryBadge category={healing.category} />
+              {healing.targetFile && (
+                <span className="text-[10px] text-gray-600 font-mono truncate max-w-[100px]">
+                  {healing.targetFile}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        {healing.lastQualityScore > 0 && (
+          <div className="text-right">
+            <div className={`text-[14px] font-bold ${healing.lastQualityScore >= 80 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+              {healing.lastQualityScore}
+            </div>
+            <div className="text-[9px] text-gray-600">quality</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RepairHistoryTimeline({ history }: { history: RuntimeRepairRecord[] }) {
+  if (history.length === 0) return null;
+  const recent = [...history].reverse().slice(0, 6);
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/2">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <GitBranch size={12} className="text-gray-500" />
+        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+          Repair History ({history.length})
+        </span>
+      </div>
+      <div className="px-3 pb-3 space-y-1.5">
+        {recent.map((r) => (
+          <div key={r.id} className="flex items-center gap-2">
+            {r.success
+              ? <CheckCircle2 size={10} className="text-emerald-400 shrink-0" />
+              : <XCircle      size={10} className="text-red-400 shrink-0" />}
+            <span className="text-[10px] text-gray-400 flex-1 truncate font-mono">
+              {r.filesChanged[0] ?? 'no file'}
+            </span>
+            <CategoryBadge category={r.errorType} />
+            {r.qualityScore > 0 && (
+              <span className={`text-[10px] font-bold ${r.qualityScore >= 80 ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                {r.qualityScore}
+              </span>
+            )}
+            <span className="text-[9px] text-gray-600 shrink-0">
+              {r.duration < 1000 ? `${r.duration}ms` : `${(r.duration / 1000).toFixed(1)}s`}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RepairAnalyticsPanel({ metrics }: { metrics: RepairMetrics }) {
+  if (metrics.totalRepairs === 0) return null;
+  const rateColor = metrics.successRate >= 80 ? 'text-emerald-400' : metrics.successRate >= 50 ? 'text-yellow-400' : 'text-red-400';
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/2 px-3 py-2.5">
+      <div className="flex items-center gap-2 mb-2">
+        <Activity size={12} className="text-gray-500" />
+        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Repair Analytics</span>
+      </div>
+      <div className="grid grid-cols-4 gap-1 text-center">
+        <div className="bg-white/4 rounded-lg px-1.5 py-1">
+          <div className={`text-[14px] font-bold ${rateColor}`}>{metrics.successRate}%</div>
+          <div className="text-[9px] text-gray-600">success</div>
+        </div>
+        <div className="bg-white/4 rounded-lg px-1.5 py-1">
+          <div className="text-[14px] font-bold text-gray-300">{metrics.totalRepairs}</div>
+          <div className="text-[9px] text-gray-600">total</div>
+        </div>
+        <div className="bg-white/4 rounded-lg px-1.5 py-1">
+          <div className="text-[14px] font-bold text-gray-300">{metrics.averageAttempts}</div>
+          <div className="text-[9px] text-gray-600">avg tries</div>
+        </div>
+        <div className="bg-white/4 rounded-lg px-1.5 py-1">
+          <div className="text-[14px] font-bold text-gray-300">{metrics.averageQualityScore}</div>
+          <div className="text-[9px] text-gray-600">avg qual</div>
+        </div>
+      </div>
+      {metrics.mostCommonErrorType !== 'none' && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <span className="text-[10px] text-gray-600">Most common:</span>
+          <CategoryBadge category={metrics.mostCommonErrorType} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RuntimeEnginePanel({
+  state,
+  repairHistory,
+  repairMetrics,
+  selfHealingState,
+}: {
+  state: RuntimeState;
+  repairHistory?: RuntimeRepairRecord[];
+  repairMetrics?: RepairMetrics | null;
+  selfHealingState?: SelfHealingState | null;
+}) {
   const [showPkg, setShowPkg] = useState(false);
   const [showErrors, setShowErrors] = useState(true);
 
@@ -531,42 +717,68 @@ function RuntimeEnginePanel({ state }: { state: RuntimeState }) {
   const warnings  = state.warnings ?? [];
   const logs      = state.logs ?? [];
 
+  // V6.1: Compute 5-dim health from state
+  const errs = buildErrs.filter(e => e.type === 'error');
+  const hasRouteErr = buildErrs.some(e => e.message.toLowerCase().includes('route'));
+  const healthV2 = {
+    compile:    state.buildPassed ? 100 : errs.length > 0 ? Math.max(0, 100 - errs.length * 15) : 75,
+    runtime:    state.runtimePassed ? 100 : state.buildPassed ? 70 : 40,
+    repair:     (state.repairedFiles ?? 0) > 0 ? Math.min(100, 60 + (state.repairedFiles ?? 0) * 15) : (state.buildPassed ? 100 : 50),
+    dependency: packages.length > 0 ? 100 : state.buildPassed ? 80 : 60,
+    route:      hasRouteErr ? 50 : state.buildPassed ? 100 : 75,
+  };
+
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
 
-      {/* Health Overview */}
+      {/* Self-Healing Panel */}
+      {selfHealingState && (
+        <SelfHealingPanel healing={selfHealingState} />
+      )}
+
+      {/* Health Overview — V6.1 with 5-dim bars */}
       <div className={`rounded-xl border px-3 py-2.5 ${scoreBg}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Activity size={13} className={scoreColor} />
-            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Runtime Engine</span>
+            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Runtime Health V2</span>
           </div>
           <RuntimeStatusBadge status={state.status} />
         </div>
-        <RuntimeHealthBar score={state.healthScore} />
-        <div className="grid grid-cols-3 gap-2 mt-2.5">
+        <div className="flex items-center gap-2 mb-2.5">
+          <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-700 ${state.healthScore >= 90 ? 'bg-emerald-500' : state.healthScore >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${state.healthScore}%` }} />
+          </div>
+          <span className={`text-[13px] font-bold ${scoreColor} w-8 text-right`}>{state.healthScore}%</span>
+        </div>
+        <DimHealthBar label="Compile"    score={healthV2.compile}    icon={<ShieldCheck size={10} />} />
+        <DimHealthBar label="Runtime"    score={healthV2.runtime}    icon={<Zap size={10} />} />
+        <DimHealthBar label="Repair"     score={healthV2.repair}     icon={<Wrench size={10} />} />
+        <DimHealthBar label="Dependency" score={healthV2.dependency} icon={<PackagePlus size={10} />} />
+        <DimHealthBar label="Route"      score={healthV2.route}      icon={<Route size={10} />} />
+        <div className="grid grid-cols-2 gap-2 mt-2.5">
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500">Build</span>
-            <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${state.buildPassed ? 'text-emerald-400' : 'text-red-400'}`}>
-              {state.buildPassed ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-              {state.buildPassed ? 'Passed' : 'Failed'}
-            </span>
+            <span className="text-[10px] text-gray-500">Files validated</span>
+            <span className="text-[12px] font-semibold text-gray-300">{state.filesValidated ?? 0}/{state.filesTotal ?? 0}</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500">Runtime</span>
-            <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${state.runtimePassed ? 'text-emerald-400' : 'text-red-400'}`}>
-              {state.runtimePassed ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-              {state.runtimePassed ? 'Passed' : 'Failed'}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-gray-500">Files</span>
-            <span className="text-[12px] font-semibold text-gray-300">
-              {state.filesValidated ?? 0}/{state.filesTotal ?? 0}
+            <span className="text-[10px] text-gray-500">Files repaired</span>
+            <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${(state.repairedFiles ?? 0) > 0 ? 'text-purple-400' : 'text-gray-500'}`}>
+              <Wrench size={10} />{state.repairedFiles ?? 0}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Repair Analytics */}
+      {repairMetrics && repairMetrics.totalRepairs > 0 && (
+        <RepairAnalyticsPanel metrics={repairMetrics} />
+      )}
+
+      {/* Repair History */}
+      {(repairHistory?.length ?? 0) > 0 && (
+        <RepairHistoryTimeline history={repairHistory!} />
+      )}
 
       {/* Build Errors */}
       {buildErrs.length > 0 && (
@@ -664,7 +876,7 @@ function RuntimeEnginePanel({ state }: { state: RuntimeState }) {
             <TerminalSquare size={12} className="text-gray-500" />
             <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Runtime Logs ({logs.length})</span>
           </div>
-          <div className="px-3 pb-3 space-y-1 max-h-56 overflow-y-auto">
+          <div className="px-3 pb-3 space-y-1 max-h-48 overflow-y-auto">
             {logs.map((log, i) => (
               <div key={i} className="flex items-start gap-1.5">
                 {logIcon(log.type)}
@@ -719,6 +931,7 @@ const BUILD_STEP_LABELS = [
   'Setting up authentication...',
   'Scaffolding project...',
   'Running runtime engine...',
+  'Self-healing issues...',
   'Preparing preview...',
 ];
 
@@ -883,6 +1096,9 @@ export default function WorkspacePreviewPanel({
   registryFileMap, componentHistory, editSafetyScore, lastEditImpact,
   selectedTemplate, onSelectTemplate, onClearTemplate, autoMatchedTemplate,
   runtimeState,
+  repairHistory,
+  repairMetrics,
+  selfHealingState,
 }: Props) {
   const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry' | 'marketplace' | 'runtime'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
@@ -1147,7 +1363,12 @@ export default function WorkspacePreviewPanel({
 
       {/* ── Runtime Engine tab (V6.0) ── */}
       {tab === 'runtime' && runtimeState && (
-        <RuntimeEnginePanel state={runtimeState} />
+        <RuntimeEnginePanel
+          state={runtimeState}
+          repairHistory={repairHistory}
+          repairMetrics={repairMetrics}
+          selfHealingState={selfHealingState}
+        />
       )}
 
       {/* ── Template Marketplace tab (V5.6) ── */}
