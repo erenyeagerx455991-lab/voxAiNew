@@ -411,7 +411,7 @@ Output ONLY this JSON (no markdown, no explanation, no code fences):
   "mood": "one word"
 }`;
 
-function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentContext?: string, projectBlueprint?: ProjectBlueprint | null) {
+function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, componentContext?: string, projectBlueprint?: ProjectBlueprint | null, registrySelection?: Record<string, string>) {
   const sectionList = blueprint.sectionOrder.map((s, i) => `${i + 1}. ${s}`).join('\n');
   const functionNames = blueprint.sectionOrder.map(s => `${s}()`).join(', ');
   const appReturn = blueprint.sectionOrder.map(s => `<${s}/>`).join('');
@@ -610,7 +610,13 @@ LAYOUT RULES (apply per section type):
 ${layoutStyleRules}
 ${structureVariationRules}
 
-═══ SHADCN/UI COMPONENTS ═══
+${(registrySelection && Object.keys(registrySelection).length > 0) ? `═══ COMPONENT REGISTRY (V5.4) ═══
+Selected component variants for this build. ENFORCE these structural patterns — do NOT invent different layouts:
+
+${Object.entries(registrySelection).map(([cat, hint]) => `${cat.toUpperCase()}: ${hint}`).join('\n')}
+
+For each section listed above, follow the described layout and visual pattern EXACTLY.
+Do NOT deviate from the selected component variant's structural style.\n\n` : ''}═══ SHADCN/UI COMPONENTS ═══
 The following components are available as globals (no import needed). Use them for interactive UI elements:
 - <Button variant="default|outline|ghost|secondary|destructive" size="default|sm|lg">...</Button>
 - <Card className="..."><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>...</CardContent></Card>
@@ -2312,6 +2318,143 @@ function generateMotionProfileServer(dna: DNAComposition) {
   };
 }
 
+// ── V5.4: COMPONENT REGISTRY ENGINE ──────────────────────────────────────────
+
+const REGISTRY_STYLE_HINTS_SERVER: Record<string, string> = {
+  HeroLinear: 'oversized editorial typography, left-aligned, dark minimal, NO decoration',
+  HeroStripe: 'centered gradient hero, radial glow orbs, premium dark navy, bold CTA',
+  HeroFramer: 'dramatic oversized text, expressive animations, bold accent colors',
+  HeroVercel: 'split layout, monochrome black/white, strong left text + right visual',
+  HeroNotion: 'clean editorial, light theme, simple centered copy, minimal decoration',
+  HeroMinimal: 'clean centered layout, strong typography, subtle hover only',
+  HeroEditorial: 'magazine-style, huge type fills the viewport, editorial whitespace',
+  HeroBento: 'bento grid hero with feature tiles, dark, modern asymmetric layout',
+  PricingStripe: 'gradient-border 3-tier cards, popular badge, trust signals, dark navy',
+  PricingMinimal: 'flat 3-column minimal cards, simple border, clean dark background',
+  PricingEnterprise: 'feature comparison table, check marks, enterprise tier highlighted',
+  PricingCards: 'elevated cards with popular glow, icon features, gradient CTA button',
+  NavbarMinimal: 'sticky minimal bar, logo + 4-5 ghost links + CTA, dark',
+  NavbarFloating: 'floating pill navbar centered, blur backdrop, ghost links',
+  NavbarEnterprise: 'full-width, mega-menu dropdowns, announcement bar, dark',
+  NavbarSidebar: 'left sidebar with icon + label nav, dark, collapsible mobile',
+  DashboardAnalytics: 'KPI stat cards row, line + bar charts, data table, dark sidebar',
+  DashboardSaaS: 'overview stats, recent activity feed, quick actions, dark sidebar',
+  DashboardFinance: 'portfolio chart, asset allocation, transaction list, premium dark',
+  DashboardAI: 'chat interface, prompt history, model selector, dark terminal feel',
+  FeaturesGrid: '3-column icon + title + description cards, flat-bordered, dark',
+  FeaturesBento: 'asymmetric bento grid, large feature card + small tiles, dark',
+  TestimonialsCards: '3-column quote cards, avatar, star rating, flat-bordered dark',
+  TestimonialsWall: 'masonry grid of testimonial tiles, varied sizes, dark',
+  CtaStripe: 'gradient CTA banner, two buttons (primary + outline), trust line',
+  CtaMinimal: 'centered minimal CTA, one headline, one button, flat dark',
+  CtaGradient: 'animated gradient background, bold headline, glowing button',
+  FooterSimple: 'single-row logo + links + copyright, minimal dark',
+  FooterEnterprise: '4-column footer with link groups, social icons, newsletter form',
+};
+
+function getDominantBrandServer(dna: DNAComposition): string {
+  const entries = (Object.entries(dna) as [string, number][])
+    .filter(([, v]) => v > 0)
+    .sort(([, a], [, b]) => b - a);
+  return entries.length > 0 ? entries[0][0] : 'linear';
+}
+
+function selectRegistryComponentsServer(
+  dna: DNAComposition,
+  blueprint: PageBlueprint,
+  projectBlueprint: ProjectBlueprint
+): Record<string, string> {
+  const selection: Record<string, string> = {};
+  const dominant = getDominantBrandServer(dna);
+  const sections = blueprint.sectionOrder ?? [];
+  const hint = (name: string) => `${name} — ${REGISTRY_STYLE_HINTS_SERVER[name] || 'selected component variant'}`;
+
+  for (const section of sections) {
+    const s = section.toLowerCase().replace(/\s+/g, '');
+
+    if (s === 'hero' || s.startsWith('hero')) {
+      let name = 'HeroMinimal';
+      if (dominant === 'linear') name = 'HeroLinear';
+      else if (dominant === 'stripe') name = 'HeroStripe';
+      else if (dominant === 'framer') name = 'HeroFramer';
+      else if (dominant === 'vercel') name = 'HeroVercel';
+      else if (dominant === 'notion') name = 'HeroNotion';
+      else if (dominant === 'cursor' || dominant === 'raycast') name = 'HeroBento';
+      selection.hero = hint(name);
+    }
+
+    if (s === 'pricing') {
+      let name = 'PricingCards';
+      if (dominant === 'stripe') name = 'PricingStripe';
+      else if (dominant === 'linear' && (dna.linear ?? 0) > 20) name = 'PricingMinimal';
+      else if (projectBlueprint.projectType?.toLowerCase().includes('enterprise')) name = 'PricingEnterprise';
+      selection.pricing = hint(name);
+    }
+
+    if (s === 'navbar' || s === 'navigation') {
+      let name = 'NavbarEnterprise';
+      if (dominant === 'framer' || dominant === 'cursor') name = 'NavbarFloating';
+      else if ((dna.linear ?? 0) > 30 || (dna.vercel ?? 0) > 30) name = 'NavbarMinimal';
+      else if (projectBlueprint.dashboardNeeded) name = 'NavbarSidebar';
+      selection.navbar = hint(name);
+    }
+
+    if (s === 'features' || s === 'featuresbento' || (s.includes('feature') && !s.includes('featured'))) {
+      let name = 'FeaturesGrid';
+      if (dominant === 'framer' || dominant === 'cursor' || dominant === 'raycast') name = 'FeaturesBento';
+      selection.features = hint(name);
+    }
+
+    if (s === 'testimonials') {
+      let name = 'TestimonialsCards';
+      if (dominant === 'framer') name = 'TestimonialsWall';
+      selection.testimonials = hint(name);
+    }
+
+    if (s === 'cta' || s.includes('calltoaction')) {
+      let name = 'CtaMinimal';
+      if (dominant === 'stripe') name = 'CtaStripe';
+      else if (dominant === 'framer') name = 'CtaGradient';
+      selection.cta = hint(name);
+    }
+
+    if (s === 'footer') {
+      let name = 'FooterSimple';
+      if (dominant === 'stripe' || (projectBlueprint.pages && projectBlueprint.pages.length > 2)) name = 'FooterEnterprise';
+      selection.footer = hint(name);
+    }
+
+    if (s === 'dashboard' || s.includes('dashboard')) {
+      let name = 'DashboardSaaS';
+      if (dominant === 'stripe' || projectBlueprint.projectType?.toLowerCase().includes('finance')) name = 'DashboardFinance';
+      else if (dominant === 'cursor' || projectBlueprint.projectType?.toLowerCase().includes('ai')) name = 'DashboardAI';
+      selection.dashboard = hint(name);
+    }
+
+    if (s === 'faq') {
+      selection.faq = hint('FaqAccordion');
+    }
+  }
+
+  return selection;
+}
+
+function computeRegistryHealthServer(
+  selection: Record<string, string>,
+  sectionOrder: string[]
+): { coverageScore: number; reusedComponents: number; customComponents: number; lockedComponents: number; editCompatibility: number; totalSections: number; mappedSections: number } {
+  const MAPPABLE = ['hero', 'pricing', 'navbar', 'features', 'faq', 'testimonials', 'cta', 'footer', 'dashboard', 'navigation', 'auth'];
+  const mappable = sectionOrder.filter(s =>
+    MAPPABLE.some(m => s.toLowerCase().replace(/\s+/g, '') === m || s.toLowerCase().includes(m))
+  );
+  const totalSections = mappable.length;
+  const mappedSections = Object.keys(selection).length;
+  const coverageScore = totalSections > 0 ? Math.min(100, Math.round((mappedSections / totalSections) * 100)) : 0;
+  const reusedComponents = mappedSections;
+  const editCompatibility = Math.min(100, reusedComponents * 12);
+  return { coverageScore, reusedComponents, customComponents: Math.max(0, sectionOrder.length - mappedSections), lockedComponents: 0, editCompatibility, totalSections, mappedSections };
+}
+
 function buildDNAContextString(dna: DNAComposition, ownership: Record<string, string>, theme: ReturnType<typeof generateThemeTokensServer>): string {
   const active = DNA_BRAND_KEYS.filter(k => dna[k] > 0).map(k => `${k.charAt(0).toUpperCase()+k.slice(1)} ${dna[k]}%`);
   if (active.length === 0) return '';
@@ -2761,6 +2904,18 @@ router.post("/agents/build", async (req, res) => {
     const componentContext = buildContextFromTemplates(selectedTemplates);
     console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates: ${selectedTemplates.map(t => t.id).join(', ')}`);
 
+    // ── V5.4: COMPONENT REGISTRY SELECTION ──────────────────────────────────
+    let registrySelection: Record<string, string> = {};
+    try {
+      registrySelection = selectRegistryComponentsServer(dnaComposition, blueprint, projectBlueprint);
+      if (Object.keys(registrySelection).length > 0) {
+        console.log(`[Registry V5.4] Selected ${Object.keys(registrySelection).length} components: ${Object.entries(registrySelection).map(([k, v]) => `${k}=${v.split(' ')[0]}`).join(', ')}`);
+        sse(res, { type: "registry_selection", selection: registrySelection });
+      }
+    } catch (e) {
+      console.error('[Registry V5.4] Selection failed (continuing):', e);
+    }
+
     // ── AGENT 4: FRONTEND / CODE GENERATION ──────────────────────────────────
     sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });
 
@@ -2793,7 +2948,7 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     try {
       generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
         [
-          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) },
           { role: "user", content: codegenUserPrompt },
         ],
         8000
@@ -2802,7 +2957,7 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       console.error("OpenRouter codegen failed, falling back to Groq:", e);
       generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
         [
-          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint) },
+          { role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) },
           { role: "user", content: isMultiPageApp ? codegenUserPrompt : `Build a complete landing page for: ${prompt}. Build EXACTLY ${sectionCount} sections in order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.` },
         ],
         false, 8000
@@ -2951,6 +3106,13 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     sse(res, { type: "build_health", ...buildHealthMetrics });
     if (runtimeResult.issues.length > 0) {
       sse(res, { type: "runtime_validate", issues: runtimeResult.issues, runtimeScore: runtimeResult.runtimeScore, routeIssues: routeValidation.issues });
+    }
+
+    // ── V5.4: REGISTRY HEALTH SSE ────────────────────────────────────────────
+    if (Object.keys(registrySelection).length > 0) {
+      const regHealth = computeRegistryHealthServer(registrySelection, blueprint.sectionOrder);
+      console.log(`[Registry V5.4] Health: coverage=${regHealth.coverageScore}% mapped=${regHealth.mappedSections}/${regHealth.totalSections}`);
+      sse(res, { type: "registry_health", ...regHealth });
     }
 
     // ── AGENTS 6-8: BACKEND / DATABASE / AUTH (parallel) ─────────────────────

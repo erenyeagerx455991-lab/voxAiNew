@@ -10,7 +10,9 @@ export type ComponentStyle =
 export type Industry =
   | 'saas' | 'ai' | 'startup' | 'ecommerce' | 'restaurant'
   | 'portfolio' | 'agency' | 'fintech' | 'healthcare'
-  | 'education' | 'fitness' | 'real-estate' | 'generic';
+  | 'education' | 'fitness' | 'real-estate' | 'generic'
+  | 'developer' | 'productivity' | 'enterprise' | 'design'
+  | 'media' | 'business' | 'global';
 
 export type ThemeMode = 'dark' | 'light' | 'both';
 
@@ -23,11 +25,11 @@ export interface ComponentMeta {
   industries: Industry[];
   tags: string[];
   description: string;
-  priority: number; // 1-10, higher = prefer in selection
+  priority: number;
 }
 
 export interface ComponentDef extends ComponentMeta {
-  standaloneCode: string; // iframe-ready JSX (no imports, React.* namespace)
+  standaloneCode: string;
 }
 
 export interface PageLayout {
@@ -52,4 +54,24 @@ export interface SelectorInput {
 export interface RegistryStats {
   total: number;
   byCategory: Record<ComponentCategory, number>;
+}
+
+// ── V5.4 Component Registry Types ──────────────────────────────────────────
+
+export type RegistryCategory =
+  | 'hero' | 'pricing' | 'navbar' | 'dashboard'
+  | 'features' | 'faq' | 'testimonials' | 'cta'
+  | 'footer' | 'auth';
+
+export interface ComponentRegistryItem {
+  id: string;
+  category: RegistryCategory;
+  name: string;
+  dnaTags: string[];
+  industryTags: string[];
+  sections: string[];
+  complexity: 'low' | 'medium' | 'high';
+  references: string[];
+  componentPath: string;
+  previewImage?: string;
 }

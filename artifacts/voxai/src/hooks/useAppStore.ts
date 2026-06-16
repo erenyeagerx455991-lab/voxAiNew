@@ -2,13 +2,13 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph } from '../services/builderService';
-import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from '../services/builderService';
+import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection } from '../services/builderService';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
-export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph };
+export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth };
 
 interface AppState {
   view: View;
@@ -46,6 +46,11 @@ interface AppState {
   runtimeErrors: { file: string; message: string; stack?: string; component?: string }[];
   runtimeRepairAttempt: number;
   onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => void;
+  registrySelection: RegistrySelection | null;
+  registryHealth: RegistryHealth | null;
+  lockedComponents: string[];
+  lockComponent: (cat: string) => void;
+  unlockComponent: (cat: string) => void;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -139,6 +144,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [knowledgeGraph, setKnowledgeGraph] = useState<ProjectKnowledgeGraph | null>(null);
   const [graphContext, setGraphContext] = useState<{ filesLoaded: number; filesSkipped: number; tokensSaved: number; resolvedNodes: string[] } | null>(null);
   const [runtimeErrors, setRuntimeErrors] = useState<{ file: string; message: string; stack?: string; component?: string }[]>([]);
+  const [registrySelection, setRegistrySelection] = useState<RegistrySelection | null>(null);
+  const [registryHealth, setRegistryHealth] = useState<RegistryHealth | null>(null);
+  const [lockedComponents, setLockedComponents] = useState<string[]>([]);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
@@ -152,6 +160,24 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
 
   const toggleSidebar = useCallback(() => setSidebarOpen((o) => !o), []);
   const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  const lockComponent = useCallback((cat: string) => {
+    setLockedComponents(prev => {
+      const next = prev.includes(cat) ? prev : [...prev, cat];
+      const cid = activeChatId;
+      if (cid) saveRegistrySelection(cid, registrySelection ?? {}, next);
+      return next;
+    });
+  }, [activeChatId, registrySelection]);
+
+  const unlockComponent = useCallback((cat: string) => {
+    setLockedComponents(prev => {
+      const next = prev.filter(c => c !== cat);
+      const cid = activeChatId;
+      if (cid) saveRegistrySelection(cid, registrySelection ?? {}, next);
+      return next;
+    });
+  }, [activeChatId, registrySelection]);
 
   // Keep refs in sync for stale-closure-safe access inside callbacks
   useEffect(() => { projectFilesRef.current = projectFiles; }, [projectFiles]);
@@ -292,6 +318,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     } else {
       setGeneratedCode('');
       setKnowledgeGraph(null);
+      setRegistrySelection(null);
+      setRegistryHealth(null);
+      setLockedComponents([]);
     }
   }, [loadMessages]);
 
@@ -324,6 +353,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setProjectFiles([]);
     setProjectMemory(null);
     setKnowledgeGraph(null);
+    setRegistrySelection(null);
+    setRegistryHealth(null);
+    setLockedComponents([]);
     setGraphContext(null);
     setView('chat');
     closeSidebar();
@@ -546,7 +578,14 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
               setKnowledgeGraph(graph);
               const cid = activeChatId;
               if (cid) saveKnowledgeGraph(cid, graph);
-            }
+            },
+            (sel: RegistrySelection) => {
+              setRegistrySelection(sel);
+              setLockedComponents([]);
+              const cid = activeChatId;
+              if (cid) saveRegistrySelection(cid, sel, []);
+            },
+            (health: RegistryHealth) => setRegistryHealth(health)
           );
         }
       } catch (err) {
@@ -631,6 +670,11 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     graphContext,
     runtimeErrors,
     runtimeRepairAttempt,
+    registrySelection,
+    registryHealth,
+    lockedComponents,
+    lockComponent,
+    unlockComponent,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
       // Auto-trigger runtime repair (max 3 attempts)

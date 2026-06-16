@@ -78,7 +78,7 @@ export const premiumPricingComponents: ComponentDef[] = [
                     <span className="text-white font-black text-4xl">{price===0?'Free':'$'+price}</span>
                     {price>0 && <span className="text-white/30 text-sm mb-1">/mo</span>}
                   </div>
-                  {annual && price>0 && <div className="text-emerald-400 text-xs font-medium">Save ${(p.m-p.a)*12}/yr</div>}
+                  {annual && price>0 && <div className="text-emerald-400 text-xs font-medium">Save \${(p.m-p.a)*12}/yr</div>}
                   <div className="text-white/25 text-xs mt-1">{p.desc}</div>
                 </div>
                 <ul className="space-y-2.5 mb-8 flex-1">
@@ -170,7 +170,7 @@ export const premiumPricingComponents: ComponentDef[] = [
           <div className="border-t border-white/5 pt-8">
             <div className="flex items-center justify-between mb-3">
               <span className="text-white/50 text-sm">Estimate: {volume} generations/mo</span>
-              <span className="text-white font-black text-2xl">${calcCost(volume)}<span className="text-white/30 text-sm font-normal">/mo</span></span>
+              <span className="text-white font-black text-2xl">\${calcCost(volume)}<span className="text-white/30 text-sm font-normal">/mo</span></span>
             </div>
             <input type="range" min={1} max={500} value={volume} onChange={e=>setVolume(Number(e.target.value))} className="w-full accent-violet-500" />
             <div className="flex justify-between text-white/20 text-xs mt-1"><span>1</span><span>500</span></div>

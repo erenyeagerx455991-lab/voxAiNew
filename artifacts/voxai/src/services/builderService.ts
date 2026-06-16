@@ -19,6 +19,7 @@ export interface ProjectBlueprint {
     database?: string;
   };
   description?: string;
+  dependencies?: string[];
 }
 
 export interface ProjectFile {
@@ -692,6 +693,8 @@ export interface ProjectMemory {
   componentRegistry: ComponentRegistry;
   editHistory: EditOperation[];
   referenceComposition?: DNAComposition;
+  registrySelection?: RegistrySelection;
+  lockedComponents?: string[];
   timestamp: number;
 }
 
@@ -795,6 +798,22 @@ export interface ProjectKnowledgeGraph {
   dependencies: string[];
   graphHealthScore: number;  // 0-100
   editContextHint?: string;  // quick summary for the edit LLM
+}
+
+// ── V5.4: REGISTRY TYPES ──────────────────────────────────────────────────────
+
+export type RegistryCategory = 'hero' | 'pricing' | 'navbar' | 'dashboard' | 'features' | 'faq' | 'testimonials' | 'cta' | 'footer' | 'auth';
+
+export type RegistrySelection = Partial<Record<RegistryCategory, string>>;
+
+export interface RegistryHealth {
+  coverageScore: number;
+  reusedComponents: number;
+  customComponents: number;
+  lockedComponents: number;
+  editCompatibility: number;
+  totalSections: number;
+  mappedSections: number;
 }
 
 // ── PHASE 2: GRAPH GENERATOR ──────────────────────────────────────────────────
@@ -1096,4 +1115,55 @@ export function buildComponentRegistry(files: ProjectFile[]): ComponentRegistry 
     registry[componentName] = templateHint;
   }
   return registry;
+}
+
+// ── V5.4: COMPONENT REGISTRY ──────────────────────────────────────────────────
+
+const REGISTRY_KEY = (chatId: string) => `voxai_registry_${chatId}`;
+
+export function saveRegistrySelection(chatId: string, selection: RegistrySelection, lockedComponents: string[]): void {
+  try {
+    localStorage.setItem(REGISTRY_KEY(chatId), JSON.stringify({ selection, lockedComponents }));
+  } catch {}
+}
+
+export function loadRegistrySelection(chatId: string): { selection: RegistrySelection; lockedComponents: string[] } | null {
+  try {
+    const raw = localStorage.getItem(REGISTRY_KEY(chatId));
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function clearRegistrySelection(chatId: string): void {
+  try {
+    localStorage.removeItem(REGISTRY_KEY(chatId));
+  } catch {}
+}
+
+export function computeRegistryHealth(
+  selection: RegistrySelection,
+  sectionOrder: string[],
+  lockedComponents: string[]
+): RegistryHealth {
+  const MAPPABLE = ['hero', 'pricing', 'navbar', 'features', 'faq', 'testimonials', 'cta', 'footer', 'dashboard', 'navigation', 'auth'];
+  const mappable = sectionOrder.filter(s =>
+    MAPPABLE.some(m => s.toLowerCase().replace(/\s+/g, '') === m || s.toLowerCase().includes(m))
+  );
+  const totalSections = mappable.length;
+  const mappedSections = Object.keys(selection).length;
+  const coverageScore = totalSections > 0 ? Math.min(100, Math.round((mappedSections / totalSections) * 100)) : 0;
+  const reusedComponents = mappedSections;
+  const editCompatibility = Math.min(100, reusedComponents * 12);
+  return {
+    coverageScore,
+    reusedComponents,
+    customComponents: Math.max(0, sectionOrder.length - mappedSections),
+    lockedComponents: lockedComponents.length,
+    editCompatibility,
+    totalSections,
+    mappedSections,
+  };
 }

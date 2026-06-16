@@ -306,6 +306,11 @@ function AppContent() {
                   buildHealth={store.buildHealth}
                   onRuntimeError={store.onRuntimeError}
                   knowledgeGraph={store.knowledgeGraph}
+                  registrySelection={store.registrySelection}
+                  registryHealth={store.registryHealth}
+                  lockedComponents={store.lockedComponents}
+                  onLockComponent={store.lockComponent}
+                  onUnlockComponent={store.unlockComponent}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

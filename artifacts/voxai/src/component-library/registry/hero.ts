@@ -145,7 +145,7 @@ export const heroComponents: ComponentDef[] = [
       <div className="flex items-center gap-3 text-sm text-gray-400">
         <div className="flex -space-x-2">
           {['bg-violet-400','bg-blue-400','bg-emerald-400','bg-pink-400'].map((c,i) => (
-            <div key={i} className={`w-8 h-8 rounded-full ${c} border-2 border-white`} />
+            <div key={i} className={\`w-8 h-8 rounded-full \${c} border-2 border-white\`} />
           ))}
         </div>
         <span>Trusted by 200+ clients worldwide</span>

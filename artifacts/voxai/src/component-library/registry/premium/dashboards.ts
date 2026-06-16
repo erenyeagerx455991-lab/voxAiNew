@@ -80,7 +80,7 @@ export const premiumDashboardComponents: ComponentDef[] = [
               <div key={i} className="flex-1 flex flex-col items-center gap-1 relative group" onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
                 {hovered===i && (
                   <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#1a1a25] border border-white/15 rounded-lg px-2.5 py-1.5 whitespace-nowrap z-10">
-                    <div className="text-white font-bold text-xs">${d.v}K</div>
+                    <div className="text-white font-bold text-xs">\${d.v}K</div>
                   </div>
                 )}
                 <div className={"w-full rounded-t-lg transition-all " + (hovered===i?"bg-violet-400":"bg-violet-600/50 group-hover:bg-violet-500/70")} style={{height: (d.v/max*100)+'%'}} />

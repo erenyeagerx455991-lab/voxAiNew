@@ -4,9 +4,10 @@ import {
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
   Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu, Zap, Route,
   Network, LayoutDashboard, Component, Database, GitBranch, Package,
+  Lock, LockOpen, BookOpen, PackageCheck,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from '../services/builderService';
 import { exportProjectZip } from '../services/mockAiService';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
@@ -31,6 +32,139 @@ interface Props {
   buildHealth?: BuildHealth | null;
   onRuntimeError?: (err: { file: string; message: string; stack?: string; component?: string }) => void;
   knowledgeGraph?: ProjectKnowledgeGraph | null;
+  registrySelection?: RegistrySelection | null;
+  registryHealth?: RegistryHealth | null;
+  lockedComponents?: string[];
+  onLockComponent?: (cat: string) => void;
+  onUnlockComponent?: (cat: string) => void;
+}
+
+// ── V5.4: Component Registry Panel ───────────────────────────────────────────
+
+const DNA_BRAND_COLORS: Record<string, string> = {
+  stripe: 'text-violet-400', linear: 'text-indigo-400', framer: 'text-pink-400',
+  vercel: 'text-gray-300', notion: 'text-amber-400', cursor: 'text-emerald-400', raycast: 'text-orange-400',
+};
+
+function extractComponentName(hint: string): string {
+  return hint.split(' ')[0] ?? hint;
+}
+
+function extractComponentBrand(name: string): string {
+  const lower = name.toLowerCase();
+  for (const b of ['stripe', 'linear', 'framer', 'vercel', 'notion', 'cursor', 'raycast']) {
+    if (lower.includes(b)) return b;
+  }
+  return 'linear';
+}
+
+function RegistryPanel({
+  selection,
+  health,
+  lockedComponents,
+  onLock,
+  onUnlock,
+}: {
+  selection: RegistrySelection;
+  health?: RegistryHealth | null;
+  lockedComponents: string[];
+  onLock: (cat: string) => void;
+  onUnlock: (cat: string) => void;
+}) {
+  const entries = Object.entries(selection) as [string, string][];
+  const coverageScore = health?.coverageScore ?? Math.round((entries.length / Math.max(entries.length, 6)) * 100);
+  const scoreColor = coverageScore >= 80 ? 'text-emerald-400' : coverageScore >= 50 ? 'text-yellow-400' : 'text-red-400';
+  const scoreBg = coverageScore >= 80 ? 'border-emerald-500/30 bg-emerald-500/5' : coverageScore >= 50 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+
+  return (
+    <div className="flex-1 overflow-auto">
+      {/* Health header */}
+      <div className={`mx-3 my-2 rounded-lg border px-3 py-2 ${scoreBg}`}>
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5">
+            <PackageCheck size={12} className={scoreColor} />
+            <span className="text-[11px] font-semibold text-gray-300">Component Registry</span>
+            <span className="text-[10px] text-gray-500">V5.4</span>
+          </div>
+          <span className={`text-[14px] font-bold ${scoreColor}`}>{coverageScore}%</span>
+        </div>
+        <div className="grid grid-cols-4 gap-1 text-center">
+          {[
+            ['Selected', entries.length],
+            ['Locked', lockedComponents.length],
+            ['Sections', health?.totalSections ?? entries.length],
+            ['Compat', `${health?.editCompatibility ?? 0}%`],
+          ].map(([label, val]) => (
+            <div key={String(label)} className="bg-white/5 rounded px-1 py-0.5">
+              <div className="text-[12px] font-bold text-gray-200">{val}</div>
+              <div className="text-[9px] text-gray-500">{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Component list */}
+      <div className="px-3 pb-2">
+        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5 px-1">
+          Selected Variants
+        </div>
+        <div className="space-y-1">
+          {entries.map(([cat, hint]) => {
+            const compName = extractComponentName(hint);
+            const brand = extractComponentBrand(compName);
+            const brandColor = DNA_BRAND_COLORS[brand] ?? 'text-gray-400';
+            const isLocked = lockedComponents.includes(cat);
+            const descStart = hint.indexOf(' — ');
+            const desc = descStart > -1 ? hint.slice(descStart + 3) : '';
+            return (
+              <div
+                key={cat}
+                className={`rounded-lg border px-2.5 py-2 flex items-start gap-2 transition-colors ${
+                  isLocked ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-white/6 bg-white/3 hover:bg-white/5'
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-14 shrink-0">{cat}</span>
+                    <span className={`text-[12px] font-semibold ${brandColor}`}>{compName}</span>
+                    {isLocked && <Lock size={9} className="text-indigo-400 shrink-0" />}
+                  </div>
+                  {desc && <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-1">{desc}</p>}
+                </div>
+                <button
+                  onClick={() => isLocked ? onUnlock(cat) : onLock(cat)}
+                  title={isLocked ? `Unlock ${cat}` : `Lock ${cat} — AI won't change this component on edits`}
+                  className={`shrink-0 mt-0.5 p-1 rounded transition-colors ${
+                    isLocked
+                      ? 'text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10'
+                      : 'text-gray-600 hover:text-gray-400 hover:bg-white/5'
+                  }`}
+                >
+                  {isLocked ? <Lock size={11} /> : <LockOpen size={11} />}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {entries.length === 0 && (
+          <div className="text-center py-8 text-gray-600 text-[12px]">
+            No registry selection yet — build a project to see selected components.
+          </div>
+        )}
+      </div>
+
+      {lockedComponents.length > 0 && (
+        <div className="mx-3 mb-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 px-3 py-2">
+          <p className="text-[10px] text-indigo-300">
+            <Lock size={9} className="inline mr-1" />
+            <strong>{lockedComponents.length}</strong> locked component{lockedComponents.length !== 1 ? 's' : ''} — AI will preserve {lockedComponents.length !== 1 ? 'their' : 'its'} structure on edits.
+          </p>
+        </div>
+      )}
+
+      <div className="pb-4" />
+    </div>
+  );
 }
 
 // ── V5.3: Knowledge Graph Panel ────────────────────────────────────────────────
@@ -442,8 +576,9 @@ export default function WorkspacePreviewPanel({
   dnaComposition, sectionOwnership, themeTokens, motionProfile,
   lastEditDiff, canUndo, canRedo, onUndo, onRedo,
   buildHealth, onRuntimeError, knowledgeGraph,
+  registrySelection, registryHealth, lockedComponents = [], onLockComponent, onUnlockComponent,
 }: Props) {
-  const [tab, setTab] = useState<'preview' | 'files' | 'graph'>('preview');
+  const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
@@ -587,6 +722,19 @@ export default function WorkspacePreviewPanel({
             Graph
           </button>
         )}
+        {registrySelection && Object.keys(registrySelection).length > 0 && (
+          <button
+            onClick={() => { setTab('registry'); setSelectedFile(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors ${
+              tab === 'registry'
+                ? 'bg-white/10 text-white'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+            }`}
+          >
+            <BookOpen size={13} />
+            Registry
+          </button>
+        )}
 
         {/* Right: undo/redo + copy (when viewing a file) + Export ZIP */}
         <div className="ml-auto flex items-center gap-1">
@@ -641,6 +789,17 @@ export default function WorkspacePreviewPanel({
       {/* ── Knowledge Graph tab (V5.3) ── */}
       {tab === 'graph' && knowledgeGraph && (
         <KnowledgeGraphPanel graph={knowledgeGraph} />
+      )}
+
+      {/* ── Component Registry tab (V5.4) ── */}
+      {tab === 'registry' && registrySelection && (
+        <RegistryPanel
+          selection={registrySelection}
+          health={registryHealth}
+          lockedComponents={lockedComponents}
+          onLock={onLockComponent ?? (() => {})}
+          onUnlock={onUnlockComponent ?? (() => {})}
+        />
       )}
 
       {/* ── Preview tab ── */}

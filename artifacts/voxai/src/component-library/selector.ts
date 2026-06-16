@@ -14,7 +14,14 @@ const INDUSTRY_KEYWORDS: Record<Industry, string[]> = {
   education:   ['education', 'course', 'learning', 'school', 'university', 'teach', 'tutor', 'training'],
   fitness:     ['fitness', 'gym', 'workout', 'yoga', 'sport', 'nutrition', 'trainer'],
   'real-estate': ['real estate', 'property', 'home', 'house', 'rent', 'buy', 'agent', 'listing'],
-  generic:     [],
+  generic:      [],
+  developer:    ['developer', 'dev tools', 'devtools', 'code', 'api', 'sdk', 'open source', 'cli'],
+  productivity: ['productivity', 'workflow', 'task', 'todo', 'project management', 'kanban', 'planner'],
+  enterprise:   ['enterprise', 'b2b', 'corporate', 'large company', 'organization', 'team'],
+  design:       ['design', 'ui', 'ux', 'figma', 'prototype', 'visual'],
+  media:        ['media', 'news', 'blog', 'magazine', 'content', 'publishing'],
+  business:     ['business', 'company', 'services', 'professional'],
+  global:       ['global', 'international', 'worldwide', 'multi-language'],
 };
 
 const STYLE_KEYWORDS: Record<ComponentStyle, string[]> = {

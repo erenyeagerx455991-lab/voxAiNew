@@ -1,4 +1,6 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth } from './builderService';
+
+export type { RegistrySelection, RegistryHealth };
 
 export type { EditDiff, BuildHealth, ProjectKnowledgeGraph };
 
@@ -19,7 +21,9 @@ export async function mockStreamResponse(
   onStep?: (step: number) => void,
   onDnaComposition?: (data: DNABuildData) => void,
   onBuildHealth?: (health: BuildHealth) => void,
-  onKnowledgeGraph?: (graph: ProjectKnowledgeGraph) => void
+  onKnowledgeGraph?: (graph: ProjectKnowledgeGraph) => void,
+  onRegistrySelection?: (selection: RegistrySelection) => void,
+  onRegistryHealth?: (health: RegistryHealth) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -91,6 +95,22 @@ export async function mockStreamResponse(
 
           if (json.type === "graph_build_done" && json.graph) {
             onKnowledgeGraph?.(json.graph as ProjectKnowledgeGraph);
+          }
+
+          if (json.type === "registry_selection" && json.selection) {
+            onRegistrySelection?.(json.selection as RegistrySelection);
+          }
+
+          if (json.type === "registry_health") {
+            onRegistryHealth?.({
+              coverageScore:    json.coverageScore    ?? 0,
+              reusedComponents: json.reusedComponents ?? 0,
+              customComponents: json.customComponents ?? 0,
+              lockedComponents: json.lockedComponents ?? 0,
+              editCompatibility: json.editCompatibility ?? 0,
+              totalSections:    json.totalSections    ?? 0,
+              mappedSections:   json.mappedSections   ?? 0,
+            });
           }
 
           if (json.type === "done") {

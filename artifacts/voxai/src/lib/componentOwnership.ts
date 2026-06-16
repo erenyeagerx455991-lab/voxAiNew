@@ -77,8 +77,9 @@ export function resolveSectionOwnership(
 export function getSectionsByBrand(ownership: SectionOwnership): Record<BrandKey, string[]> {
   const result: Partial<Record<BrandKey, string[]>> = {};
   for (const [section, brand] of Object.entries(ownership)) {
-    if (!result[brand]) result[brand] = [];
-    result[brand]!.push(section);
+    const b = brand as BrandKey;
+    if (!result[b]) result[b] = [];
+    result[b]!.push(section);
   }
   return result as Record<BrandKey, string[]>;
 }
