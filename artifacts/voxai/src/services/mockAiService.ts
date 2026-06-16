@@ -1,4 +1,5 @@
 import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap } from './builderService';
+import type { ProjectTemplate } from './templateMarketplace';
 
 export type { RegistrySelection, RegistryHealth, RegistryFileMap };
 
@@ -24,6 +25,28 @@ export interface EditImpact {
 
 const API_BASE = "/api";
 
+// ── Template Marketplace API ──────────────────────────────────────────────────
+export async function fetchTemplates(): Promise<ProjectTemplate[]> {
+  try {
+    const r = await fetch(`${API_BASE}/agents/templates`);
+    if (!r.ok) return [];
+    const { templates } = await r.json();
+    return templates ?? [];
+  } catch { return []; }
+}
+
+export async function matchTemplateApi(prompt: string): Promise<{ templateId: string; confidence: number } | null> {
+  try {
+    const r = await fetch(`${API_BASE}/agents/templates/match`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    });
+    if (!r.ok) return null;
+    const { best } = await r.json();
+    return { templateId: best.templateId, confidence: best.confidence };
+  } catch { return null; }
+}
+
 // ── BUILD (Phase 0 — full generation) ────────────────────────────────────────
 export async function mockStreamResponse(
   prompt: string,
@@ -41,7 +64,9 @@ export async function mockStreamResponse(
   onBuildHealth?: (health: BuildHealth) => void,
   onKnowledgeGraph?: (graph: ProjectKnowledgeGraph) => void,
   onRegistrySelection?: (selection: RegistrySelection) => void,
-  onRegistryHealth?: (health: RegistryHealth) => void
+  onRegistryHealth?: (health: RegistryHealth) => void,
+  onTemplateSelected?: (templateId: string, templateName: string, confidence: number, pages: string[], apis: string[], databaseTables: string[], features: string[]) => void,
+  selectedTemplateId?: string
 ): Promise<void> {
   onStep?.(0);
 
@@ -49,7 +74,7 @@ export async function mockStreamResponse(
     const res = await fetch(`${API_BASE}/agents/build`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, selectedTemplateId }),
     });
 
     if (!res.ok || !res.body) {
@@ -117,6 +142,18 @@ export async function mockStreamResponse(
 
           if (json.type === "registry_selection" && json.selection) {
             onRegistrySelection?.(json.selection as RegistrySelection);
+          }
+
+          if (json.type === "template_selected") {
+            onTemplateSelected?.(
+              json.templateId ?? '',
+              json.templateName ?? '',
+              json.confidence ?? 50,
+              json.pages ?? [],
+              json.apis ?? [],
+              json.databaseTables ?? [],
+              json.features ?? [],
+            );
           }
 
           if (json.type === "registry_health") {

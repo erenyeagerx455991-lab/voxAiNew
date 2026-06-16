@@ -695,6 +695,9 @@ export interface ProjectMemory {
   referenceComposition?: DNAComposition;
   registrySelection?: RegistrySelection;
   lockedComponents?: string[];
+  selectedTemplateId?: string;
+  selectedTemplateName?: string;
+  templateHistory?: string[];
   timestamp: number;
 }
 

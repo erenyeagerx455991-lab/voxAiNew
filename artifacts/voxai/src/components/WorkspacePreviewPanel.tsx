@@ -10,6 +10,8 @@ import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } fro
 import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
 import type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 import { exportProjectZip } from '../services/mockAiService';
+import type { ProjectTemplate } from '../services/templateMarketplace';
+import TemplateMarketplacePanel from './TemplateMarketplacePanel';
 import DNACompositionPanel from './DNACompositionPanel';
 import type { SectionOwnership } from '../lib/componentOwnership';
 
@@ -42,6 +44,10 @@ interface Props {
   componentHistory?: ComponentHistory | null;
   editSafetyScore?: number;
   lastEditImpact?: { affectedSections: string[]; lockedConflicts: string[] } | null;
+  selectedTemplate?: ProjectTemplate | null;
+  onSelectTemplate?: (t: ProjectTemplate) => void;
+  onClearTemplate?: () => void;
+  autoMatchedTemplate?: { templateId: string; templateName: string; confidence: number } | null;
 }
 
 // ── V5.4: Component Registry Panel ───────────────────────────────────────────
@@ -648,8 +654,10 @@ export default function WorkspacePreviewPanel({
   lastEditDiff, canUndo, canRedo, onUndo, onRedo,
   buildHealth, onRuntimeError, knowledgeGraph,
   registrySelection, registryHealth, lockedComponents = [], onLockComponent, onUnlockComponent,
+  registryFileMap, componentHistory, editSafetyScore, lastEditImpact,
+  selectedTemplate, onSelectTemplate, onClearTemplate, autoMatchedTemplate,
 }: Props) {
-  const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry'>('preview');
+  const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry' | 'marketplace'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
@@ -806,6 +814,20 @@ export default function WorkspacePreviewPanel({
             Registry
           </button>
         )}
+        <button
+          onClick={() => { setTab('marketplace'); setSelectedFile(null); }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors relative ${
+            tab === 'marketplace'
+              ? 'bg-amber-500/15 text-amber-300'
+              : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+          }`}
+        >
+          <Package size={13} />
+          Templates
+          {selectedTemplate && (
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400" />
+          )}
+        </button>
 
         {/* Right: undo/redo + copy (when viewing a file) + Export ZIP */}
         <div className="ml-auto flex items-center gap-1">
@@ -874,6 +896,15 @@ export default function WorkspacePreviewPanel({
           registryFileMap={registryFileMap}
           componentHistory={componentHistory}
           editSafetyScore={editSafetyScore}
+        />
+      )}
+
+      {/* ── Template Marketplace tab (V5.6) ── */}
+      {tab === 'marketplace' && (
+        <TemplateMarketplacePanel
+          selectedTemplate={selectedTemplate ?? null}
+          onSelectTemplate={onSelectTemplate ?? (() => {})}
+          onClearTemplate={onClearTemplate ?? (() => {})}
         />
       )}
 

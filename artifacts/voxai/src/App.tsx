@@ -315,6 +315,10 @@ function AppContent() {
                   componentHistory={store.componentHistory}
                   editSafetyScore={store.editSafetyScore}
                   lastEditImpact={store.lastEditImpact}
+                  selectedTemplate={store.selectedTemplate}
+                  onSelectTemplate={store.setSelectedTemplate}
+                  onClearTemplate={() => store.setSelectedTemplate(null)}
+                  autoMatchedTemplate={store.autoMatchedTemplate}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

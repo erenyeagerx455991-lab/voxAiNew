@@ -4,12 +4,15 @@ import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMess
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
 import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry } from '../services/builderService';
+import type { ProjectTemplate } from '../services/templateMarketplace';
+import { TEMPLATE_LIBRARY, saveSelectedTemplate, loadSelectedTemplate, saveTemplateHistory, loadTemplateHistory, clearTemplateData } from '../services/templateMarketplace';
 import type { View, Chat, Message } from '../lib/types';
 
 export type { View, Chat, Message };
 export type { ProjectBlueprint, ProjectFile };
 export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory };
 export type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
+export type { ProjectTemplate };
 
 interface AppState {
   view: View;
@@ -56,6 +59,10 @@ interface AppState {
   componentHistory: ComponentHistory | null;
   editSafetyScore: number;
   lastEditImpact: { affectedSections: string[]; lockedConflicts: string[] } | null;
+  selectedTemplate: ProjectTemplate | null;
+  setSelectedTemplate: (t: ProjectTemplate | null) => void;
+  autoMatchedTemplate: { templateId: string; templateName: string; confidence: number } | null;
+  templateHistory: ProjectTemplate[];
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -156,7 +163,17 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [componentHistory, setComponentHistory] = useState<ComponentHistory | null>(null);
   const [editSafetyScore, setEditSafetyScore] = useState<number>(100);
   const [lastEditImpact, setLastEditImpact] = useState<{ affectedSections: string[]; lockedConflicts: string[] } | null>(null);
+  const [selectedTemplate, setSelectedTemplateState] = useState<ProjectTemplate | null>(null);
+  const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<{ templateId: string; templateName: string; confidence: number } | null>(null);
+  const [templateHistory, setTemplateHistory] = useState<ProjectTemplate[]>([]);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
+
+  const setSelectedTemplate = useCallback((t: ProjectTemplate | null) => {
+    setSelectedTemplateState(t);
+    const cid = activeChatId;
+    if (cid && t) saveSelectedTemplate(cid, t);
+    else if (cid && !t) clearTemplateData(cid);
+  }, [activeChatId]);
   const [initialized, setInitialized] = useState(false);
   const loadingRef = useRef(false);
   const projectFilesRef = useRef<ProjectFile[]>([]);
@@ -615,7 +632,22 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
               setComponentHistory(hist);
               if (cid) saveComponentHistory(cid, hist);
             },
-            (health: RegistryHealth) => setRegistryHealth(health)
+            (health: RegistryHealth) => setRegistryHealth(health),
+            // V5.6: auto-matched template callback
+            (templateId, templateName, confidence, _pages, _apis, _databaseTables, _features) => {
+              setAutoMatchedTemplate({ templateId, templateName, confidence });
+              // Store in template history
+              const matched = TEMPLATE_LIBRARY.find(t => t.id === templateId);
+              if (matched) {
+                setTemplateHistory(prev => {
+                  const next = [matched, ...prev.filter(h => h.id !== templateId)].slice(0, 5);
+                  const cid = activeChatId;
+                  if (cid) saveTemplateHistory(cid, next);
+                  return next;
+                });
+              }
+            },
+            selectedTemplate?.id
           );
         }
       } catch (err) {
@@ -709,6 +741,10 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     componentHistory,
     editSafetyScore,
     lastEditImpact,
+    selectedTemplate,
+    setSelectedTemplate,
+    autoMatchedTemplate,
+    templateHistory,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
       // Auto-trigger runtime repair (max 3 attempts)
