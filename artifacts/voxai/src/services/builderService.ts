@@ -839,6 +839,50 @@ export function buildRegistryFileMap(files: ProjectFile[], registrySelection: Re
 
 // ── V5.5: COMPONENT HISTORY ───────────────────────────────────────────────────
 
+// ── V6.0: RUNTIME ENGINE TYPES ────────────────────────────────────────────────
+
+export type RuntimeStatus = 'idle' | 'installing' | 'validating' | 'running' | 'failed' | 'repaired';
+
+export interface RuntimeLog {
+  timestamp: number;
+  type: 'info' | 'error' | 'warn' | 'success';
+  message: string;
+}
+
+export interface BuildError {
+  file: string;
+  line?: number;
+  col?: number;
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  rule?: string;
+}
+
+export interface RuntimeDependencies {
+  packages: string[];
+  devPackages: string[];
+  packageJson: string;
+  warnings: string[];
+}
+
+export interface RuntimeState {
+  status: RuntimeStatus;
+  buildPassed: boolean;
+  runtimePassed: boolean;
+  logs: RuntimeLog[];
+  attempts: number;
+  healthScore: number;
+  buildErrors: BuildError[];
+  warnings: BuildError[];
+  dependencies: RuntimeDependencies | null;
+  startedAt?: number;
+  finishedAt?: number;
+  filesValidated?: number;
+  filesTotal?: number;
+  missingImports?: Array<{ file: string; missingPackage: string }>;
+  chatId?: string;
+}
+
 export interface ComponentHistoryEntry {
   componentName: string;
   timestamp: number;

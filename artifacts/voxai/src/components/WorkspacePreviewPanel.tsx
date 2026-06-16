@@ -4,10 +4,11 @@ import {
   FileCode2, FileJson, FileText, Globe, X, Monitor, Folder, Download,
   Undo2, Redo2, ShieldCheck, Wrench, AlertTriangle, Cpu, Zap, Route,
   Network, LayoutDashboard, Component, Database, GitBranch, Package,
-  Lock, LockOpen, BookOpen, PackageCheck,
+  Lock, LockOpen, BookOpen, PackageCheck, Activity, CheckCircle2,
+  XCircle, Circle, PackagePlus, TerminalSquare,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState } from '../services/builderService';
 import type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 import { exportProjectZip } from '../services/mockAiService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
@@ -48,6 +49,7 @@ interface Props {
   onSelectTemplate?: (t: ProjectTemplate) => void;
   onClearTemplate?: () => void;
   autoMatchedTemplate?: { templateId: string; templateName: string; confidence: number } | null;
+  runtimeState?: RuntimeState | null;
 }
 
 // ── V5.4: Component Registry Panel ───────────────────────────────────────────
@@ -476,6 +478,229 @@ function BuildHealthPanel({ health }: { health: BuildHealth }) {
   );
 }
 
+// ── V6.0: Runtime Engine Panel ───────────────────────────────────────────────
+
+function RuntimeStatusBadge({ status }: { status: RuntimeState['status'] }) {
+  const MAP: Record<RuntimeState['status'], { label: string; color: string; dot: string }> = {
+    idle:       { label: 'Idle',       color: 'text-gray-400',    dot: 'bg-gray-500' },
+    installing: { label: 'Installing', color: 'text-yellow-400',  dot: 'bg-yellow-400 animate-pulse' },
+    validating: { label: 'Validating', color: 'text-blue-400',    dot: 'bg-blue-400 animate-pulse' },
+    running:    { label: 'Running',    color: 'text-emerald-400', dot: 'bg-emerald-400' },
+    failed:     { label: 'Failed',     color: 'text-red-400',     dot: 'bg-red-500' },
+    repaired:   { label: 'Repaired',   color: 'text-purple-400',  dot: 'bg-purple-400' },
+  };
+  const s = MAP[status] ?? MAP.idle;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+      <span className={`text-[12px] font-semibold ${s.color}`}>{s.label}</span>
+    </div>
+  );
+}
+
+function RuntimeHealthBar({ score }: { score: number }) {
+  const color = score >= 90 ? 'bg-emerald-500' : score >= 70 ? 'bg-yellow-500' : 'bg-red-500';
+  const textColor = score >= 90 ? 'text-emerald-400' : score >= 70 ? 'text-yellow-400' : 'text-red-400';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${score}%` }} />
+      </div>
+      <span className={`text-[12px] font-bold ${textColor} w-8 text-right`}>{score}%</span>
+    </div>
+  );
+}
+
+function RuntimeEnginePanel({ state }: { state: RuntimeState }) {
+  const [showPkg, setShowPkg] = useState(false);
+  const [showErrors, setShowErrors] = useState(true);
+
+  const logIcon = (type: RuntimeState['logs'][number]['type']) => {
+    if (type === 'success') return <CheckCircle2 size={11} className="text-emerald-400 shrink-0 mt-px" />;
+    if (type === 'error')   return <XCircle      size={11} className="text-red-400    shrink-0 mt-px" />;
+    if (type === 'warn')    return <AlertTriangle size={11} className="text-yellow-400 shrink-0 mt-px" />;
+    return                         <Circle       size={11} className="text-gray-600   shrink-0 mt-px" />;
+  };
+
+  const scoreColor = state.healthScore >= 90 ? 'text-emerald-400' : state.healthScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+  const scoreBg    = state.healthScore >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' : state.healthScore >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+
+  const packages  = state.dependencies?.packages ?? [];
+  const devPkgs   = state.dependencies?.devPackages ?? [];
+  const buildErrs = state.buildErrors ?? [];
+  const warnings  = state.warnings ?? [];
+  const logs      = state.logs ?? [];
+
+  return (
+    <div className="flex-1 overflow-y-auto p-3 space-y-3">
+
+      {/* Health Overview */}
+      <div className={`rounded-xl border px-3 py-2.5 ${scoreBg}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Activity size={13} className={scoreColor} />
+            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Runtime Engine</span>
+          </div>
+          <RuntimeStatusBadge status={state.status} />
+        </div>
+        <RuntimeHealthBar score={state.healthScore} />
+        <div className="grid grid-cols-3 gap-2 mt-2.5">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500">Build</span>
+            <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${state.buildPassed ? 'text-emerald-400' : 'text-red-400'}`}>
+              {state.buildPassed ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+              {state.buildPassed ? 'Passed' : 'Failed'}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500">Runtime</span>
+            <span className={`text-[12px] font-semibold flex items-center gap-0.5 ${state.runtimePassed ? 'text-emerald-400' : 'text-red-400'}`}>
+              {state.runtimePassed ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
+              {state.runtimePassed ? 'Passed' : 'Failed'}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-gray-500">Files</span>
+            <span className="text-[12px] font-semibold text-gray-300">
+              {state.filesValidated ?? 0}/{state.filesTotal ?? 0}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Build Errors */}
+      {buildErrs.length > 0 && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5">
+          <button
+            onClick={() => setShowErrors(v => !v)}
+            className="flex items-center justify-between w-full px-3 py-2 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <XCircle size={12} className="text-red-400" />
+              <span className="text-[11px] font-semibold text-red-400 uppercase tracking-wider">
+                {buildErrs.length} Build Error{buildErrs.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {showErrors ? <ChevronDown size={11} className="text-gray-600" /> : <ChevronRight size={11} className="text-gray-600" />}
+          </button>
+          {showErrors && (
+            <div className="px-3 pb-2 space-y-1.5">
+              {buildErrs.map((err, i) => (
+                <div key={i} className="rounded-lg bg-red-500/8 border border-red-500/15 px-2.5 py-1.5">
+                  <div className="flex items-start gap-1.5">
+                    <span className="text-[10px] font-mono text-red-400/70 shrink-0 mt-0.5">
+                      {err.file}{err.line ? `:${err.line}` : ''}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-red-300 mt-0.5">{err.message}</p>
+                  {err.rule && <span className="text-[10px] text-gray-600">{err.rule}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Warnings */}
+      {warnings.length > 0 && (
+        <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2">
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertTriangle size={11} className="text-yellow-400" />
+            <span className="text-[11px] font-semibold text-yellow-400 uppercase tracking-wider">{warnings.length} Warning{warnings.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-0.5">
+            {warnings.slice(0, 3).map((w, i) => (
+              <p key={i} className="text-[11px] text-yellow-300/80 font-mono truncate">{w.message}</p>
+            ))}
+            {warnings.length > 3 && <p className="text-[10px] text-gray-600">{warnings.length - 3} more warnings…</p>}
+          </div>
+        </div>
+      )}
+
+      {/* Dependencies */}
+      <div className="rounded-xl border border-white/8 bg-white/2">
+        <button
+          onClick={() => setShowPkg(v => !v)}
+          className="flex items-center justify-between w-full px-3 py-2 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <PackagePlus size={12} className="text-indigo-400" />
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+              Dependencies ({packages.length})
+            </span>
+          </div>
+          {showPkg ? <ChevronDown size={11} className="text-gray-600" /> : <ChevronRight size={11} className="text-gray-600" />}
+        </button>
+        {showPkg && (
+          <div className="px-3 pb-3">
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {packages.map(pkg => (
+                <span key={pkg} className="text-[11px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded px-1.5 py-0.5">
+                  {pkg}
+                </span>
+              ))}
+            </div>
+            {devPkgs.length > 0 && (
+              <>
+                <p className="text-[10px] text-gray-600 mb-1">Dev dependencies ({devPkgs.length})</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {devPkgs.slice(0, 8).map(pkg => (
+                    <span key={pkg} className="text-[10px] font-mono text-gray-500 bg-white/3 border border-white/8 rounded px-1.5 py-0.5">
+                      {pkg}
+                    </span>
+                  ))}
+                  {devPkgs.length > 8 && <span className="text-[10px] text-gray-600">+{devPkgs.length - 8} more</span>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Logs */}
+      {logs.length > 0 && (
+        <div className="rounded-xl border border-white/8 bg-white/2">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <TerminalSquare size={12} className="text-gray-500" />
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Runtime Logs ({logs.length})</span>
+          </div>
+          <div className="px-3 pb-3 space-y-1 max-h-56 overflow-y-auto">
+            {logs.map((log, i) => (
+              <div key={i} className="flex items-start gap-1.5">
+                {logIcon(log.type)}
+                <p className={`text-[11px] leading-relaxed ${
+                  log.type === 'error'   ? 'text-red-300' :
+                  log.type === 'warn'    ? 'text-yellow-300' :
+                  log.type === 'success' ? 'text-emerald-300' :
+                  'text-gray-400'
+                }`}>{log.message}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Missing Imports */}
+      {(state.missingImports ?? []).length > 0 && (
+        <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 px-3 py-2">
+          <div className="flex items-center gap-2 mb-1.5">
+            <AlertTriangle size={11} className="text-orange-400" />
+            <span className="text-[11px] font-semibold text-orange-400 uppercase tracking-wider">
+              {state.missingImports!.length} Unresolved Import{state.missingImports!.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          {state.missingImports!.slice(0, 3).map((mi, i) => (
+            <p key={i} className="text-[11px] font-mono text-orange-300/80">
+              <span className="text-gray-600">{mi.file}</span> — <span>{mi.missingPackage}</span>
+            </p>
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 function fileIcon(lang: string) {
   if (lang === 'json')  return <FileJson size={14} className="text-yellow-400 shrink-0" />;
   if (lang === 'html')  return <Globe     size={14} className="text-orange-400 shrink-0" />;
@@ -493,6 +718,7 @@ const BUILD_STEP_LABELS = [
   'Generating database schema...',
   'Setting up authentication...',
   'Scaffolding project...',
+  'Running runtime engine...',
   'Preparing preview...',
 ];
 
@@ -656,8 +882,9 @@ export default function WorkspacePreviewPanel({
   registrySelection, registryHealth, lockedComponents = [], onLockComponent, onUnlockComponent,
   registryFileMap, componentHistory, editSafetyScore, lastEditImpact,
   selectedTemplate, onSelectTemplate, onClearTemplate, autoMatchedTemplate,
+  runtimeState,
 }: Props) {
-  const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry' | 'marketplace'>('preview');
+  const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry' | 'marketplace' | 'runtime'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
   const [search, setSearch] = useState('');
   const [copied, setCopied] = useState(false);
@@ -828,6 +1055,25 @@ export default function WorkspacePreviewPanel({
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-amber-400" />
           )}
         </button>
+        {runtimeState && (
+          <button
+            onClick={() => { setTab('runtime'); setSelectedFile(null); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors relative ${
+              tab === 'runtime'
+                ? 'bg-white/10 text-white'
+                : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+            }`}
+          >
+            <Activity size={13} />
+            Runtime
+            {runtimeState.status === 'running' && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400" />
+            )}
+            {runtimeState.status === 'failed' && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500" />
+            )}
+          </button>
+        )}
 
         {/* Right: undo/redo + copy (when viewing a file) + Export ZIP */}
         <div className="ml-auto flex items-center gap-1">
@@ -897,6 +1143,11 @@ export default function WorkspacePreviewPanel({
           componentHistory={componentHistory}
           editSafetyScore={editSafetyScore}
         />
+      )}
+
+      {/* ── Runtime Engine tab (V6.0) ── */}
+      {tab === 'runtime' && runtimeState && (
+        <RuntimeEnginePanel state={runtimeState} />
       )}
 
       {/* ── Template Marketplace tab (V5.6) ── */}

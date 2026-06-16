@@ -9,6 +9,9 @@ import {
   logCompressionReport,
   GROQ_TOKEN_BUDGET,
 } from "../contextManager";
+import { resolveDependencies } from "../runtime/dependencyResolver.js";
+import { validateFiles, computeHealthScore, detectMissingImports, parseStaticValidatorScore } from "../runtime/runtimeValidator.js";
+import * as runtimeManager from "../runtime/runtimeManager.js";
 
 const router: Router = Router();
 
@@ -2537,7 +2540,8 @@ const COMPOSITION_SECTIONS = ['hero','navbar','features','pricing','testimonials
 router.post("/agents/build", async (req, res) => {
   const groqKey = process.env["GROQ_API_KEY"];
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
-  const { prompt } = req.body as { prompt: string };
+  const { prompt, chatId: reqChatId, selectedTemplateId } = req.body as { prompt: string; chatId?: string; selectedTemplateId?: string };
+  const chatId = reqChatId ?? `build-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
@@ -3234,6 +3238,136 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     sse(res, { type: "graph_build_done", graph: knowledgeGraph });
     sse(res, { type: "graph_health", score: knowledgeGraph.graphHealthScore, pages: knowledgeGraph.pages.length, components: knowledgeGraph.components.length, apis: knowledgeGraph.apis.length, routes: knowledgeGraph.routes.length });
     console.log(`[KnowledgeGraph] Built — pages:${knowledgeGraph.pages.length} components:${knowledgeGraph.components.length} apis:${knowledgeGraph.apis.length} healthScore:${knowledgeGraph.graphHealthScore}`);
+
+    // ── AGENT 10: RUNTIME AGENT (V6.0) ───────────────────────────────────────
+    sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: "active" });
+    sse(res, { type: "runtime_install_start" });
+
+    // Phase 1: Dependency Resolution
+    const resolvedDeps = resolveDependencies(
+      projectBlueprint.features ?? [],
+      {
+        projectType: projectBlueprint.projectType,
+        authNeeded: projectBlueprint.authNeeded,
+        apis: projectBlueprint.apis,
+      }
+    );
+    sse(res, {
+      type: "runtime_install_done",
+      dependencies: resolvedDeps.packages,
+      devDependencies: resolvedDeps.devPackages,
+      packageJson: resolvedDeps.packageJson,
+      warnings: resolvedDeps.warnings,
+    });
+    console.log(`[RuntimeAgent] Resolved ${resolvedDeps.packages.length} dependencies`);
+
+    // Phase 2: Static Build Validation
+    sse(res, { type: "runtime_start" });
+    runtimeManager.setState(chatId, {
+      status: 'validating',
+      dependencies: resolvedDeps,
+      startedAt: Date.now(),
+    });
+
+    const runtimeLogs: Array<{ timestamp: number; type: string; message: string }> = [];
+    const rtLog = (type: 'info' | 'error' | 'warn' | 'success', message: string) => {
+      const entry = { timestamp: Date.now(), type, message };
+      runtimeLogs.push(entry);
+      runtimeManager.addLog(chatId, type, message);
+      sse(res, { type: "runtime_log", logType: type, message });
+    };
+
+    rtLog('info', `Starting runtime validation for ${allFiles.length} files...`);
+    rtLog('info', `Resolved ${resolvedDeps.packages.length} dependencies: ${resolvedDeps.packages.slice(0, 5).join(', ')}${resolvedDeps.packages.length > 5 ? '…' : ''}`);
+
+    const validationResult = validateFiles(allFiles as Array<{ name: string; content: string; lang: string }>);
+    rtLog('info', `Static analysis: ${validationResult.filesPassed}/${validationResult.filesChecked} files passed`);
+
+    if (validationResult.errors.length > 0) {
+      for (const err of validationResult.errors.slice(0, 5)) {
+        rtLog('error', `[${err.file}${err.line ? `:${err.line}` : ''}] ${err.message}`);
+      }
+    }
+
+    if (validationResult.warnings.length > 0) {
+      rtLog('warn', `${validationResult.warnings.length} warning(s) detected`);
+    }
+
+    // Phase 3: Import Resolution Check
+    const missingImports = detectMissingImports(
+      allFiles as Array<{ name: string; content: string; lang: string }>,
+      resolvedDeps.packages
+    );
+    if (missingImports.length > 0) {
+      for (const mi of missingImports.slice(0, 3)) {
+        rtLog('warn', `[${mi.file}] Import not resolved: ${mi.missingPackage}`);
+      }
+    } else {
+      rtLog('success', 'All imports resolved successfully');
+    }
+
+    // Phase 4: Compute Health Score
+    const buildPassed = validationResult.passed && validationResult.errors.length === 0;
+    const runtimePassed = buildPassed && missingImports.length === 0;
+    const pvStaticScore = parseStaticValidatorScore(pv.issues);
+
+    const healthScore = computeHealthScore({
+      compileSuccess: buildPassed,
+      dependenciesResolved: resolvedDeps.packages.length > 0,
+      runtimeSuccess: runtimePassed,
+      routesValid: !validationResult.errors.some(e => e.rule === 'missing-route' || e.message.toLowerCase().includes('route')),
+      noConsoleErrors: !validationResult.errors.some(e => e.rule === 'console-error'),
+      staticScore: pvStaticScore,
+      repairAttempts: 0,
+      filesPassed: validationResult.filesPassed,
+      filesTotal: validationResult.filesChecked,
+    });
+
+    const finalRuntimeState = runtimeManager.setState(chatId, {
+      status: buildPassed ? 'running' : 'failed',
+      buildPassed,
+      runtimePassed,
+      buildErrors: validationResult.errors,
+      filesValidated: validationResult.filesPassed,
+      filesTotal: validationResult.filesChecked,
+      missingImports,
+      healthScore,
+      finishedAt: Date.now(),
+    });
+
+    if (buildPassed) {
+      rtLog('success', `Build validation passed — health score: ${healthScore}%`);
+    } else {
+      rtLog('error', `Build validation failed — ${validationResult.errors.length} error(s), health score: ${healthScore}%`);
+    }
+
+    sse(res, {
+      type: "runtime_health",
+      chatId,
+      health: healthScore,
+      status: finalRuntimeState.status,
+      buildPassed,
+      runtimePassed,
+      attempts: finalRuntimeState.attempts,
+      dependencies: resolvedDeps.packages,
+      devDependencies: resolvedDeps.devPackages,
+      packageJson: resolvedDeps.packageJson,
+      logs: runtimeLogs,
+      buildErrors: validationResult.errors,
+      warnings: validationResult.warnings,
+      missingImports,
+      filesValidated: validationResult.filesPassed,
+      filesTotal: validationResult.filesChecked,
+    });
+
+    sse(res, {
+      type: "runtime_complete",
+      chatId,
+      state: finalRuntimeState,
+    });
+
+    sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: buildPassed ? "done" : "warn" });
+    console.log(`[RuntimeAgent] Done — health:${healthScore} buildPassed:${buildPassed} deps:${resolvedDeps.packages.length}`);
 
     // ── DONE ──────────────────────────────────────────────────────────────────
     sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles, dnaComposition, sectionOwnership: dnaOwnership, themeTokens: dnaTheme, motionProfile: dnaMotion, knowledgeGraph });

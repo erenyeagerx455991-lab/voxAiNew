@@ -319,6 +319,7 @@ function AppContent() {
                   onSelectTemplate={store.setSelectedTemplate}
                   onClearTemplate={() => store.setSelectedTemplate(null)}
                   autoMatchedTemplate={store.autoMatchedTemplate}
+                  runtimeState={store.runtimeState}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}

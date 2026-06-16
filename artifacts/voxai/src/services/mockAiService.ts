@@ -1,9 +1,9 @@
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap } from './builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNABuildData, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, RuntimeState, RuntimeLog, BuildError } from './builderService';
 import type { ProjectTemplate } from './templateMarketplace';
 
 export type { RegistrySelection, RegistryHealth, RegistryFileMap };
 
-export type { EditDiff, BuildHealth, ProjectKnowledgeGraph };
+export type { EditDiff, BuildHealth, ProjectKnowledgeGraph, RuntimeState, RuntimeLog, BuildError };
 
 export interface RegistryHealthV2 {
   registryCoverage: number;
@@ -66,7 +66,9 @@ export async function mockStreamResponse(
   onRegistrySelection?: (selection: RegistrySelection) => void,
   onRegistryHealth?: (health: RegistryHealth) => void,
   onTemplateSelected?: (templateId: string, templateName: string, confidence: number, pages: string[], apis: string[], databaseTables: string[], features: string[]) => void,
-  selectedTemplateId?: string
+  selectedTemplateId?: string,
+  chatId?: string,
+  onRuntimeState?: (state: RuntimeState) => void
 ): Promise<void> {
   onStep?.(0);
 
@@ -74,7 +76,7 @@ export async function mockStreamResponse(
     const res = await fetch(`${API_BASE}/agents/build`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, selectedTemplateId }),
+      body: JSON.stringify({ prompt, selectedTemplateId, chatId }),
     });
 
     if (!res.ok || !res.body) {
@@ -168,6 +170,49 @@ export async function mockStreamResponse(
             });
           }
 
+          if (json.type === "runtime_install_start") {
+            // Runtime Agent starting — step 9 already emitted by server
+          }
+
+          if (json.type === "runtime_install_done") {
+            // dependencies resolved — no-op, handled by runtime_health
+          }
+
+          if (json.type === "runtime_start") {
+            // build validation starting
+          }
+
+          if (json.type === "runtime_log") {
+            // individual runtime log line — no-op, batched in runtime_health
+          }
+
+          if (json.type === "runtime_health") {
+            onRuntimeState?.({
+              status:         json.status          ?? 'running',
+              buildPassed:    json.buildPassed      ?? false,
+              runtimePassed:  json.runtimePassed    ?? false,
+              logs:           json.logs             ?? [],
+              attempts:       json.attempts         ?? 0,
+              healthScore:    json.health           ?? 0,
+              buildErrors:    json.buildErrors      ?? [],
+              warnings:       json.warnings         ?? [],
+              dependencies:   json.dependencies ? {
+                packages:     json.dependencies,
+                devPackages:  json.devDependencies  ?? [],
+                packageJson:  json.packageJson      ?? '',
+                warnings:     [],
+              } : null,
+              filesValidated: json.filesValidated   ?? 0,
+              filesTotal:     json.filesTotal        ?? 0,
+              missingImports: json.missingImports    ?? [],
+              chatId:         json.chatId,
+            } as RuntimeState);
+          }
+
+          if (json.type === "runtime_complete") {
+            // Final runtime state — already handled via runtime_health
+          }
+
           if (json.type === "done") {
             finalCode = json.code ?? "";
             finalProjectBlueprint = json.projectBlueprint;
@@ -175,7 +220,7 @@ export async function mockStreamResponse(
             finalFiles = Array.isArray(json.files) ? json.files : undefined;
             // If graph wasn't emitted separately, check done payload
             if (json.knowledgeGraph && onKnowledgeGraph) onKnowledgeGraph(json.knowledgeGraph);
-            onStep?.(9); // index 9 = "Preparing Preview"
+            onStep?.(10); // index 10 = "Preparing Preview" (step 9 is now Runtime Agent)
             await new Promise((r) => setTimeout(r, 300));
             onDone(planText || json.plan || "", finalCode, finalProjectBlueprint, finalSectionOrder, finalFiles);
           }

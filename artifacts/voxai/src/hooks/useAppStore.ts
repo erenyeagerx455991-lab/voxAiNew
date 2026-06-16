@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry } from '../services/builderService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
 import { TEMPLATE_LIBRARY, saveSelectedTemplate, loadSelectedTemplate, saveTemplateHistory, loadTemplateHistory, clearTemplateData } from '../services/templateMarketplace';
@@ -13,6 +13,7 @@ export type { ProjectBlueprint, ProjectFile };
 export type { EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory };
 export type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 export type { ProjectTemplate };
+export type { RuntimeState };
 
 interface AppState {
   view: View;
@@ -63,6 +64,7 @@ interface AppState {
   setSelectedTemplate: (t: ProjectTemplate | null) => void;
   autoMatchedTemplate: { templateId: string; templateName: string; confidence: number } | null;
   templateHistory: ProjectTemplate[];
+  runtimeState: RuntimeState | null;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -167,6 +169,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [autoMatchedTemplate, setAutoMatchedTemplate] = useState<{ templateId: string; templateName: string; confidence: number } | null>(null);
   const [templateHistory, setTemplateHistory] = useState<ProjectTemplate[]>([]);
   const [runtimeRepairAttempt, setRuntimeRepairAttempt] = useState(0);
+  const [runtimeState, setRuntimeState] = useState<RuntimeState | null>(null);
 
   const setSelectedTemplate = useCallback((t: ProjectTemplate | null) => {
     setSelectedTemplateState(t);
@@ -647,7 +650,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
                 });
               }
             },
-            selectedTemplate?.id
+            selectedTemplate?.id,
+            activeChatId ?? undefined,
+            (state: RuntimeState) => setRuntimeState(state)
           );
         }
       } catch (err) {
@@ -745,6 +750,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     setSelectedTemplate,
     autoMatchedTemplate,
     templateHistory,
+    runtimeState,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
       // Auto-trigger runtime repair (max 3 attempts)
