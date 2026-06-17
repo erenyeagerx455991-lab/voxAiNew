@@ -13,6 +13,7 @@ import { resolveDependencies } from "../runtime/dependencyResolver.js";
 import { validateFiles, computeHealthScore, detectMissingImports, parseStaticValidatorScore, computeRepairQuality } from "../runtime/runtimeValidator.js";
 import * as runtimeManager from "../runtime/runtimeManager.js";
 import { classifyRuntimeError, REPAIR_PROMPTS } from "../runtime/repairStrategies.js";
+import { buildRuntimeDependencyGraph, resolveImports, resolveComponents, resolveRoutes, resolvePackages } from "../runtime/dependencyResolverV2.js";
 
 const router: Router = Router();
 
@@ -4417,6 +4418,260 @@ router.post("/agents/templates/merge", (req, res) => {
   const dnaStr = Object.entries(merged.templateDna).map(([id, pct]) => `${id} (${pct}%)`).join(' + ');
   const context = `HYBRID TEMPLATE DNA: ${dnaStr}\nMerged architecture:\n- Pages: ${merged.pages.join(', ')}\n- APIs: ${merged.apis.join(', ')}\n- Database Tables: ${merged.databaseTables.join(', ')}\n- Features: ${merged.features.join(', ')}`;
   return res.json({ merged, context });
+});
+
+// ── V6.2: AUTONOMOUS RUNTIME BUILDER ─────────────────────────────────────────
+// POST /agents/autonomous-build → SSE stream; 10-phase proactive build loop
+// Phases: deps → imports → components → routes → packages → sandbox →
+//          loop (≤5 passes, stop at ≥95) → healthV3 → timeline → gate
+// ─────────────────────────────────────────────────────────────────────────────
+router.post("/agents/autonomous-build", async (req, res) => {
+  const groqKey = process.env["GROQ_API_KEY"];
+  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+
+  const {
+    chatId,
+    files: rawFiles = [],
+    resolvedDeps: rawResolvedDeps,
+  } = req.body as {
+    chatId?: string;
+    files: Array<{ name: string; content: string; lang: string; path?: string }>;
+    resolvedDeps?: { packages: string[]; devPackages: string[]; packageJson: string; warnings: string[] };
+  };
+
+  if (!rawFiles.length) return res.status(400).json({ error: "files required" });
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const sseAB = (data: Record<string, unknown>) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const resolvedDeps = rawResolvedDeps ?? { packages: [], devPackages: [], packageJson: '{}', warnings: [] };
+    let workingFiles = rawFiles.map(f => ({ ...f }));
+
+    // Init timeline
+    const cid = chatId ?? `anon-${Date.now()}`;
+    runtimeManager.initTimeline(cid);
+
+    // ── Phase 1: Dependency Intelligence ──────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "deps", label: "Dependency Intelligence Engine" });
+    const depGraph = buildRuntimeDependencyGraph(workingFiles, resolvedDeps);
+    runtimeManager.addTimelineEvent(cid, { phase: 'deps', label: 'Dependency Intelligence', status: depGraph.healthScore >= 80 ? 'pass' : 'warn', score: depGraph.healthScore, detail: `${depGraph.totalImports} imports, ${depGraph.totalComponents} components, ${depGraph.totalRoutes} routes` });
+    sseAB({
+      type: "dependency_plan",
+      depGraph,
+      summary: {
+        imports: `${depGraph.resolvedImports}/${depGraph.totalImports} resolved`,
+        components: `${depGraph.resolvedComponents}/${depGraph.totalComponents} resolved`,
+        routes: `${depGraph.resolvedRoutes}/${depGraph.totalRoutes} resolved`,
+        packages: `${depGraph.resolvedPackages}/${depGraph.totalPackages} resolved`,
+        health: depGraph.healthScore,
+        injected: depGraph.injectedImports,
+      }
+    });
+    console.log(`[AutonomousBuild] Dep graph — health:${depGraph.healthScore} imports:${depGraph.totalImports} components:${depGraph.totalComponents} routes:${depGraph.totalRoutes}`);
+
+    // ── Phase 2: Import Resolver ───────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "imports", label: "Import Resolver" });
+    const { resolutions: importResolutions, patchedFiles: afterImports } = resolveImports(workingFiles, resolvedDeps);
+    workingFiles = afterImports;
+    const autoInjected = importResolutions.filter(r => r.autoInjected).length;
+    runtimeManager.addTimelineEvent(cid, { phase: 'imports', label: 'Import Resolver', status: autoInjected > 0 ? 'warn' : 'pass', score: undefined, detail: `${autoInjected} imports auto-injected` });
+    sseAB({ type: "imports_resolved", resolutions: importResolutions.slice(0, 50), autoInjected, total: importResolutions.length });
+
+    // ── Phase 3: Component Resolver ────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "components", label: "Component Resolver" });
+    const { resolutions: compResolutions } = resolveComponents(workingFiles);
+    const missingComps = compResolutions.filter(c => !c.resolved).length;
+    runtimeManager.addTimelineEvent(cid, { phase: 'components', label: 'Component Resolver', status: missingComps > 0 ? 'warn' : 'pass', detail: `${missingComps} unresolved components` });
+    sseAB({ type: "components_resolved", resolutions: compResolutions.slice(0, 50), missing: missingComps, total: compResolutions.length });
+
+    // ── Phase 4: Route Resolver ────────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "routes", label: "Route Resolver" });
+    const { resolutions: routeResolutions } = resolveRoutes(workingFiles);
+    const missingRoutes = routeResolutions.filter(r => !r.resolved).length;
+    runtimeManager.addTimelineEvent(cid, { phase: 'routes', label: 'Route Resolver', status: missingRoutes > 0 ? 'warn' : 'pass', detail: `${routeResolutions.length} routes, ${missingRoutes} missing` });
+    sseAB({ type: "routes_resolved", resolutions: routeResolutions, missing: missingRoutes, total: routeResolutions.length });
+
+    // ── Phase 5: Package Resolver ──────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "packages", label: "Package Resolver" });
+    const pkgResolutions = resolvePackages(workingFiles, resolvedDeps);
+    const missingPkgs = pkgResolutions.filter(p => !p.inResolved).length;
+    runtimeManager.addTimelineEvent(cid, { phase: 'packages', label: 'Package Resolver', status: missingPkgs > 0 ? 'warn' : 'pass', detail: `${pkgResolutions.length} detected, ${missingPkgs} missing from resolved` });
+    sseAB({ type: "packages_resolved", resolutions: pkgResolutions, missing: missingPkgs, total: pkgResolutions.length });
+
+    // ── Phase 6: Runtime Sandbox ───────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "sandbox", label: "Runtime Sandbox Validation" });
+    let sandboxResult = validateFiles(workingFiles as Array<{ name: string; content: string; lang: string }>);
+    runtimeManager.addTimelineEvent(cid, {
+      phase: 'sandbox',
+      label: 'Runtime Sandbox',
+      status: sandboxResult.passed ? 'pass' : 'fail',
+      score: sandboxResult.score,
+      detail: `${sandboxResult.filesPassed}/${sandboxResult.filesChecked} files passed`,
+    });
+    sseAB({ type: "sandbox_result", passed: sandboxResult.passed, runtimeScore: sandboxResult.score, filesPassed: sandboxResult.filesPassed, filesChecked: sandboxResult.filesChecked, errors: sandboxResult.errors.slice(0, 5) });
+
+    // ── Phase 7: Autonomous Build Loop (max 5 passes, stop at ≥95) ────────────
+    sseAB({ type: "autonomous_phase", phase: "loop", label: "Autonomous Build Loop" });
+    const MAX_AUTO_PASSES = 5;
+    const PASS_TARGET = 95;
+    const REPAIR_SYSTEM_AB = 'You are a React JSX repair agent. Fix ONLY the reported issues. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
+    let passScores: number[] = [];
+    let currentHealth = sandboxResult.score;
+
+    for (let pass = 0; pass < MAX_AUTO_PASSES; pass++) {
+      const failures = workingFiles.filter(f =>
+        (f.lang === 'tsx' || f.lang === 'jsx') &&
+        f.name !== 'main.tsx' &&
+        !validateFiles([f] as Array<{ name: string; content: string; lang: string }>).passed
+      );
+
+      if (failures.length === 0 && currentHealth >= PASS_TARGET) {
+        passScores.push(currentHealth);
+        runtimeManager.addTimelineEvent(cid, { phase: `loop_pass_${pass + 1}`, label: `Pass ${pass + 1} — Target reached`, status: 'pass', score: currentHealth });
+        sseAB({ type: "autonomous_build_pass", pass: pass + 1, health: currentHealth, repairedCount: 0, status: "target_reached", passScores });
+        break;
+      }
+
+      if (failures.length === 0) {
+        passScores.push(currentHealth);
+        runtimeManager.addTimelineEvent(cid, { phase: `loop_pass_${pass + 1}`, label: `Pass ${pass + 1} — No failures`, status: 'pass', score: currentHealth });
+        sseAB({ type: "autonomous_build_pass", pass: pass + 1, health: currentHealth, repairedCount: 0, status: "no_failures", passScores });
+        break;
+      }
+
+      sseAB({ type: "autonomous_build_pass", pass: pass + 1, health: currentHealth, repairedCount: failures.length, status: "repairing", passScores });
+      let repairedCount = 0;
+
+      await Promise.all(failures.slice(0, 4).map(async (file) => {
+        const validation = validateFiles([file] as Array<{ name: string; content: string; lang: string }>);
+        const issues = validation.errors.slice(0, 3).map(e => e.message).join('; ') || 'JSX/syntax errors';
+        try {
+          const repaired = await callGroq(groqKey, REPAIR_MODEL,
+            [
+              { role: 'system', content: REPAIR_SYSTEM_AB },
+              { role: 'user', content: `File: ${file.name}\nIssues: ${issues}\n\nFull file:\n${file.content.slice(0, 3000)}` },
+            ],
+            false, 1500
+          );
+          if (repaired && repaired.length > 80) {
+            const cleaned = repaired.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            if (cleaned.length > file.content.length * 0.3) {
+              file.content = cleaned;
+              repairedCount++;
+            }
+          }
+        } catch (e) {
+          console.error(`[AutonomousBuild:pass${pass + 1}] repair failed for ${file.name}:`, e);
+        }
+      }));
+
+      // Re-validate after repair
+      const postRepair = validateFiles(workingFiles as Array<{ name: string; content: string; lang: string }>);
+      currentHealth = postRepair.score;
+      passScores.push(currentHealth);
+
+      runtimeManager.addTimelineEvent(cid, {
+        phase: `loop_pass_${pass + 1}`,
+        label: `Pass ${pass + 1} — ${repairedCount} files repaired`,
+        status: currentHealth >= PASS_TARGET ? 'pass' : currentHealth >= 80 ? 'warn' : 'fail',
+        score: currentHealth,
+        detail: `${repairedCount}/${failures.length} repaired`,
+      });
+      sseAB({ type: "autonomous_build_pass", pass: pass + 1, health: currentHealth, repairedCount, status: currentHealth >= PASS_TARGET ? "target_reached" : "pass_complete", passScores });
+      sandboxResult = postRepair;
+
+      if (currentHealth >= PASS_TARGET) break;
+    }
+
+    const tl = runtimeManager.getTimeline(cid);
+    if (tl) tl.totalPasses = passScores.length;
+
+    // ── Phase 8: Compute RuntimeHealthV3 ──────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "health", label: "Runtime Health V3" });
+    const runtimeStateForV3 = runtimeManager.getState(cid);
+    const healthV3 = runtimeManager.computeHealthV3(runtimeStateForV3, depGraph);
+    // Blend in the sandbox scores we tracked
+    if (currentHealth > 0) {
+      const blendedOverall = Math.round((healthV3.overall * 0.6) + (currentHealth * 0.4));
+      (healthV3 as { overall: number }).overall = Math.min(100, blendedOverall);
+    }
+
+    runtimeManager.addTimelineEvent(cid, { phase: 'health_v3', label: 'Runtime Health V3', status: healthV3.overall >= 90 ? 'pass' : healthV3.overall >= 70 ? 'warn' : 'fail', score: healthV3.overall });
+    sseAB({ type: "runtime_health_v3", healthV3, passScores, finalHealth: healthV3.overall });
+    console.log(`[AutonomousBuild] HealthV3 overall:${healthV3.overall} compile:${healthV3.compile} runtime:${healthV3.runtime} imports:${healthV3.imports} packages:${healthV3.packages} components:${healthV3.components}`);
+
+    // ── Phase 9: Runtime Timeline ──────────────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "timeline", label: "Runtime Timeline" });
+    const finalTimeline = runtimeManager.finalizeTimeline(cid, healthV3.overall);
+    if (finalTimeline) {
+      sseAB({ type: "runtime_timeline", timeline: finalTimeline });
+    }
+
+    // ── Phase 10: Autonomous Preview Gate ─────────────────────────────────────
+    sseAB({ type: "autonomous_phase", phase: "gate", label: "Preview Gate" });
+    const gatePass = healthV3.overall >= 90;
+
+    if (!gatePass) {
+      // One final targeted repair pass for critical issues
+      const criticalFiles = workingFiles.filter(f =>
+        (f.lang === 'tsx' || f.lang === 'jsx') &&
+        !validateFiles([f] as Array<{ name: string; content: string; lang: string }>).passed
+      );
+      if (criticalFiles.length > 0) {
+        sseAB({ type: "preview_gate_fail", health: healthV3.overall, threshold: 90, repairingFiles: criticalFiles.length });
+        await Promise.all(criticalFiles.slice(0, 3).map(async (file) => {
+          try {
+            const repaired = await callGroq(groqKey, REPAIR_MODEL,
+              [
+                { role: 'system', content: REPAIR_SYSTEM_AB },
+                { role: 'user', content: `CRITICAL: Fix ALL errors in this file for production preview.\nFile: ${file.name}\n\nFull file:\n${file.content.slice(0, 3000)}` },
+              ],
+              false, 1500
+            );
+            if (repaired && repaired.length > 80) {
+              const cleaned = repaired.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+              if (cleaned.length > file.content.length * 0.3) file.content = cleaned;
+            }
+          } catch { /* best effort */ }
+        }));
+        // Final health after gate repair
+        const afterGate = validateFiles(workingFiles as Array<{ name: string; content: string; lang: string }>);
+        healthV3.overall = Math.min(100, Math.round((healthV3.overall * 0.6) + (afterGate.score * 0.4)));
+        runtimeManager.addTimelineEvent(cid, { phase: 'gate', label: 'Preview Gate — Repaired', status: healthV3.overall >= 90 ? 'pass' : 'warn', score: healthV3.overall });
+        sseAB({ type: "preview_gate_repaired", health: healthV3.overall, gatePass: healthV3.overall >= 90 });
+      } else {
+        sseAB({ type: "preview_gate_fail", health: healthV3.overall, threshold: 90, repairingFiles: 0 });
+      }
+    } else {
+      runtimeManager.addTimelineEvent(cid, { phase: 'gate', label: 'Preview Gate — Passed', status: 'pass', score: healthV3.overall });
+      sseAB({ type: "preview_gate_pass", health: healthV3.overall });
+    }
+
+    sseAB({
+      type: "autonomous_build_done",
+      chatId: cid,
+      healthV3,
+      depGraph,
+      passScores,
+      timeline: runtimeManager.getTimeline(cid),
+      gatePass: healthV3.overall >= 90,
+      files: workingFiles,
+    });
+
+    console.log(`[AutonomousBuild] Done — final health:${healthV3.overall} passes:${passScores.length} gate:${healthV3.overall >= 90}`);
+
+  } catch (err: any) {
+    sseAB({ type: "autonomous_build_error", error: err?.message ?? "Autonomous build failed" });
+  }
+
+  res.end();
 });
 
 export default router;

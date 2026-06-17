@@ -1,5 +1,6 @@
 import type { BuildError } from './runtimeValidator.js';
 import type { ResolvedDependencies } from './dependencyResolver.js';
+import type { RuntimeDependencyGraph } from './dependencyResolverV2.js';
 
 export type RuntimeStatus = 'idle' | 'installing' | 'validating' | 'running' | 'failed' | 'repaired';
 
@@ -205,6 +206,126 @@ export function getRepairMetrics(chatId: string): RepairMetrics {
 
 export function getAllStates(): Map<string, RuntimeState> {
   return new Map(store);
+}
+
+// ── V6.2: 9-Dimension Health Score ───────────────────────────────────────────
+
+export interface RuntimeHealthV3 {
+  overall: number;
+  compile: number;
+  runtime: number;
+  repair: number;
+  dependencies: number;
+  routes: number;
+  imports: number;
+  packages: number;
+  components: number;
+  pages: number;
+}
+
+export interface TimelineEvent {
+  timestamp: number;
+  phase: string;
+  label: string;
+  status: 'pass' | 'fail' | 'warn' | 'info';
+  score?: number;
+  detail?: string;
+}
+
+export interface RuntimeTimeline {
+  chatId: string;
+  startedAt: number;
+  finishedAt?: number;
+  events: TimelineEvent[];
+  totalPasses: number;
+  peakHealth: number;
+  finalHealth: number;
+}
+
+const timelineStore = new Map<string, RuntimeTimeline>();
+
+export function initTimeline(chatId: string): RuntimeTimeline {
+  const tl: RuntimeTimeline = {
+    chatId,
+    startedAt: Date.now(),
+    events: [],
+    totalPasses: 0,
+    peakHealth: 0,
+    finalHealth: 0,
+  };
+  timelineStore.set(chatId, tl);
+  return tl;
+}
+
+export function addTimelineEvent(chatId: string, event: Omit<TimelineEvent, 'timestamp'>): void {
+  const tl = timelineStore.get(chatId);
+  if (!tl) return;
+  tl.events.push({ ...event, timestamp: Date.now() });
+  if (event.score !== undefined && event.score > tl.peakHealth) tl.peakHealth = event.score;
+}
+
+export function finalizeTimeline(chatId: string, finalHealth: number): RuntimeTimeline | null {
+  const tl = timelineStore.get(chatId);
+  if (!tl) return null;
+  tl.finishedAt = Date.now();
+  tl.finalHealth = finalHealth;
+  if (finalHealth > tl.peakHealth) tl.peakHealth = finalHealth;
+  return tl;
+}
+
+export function getTimeline(chatId: string): RuntimeTimeline | null {
+  return timelineStore.get(chatId) ?? null;
+}
+
+export function computeHealthV3(state: RuntimeState, depGraph?: RuntimeDependencyGraph | null): RuntimeHealthV3 {
+  const errs = state.buildErrors ?? [];
+
+  const compile = state.buildPassed
+    ? 100
+    : errs.length > 0
+      ? Math.max(0, 100 - errs.filter(e => e.type === 'error').length * 15)
+      : 75;
+
+  const runtime = state.runtimePassed ? 100 : state.buildPassed ? 70 : 40;
+
+  const repaired = state.repairedFiles ?? 0;
+  const repair = repaired > 0
+    ? Math.min(100, 60 + repaired * 15)
+    : state.buildPassed ? 100 : 50;
+
+  const dependencies = state.dependencies && state.dependencies.packages.length > 0
+    ? 100
+    : state.buildPassed ? 80 : 60;
+
+  const hasRouteErrors = errs.some(e =>
+    e.message.toLowerCase().includes('route') || e.message.toLowerCase().includes('router')
+  );
+  const routes = hasRouteErrors ? 50 : state.buildPassed ? 100 : 75;
+
+  // V6.2: new 4 dimensions from dependency graph
+  const imports = depGraph
+    ? (depGraph.totalImports > 0 ? Math.round((depGraph.resolvedImports / depGraph.totalImports) * 100) : 100)
+    : (state.missingImports && state.missingImports.length > 0 ? 70 : 100);
+
+  const packages = depGraph
+    ? (depGraph.totalPackages > 0 ? Math.round((depGraph.resolvedPackages / depGraph.totalPackages) * 100) : 100)
+    : (state.dependencies?.packages.length ?? 0) > 0 ? 100 : 80;
+
+  const components = depGraph
+    ? (depGraph.totalComponents > 0 ? Math.round((depGraph.resolvedComponents / depGraph.totalComponents) * 100) : 100)
+    : 85;
+
+  const pages = depGraph
+    ? (depGraph.totalRoutes > 0 ? Math.round((depGraph.resolvedRoutes / depGraph.totalRoutes) * 100) : 100)
+    : state.buildPassed ? 100 : 75;
+
+  const overall = Math.round(
+    (compile * 0.15) + (runtime * 0.15) + (repair * 0.10) +
+    (dependencies * 0.10) + (routes * 0.10) + (imports * 0.10) +
+    (packages * 0.10) + (components * 0.10) + (pages * 0.10)
+  );
+
+  return { overall, compile, runtime, repair, dependencies, routes, imports, packages, components, pages };
 }
 
 export function pruneOldStates(maxAgeMs = 30 * 60 * 1000): void {

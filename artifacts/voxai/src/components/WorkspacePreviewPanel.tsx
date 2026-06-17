@@ -8,7 +8,7 @@ import {
   XCircle, Circle, PackagePlus, TerminalSquare,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
-import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState, RuntimeHealthV3, RuntimeTimeline, AutonomousBuildState } from '../services/builderService';
 import type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 import { exportProjectZip } from '../services/mockAiService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
@@ -53,6 +53,9 @@ interface Props {
   repairHistory?: RuntimeRepairRecord[];
   repairMetrics?: RepairMetrics | null;
   selfHealingState?: SelfHealingState | null;
+  runtimeHealthV3?: RuntimeHealthV3 | null;
+  runtimeTimeline?: RuntimeTimeline | null;
+  autonomousBuildState?: AutonomousBuildState | null;
 }
 
 // ── V5.4: Component Registry Panel ───────────────────────────────────────────
@@ -687,16 +690,132 @@ function RepairAnalyticsPanel({ metrics }: { metrics: RepairMetrics }) {
   );
 }
 
+// ── V6.2: Autonomous Build State panel ───────────────────────────────────────
+function AutonomousBuildPanel({ abState }: { abState: AutonomousBuildState }) {
+  const PHASE_LABELS: Record<string, string> = {
+    deps: 'Dependency Intelligence', imports: 'Import Resolver', components: 'Component Resolver',
+    routes: 'Route Resolver', packages: 'Package Resolver', sandbox: 'Runtime Sandbox',
+    loop: 'Autonomous Build Loop', health: 'Health V3', timeline: 'Timeline', gate: 'Preview Gate',
+    done: 'Complete', idle: 'Idle',
+  };
+  const phaseLabel = PHASE_LABELS[abState.phase] ?? abState.phase;
+  const scoreColor = abState.healthScore >= 90 ? 'text-emerald-400' : abState.healthScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+  const dg = abState.depGraph;
+  return (
+    <div className="rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-2.5">
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2">
+          <Cpu size={12} className="text-violet-400" />
+          <span className="text-[11px] font-semibold text-violet-300 uppercase tracking-wider">Autonomous Builder</span>
+          {abState.active && <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />}
+        </div>
+        {abState.healthScore > 0 && <span className={`text-[12px] font-bold ${scoreColor}`}>{abState.healthScore}%</span>}
+      </div>
+      <div className="flex items-center gap-1.5 mb-2">
+        <div className="flex-1 h-0.5 bg-white/5 rounded-full overflow-hidden">
+          {abState.passScores.length > 0 && <div className={`h-full rounded-full transition-all duration-500 ${abState.healthScore >= 90 ? 'bg-emerald-500' : abState.healthScore >= 70 ? 'bg-yellow-500' : 'bg-violet-500'}`} style={{ width: `${abState.healthScore}%` }} />}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <span className="text-[10px] text-gray-600 uppercase tracking-wider">Phase</span>
+        <span className="text-[11px] text-violet-300">{phaseLabel}</span>
+        {abState.active && <div className="w-3 h-3 border border-violet-500 border-t-transparent rounded-full animate-spin ml-auto" />}
+      </div>
+      {abState.passScores.length > 0 && (
+        <div className="flex items-center gap-1 mt-1">
+          <span className="text-[10px] text-gray-600">Passes:</span>
+          {abState.passScores.map((s, i) => (
+            <span key={i} className={`text-[10px] font-mono font-bold ${s >= 90 ? 'text-emerald-400' : s >= 70 ? 'text-yellow-400' : 'text-red-400'}`}>{s}%</span>
+          ))}
+        </div>
+      )}
+      {dg && (
+        <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
+          <div className="flex flex-col bg-white/3 rounded-lg px-2 py-1">
+            <span className="text-gray-500">Imports</span>
+            <span className="font-semibold text-gray-300">{dg.resolvedImports}/{dg.totalImports}</span>
+          </div>
+          <div className="flex flex-col bg-white/3 rounded-lg px-2 py-1">
+            <span className="text-gray-500">Components</span>
+            <span className="font-semibold text-gray-300">{dg.resolvedComponents}/{dg.totalComponents}</span>
+          </div>
+          <div className="flex flex-col bg-white/3 rounded-lg px-2 py-1">
+            <span className="text-gray-500">Routes</span>
+            <span className="font-semibold text-gray-300">{dg.resolvedRoutes}/{dg.totalRoutes}</span>
+          </div>
+          <div className="flex flex-col bg-white/3 rounded-lg px-2 py-1">
+            <span className="text-gray-500">Packages</span>
+            <span className="font-semibold text-gray-300">{dg.resolvedPackages}/{dg.totalPackages}</span>
+          </div>
+        </div>
+      )}
+      {abState.previewGatePass && (
+        <div className="mt-2 flex items-center gap-1.5 text-emerald-400">
+          <CheckCircle2 size={11} />
+          <span className="text-[10px] font-semibold">Preview Gate Passed</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── V6.2: Timeline Panel ──────────────────────────────────────────────────────
+function RuntimeTimelinePanel({ timeline }: { timeline: RuntimeTimeline }) {
+  const statusIcon = (s: string) => {
+    if (s === 'pass') return <CheckCircle2 size={10} className="text-emerald-400 shrink-0" />;
+    if (s === 'fail') return <XCircle size={10} className="text-red-400 shrink-0" />;
+    if (s === 'warn') return <AlertTriangle size={10} className="text-yellow-400 shrink-0" />;
+    return <Circle size={10} className="text-gray-600 shrink-0" />;
+  };
+  const elapsed = timeline.finishedAt ? `${((timeline.finishedAt - timeline.startedAt) / 1000).toFixed(1)}s` : '…';
+  return (
+    <div className="rounded-xl border border-white/8 bg-white/2">
+      <div className="flex items-center justify-between px-3 py-2">
+        <div className="flex items-center gap-2">
+          <GitBranch size={12} className="text-indigo-400" />
+          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Runtime Timeline</span>
+        </div>
+        <div className="flex items-center gap-2 text-[10px] text-gray-500">
+          <span>Peak: <span className="text-emerald-400 font-semibold">{timeline.peakHealth}%</span></span>
+          <span>{elapsed}</span>
+        </div>
+      </div>
+      <div className="px-3 pb-2.5 space-y-1 max-h-56 overflow-y-auto">
+        {timeline.events.map((ev, i) => (
+          <div key={i} className="flex items-start gap-2">
+            {statusIcon(ev.status)}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[11px] text-gray-300 truncate">{ev.label}</span>
+                {ev.score !== undefined && (
+                  <span className={`text-[10px] font-bold shrink-0 ${ev.score >= 90 ? 'text-emerald-400' : ev.score >= 70 ? 'text-yellow-400' : 'text-red-400'}`}>{ev.score}%</span>
+                )}
+              </div>
+              {ev.detail && <p className="text-[10px] text-gray-600 truncate">{ev.detail}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function RuntimeEnginePanel({
   state,
   repairHistory,
   repairMetrics,
   selfHealingState,
+  runtimeHealthV3,
+  runtimeTimeline,
+  autonomousBuildState,
 }: {
   state: RuntimeState;
   repairHistory?: RuntimeRepairRecord[];
   repairMetrics?: RepairMetrics | null;
   selfHealingState?: SelfHealingState | null;
+  runtimeHealthV3?: RuntimeHealthV3 | null;
+  runtimeTimeline?: RuntimeTimeline | null;
+  autonomousBuildState?: AutonomousBuildState | null;
 }) {
   const [showPkg, setShowPkg] = useState(false);
   const [showErrors, setShowErrors] = useState(true);
@@ -708,19 +827,16 @@ function RuntimeEnginePanel({
     return                         <Circle       size={11} className="text-gray-600   shrink-0 mt-px" />;
   };
 
-  const scoreColor = state.healthScore >= 90 ? 'text-emerald-400' : state.healthScore >= 70 ? 'text-yellow-400' : 'text-red-400';
-  const scoreBg    = state.healthScore >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' : state.healthScore >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
-
   const packages  = state.dependencies?.packages ?? [];
   const devPkgs   = state.dependencies?.devPackages ?? [];
   const buildErrs = state.buildErrors ?? [];
   const warnings  = state.warnings ?? [];
   const logs      = state.logs ?? [];
 
-  // V6.1: Compute 5-dim health from state
+  // Use V3 health if available, else fall back to computed V2
   const errs = buildErrs.filter(e => e.type === 'error');
   const hasRouteErr = buildErrs.some(e => e.message.toLowerCase().includes('route'));
-  const healthV2 = {
+  const healthV2Fallback = {
     compile:    state.buildPassed ? 100 : errs.length > 0 ? Math.max(0, 100 - errs.length * 15) : 75,
     runtime:    state.runtimePassed ? 100 : state.buildPassed ? 70 : 40,
     repair:     (state.repairedFiles ?? 0) > 0 ? Math.min(100, 60 + (state.repairedFiles ?? 0) * 15) : (state.buildPassed ? 100 : 50),
@@ -728,34 +844,79 @@ function RuntimeEnginePanel({
     route:      hasRouteErr ? 50 : state.buildPassed ? 100 : 75,
   };
 
+  const displayHealth = runtimeHealthV3 ?? {
+    overall: state.healthScore,
+    compile: healthV2Fallback.compile,
+    runtime: healthV2Fallback.runtime,
+    repair: healthV2Fallback.repair,
+    dependencies: healthV2Fallback.dependency,
+    routes: healthV2Fallback.route,
+    imports: null as unknown as number,
+    packages: null as unknown as number,
+    components: null as unknown as number,
+    pages: null as unknown as number,
+  };
+
+  const overallScore = runtimeHealthV3?.overall ?? state.healthScore;
+  const scoreColor = overallScore >= 90 ? 'text-emerald-400' : overallScore >= 70 ? 'text-yellow-400' : 'text-red-400';
+  const scoreBg    = overallScore >= 90 ? 'border-emerald-500/30 bg-emerald-500/5' : overallScore >= 70 ? 'border-yellow-500/30 bg-yellow-500/5' : 'border-red-500/30 bg-red-500/5';
+
   return (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
+
+      {/* Autonomous Builder Panel (V6.2) */}
+      {autonomousBuildState && (autonomousBuildState.active || autonomousBuildState.phase !== 'idle') && (
+        <AutonomousBuildPanel abState={autonomousBuildState} />
+      )}
+
+      {/* Preview Gate Banner (V6.2) */}
+      {autonomousBuildState && !autonomousBuildState.active && autonomousBuildState.phase === 'done' && !autonomousBuildState.previewGatePass && overallScore < 90 && (
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-3 py-2 flex items-start gap-2">
+          <AlertTriangle size={12} className="text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[11px] font-semibold text-amber-300">Preview Gate Warning</p>
+            <p className="text-[10px] text-amber-300/70 mt-0.5">Health score ({overallScore}%) is below the 90% gate threshold. The preview may have minor issues.</p>
+          </div>
+        </div>
+      )}
+      {autonomousBuildState && !autonomousBuildState.active && autonomousBuildState.previewGatePass && (
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 flex items-center gap-2">
+          <CheckCircle2 size={12} className="text-emerald-400 shrink-0" />
+          <p className="text-[11px] font-semibold text-emerald-300">Preview Gate Passed — health ≥ 90%</p>
+        </div>
+      )}
 
       {/* Self-Healing Panel */}
       {selfHealingState && (
         <SelfHealingPanel healing={selfHealingState} />
       )}
 
-      {/* Health Overview — V6.1 with 5-dim bars */}
+      {/* Health Overview — V6.2 with 9-dim bars */}
       <div className={`rounded-xl border px-3 py-2.5 ${scoreBg}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Activity size={13} className={scoreColor} />
-            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Runtime Health V2</span>
+            <span className="text-[11px] font-semibold text-gray-300 uppercase tracking-wider">Runtime Health V3</span>
           </div>
           <RuntimeStatusBadge status={state.status} />
         </div>
         <div className="flex items-center gap-2 mb-2.5">
           <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${state.healthScore >= 90 ? 'bg-emerald-500' : state.healthScore >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${state.healthScore}%` }} />
+            <div className={`h-full rounded-full transition-all duration-700 ${overallScore >= 90 ? 'bg-emerald-500' : overallScore >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${overallScore}%` }} />
           </div>
-          <span className={`text-[13px] font-bold ${scoreColor} w-8 text-right`}>{state.healthScore}%</span>
+          <span className={`text-[13px] font-bold ${scoreColor} w-8 text-right`}>{overallScore}%</span>
         </div>
-        <DimHealthBar label="Compile"    score={healthV2.compile}    icon={<ShieldCheck size={10} />} />
-        <DimHealthBar label="Runtime"    score={healthV2.runtime}    icon={<Zap size={10} />} />
-        <DimHealthBar label="Repair"     score={healthV2.repair}     icon={<Wrench size={10} />} />
-        <DimHealthBar label="Dependency" score={healthV2.dependency} icon={<PackagePlus size={10} />} />
-        <DimHealthBar label="Route"      score={healthV2.route}      icon={<Route size={10} />} />
+        <DimHealthBar label="Compile"      score={displayHealth.compile}      icon={<ShieldCheck size={10} />} />
+        <DimHealthBar label="Runtime"      score={displayHealth.runtime}      icon={<Zap size={10} />} />
+        <DimHealthBar label="Repair"       score={displayHealth.repair}       icon={<Wrench size={10} />} />
+        <DimHealthBar label="Dependencies" score={displayHealth.dependencies} icon={<PackagePlus size={10} />} />
+        <DimHealthBar label="Routes"       score={displayHealth.routes}       icon={<Route size={10} />} />
+        {runtimeHealthV3 && <>
+          <DimHealthBar label="Imports"    score={runtimeHealthV3.imports}    icon={<FileCode2 size={10} />} />
+          <DimHealthBar label="Packages"   score={runtimeHealthV3.packages}   icon={<Package size={10} />} />
+          <DimHealthBar label="Components" score={runtimeHealthV3.components} icon={<Component size={10} />} />
+          <DimHealthBar label="Pages"      score={runtimeHealthV3.pages}      icon={<LayoutDashboard size={10} />} />
+        </>}
         <div className="grid grid-cols-2 gap-2 mt-2.5">
           <div className="flex flex-col">
             <span className="text-[10px] text-gray-500">Files validated</span>
@@ -769,6 +930,11 @@ function RuntimeEnginePanel({
           </div>
         </div>
       </div>
+
+      {/* Runtime Timeline (V6.2) */}
+      {runtimeTimeline && runtimeTimeline.events.length > 0 && (
+        <RuntimeTimelinePanel timeline={runtimeTimeline} />
+      )}
 
       {/* Repair Analytics */}
       {repairMetrics && repairMetrics.totalRepairs > 0 && (
@@ -1099,6 +1265,9 @@ export default function WorkspacePreviewPanel({
   repairHistory,
   repairMetrics,
   selfHealingState,
+  runtimeHealthV3,
+  runtimeTimeline,
+  autonomousBuildState,
 }: Props) {
   const [tab, setTab] = useState<'preview' | 'files' | 'graph' | 'registry' | 'marketplace' | 'runtime'>('preview');
   const [selectedFile, setSelectedFile] = useState<ProjectFile | null>(null);
@@ -1361,13 +1530,16 @@ export default function WorkspacePreviewPanel({
         />
       )}
 
-      {/* ── Runtime Engine tab (V6.0) ── */}
+      {/* ── Runtime Engine tab (V6.2) ── */}
       {tab === 'runtime' && runtimeState && (
         <RuntimeEnginePanel
           state={runtimeState}
           repairHistory={repairHistory}
           repairMetrics={repairMetrics}
           selfHealingState={selfHealingState}
+          runtimeHealthV3={runtimeHealthV3}
+          runtimeTimeline={runtimeTimeline}
+          autonomousBuildState={autonomousBuildState}
         />
       )}
 

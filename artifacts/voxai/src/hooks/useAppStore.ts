@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
-import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState } from '../services/builderService';
+import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState, RuntimeHealthV3, RuntimeTimeline, AutonomousBuildState } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry, saveRepairHistory, loadRepairHistory, computeRepairMetrics, clearRepairHistory } from '../services/builderService';
 import type { ProjectTemplate } from '../services/templateMarketplace';
 import { TEMPLATE_LIBRARY, saveSelectedTemplate, loadSelectedTemplate, saveTemplateHistory, loadTemplateHistory, clearTemplateData } from '../services/templateMarketplace';
@@ -15,6 +15,7 @@ export type { RegistryHealthV2, EditImpact } from '../services/mockAiService';
 export type { ProjectTemplate };
 export type { RuntimeState };
 export type { RuntimeRepairRecord, RepairMetrics, SelfHealingState };
+export type { RuntimeHealthV3, RuntimeTimeline, AutonomousBuildState };
 
 interface AppState {
   view: View;
@@ -69,6 +70,9 @@ interface AppState {
   repairHistory: RuntimeRepairRecord[];
   repairMetrics: RepairMetrics | null;
   selfHealingState: SelfHealingState | null;
+  runtimeHealthV3: RuntimeHealthV3 | null;
+  runtimeTimeline: RuntimeTimeline | null;
+  autonomousBuildState: AutonomousBuildState | null;
   undoEdit: () => void;
   redoEdit: () => void;
   handleSend: (content: string) => Promise<void>;
@@ -177,6 +181,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [repairHistory, setRepairHistory] = useState<RuntimeRepairRecord[]>([]);
   const [repairMetrics, setRepairMetrics] = useState<RepairMetrics | null>(null);
   const [selfHealingState, setSelfHealingState] = useState<SelfHealingState | null>(null);
+  const [runtimeHealthV3, setRuntimeHealthV3] = useState<RuntimeHealthV3 | null>(null);
+  const [runtimeTimeline, setRuntimeTimeline] = useState<RuntimeTimeline | null>(null);
+  const [autonomousBuildState, setAutonomousBuildState] = useState<AutonomousBuildState | null>(null);
 
   const setSelectedTemplate = useCallback((t: ProjectTemplate | null) => {
     setSelectedTemplateState(t);
@@ -559,6 +566,71 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           setBuildStep(9);
           loadingRef.current = false;
           onCreditsChange?.();
+
+          // V6.2: Kick off Autonomous Runtime Builder after full build completes
+          if (serverFiles && serverFiles.length > 0 && chatId) {
+            const filesForAB = serverFiles.map(f => ({ name: f.name, content: f.content, lang: f.lang, path: f.path ?? '' }));
+            setAutonomousBuildState({ active: true, currentPass: 0, maxPasses: 5, phase: 'deps', healthScore: 0, passScores: [], previewGatePass: false, depGraph: null, healthV3: null, timeline: null });
+            (async () => {
+              try {
+                const resp = await fetch('/api/agents/autonomous-build', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ chatId, files: filesForAB }),
+                });
+                if (!resp.ok || !resp.body) return;
+                const reader = resp.body.getReader();
+                const dec = new TextDecoder();
+                let buf = '';
+                while (true) {
+                  const { done, value } = await reader.read();
+                  if (done) break;
+                  buf += dec.decode(value, { stream: true });
+                  const parts = buf.split('\n\n');
+                  buf = parts.pop() ?? '';
+                  for (const part of parts) {
+                    if (!part.startsWith('data:')) continue;
+                    try {
+                      const ev = JSON.parse(part.slice(5).trim());
+                      if (ev.type === 'autonomous_phase') {
+                        setAutonomousBuildState(prev => prev ? { ...prev, phase: ev.phase as AutonomousBuildState['phase'] } : prev);
+                      } else if (ev.type === 'dependency_plan' && ev.depGraph) {
+                        setAutonomousBuildState(prev => prev ? { ...prev, depGraph: ev.depGraph } : prev);
+                      } else if (ev.type === 'autonomous_build_pass') {
+                        setAutonomousBuildState(prev => prev ? { ...prev, currentPass: ev.pass, healthScore: ev.health, passScores: ev.passScores ?? prev.passScores } : prev);
+                      } else if (ev.type === 'runtime_health_v3' && ev.healthV3) {
+                        setRuntimeHealthV3(ev.healthV3);
+                        setAutonomousBuildState(prev => prev ? { ...prev, healthV3: ev.healthV3, healthScore: ev.healthV3.overall, passScores: ev.passScores ?? prev.passScores } : prev);
+                      } else if (ev.type === 'runtime_timeline' && ev.timeline) {
+                        setRuntimeTimeline(ev.timeline);
+                        setAutonomousBuildState(prev => prev ? { ...prev, timeline: ev.timeline } : prev);
+                      } else if (ev.type === 'preview_gate_pass') {
+                        setAutonomousBuildState(prev => prev ? { ...prev, previewGatePass: true } : prev);
+                      } else if (ev.type === 'preview_gate_repaired') {
+                        setAutonomousBuildState(prev => prev ? { ...prev, previewGatePass: ev.gatePass ?? false } : prev);
+                      } else if (ev.type === 'autonomous_build_done') {
+                        setAutonomousBuildState(prev => prev ? {
+                          ...prev, active: false, phase: 'done',
+                          previewGatePass: ev.gatePass ?? false,
+                          healthScore: ev.healthV3?.overall ?? prev.healthScore,
+                          healthV3: ev.healthV3 ?? prev.healthV3,
+                          timeline: ev.timeline ?? prev.timeline,
+                        } : prev);
+                        if (ev.healthV3) setRuntimeHealthV3(ev.healthV3);
+                        if (ev.timeline) setRuntimeTimeline(ev.timeline);
+                      } else if (ev.type === 'autonomous_build_error') {
+                        setAutonomousBuildState(prev => prev ? { ...prev, active: false, phase: 'done' } : prev);
+                        console.warn('[AutonomousBuild] error:', ev.error);
+                      }
+                    } catch { /* parse error — skip */ }
+                  }
+                }
+              } catch (e) {
+                console.warn('[AutonomousBuild] fetch error:', e);
+                setAutonomousBuildState(prev => prev ? { ...prev, active: false, phase: 'done' } : prev);
+              }
+            })();
+          }
         };
 
         const handleError = (err: string) => {
@@ -761,6 +833,9 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     repairHistory,
     repairMetrics,
     selfHealingState,
+    runtimeHealthV3,
+    runtimeTimeline,
+    autonomousBuildState,
     onRuntimeError: (err: { file: string; message: string; stack?: string; component?: string }) => {
       setRuntimeErrors(prev => [...prev.slice(-9), err]);
       // Auto-trigger V6.1 self-healing loop (max 3 attempts)

@@ -917,6 +917,107 @@ export interface RuntimeHealthV2 {
   route: number;
 }
 
+// ── V6.2: 9-Dimension Health & Dependency Intelligence ───────────────────────
+
+export interface RuntimeHealthV3 {
+  overall: number;
+  compile: number;
+  runtime: number;
+  repair: number;
+  dependencies: number;
+  routes: number;
+  imports: number;
+  packages: number;
+  components: number;
+  pages: number;
+}
+
+export interface TimelineEvent {
+  timestamp: number;
+  phase: string;
+  label: string;
+  status: 'pass' | 'fail' | 'warn' | 'info';
+  score?: number;
+  detail?: string;
+}
+
+export interface RuntimeTimeline {
+  chatId: string;
+  startedAt: number;
+  finishedAt?: number;
+  events: TimelineEvent[];
+  totalPasses: number;
+  peakHealth: number;
+  finalHealth: number;
+}
+
+export interface RuntimeImportResolution {
+  file: string;
+  importPath: string;
+  resolved: boolean;
+  autoInjected: boolean;
+  reason?: string;
+}
+
+export interface RuntimeComponentResolution {
+  name: string;
+  definedIn?: string;
+  usedIn: string[];
+  resolved: boolean;
+  stubGenerated: boolean;
+}
+
+export interface RuntimeRouteResolution {
+  path: string;
+  component: string;
+  pageFile?: string;
+  resolved: boolean;
+  stubGenerated: boolean;
+}
+
+export interface RuntimePackageResolution {
+  name: string;
+  source: 'import' | 'feature' | 'inferred';
+  required: boolean;
+  inResolved: boolean;
+}
+
+export interface RuntimeDependencyGraph {
+  imports: RuntimeImportResolution[];
+  components: RuntimeComponentResolution[];
+  routes: RuntimeRouteResolution[];
+  packages: RuntimePackageResolution[];
+  resolvedAt: number;
+  totalImports: number;
+  resolvedImports: number;
+  unresolvedImports: number;
+  totalComponents: number;
+  resolvedComponents: number;
+  missingComponents: number;
+  totalRoutes: number;
+  resolvedRoutes: number;
+  missingRoutes: number;
+  totalPackages: number;
+  resolvedPackages: number;
+  missingPackages: number;
+  healthScore: number;
+  injectedImports: number;
+  generatedStubs: number;
+}
+
+export interface AutonomousBuildState {
+  active: boolean;
+  currentPass: number;
+  maxPasses: number;
+  phase: 'deps' | 'imports' | 'components' | 'routes' | 'packages' | 'sandbox' | 'loop' | 'health' | 'timeline' | 'gate' | 'done' | 'idle';
+  healthScore: number;
+  passScores: number[];
+  previewGatePass: boolean;
+  depGraph?: RuntimeDependencyGraph | null;
+  healthV3?: RuntimeHealthV3 | null;
+  timeline?: RuntimeTimeline | null;
+}
+
 export interface SelfHealingState {
   active: boolean;
   currentAttempt: number;

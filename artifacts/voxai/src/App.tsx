@@ -323,6 +323,9 @@ function AppContent() {
                   repairHistory={store.repairHistory}
                   repairMetrics={store.repairMetrics}
                   selfHealingState={store.selfHealingState}
+                  runtimeHealthV3={store.runtimeHealthV3}
+                  runtimeTimeline={store.runtimeTimeline}
+                  autonomousBuildState={store.autonomousBuildState}
                 />
                 {/* Transparent overlay — captures swipe anywhere on preview to resize.
                     Taps pass through automatically (pointer-events toggled in onGestureEnd). */}
