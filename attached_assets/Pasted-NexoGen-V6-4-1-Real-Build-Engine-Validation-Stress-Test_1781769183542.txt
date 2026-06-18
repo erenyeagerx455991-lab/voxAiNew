@@ -1,0 +1,443 @@
+NexoGen V6.4.1 — Real Build Engine Validation & Stress Test Suite
+
+Objective
+
+Do NOT add new features.
+
+Do NOT modify UI.
+
+Do NOT add dashboards, tabs, analytics, health scores, marketplaces, registries, templates, or graphs.
+
+The purpose of this task is:
+
+PROVE that the V6.4 Real Build & Runtime Execution Engine actually works on broken projects.
+
+Current problem:
+
+The verification report shows:
+
+- 10/10 projects passed
+- Repair loop never triggered
+
+This means the most important capability (self-healing) has not been validated.
+
+We must intentionally break projects and verify:
+
+Build Failure
+→ Error Classification
+→ Repair
+→ Rebuild
+→ Pass
+
+using REAL npm install and REAL Vite builds.
+
+---
+
+Phase 1 — Create Validation Harness
+
+Create:
+
+server/runtime/validationHarness.ts
+
+Purpose:
+
+Generate controlled failure scenarios.
+
+Run them through the actual V6.4 pipeline.
+
+Capture:
+
+- build failures
+- repair attempts
+- final results
+
+No mocks.
+
+No simulated results.
+
+Must use the real buildExecutor.
+
+---
+
+Phase 2 — Import Failure Tests
+
+Generate projects containing:
+
+Missing imports
+
+Example:
+
+import MissingComponent from "./DoesNotExist"
+
+Expected:
+
+Build fails
+
+Classifier returns:
+
+{
+category: "import"
+}
+
+Repair agent fixes import
+
+Build passes
+
+Create minimum:
+
+5 unique import failure cases
+
+---
+
+Phase 3 — TypeScript Failure Tests
+
+Generate failures:
+
+const value: string = 123
+
+Missing props
+
+Invalid generics
+
+Incorrect return types
+
+Expected:
+
+Classifier:
+
+{
+category: "typescript"
+}
+
+Repair succeeds
+
+Build passes
+
+Create:
+
+5 TypeScript failure scenarios
+
+---
+
+Phase 4 — JSX Failure Tests
+
+Generate:
+
+Unclosed tags
+
+Invalid JSX nesting
+
+Malformed fragments
+
+Broken component returns
+
+Expected:
+
+Classifier:
+
+{
+category: "jsx"
+}
+
+Repair succeeds
+
+Build passes
+
+Create:
+
+5 JSX failure scenarios
+
+---
+
+Phase 5 — Route Failure Tests
+
+Generate:
+
+Missing route imports
+
+Invalid route elements
+
+Broken route trees
+
+createBrowserRouter issues
+
+Expected:
+
+Classifier:
+
+{
+category: "route"
+}
+
+Repair succeeds
+
+Build passes
+
+Create:
+
+5 route scenarios
+
+---
+
+Phase 6 — Dependency Failure Tests
+
+Generate:
+
+Missing dependency
+
+Invalid package version
+
+Wrong package name
+
+Peer dependency conflict
+
+Expected:
+
+Classifier:
+
+{
+category: "dependency"
+}
+
+Repair succeeds when possible
+
+Create:
+
+5 dependency scenarios
+
+---
+
+Phase 7 — Runtime Failure Tests
+
+Generate:
+
+undefined access
+
+missing state
+
+promise rejection
+
+invalid hook usage
+
+Expected:
+
+Classifier:
+
+{
+category: "runtime"
+}
+
+Repair attempts triggered
+
+Create:
+
+5 runtime scenarios
+
+---
+
+Phase 8 — End-to-End Repair Validation
+
+For every test:
+
+Run:
+
+npm install
+↓
+npm run build
+↓
+Classify
+↓
+Repair
+↓
+Rebuild
+
+Maximum:
+
+5 repair passes
+
+Record:
+
+{
+scenario,
+category,
+passes,
+success,
+buildTimeMs
+}
+
+---
+
+Phase 9 — Failure Escalation
+
+If repair fails after 5 passes:
+
+Return:
+
+{
+status: "FAILED",
+rootCause,
+attempts: 5
+}
+
+No infinite loops.
+
+No silent failures.
+
+---
+
+Phase 10 — Real Metrics
+
+Generate actual metrics.
+
+Do NOT estimate.
+
+Measure:
+
+Repair Success Rate
+
+Average Repair Passes
+
+Average Build Time
+
+Average Repair Time
+
+Category Success Rates
+
+Example:
+
+Import Errors:
+92%
+
+TypeScript:
+88%
+
+JSX:
+95%
+
+Dependency:
+81%
+
+Runtime:
+73%
+
+Use real results only.
+
+---
+
+Phase 11 — Repair Quality Audit
+
+For every successful repair:
+
+Verify:
+
+1. Build passes
+2. Original feature still exists
+3. No unrelated files changed
+4. Registry-locked components untouched
+
+Reject repair if:
+
+Quality Score < 80
+
+---
+
+Phase 12 — Stress Testing
+
+Run:
+
+50 total broken projects
+
+Mix categories randomly.
+
+Examples:
+
+Import + TypeScript
+
+Runtime + JSX
+
+Dependency + Route
+
+Measure:
+
+Total Success Rate
+
+Average Runtime
+
+Worst Case Runtime
+
+Memory Usage
+
+---
+
+Phase 13 — Final Validation Report
+
+Output:
+
+Projects Tested
+Repair Attempts
+Successful Repairs
+Failed Repairs
+
+Per-category breakdown:
+
+Import
+TypeScript
+JSX
+Route
+Dependency
+Runtime
+
+Show:
+
+Best Category
+
+Worst Category
+
+Average Repair Passes
+
+Average Build Time
+
+Worst Build Time
+
+---
+
+Success Criteria
+
+✓ Real build failures generated
+
+✓ Repair loop actually triggered
+
+✓ Repair loop validated
+
+✓ No mocked results
+
+✓ Real npm install executed
+
+✓ Real Vite build executed
+
+✓ 50 stress tests completed
+
+✓ Repair success rate reported
+
+✓ Failure categories verified
+
+✓ Existing architecture unchanged
+
+✓ No UI changes
+
+✓ No new features
+
+Output final report showing:
+
+1. Repair success rate
+2. Category success rates
+3. Average repair passes
+4. Average build time
+5. Worst-case build time
+6. Remaining failure categories
+7. Recommended next optimization targets
+
+CRITICAL:
+
+Do not claim success unless the repair loop is actually exercised on intentionally broken projects.
+All metrics must come from real execution, not synthetic assumptions.
