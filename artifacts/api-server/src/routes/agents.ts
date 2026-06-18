@@ -14,6 +14,8 @@ import { validateFiles, computeHealthScore, detectMissingImports, parseStaticVal
 import * as runtimeManager from "../runtime/runtimeManager.js";
 import { classifyRuntimeError, REPAIR_PROMPTS } from "../runtime/repairStrategies.js";
 import { buildRuntimeDependencyGraph, resolveImports, resolveComponents, resolveRoutes, resolvePackages } from "../runtime/dependencyResolverV2.js";
+import { setupWorkspace, rebuildWorkspace, teardownWorkspace, buildRepairTargets } from "../runtime/buildExecutor.js";
+import type { RealBuildError } from "../runtime/buildExecutor.js";
 
 const router: Router = Router();
 
@@ -3241,11 +3243,11 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
     sse(res, { type: "graph_health", score: knowledgeGraph.graphHealthScore, pages: knowledgeGraph.pages.length, components: knowledgeGraph.components.length, apis: knowledgeGraph.apis.length, routes: knowledgeGraph.routes.length });
     console.log(`[KnowledgeGraph] Built — pages:${knowledgeGraph.pages.length} components:${knowledgeGraph.components.length} apis:${knowledgeGraph.apis.length} healthScore:${knowledgeGraph.graphHealthScore}`);
 
-    // ── AGENT 10: RUNTIME AGENT (V6.0) ───────────────────────────────────────
+    // ── AGENT 10: RUNTIME AGENT (V6.4 — Real Build Execution) ───────────────────
     sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: "active" });
     sse(res, { type: "runtime_install_start" });
 
-    // Phase 1: Dependency Resolution
+    // Phase 1: Resolve dependency list (used for package.json scaffold)
     const resolvedDeps = resolveDependencies(
       projectBlueprint.features ?? [],
       {
@@ -3254,22 +3256,7 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
         apis: projectBlueprint.apis,
       }
     );
-    sse(res, {
-      type: "runtime_install_done",
-      dependencies: resolvedDeps.packages,
-      devDependencies: resolvedDeps.devPackages,
-      packageJson: resolvedDeps.packageJson,
-      warnings: resolvedDeps.warnings,
-    });
-    console.log(`[RuntimeAgent] Resolved ${resolvedDeps.packages.length} dependencies`);
-
-    // Phase 2: Static Build Validation
-    sse(res, { type: "runtime_start" });
-    runtimeManager.setState(chatId, {
-      status: 'validating',
-      dependencies: resolvedDeps,
-      startedAt: Date.now(),
-    });
+    console.log(`[RuntimeAgent V6.4] Resolved ${resolvedDeps.packages.length} packages for real build`);
 
     const runtimeLogs: Array<{ timestamp: number; type: string; message: string }> = [];
     const rtLog = (type: 'info' | 'error' | 'warn' | 'success', message: string) => {
@@ -3279,87 +3266,171 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       sse(res, { type: "runtime_log", logType: type, message });
     };
 
-    rtLog('info', `Starting runtime validation for ${allFiles.length} files...`);
-    rtLog('info', `Resolved ${resolvedDeps.packages.length} dependencies: ${resolvedDeps.packages.slice(0, 5).join(', ')}${resolvedDeps.packages.length > 5 ? '…' : ''}`);
+    rtLog('info', `Starting real build for ${allFiles.length} files...`);
+    rtLog('info', `Packages: ${resolvedDeps.packages.slice(0, 5).join(', ')}${resolvedDeps.packages.length > 5 ? '…' : ''}`);
 
-    const validationResult = validateFiles(allFiles as Array<{ name: string; content: string; lang: string }>);
-    rtLog('info', `Static analysis: ${validationResult.filesPassed}/${validationResult.filesChecked} files passed`);
+    runtimeManager.setState(chatId, { status: 'installing', startedAt: Date.now(), dependencies: resolvedDeps });
 
-    if (validationResult.errors.length > 0) {
-      for (const err of validationResult.errors.slice(0, 5)) {
-        rtLog('error', `[${err.file}${err.line ? `:${err.line}` : ''}] ${err.message}`);
+    const MAX_REAL_PASSES = 5;
+    const REAL_REPAIR_SYSTEM = 'You are a React/TypeScript build repair agent. Fix ONLY the reported build errors. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
+
+    let realBuildPassed = false;
+    let realBuildErrors: RealBuildError[] = [];
+    let totalRealRepairAttempts = 0;
+    let workspaceDir = '';
+    const realBuildStart = Date.now();
+
+    try {
+      // Phase 2+3: Create isolated workspace + npm install (once)
+      rtLog('info', 'Creating isolated workspace...');
+      const setup = await setupWorkspace(
+        allFiles as Array<{ name: string; path?: string; content: string; lang: string }>,
+        resolvedDeps.packages,
+        rtLog
+      );
+      workspaceDir = setup.workspaceDir;
+
+      sse(res, {
+        type: "runtime_install_done",
+        dependencies: resolvedDeps.packages,
+        devDependencies: resolvedDeps.devPackages,
+        packageJson: resolvedDeps.packageJson,
+        warnings: resolvedDeps.warnings,
+        installDurationMs: setup.installDurationMs,
+        installSuccess: setup.installSuccess,
+      });
+
+      if (!setup.installSuccess) {
+        // Phase 9: Preview gate — install failure blocks build
+        realBuildErrors = setup.errors;
+        sse(res, { type: "runtime_failed", errors: setup.errors, phase: 'install' });
+        rtLog('error', `npm install failed after ${(setup.installDurationMs / 1000).toFixed(1)}s — ${setup.errors.map(e => e.message).slice(0, 2).join('; ')}`);
+
+      } else {
+        rtLog('info', `npm install succeeded in ${(setup.installDurationMs / 1000).toFixed(1)}s`);
+
+        // Phase 4: Start build loop (SSE compatible with frontend)
+        sse(res, { type: "runtime_start" });
+        sse(res, { type: "runtime_build_start" });
+        runtimeManager.setState(chatId, { status: 'running' });
+
+        // Phase 7: Repair loop — up to 5 passes of real Vite build + targeted repair
+        for (let pass = 0; pass < MAX_REAL_PASSES; pass++) {
+          const buildResult = await rebuildWorkspace(
+            workspaceDir,
+            allFiles as Array<{ name: string; path?: string; content: string; lang: string }>,
+            rtLog
+          );
+
+          if (buildResult.success) {
+            // Phase 9: Build passed — unblock preview
+            realBuildPassed = true;
+            realBuildErrors = [];
+            sse(res, { type: "runtime_build_done", pass: pass + 1, success: true, durationMs: buildResult.durationMs });
+            sse(res, { type: "runtime_passed", pass: pass + 1, totalDurationMs: Date.now() - realBuildStart });
+            rtLog('success', `Real build passed on pass ${pass + 1} (${((Date.now() - realBuildStart) / 1000).toFixed(1)}s total)`);
+            break;
+          }
+
+          realBuildErrors = buildResult.errors;
+          sse(res, { type: "runtime_error", pass: pass + 1, errors: buildResult.errors.slice(0, 10) });
+          rtLog('warn', `Pass ${pass + 1}: ${buildResult.errors.length} build error(s)`);
+
+          if (pass === MAX_REAL_PASSES - 1) {
+            // Phase 9: All passes exhausted — keep repair history, block preview
+            sse(res, { type: "runtime_build_done", pass: pass + 1, success: false, durationMs: buildResult.durationMs });
+            sse(res, { type: "runtime_failed", errors: buildResult.errors.slice(0, 10), passes: MAX_REAL_PASSES, phase: 'build' });
+            rtLog('error', `Build failed after ${MAX_REAL_PASSES} repair passes`);
+            break;
+          }
+
+          // Phase 7+8: Targeted repair — only failing files + their direct imports
+          const repairTargets = buildRepairTargets(buildResult.errors, allFiles as any);
+          sse(res, { type: "runtime_repair_start", pass: pass + 1, targets: repairTargets.length, errors: buildResult.errors.length });
+          rtLog('info', `Repair pass ${pass + 1}: targeting ${repairTargets.length} file(s)...`);
+          runtimeManager.setState(chatId, { status: 'repaired' });
+
+          if (repairTargets.length === 0) {
+            rtLog('warn', 'No specific files targeted — stopping repair loop');
+            sse(res, { type: "runtime_failed", errors: buildResult.errors, phase: 'no-targets' });
+            break;
+          }
+
+          // Parallel repair of all failing files (Phase 8: minimal context per file)
+          await Promise.all(repairTargets.map(async (target) => {
+            totalRealRepairAttempts++;
+            try {
+              const fixed = await callGroq(groqKey, REPAIR_MODEL,
+                [
+                  { role: 'system', content: REAL_REPAIR_SYSTEM },
+                  { role: 'user', content: target.context },
+                ],
+                false, 2000
+              );
+              if (fixed && fixed.length > 80) {
+                const cleaned = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+                target.file.content = cleaned; // mutate in-place — rebuildWorkspace picks up changes
+                rtLog('success', `Repaired ${target.file.name} (${cleaned.length} chars)`);
+              }
+            } catch (repairErr: any) {
+              rtLog('warn', `Repair skip ${target.file.name}: ${repairErr?.message ?? repairErr}`);
+            }
+          }));
+
+          sse(res, { type: "runtime_repair_done", pass: pass + 1, repaired: repairTargets.length });
+        }
       }
+    } catch (execErr: any) {
+      rtLog('error', `Runtime executor error: ${execErr?.message ?? execErr}`);
+      realBuildErrors = [{ category: 'build', message: execErr?.message ?? 'Executor error', confidence: 'low' }];
+    } finally {
+      // Phase 2: Always cleanup — no orphan workspaces
+      if (workspaceDir) await teardownWorkspace(workspaceDir).catch(() => {});
     }
 
-    if (validationResult.warnings.length > 0) {
-      rtLog('warn', `${validationResult.warnings.length} warning(s) detected`);
-    }
-
-    // Phase 3: Import Resolution Check
-    const missingImports = detectMissingImports(
-      allFiles as Array<{ name: string; content: string; lang: string }>,
-      resolvedDeps.packages
-    );
-    if (missingImports.length > 0) {
-      for (const mi of missingImports.slice(0, 3)) {
-        rtLog('warn', `[${mi.file}] Import not resolved: ${mi.missingPackage}`);
-      }
-    } else {
-      rtLog('success', 'All imports resolved successfully');
-    }
-
-    // Phase 4: Compute Health Score
-    const buildPassed = validationResult.passed && validationResult.errors.length === 0;
-    const runtimePassed = buildPassed && missingImports.length === 0;
-    const pvStaticScore = parseStaticValidatorScore(pv.issues);
-
-    const healthScore = computeHealthScore({
-      compileSuccess: buildPassed,
-      dependenciesResolved: resolvedDeps.packages.length > 0,
-      runtimeSuccess: runtimePassed,
-      routesValid: !validationResult.errors.some(e => e.rule === 'missing-route' || e.message.toLowerCase().includes('route')),
-      noConsoleErrors: !validationResult.errors.some(e => e.rule === 'console-error'),
-      staticScore: pvStaticScore,
-      repairAttempts: 0,
-      filesPassed: validationResult.filesPassed,
-      filesTotal: validationResult.filesChecked,
-    });
+    // Phase 10: Compute final health state from real build result
+    const totalRealDurationMs = Date.now() - realBuildStart;
+    const healthScore = realBuildPassed
+      ? 95
+      : Math.max(20, 70 - Math.min(50, realBuildErrors.length * 8));
 
     const finalRuntimeState = runtimeManager.setState(chatId, {
-      status: buildPassed ? 'running' : 'failed',
-      buildPassed,
-      runtimePassed,
-      buildErrors: validationResult.errors,
-      filesValidated: validationResult.filesPassed,
-      filesTotal: validationResult.filesChecked,
-      missingImports,
+      status: realBuildPassed ? 'running' : 'failed',
+      buildPassed: realBuildPassed,
+      runtimePassed: realBuildPassed,
+      buildErrors: realBuildErrors.map(e => ({
+        file: e.file ?? 'unknown',
+        type: 'error' as const,
+        message: e.message,
+        rule: e.category,
+      })),
       healthScore,
       finishedAt: Date.now(),
+      repairedFiles: totalRealRepairAttempts,
     });
 
-    if (buildPassed) {
-      rtLog('success', `Build validation passed — health score: ${healthScore}%`);
-    } else {
-      rtLog('error', `Build validation failed — ${validationResult.errors.length} error(s), health score: ${healthScore}%`);
-    }
-
+    // Phase 11: SSE events — compatible with existing frontend handlers
     sse(res, {
       type: "runtime_health",
       chatId,
       health: healthScore,
       status: finalRuntimeState.status,
-      buildPassed,
-      runtimePassed,
+      buildPassed: realBuildPassed,
+      runtimePassed: realBuildPassed,
       attempts: finalRuntimeState.attempts,
       dependencies: resolvedDeps.packages,
       devDependencies: resolvedDeps.devPackages,
       packageJson: resolvedDeps.packageJson,
       logs: runtimeLogs,
-      buildErrors: validationResult.errors,
-      warnings: validationResult.warnings,
-      missingImports,
-      filesValidated: validationResult.filesPassed,
-      filesTotal: validationResult.filesChecked,
+      buildErrors: finalRuntimeState.buildErrors,
+      warnings: [],
+      missingImports: [],
+      filesValidated: allFiles.length,
+      filesTotal: allFiles.length,
+      // V6.4 real-build fields
+      realBuild: true,
+      totalDurationMs: totalRealDurationMs,
+      repairAttempts: totalRealRepairAttempts,
     });
 
     sse(res, {
@@ -3368,8 +3439,8 @@ Apply the design DNA above to ALL pages. Make each page production-quality and v
       state: finalRuntimeState,
     });
 
-    sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: buildPassed ? "done" : "warn" });
-    console.log(`[RuntimeAgent] Done — health:${healthScore} buildPassed:${buildPassed} deps:${resolvedDeps.packages.length}`);
+    sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: realBuildPassed ? "done" : "warn" });
+    console.log(`[RuntimeAgent V6.4] Done — realBuild:${realBuildPassed} health:${healthScore} repairs:${totalRealRepairAttempts} duration:${(totalRealDurationMs / 1000).toFixed(1)}s`);
 
     // ── DONE ──────────────────────────────────────────────────────────────────
     sse(res, { type: "done", code: fixedCode, plan: cleanPlan, blueprint, projectBlueprint, sectionOrder: blueprint.sectionOrder, files: allFiles, dnaComposition, sectionOwnership: dnaOwnership, themeTokens: dnaTheme, motionProfile: dnaMotion, knowledgeGraph });
