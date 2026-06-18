@@ -1,0 +1,304 @@
+NexoGen V6.3-B — AST Resolver Production Integration
+
+Goal
+
+Integrate the new AST resolver into the existing dependency resolution pipeline.
+
+The AST resolver is already implemented and validated.
+
+DO NOT build new features.
+
+DO NOT modify UI.
+
+DO NOT add new panels, tabs, health dimensions, analytics, scoring systems, or dashboards.
+
+Only replace regex-based dependency detection with AST-based detection.
+
+---
+
+Current State
+
+Implemented:
+
+server/runtime/astResolver.ts
+
+Functions available:
+
+- parseFileAST()
+- extractImportsAST()
+- extractExportsAST()
+- extractHooksAST()
+
+Validation already passes.
+
+Current problem:
+
+dependencyResolverV2.ts still uses regex extraction as the primary source.
+
+The AST resolver exists but is not being used.
+
+---
+
+Objective
+
+Make AST the primary source of truth.
+
+Regex becomes fallback only.
+
+Existing interfaces must remain unchanged.
+
+No breaking API changes.
+
+No frontend changes.
+
+---
+
+Phase 1 — Audit Existing Resolver
+
+Inspect:
+
+server/runtime/dependencyResolverV2.ts
+
+Find every place where regex is used for:
+
+- imports
+- exports
+- hooks
+- routes
+- components
+
+Generate a migration checklist before changing code.
+
+---
+
+Phase 2 — Integrate AST Resolver
+
+Import:
+
+server/runtime/astResolver.ts
+
+Replace regex extraction calls with:
+
+extractImportsAST()
+
+extractExportsAST()
+
+extractHooksAST()
+
+AST result becomes authoritative.
+
+Example:
+
+Current:
+
+const imports = extractImportsRegex(content);
+
+Replace with:
+
+const imports = extractImportsAST(content);
+
+---
+
+Phase 3 — Preserve Existing Return Types
+
+Do NOT change public interfaces.
+
+Existing consumers must continue working.
+
+Return shapes must remain identical.
+
+If dependencyResolverV2 currently returns:
+
+{
+imports,
+exports,
+hooks
+}
+
+it must still return:
+
+{
+imports,
+exports,
+hooks
+}
+
+Only the implementation changes.
+
+---
+
+Phase 4 — Regex Fallback
+
+Keep regex extraction as fallback only.
+
+Flow:
+
+try AST
+
+if AST succeeds:
+use AST result
+
+if AST fails:
+use regex result
+
+Never throw.
+
+Never interrupt the build pipeline.
+
+Example:
+
+try {
+return extractImportsAST(content);
+}
+catch {
+regexFallbackCount++;
+return extractImportsRegex(content);
+}
+
+---
+
+Phase 5 — Component Detection Migration
+
+Current component detection relies on regex.
+
+Upgrade to AST traversal.
+
+Detect:
+
+- function components
+- arrow function components
+- memo(...)
+- forwardRef(...)
+- exported components
+
+Must correctly detect:
+
+export default function Dashboard(){}
+
+const Dashboard = () => {}
+
+export const Dashboard = () => {}
+
+export default memo(Dashboard)
+
+export default forwardRef(...)
+
+Regex remains fallback only.
+
+---
+
+Phase 6 — Route Detection Migration
+
+Replace regex route detection.
+
+Use AST traversal.
+
+Support:
+
+<Route path="/dashboard" /><Route
+path="/dashboard"
+element={<Dashboard />}
+/>
+
+createBrowserRouter(...)
+
+RouteObject arrays
+
+Nested routes
+
+Regex fallback remains.
+
+---
+
+Phase 7 — Diagnostics
+
+Extend existing diagnostics only.
+
+Track:
+
+astSuccessCount
+astFailureCount
+regexFallbackCount
+
+Log:
+
+[AST_SUCCESS]
+[AST_FAILURE]
+[REGEX_FALLBACK_USED]
+
+Do not add new health scores.
+
+Do not add new UI.
+
+---
+
+Phase 8 — Real Project Verification
+
+Run the resolver against actual generated projects.
+
+Minimum:
+
+10 previously generated projects
+
+Report:
+
+{
+filesAnalyzed,
+astSuccessCount,
+astFailureCount,
+regexFallbackCount
+}
+
+Use real project data.
+
+Do not rely only on synthetic tests.
+
+---
+
+Phase 9 — Compatibility Verification
+
+Verify:
+
+Knowledge Graph still builds
+
+Runtime Builder still works
+
+Runtime Repair still works
+
+Registry-Aware Editing still works
+
+Autonomous Runtime Builder still works
+
+No consumer code changes required.
+
+---
+
+Phase 10 — Final Report
+
+Output:
+
+1. Files modified
+2. Regex extractors removed
+3. Regex extractors retained as fallback
+4. AST success rate
+5. Fallback rate
+6. Real-project verification results
+7. Any remaining limitations
+
+Success Criteria:
+
+✓ AST is primary source
+
+✓ Regex only fallback
+
+✓ No UI changes
+
+✓ No API changes
+
+✓ No new features
+
+✓ No build failures
+
+✓ Existing pipelines continue working
+
+✓ Real generated projects verified

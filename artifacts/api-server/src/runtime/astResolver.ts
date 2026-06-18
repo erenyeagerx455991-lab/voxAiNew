@@ -460,3 +460,320 @@ export function generateMigrationReport(): MigrationReport {
     diagnostics: getASTDiagnostics(),
   };
 }
+
+// ── Phase 5: Component Detection ─────────────────────────────────────────────
+
+function isUpperCaseStart(name: string): boolean {
+  return name.length > 0 && name[0]! >= 'A' && name[0]! <= 'Z';
+}
+
+/**
+ * Detect all React component definitions in a source file using AST.
+ * Handles: function Foo(), const Foo = () => {}, memo(Foo), forwardRef(...), export default.
+ * Falls back to regex on AST failure.
+ */
+export function extractDefinedComponentsAST(sourceCode: string): string[] {
+  const result = parseFileAST(sourceCode);
+
+  if (result.success && result.ast) {
+    try {
+      const components = new Set<string>();
+
+      traverse(result.ast, {
+        // function Dashboard() {} / export function Dashboard() {}
+        FunctionDeclaration(path) {
+          if (path.node.id && isUpperCaseStart(path.node.id.name)) {
+            components.add(path.node.id.name);
+          }
+        },
+
+        VariableDeclarator(path) {
+          if (path.node.id.type !== 'Identifier') return;
+          if (!isUpperCaseStart(path.node.id.name)) return;
+          const init = path.node.init;
+          if (!init) return;
+
+          // const Foo = () => {} or const Foo = function() {}
+          if (init.type === 'ArrowFunctionExpression' || init.type === 'FunctionExpression') {
+            components.add(path.node.id.name);
+            return;
+          }
+
+          // const Foo = memo(Bar) / React.memo(Bar) / forwardRef(...) / React.forwardRef(...)
+          if (init.type === 'CallExpression') {
+            const callee = init.callee;
+            const isMemoOrRef =
+              (callee.type === 'Identifier' &&
+                (callee.name === 'memo' || callee.name === 'forwardRef')) ||
+              (callee.type === 'MemberExpression' &&
+                callee.object.type === 'Identifier' &&
+                callee.object.name === 'React' &&
+                callee.property.type === 'Identifier' &&
+                (callee.property.name === 'memo' || callee.property.name === 'forwardRef'));
+            if (isMemoOrRef) components.add(path.node.id.name);
+          }
+        },
+
+        // export default memo(Dashboard) / export default forwardRef(...)
+        ExportDefaultDeclaration(path) {
+          const decl = path.node.declaration;
+          if (decl.type !== 'CallExpression') return;
+          const callee = decl.callee;
+          const isMemoOrRef =
+            (callee.type === 'Identifier' &&
+              (callee.name === 'memo' || callee.name === 'forwardRef')) ||
+            (callee.type === 'MemberExpression' &&
+              callee.object.type === 'Identifier' &&
+              callee.object.name === 'React' &&
+              callee.property.type === 'Identifier' &&
+              (callee.property.name === 'memo' || callee.property.name === 'forwardRef'));
+          if (isMemoOrRef && decl.arguments[0]?.type === 'Identifier') {
+            components.add((decl.arguments[0] as { name: string }).name);
+          }
+        },
+      });
+
+      return [...components];
+    } catch (err) {
+      console.warn('[REGEX_FALLBACK_USED] extractDefinedComponentsAST traverse failed:', err);
+      diagnostics.regexFallbackCount++;
+      return extractDefinedComponentsFallback(sourceCode);
+    }
+  }
+
+  console.warn('[REGEX_FALLBACK_USED] AST parse failed for extractDefinedComponentsAST');
+  diagnostics.regexFallbackCount++;
+  return extractDefinedComponentsFallback(sourceCode);
+}
+
+function extractDefinedComponentsFallback(sourceCode: string): string[] {
+  const comps: string[] = [];
+  const funcRe = /^(?:export\s+(?:default\s+)?)?function\s+([A-Z][A-Za-z0-9_]*)\s*[(<]/gm;
+  let m: RegExpExecArray | null;
+  while ((m = funcRe.exec(sourceCode)) !== null) {
+    if (m[1]) comps.push(m[1]);
+  }
+  const arrowRe = /^(?:export\s+)?const\s+([A-Z][A-Za-z0-9_]*)\s*=\s*(?:React\.memo\()?(?:\([^)]*\)\s*=>|\([^)]*\)\s*:\s*[A-Za-z<>\[\]]+\s*=>|function\s*\()/gm;
+  while ((m = arrowRe.exec(sourceCode)) !== null) {
+    if (m[1]) comps.push(m[1]);
+  }
+  return [...new Set(comps)];
+}
+
+/**
+ * Detect all JSX component usages in a source file using AST.
+ * Handles nested, conditional, HOC-wrapped JSX. Falls back to regex on failure.
+ */
+export function extractUsedJSXComponentsAST(sourceCode: string): string[] {
+  const result = parseFileAST(sourceCode);
+
+  if (result.success && result.ast) {
+    try {
+      const comps = new Set<string>();
+
+      traverse(result.ast, {
+        JSXOpeningElement(path) {
+          const name = path.node.name;
+          if (name.type === 'JSXIdentifier' && isUpperCaseStart(name.name) && name.name !== 'React') {
+            comps.add(name.name);
+          } else if (name.type === 'JSXMemberExpression') {
+            // X.Sub.Sub — walk to root
+            let root: typeof name.object = name.object;
+            while (root.type === 'JSXMemberExpression') root = root.object;
+            if (root.type === 'JSXIdentifier' && isUpperCaseStart(root.name) && root.name !== 'React') {
+              comps.add(root.name);
+            }
+          }
+        },
+      });
+
+      return [...comps];
+    } catch (err) {
+      console.warn('[REGEX_FALLBACK_USED] extractUsedJSXComponentsAST traverse failed:', err);
+      diagnostics.regexFallbackCount++;
+      return extractUsedJSXComponentsFallback(sourceCode);
+    }
+  }
+
+  console.warn('[REGEX_FALLBACK_USED] AST parse failed for extractUsedJSXComponentsAST');
+  diagnostics.regexFallbackCount++;
+  return extractUsedJSXComponentsFallback(sourceCode);
+}
+
+function extractUsedJSXComponentsFallback(sourceCode: string): string[] {
+  const comps: string[] = [];
+  const re = /<([A-Z][A-Za-z0-9_.]*)[\s/>]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(sourceCode)) !== null) {
+    const base = m[1]!.split('.')[0];
+    if (base && base !== 'React') comps.push(base);
+  }
+  return [...new Set(comps)];
+}
+
+// ── Phase 6: Route Detection ─────────────────────────────────────────────────
+
+function getJSXStringAttr(attrs: ReadonlyArray<unknown>, attrName: string): string | null {
+  for (const attr of attrs) {
+    const a = attr as { type: string; name?: { type: string; name: string }; value?: unknown };
+    if (a.type !== 'JSXAttribute') continue;
+    if (!a.name || a.name.type !== 'JSXIdentifier' || a.name.name !== attrName) continue;
+    const val = a.value as { type: string; value?: unknown; expression?: { type: string; value?: unknown } } | null;
+    if (!val) continue;
+    if (val.type === 'StringLiteral') return val.value as string;
+    if (val.type === 'JSXExpressionContainer' && val.expression?.type === 'StringLiteral') {
+      return val.expression.value as string;
+    }
+  }
+  return null;
+}
+
+function getJSXElementComponent(attrs: ReadonlyArray<unknown>): string | null {
+  for (const attr of attrs) {
+    const a = attr as { type: string; name?: { type: string; name: string }; value?: unknown };
+    if (a.type !== 'JSXAttribute') continue;
+    if (!a.name || a.name.name !== 'element') continue;
+    const val = a.value as { type: string; expression?: { type: string; openingElement?: { name: { type: string; name: string } } } } | null;
+    if (!val || val.type !== 'JSXExpressionContainer') continue;
+    const expr = val.expression;
+    if (expr?.type === 'JSXElement' && expr.openingElement) {
+      const n = expr.openingElement.name as { type: string; name: string };
+      if (n.type === 'JSXIdentifier') return n.name;
+    }
+  }
+  return null;
+}
+
+function extractRoutesFromContent(sourceCode: string): Array<{ path: string; component: string }> {
+  const result = parseFileAST(sourceCode);
+  if (!result.success || !result.ast) return [];
+
+  const routes: Array<{ path: string; component: string }> = [];
+  const seen = new Set<string>();
+
+  const addRoute = (path: string, component: string) => {
+    const key = `${path}:${component}`;
+    if (!seen.has(key)) { seen.add(key); routes.push({ path, component }); }
+  };
+
+  traverse(result.ast, {
+    // <Route path="/x" element={<Foo />} /> — handles multiline + nested
+    JSXOpeningElement(path) {
+      const name = path.node.name;
+      if (name.type !== 'JSXIdentifier' || name.name !== 'Route') return;
+      const attrs = path.node.attributes;
+      const routePath = getJSXStringAttr(attrs, 'path');
+      const component = getJSXElementComponent(attrs);
+      if (routePath && component) addRoute(routePath, component);
+    },
+
+    // createBrowserRouter / createHashRouter / createMemoryRouter([...RouteObjects])
+    CallExpression(path) {
+      const callee = path.node.callee;
+      const isRouterCreator =
+        (callee.type === 'Identifier' &&
+          (callee.name === 'createBrowserRouter' ||
+            callee.name === 'createHashRouter' ||
+            callee.name === 'createMemoryRouter')) ||
+        (callee.type === 'MemberExpression' &&
+          callee.property.type === 'Identifier' &&
+          (callee.property.name === 'createBrowserRouter' ||
+            callee.property.name === 'createHashRouter'));
+      if (!isRouterCreator) return;
+
+      const arg = path.node.arguments[0];
+      if (!arg || arg.type !== 'ArrayExpression') return;
+
+      function walkRouteObjects(elements: ReadonlyArray<unknown>) {
+        for (const el of elements) {
+          if (!el) continue;
+          const obj = el as { type: string; properties?: ReadonlyArray<unknown> };
+          if (obj.type !== 'ObjectExpression' || !obj.properties) continue;
+
+          let routePath: string | null = null;
+          let component: string | null = null;
+          let children: ReadonlyArray<unknown> | null = null;
+
+          for (const prop of obj.properties) {
+            const p = prop as {
+              type: string;
+              key?: { type: string; name: string };
+              value?: { type: string; value?: unknown; openingElement?: { name: { type: string; name: string } }; elements?: ReadonlyArray<unknown> };
+            };
+            if (p.type !== 'ObjectProperty' || !p.key || !p.value) continue;
+            const key = p.key.type === 'Identifier' ? p.key.name : null;
+            if (key === 'path' && p.value.type === 'StringLiteral') routePath = p.value.value as string;
+            if (key === 'element') {
+              if (p.value.type === 'JSXElement' && p.value.openingElement) {
+                const n = p.value.openingElement.name as { type: string; name: string };
+                if (n.type === 'JSXIdentifier') component = n.name;
+              }
+            }
+            if (key === 'children' && p.value.type === 'ArrayExpression' && p.value.elements) {
+              children = p.value.elements;
+            }
+          }
+
+          if (routePath && component) addRoute(routePath, component);
+          if (children) walkRouteObjects(children);
+        }
+      }
+
+      walkRouteObjects(arg.elements);
+    },
+  });
+
+  return routes;
+}
+
+function extractRoutesFallback(files: Array<{ name: string; content: string }>): Array<{ path: string; component: string }> {
+  const routes: Array<{ path: string; component: string }> = [];
+  for (const f of files) {
+    const re = /<Route[^>]+path=['"](\/[^'"]*)['"'][^>]+element=\{<([A-Z][A-Za-z0-9_]*)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(f.content)) !== null) {
+      if (m[1] && m[2]) routes.push({ path: m[1], component: m[2] });
+    }
+    const re2 = /<Route[^>]*path=['"](\/[^'"]*)['"'][^/]*\/>/g;
+    while ((m = re2.exec(f.content)) !== null) {
+      if (m[1] && !routes.some(r => r.path === m![1])) {
+        const compMatch = f.content.slice(m.index).match(/element=\{<([A-Z][A-Za-z0-9_]*)/);
+        if (compMatch?.[1]) routes.push({ path: m[1], component: compMatch[1] });
+      }
+    }
+  }
+  return routes;
+}
+
+/**
+ * Extract all routes from a set of files using AST.
+ * Supports: <Route path> JSX, createBrowserRouter([...]), nested children routes.
+ * Falls back to regex per-file on AST failure.
+ */
+export function extractRoutesAST(
+  files: Array<{ name: string; content: string }>
+): Array<{ path: string; component: string }> {
+  const allRoutes: Array<{ path: string; component: string }> = [];
+  const seen = new Set<string>();
+
+  for (const f of files) {
+    try {
+      const routes = extractRoutesFromContent(f.content);
+      for (const r of routes) {
+        const key = `${r.path}:${r.component}`;
+        if (!seen.has(key)) { seen.add(key); allRoutes.push(r); }
+      }
+    } catch (err) {
+      console.warn('[REGEX_FALLBACK_USED] extractRoutesAST failed for file:', f.name, err);
+      diagnostics.regexFallbackCount++;
+      // per-file regex fallback
+      const fallback = extractRoutesFallback([f]);
+      for (const r of fallback) {
+        const key = `${r.path}:${r.component}`;
+        if (!seen.has(key)) { seen.add(key); allRoutes.push(r); }
+      }
+    }
+  }
+
+  return allRoutes;
+}

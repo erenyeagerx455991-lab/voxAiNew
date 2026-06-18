@@ -3,6 +3,13 @@
 // project files before runtime validation.
 
 import type { ResolvedDependencies } from './dependencyResolver.js';
+import {
+  extractImportsAST,
+  extractHooksAST,
+  extractDefinedComponentsAST,
+  extractUsedJSXComponentsAST,
+  extractRoutesAST,
+} from './astResolver.js';
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
@@ -69,35 +76,28 @@ const ROUTER_COMPONENTS = new Set(['BrowserRouter', 'HashRouter', 'MemoryRouter'
 // Packages that are always available in preview (CDN/bundled)
 const CDN_AVAILABLE = new Set(['react', 'react-dom', 'react-router-dom', 'lucide-react', 'framer-motion', 'clsx', 'class-variance-authority', 'tailwind-merge', '@radix-ui/react-slot']);
 
+// ── V6.3-B: AST-primary extractors (regex kept as internal fallback in astResolver) ──
+
 function extractAllImports(content: string): string[] {
-  const imports: string[] = [];
-  // static import: import { x } from 'y'
-  const staticRe = /import\s+(?:type\s+)?(?:\{[^}]*\}|\*\s+as\s+\w+|\w+)(?:\s*,\s*(?:\{[^}]*\}|\*\s+as\s+\w+|\w+))*\s+from\s+['"]([^'"]+)['"]/g;
-  let m: RegExpExecArray | null;
-  while ((m = staticRe.exec(content)) !== null) {
-    if (m[1]) imports.push(m[1]);
-  }
-  // dynamic: require('x') or import('x')
-  const dynRe = /(?:require|import)\(\s*['"]([^'"]+)['"]\s*\)/g;
-  while ((m = dynRe.exec(content)) !== null) {
-    if (m[1]) imports.push(m[1]);
-  }
-  return [...new Set(imports)];
+  // AST primary — extractImportsAST handles internal regex fallback
+  const { imports } = extractImportsAST(content);
+  return [...new Set(imports.map(i => i.source))];
 }
 
 function extractUsedHooks(content: string): { reactHooks: string[]; routerHooks: string[]; routerComponents: string[] } {
+  // AST primary for hook calls — internal regex fallback is inside extractHooksAST
+  const { hooks } = extractHooksAST(content);
+  // AST primary for JSX router components — internal regex fallback inside extractUsedJSXComponentsAST
+  const usedJSX = extractUsedJSXComponentsAST(content);
+
   const reactHooks: string[] = [];
   const routerHooks: string[] = [];
-  const routerComponents: string[] = [];
-  for (const hook of REACT_HOOKS) {
-    if (new RegExp(`\\b${hook}\\s*[(<]`).test(content)) reactHooks.push(hook);
+  for (const h of hooks) {
+    const bare = h.startsWith('React.') ? h.slice('React.'.length) : h;
+    if (REACT_HOOKS.has(bare)) reactHooks.push(bare);
+    else if (ROUTER_HOOKS.has(h)) routerHooks.push(h);
   }
-  for (const hook of ROUTER_HOOKS) {
-    if (new RegExp(`\\b${hook}\\s*[(<]`).test(content)) routerHooks.push(hook);
-  }
-  for (const comp of ROUTER_COMPONENTS) {
-    if (new RegExp(`<${comp}[\\s/>]`).test(content)) routerComponents.push(comp);
-  }
+  const routerComponents = usedJSX.filter(c => ROUTER_COMPONENTS.has(c));
   return { reactHooks, routerHooks, routerComponents };
 }
 
@@ -109,52 +109,18 @@ function parseExistingNamedImports(content: string, pkg: string): string[] {
 }
 
 function extractDefinedComponents(content: string): string[] {
-  const comps: string[] = [];
-  // function Foo() / function Foo(
-  const funcRe = /^(?:export\s+(?:default\s+)?)?function\s+([A-Z][A-Za-z0-9_]*)\s*[(<]/gm;
-  let m: RegExpExecArray | null;
-  while ((m = funcRe.exec(content)) !== null) {
-    if (m[1]) comps.push(m[1]);
-  }
-  // const Foo = () => / const Foo = function
-  const arrowRe = /^(?:export\s+)?const\s+([A-Z][A-Za-z0-9_]*)\s*=\s*(?:React\.memo\()?(?:\([^)]*\)\s*=>|\([^)]*\)\s*:\s*[A-Za-z<>\[\]]+\s*=>|function\s*\()/gm;
-  while ((m = arrowRe.exec(content)) !== null) {
-    if (m[1]) comps.push(m[1]);
-  }
-  return [...new Set(comps)];
+  // AST primary — extractDefinedComponentsAST has internal regex fallback
+  return extractDefinedComponentsAST(content);
 }
 
 function extractUsedJSXComponents(content: string): string[] {
-  const comps: string[] = [];
-  // <ComponentName or <ComponentName.SubComp
-  const re = /<([A-Z][A-Za-z0-9_.]*)[\s/>]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) {
-    const base = m[1].split('.')[0];
-    if (base && base !== 'React') comps.push(base);
-  }
-  return [...new Set(comps)];
+  // AST primary — extractUsedJSXComponentsAST has internal regex fallback
+  return extractUsedJSXComponentsAST(content);
 }
 
 function extractRoutes(files: Array<{ name: string; content: string }>): Array<{ path: string; component: string }> {
-  const routes: Array<{ path: string; component: string }> = [];
-  for (const f of files) {
-    // <Route path="/foo" element={<Foo />} />
-    const re = /<Route[^>]+path=['"](\/[^'"]*)['"'][^>]+element=\{<([A-Z][A-Za-z0-9_]*)[^}]*\}\s*\/?>/g;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(f.content)) !== null) {
-      if (m[1] && m[2]) routes.push({ path: m[1], component: m[2] });
-    }
-    // path="x" on separate attr lines
-    const re2 = /<Route[^>]*path=['"](\/[^'"]*)['"'][^/]*\/>/g;
-    while ((m = re2.exec(f.content)) !== null) {
-      if (m[1] && !routes.some(r => r.path === m![1])) {
-        const compMatch = f.content.slice(m.index).match(/element=\{<([A-Z][A-Za-z0-9_]*)/);
-        if (compMatch?.[1]) routes.push({ path: m[1], component: compMatch[1] });
-      }
-    }
-  }
-  return routes;
+  // AST primary — extractRoutesAST handles internal per-file regex fallback
+  return extractRoutesAST(files);
 }
 
 function extractPackagesFromImports(files: Array<{ name: string; content: string }>): string[] {
