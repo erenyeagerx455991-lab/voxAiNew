@@ -1,0 +1,250 @@
+NexoGen V6.4.9.1 — Observability Audit & Production Readiness
+
+Context
+
+V6.4.9 Observability & Telemetry has been implemented.
+
+Reported outcomes:
+
+- 7 telemetry modules added
+- Structured logger added
+- "/api/telemetry/metrics" endpoint added
+- 77 new tests
+- 206/206 tests passing
+- Console calls reduced from 96 → 28
+
+Before moving to V6.5 or any UI work, perform a verification-first audit.
+
+DO NOT assume any previous report is correct.
+
+Measure everything directly from source code.
+
+---
+
+Phase 1 — Telemetry Reality Check
+
+Generate an observability audit report with REAL measurements.
+
+Measure:
+
+- Total console.log / console.warn / console.error remaining
+- File-by-file breakdown
+- Which remaining calls are:
+  - production code
+  - tests
+  - validation harnesses
+  - debug-only
+
+Output:
+
+observabilityAudit.md
+
+Include exact locations.
+
+---
+
+Phase 2 — Metrics Usage Audit
+
+Inspect every telemetry module.
+
+Verify:
+
+- metricsProvider.ts
+- buildMetrics.ts
+- agentMetrics.ts
+- tokenMetrics.ts
+- repairMetrics.ts
+- runtimeMetrics.ts
+- traceContext.ts
+
+For each module report:
+
+- exported functions
+- actual call sites
+- dead exports
+- unused metrics
+
+Flag anything that exists but is never used.
+
+---
+
+Phase 3 — Endpoint Security Verification
+
+Inspect:
+
+GET /api/telemetry/metrics
+
+Verify:
+
+- authMiddleware attached
+- no secrets exposed
+- no API keys exposed
+- no request bodies exposed
+- no prompt contents exposed
+- no source code exposed
+
+Generate:
+
+telemetrySecurityReport.md
+
+---
+
+Phase 4 — Structured Logger Audit
+
+Inspect structuredLogger usage.
+
+Verify:
+
+- all pipeline steps use logger
+- routes use logger
+- auth middleware uses logger
+- cleanup scheduler uses logger
+- runtime validator uses logger
+
+Find remaining console usage.
+
+Classify:
+
+- Must migrate
+- Acceptable
+- Test-only
+
+---
+
+Phase 5 — Trace Propagation Verification
+
+Follow a build request end-to-end.
+
+Verify trace propagation through:
+
+Request
+→ Build Route
+→ Pipeline
+→ Planner
+→ Architecture
+→ Frontend
+→ Repair
+→ Runtime Validation
+
+Check:
+
+- requestId preserved
+- buildId preserved
+- traceId preserved
+
+Report any broken propagation chain.
+
+---
+
+Phase 6 — Metrics Value Validation
+
+Verify metrics actually change.
+
+Inspect code paths and confirm:
+
+- build counter increments
+- failure counter increments
+- agent latency recorded
+- repair attempts recorded
+- token usage recorded
+
+Flag any metric that never changes.
+
+Dead metrics must be listed.
+
+---
+
+Phase 7 — Memory Growth Audit
+
+Inspect metrics storage.
+
+Verify:
+
+- bounded memory
+- histogram limits
+- cleanup strategy
+- snapshot size
+
+Estimate memory usage after:
+
+- 100 builds
+- 1,000 builds
+- 10,000 builds
+
+If memory can grow forever:
+
+Flag as CRITICAL.
+
+---
+
+Phase 8 — Observability ROI Audit
+
+Determine whether V6.4.9 actually improved observability.
+
+Compare:
+
+Before:
+
+- raw console logs
+- no metrics endpoint
+- no traces
+
+After:
+
+- structured logs
+- telemetry
+- traces
+
+Score:
+
+- Logging
+- Metrics
+- Tracing
+- Monitoring
+
+Provide updated observability score.
+
+Do not reuse old scores.
+
+---
+
+Phase 9 — Cleanup Recommendations
+
+Identify:
+
+- unused telemetry code
+- duplicated metrics
+- unnecessary abstractions
+- dead exports
+
+Create:
+
+telemetryCleanupPlan.md
+
+Rank fixes:
+
+Critical
+High
+Medium
+Low
+
+---
+
+Phase 10 — Final Verdict
+
+Provide an evidence-based verdict:
+
+A) Production Ready
+B) Mostly Ready
+C) Partial Implementation
+D) Overengineered / Low ROI
+
+Support verdict with measurements.
+
+Never assume previous reports are correct.
+
+All numbers must come from direct inspection.
+
+No code changes in this phase.
+
+Audit only.
