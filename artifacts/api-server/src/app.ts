@@ -1,11 +1,39 @@
-import express, { type Express } from "express";
-import cors from "cors";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import pinoHttp from "pino-http";
-import router from "./routes";
+import helmet from "helmet";
 import { logger } from "./lib/logger";
+import router from "./routes";
+import { corsMiddleware } from "./security/corsConfig.js";
+import { authMiddleware } from "./security/authMiddleware.js";
+import { buildRateLimiter, chatRateLimiter, generalRateLimiter } from "./security/rateLimiter.js";
+import { recordBaselineRequest } from "./security/securityBaseline.js";
+import { startCleanupScheduler } from "./security/workspaceCleanup.js";
 
 const app: Express = express();
 
+// ── Phase 5: Helmet — HTTP security headers ───────────────────────────────────
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https:"],
+        fontSrc: ["'self'", "https:", "data:"],
+        frameSrc: ["'self'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+  })
+);
+
+// ── Phase 6: CORS allowlist ────────────────────────────────────────────────────
+app.use(corsMiddleware);
+
+// ── Request logging ───────────────────────────────────────────────────────────
 app.use(
   pinoHttp({
     logger,
@@ -25,10 +53,28 @@ app.use(
     },
   }),
 );
-app.use(cors());
-app.use(express.json());
+
+app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ── Phase 1: Baseline request recorder ────────────────────────────────────────
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  recordBaselineRequest(req.path, req.headers.origin ?? 'direct');
+  next();
+});
+
+// ── Phase 4 + Phase 3: Rate limiting & auth on protected routes ───────────────
+// /api/healthz, /api/security/metrics — public, no auth required
+// /api/agents/* — strictest limits + auth
+app.use("/api/agents", generalRateLimiter, buildRateLimiter, authMiddleware);
+
+// /api/chat/* — chat limits + auth
+app.use("/api/chat", generalRateLimiter, chatRateLimiter, authMiddleware);
+
+// ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api", router);
+
+// ── Phase 9: Start workspace cleanup scheduler ────────────────────────────────
+startCleanupScheduler();
 
 export default app;

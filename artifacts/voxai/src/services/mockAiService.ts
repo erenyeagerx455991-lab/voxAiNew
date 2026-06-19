@@ -25,10 +25,25 @@ export interface EditImpact {
 
 const API_BASE = "/api";
 
+// ── V6.4.6: Centralized API headers (auth + content-type) ────────────────────
+// All requests to /api/* automatically include x-api-key when configured.
+function apiHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const key = (import.meta as Record<string, unknown>).env
+    ? (import.meta as { env: Record<string, string> }).env['VITE_API_KEY']
+    : undefined;
+  return {
+    'Content-Type': 'application/json',
+    ...(key ? { 'x-api-key': key } : {}),
+    ...extra,
+  };
+}
+
 // ── Template Marketplace API ──────────────────────────────────────────────────
 export async function fetchTemplates(): Promise<ProjectTemplate[]> {
   try {
-    const r = await fetch(`${API_BASE}/agents/templates`);
+    const r = await fetch(`${API_BASE}/agents/templates`, {
+      headers: apiHeaders(),
+    });
     if (!r.ok) return [];
     const { templates } = await r.json();
     return templates ?? [];
@@ -38,7 +53,7 @@ export async function fetchTemplates(): Promise<ProjectTemplate[]> {
 export async function matchTemplateApi(prompt: string): Promise<{ templateId: string; confidence: number } | null> {
   try {
     const r = await fetch(`${API_BASE}/agents/templates/match`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: apiHeaders(),
       body: JSON.stringify({ prompt }),
     });
     if (!r.ok) return null;
@@ -75,7 +90,7 @@ export async function mockStreamResponse(
   try {
     const res = await fetch(`${API_BASE}/agents/build`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders(),
       body: JSON.stringify({ prompt, selectedTemplateId, chatId }),
     });
 
@@ -268,7 +283,7 @@ export async function mockEditResponse(
   try {
     const res = await fetch(`${API_BASE}/agents/edit`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders(),
       body: JSON.stringify({ prompt, projectFiles, projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents: lockedComponents ?? [], registryFileMap: registryFileMap ?? {} }),
     });
 
@@ -404,7 +419,7 @@ export async function runtimeRepair(
   try {
     const res = await fetch(`${API_BASE}/agents/runtime-repair`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: apiHeaders(),
       body: JSON.stringify({
         files,
         error,
@@ -477,7 +492,7 @@ export async function exportProjectZip(
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/agents/export`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: apiHeaders(),
     body: JSON.stringify({ files, projectName }),
   });
 
