@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "thE2QW19WffQJyrFqQtRr"
+uri = "file://artifacts/api-server/ARCHITECTURE_AUDIT_V6.4.5.md"
+type = "text"
+title = "NexoGen V6.4.5 — Architecture Audit Report"
