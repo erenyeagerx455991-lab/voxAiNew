@@ -13,6 +13,15 @@ import { mkdir, writeFile, rm } from 'fs/promises';
 import { dirname, join } from 'path';
 import { classifyInstallOutput, classifyBuildOutput } from './errorClassifier.js';
 import type { RealBuildError } from './errorClassifier.js';
+import {
+  scanPackageJson,
+  validateWorkspacePath,
+  recordPathViolation,
+  recordSafeBuild,
+  recordFailedBuild,
+  securityLog,
+  type BuildSecurityReport,
+} from './security/packageScanner.js';
 
 export type { RealBuildError } from './errorClassifier.js';
 
@@ -40,7 +49,10 @@ export interface SetupResult {
   installDurationMs: number;
   errors: RealBuildError[];
   installOutput: string;
+  securityReport: BuildSecurityReport;
 }
+
+export type { BuildSecurityReport } from './security/packageScanner.js';
 
 export interface BuildRunResult {
   success: boolean;
@@ -56,7 +68,7 @@ export interface RepairTarget {
   context: string;
 }
 
-// ── Phase 12: Security ────────────────────────────────────────────────────────
+// ── V6.4.3: Security ─────────────────────────────────────────────────────────
 
 const WORKSPACE_ROOT = '/tmp/nexogen-runs';
 const NPM_CACHE_DIR  = '/tmp/nexogen-npm-cache';
@@ -64,10 +76,13 @@ const NPM_CACHE_DIR  = '/tmp/nexogen-npm-cache';
 // Whitelisted base commands only
 const ALLOWED_CMDS = new Set(['npm', 'npx', 'node']);
 
-function assertSafePath(p: string): void {
-  const normalized = p.replace(/\/+/g, '/');
-  if (!normalized.startsWith(WORKSPACE_ROOT) && !normalized.startsWith(NPM_CACHE_DIR)) {
-    throw new Error(`[Security] Path '${p}' is outside allowed workspace root`);
+// Phase 8+9: assertSafePath — uses packageScanner validateWorkspacePath for full traversal detection
+function assertSafePath(p: string, workspaceDir?: string): void {
+  try {
+    validateWorkspacePath(p, workspaceDir ?? WORKSPACE_ROOT);
+  } catch (err) {
+    recordPathViolation();
+    throw err;
   }
 }
 
@@ -317,6 +332,7 @@ async function runInstall(workspaceDir: string, onLog?: LogFn): Promise<{ succes
 
   const { exitCode, stdout, stderr } = await runCmd('npm', [
     'install',
+    '--ignore-scripts',       // V6.4.3 Phase 1: never execute pre/post/install scripts
     '--prefer-offline',
     '--no-audit',
     '--no-fund',
@@ -436,17 +452,61 @@ export async function setupWorkspace(
 
   onLog?.('info', `Wrote ${files.length} project files`);
 
-  // Phase 3: npm install (once per workspace)
+  // ── V6.4.3 Phase 5: Security scan before any npm install ─────────────────
+  const pkgJsonContent = buildPackageJson(extraPackages);
+  const scanCtx = { workspaceId: buildId, projectId: buildId };
+
+  securityLog('PACKAGE_SCAN', { workspaceId: buildId, step: 'pre-install' });
+  onLog?.('info', '[PACKAGE_SCAN] Scanning package.json for dangerous scripts...');
+
+  const scanResult = scanPackageJson(pkgJsonContent, scanCtx);
+
+  // Build a running security report (Phase 10)
+  const securityReport: BuildSecurityReport = {
+    scriptsBlocked: scanResult.violations.length,
+    suspiciousDependencies: scanResult.suspiciousDependencies,
+    unknownDependencies: scanResult.unknownDependencies,
+    pathViolations: 0,
+    installProtected: true,   // --ignore-scripts is always active (Phase 1)
+  };
+
+  if (!scanResult.safe) {
+    const reason = scanResult.violations.join('; ');
+    onLog?.('error', `[PACKAGE_SCRIPT_BLOCKED] Build aborted: ${reason}`);
+    recordFailedBuild();
+    return {
+      workspaceDir,
+      installSuccess: false,
+      installDurationMs: 0,
+      errors: [{ category: 'dependency', message: reason, severity: 'error' }],
+      installOutput: reason,
+      securityReport,
+    };
+  }
+
+  if (scanResult.suspiciousDependencies.length > 0) {
+    onLog?.('warn', `[SUSPICIOUS_DEPENDENCY] Flagged: ${scanResult.suspiciousDependencies.join(', ')}`);
+  }
+  if (scanResult.unknownDependencies.length > 0) {
+    onLog?.('warn', `[PACKAGE_SCAN] Unknown deps (not in allowlist): ${scanResult.unknownDependencies.join(', ')}`);
+  }
+
+  onLog?.('info', '[PACKAGE_SCAN] Scan passed — proceeding to install');
+
+  // Phase 3: npm install (once per workspace) — always uses --ignore-scripts
   const { success: installSuccess, output: installOutput, durationMs: installDurationMs } = await runInstall(workspaceDir, onLog);
   const errors = classifyInstallOutput(installOutput, installSuccess ? 0 : 1);
 
-  if (!installSuccess) {
+  if (installSuccess) {
+    recordSafeBuild();
+  } else {
+    recordFailedBuild();
     for (const err of errors.slice(0, 3)) {
       onLog?.('error', `  → [${err.category}] ${err.message}`);
     }
   }
 
-  return { workspaceDir, installSuccess, installDurationMs, errors, installOutput };
+  return { workspaceDir, installSuccess, installDurationMs, errors, installOutput, securityReport };
 }
 
 // ── Phase 4: Rebuild (update files + vite build) ─────────────────────────────
@@ -563,6 +623,7 @@ export interface RuntimeState {
   errors: RealBuildError[];
   totalDurationMs: number;
   repairAttempts: number;
+  securityReport?: BuildSecurityReport;   // V6.4.3 Phase 10
 }
 
 export function buildRuntimeState(
@@ -571,7 +632,8 @@ export function buildRuntimeState(
   buildPassed: boolean,
   errors: RealBuildError[],
   totalDurationMs: number,
-  repairAttempts: number
+  repairAttempts: number,
+  securityReport?: BuildSecurityReport    // V6.4.3 Phase 10
 ): RuntimeState {
   return {
     status,
@@ -581,5 +643,9 @@ export function buildRuntimeState(
     errors,
     totalDurationMs,
     repairAttempts,
+    securityReport,
   };
 }
+
+// ── V6.4.3 Phase 11: Security Metrics Export ──────────────────────────────────
+export { getSecurityMetrics } from './security/packageScanner.js';
