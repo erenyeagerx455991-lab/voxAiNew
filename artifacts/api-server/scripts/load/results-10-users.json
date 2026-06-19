@@ -1,0 +1,14 @@
+{
+  "concurrency": 10,
+  "durationSeconds": 10,
+  "requestsTotal": 24873,
+  "throughputRps": 2487.7,
+  "latencyAvgMs": 3.54,
+  "latencyP50Ms": 3,
+  "latencyP95Ms": 17,
+  "latencyMaxMs": 43,
+  "errors": 0,
+  "non2xx": 0,
+  "bytesPerSec": 2596864,
+  "generatedAt": "2026-06-19T17:14:19.845Z"
+}

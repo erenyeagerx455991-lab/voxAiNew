@@ -8,6 +8,9 @@ import { authMiddleware } from "./security/authMiddleware.js";
 import { buildRateLimiter, chatRateLimiter, generalRateLimiter } from "./security/rateLimiter.js";
 import { recordBaselineRequest } from "./security/securityBaseline.js";
 import { startCleanupScheduler } from "./security/workspaceCleanup.js";
+import { initRedis } from "./queue/redisClient.js";
+import { initBuildQueue } from "./queue/buildQueue.js";
+import { initQueueWorker } from "./queue/queueWorker.js";
 
 const app: Express = express();
 
@@ -79,5 +82,15 @@ app.use("/api", router);
 
 // ── Phase 9: Start workspace cleanup scheduler ────────────────────────────────
 startCleanupScheduler();
+
+// ── V7.0: Queue + Worker initialization ──────────────────────────────────────
+initRedis().then(() => {
+  initBuildQueue();
+  initQueueWorker();
+}).catch(() => {
+  // Redis unavailable — queue runs in-memory mode (already logged by initRedis)
+  initBuildQueue();
+  initQueueWorker();
+});
 
 export default app;

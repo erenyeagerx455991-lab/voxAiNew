@@ -24,3 +24,4 @@
 - [VoxAI V6.4.9 Pipeline Extraction](voxai-v649-pipeline-extraction.md) — build route reduced to 22 LOC; 8 pipeline step files in src/agents/pipeline/; backendStep needs repaired frontend output; architectureStep needs raw prompt string; 20/20 contract tests pass.
 - [VoxAI V6.4.9 Observability & Telemetry](voxai-v649-telemetry.md) — 7 telemetry modules + structuredLogger; GET /api/telemetry/metrics; 96→28 console.* (-71%); 206 tests pass; zero SSE contract changes.
 - [VoxAI V6.6 RAG Registry](voxai-v66-rag-registry.md) — intent-based top-K retrieval replaces full-registry injection; 80%+ token reduction; 293 tests pass; repairMetrics needs resetRepairMetrics() in beforeEach.
+- [VoxAI V7.0 Scalability Foundation](voxai-v70-scalability.md) — BullMQ+Redis queue (in-memory fallback), workspace registry, token budget, user limits; 339 tests; 2.5k–3.3k req/s at 10–100 users; autocannon load scripts in scripts/load/.

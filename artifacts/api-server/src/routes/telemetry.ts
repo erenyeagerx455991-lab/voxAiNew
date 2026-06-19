@@ -4,6 +4,10 @@ import { globalMetrics } from "../telemetry/metricsProvider.js";
 import { getRegistryMetrics } from "../telemetry/registryMetrics.js";
 import { getCacheStats } from "../components/retrieval/retrievalCache.js";
 import { getIndexStats } from "../components/registryV2/searchIndex.js";
+import { getQueueMetrics } from "../queue/queueMetrics.js";
+import { getBudgetMetrics } from "../cost/budgetMetrics.js";
+import { getBudgetUsage } from "../cost/tokenBudget.js";
+import { getAllUserStats } from "../limits/userLimits.js";
 
 const router: Router = Router();
 
@@ -35,6 +39,16 @@ router.get("/telemetry/registry", authMiddleware, (_req, res) => {
     retrieval: metrics,
     cache,
     index,
+    generatedAt: new Date().toISOString(),
+  });
+});
+
+router.get("/telemetry/queue", authMiddleware, (_req, res) => {
+  res.json({
+    queue:   getQueueMetrics(),
+    budget:  getBudgetMetrics(),
+    usage:   getBudgetUsage(),
+    users:   getAllUserStats(),
     generatedAt: new Date().toISOString(),
   });
 });

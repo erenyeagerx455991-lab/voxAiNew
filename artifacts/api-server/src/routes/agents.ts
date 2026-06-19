@@ -41,6 +41,8 @@ import { getTemplatesByCategory, getRegistryCatalogue, selectTemplatesForPrompt,
 import { retrieveComponents } from "../components/retrieval/retrieveComponents.js";
 import { buildCompressedCatalogue } from "../components/retrieval/buildRegistryContext.js";
 import { runBuildPipeline } from "../agents/pipeline/buildPipeline.js";
+import { checkBuildLimit, extractUserId, recordBuildStarted, recordBuildCompleted } from "../limits/userLimits.js";
+import { checkTokenBudget } from "../cost/tokenBudget.js";
 import { createLogger } from "../lib/structuredLogger.js";
 const log = createLogger("AgentsRoute");
 
@@ -65,6 +67,15 @@ router.post("/agents/build", async (req, res) => {
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
   if (!prompt) return res.status(400).json({ error: "prompt required" });
 
+  const userId = extractUserId(req);
+  const limitCheck = checkBuildLimit(userId);
+  if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
+
+  const budgetCheck = checkTokenBudget();
+  if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
+
+  recordBuildStarted(userId);
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
@@ -74,6 +85,8 @@ router.post("/agents/build", async (req, res) => {
     await runBuildPipeline({ prompt, chatId, keys: { groqKey, openrouterKey } }, res);
   } catch (err: any) {
     sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });
+  } finally {
+    recordBuildCompleted(userId);
   }
 
   res.end();
