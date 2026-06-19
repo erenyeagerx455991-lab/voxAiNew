@@ -5,11 +5,12 @@ import {
   recordRepairSuccess,
   recordRepairFailure,
   getRepairSnapshot,
+  resetRepairMetrics,
 } from "../../src/telemetry/repairMetrics.js";
 
 describe("Repair Metrics Integration", () => {
   beforeEach(() => {
-    globalMetrics.reset();
+    resetRepairMetrics();
   });
 
   it("records a successful repair and reflects in snapshot", () => {

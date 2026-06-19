@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { authMiddleware } from "../security/authMiddleware.js";
 import { globalMetrics } from "../telemetry/metricsProvider.js";
+import { getRegistryMetrics } from "../telemetry/registryMetrics.js";
+import { getCacheStats } from "../components/retrieval/retrievalCache.js";
+import { getIndexStats } from "../components/registryV2/searchIndex.js";
 
 const router: Router = Router();
 
@@ -20,6 +23,18 @@ router.get("/telemetry/metrics", authMiddleware, (_req, res) => {
         { count: v.count, avg: v.sum > 0 ? Math.round(v.sum / v.count) : 0, p50: v.p50, p95: v.p95, p99: v.p99, min: v.min, max: v.max },
       ])
     ),
+    generatedAt: new Date().toISOString(),
+  });
+});
+
+router.get("/telemetry/registry", authMiddleware, (_req, res) => {
+  const metrics = getRegistryMetrics();
+  const cache   = getCacheStats();
+  const index   = getIndexStats();
+  res.json({
+    retrieval: metrics,
+    cache,
+    index,
     generatedAt: new Date().toISOString(),
   });
 });

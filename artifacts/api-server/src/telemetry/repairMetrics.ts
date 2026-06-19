@@ -74,3 +74,12 @@ export function getRepairSnapshot() {
   syncSnapshot();
   return globalMetrics.snapshot().repairs;
 }
+
+export function resetRepairMetrics(): void {
+  repairRecords.length = 0;
+  totalAttempts = 0;
+  successfulRepairs = 0;
+  failedRepairs = 0;
+  repairPassCounts.length = 0;
+  globalMetrics.reset();
+}

@@ -38,6 +38,8 @@ import {
   serverMatchTemplate, buildTemplateContextServer,
 } from "../agents/templates/templateAgent.js";
 import { getTemplatesByCategory, getRegistryCatalogue, selectTemplatesForPrompt, buildContextFromTemplates } from "../components/registry";
+import { retrieveComponents } from "../components/retrieval/retrieveComponents.js";
+import { buildCompressedCatalogue } from "../components/retrieval/buildRegistryContext.js";
 import { runBuildPipeline } from "../agents/pipeline/buildPipeline.js";
 import { createLogger } from "../lib/structuredLogger.js";
 const log = createLogger("AgentsRoute");
@@ -212,7 +214,8 @@ router.post("/agents/audit", async (req, res) => {
       framer: 'hero-bento-v1', notion: 'hero-editorial-v1', cursor: 'hero-asymmetric-v1',
     };
     const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, finalDNA, referenceSites, auditPrimaryRef);
-    const componentContext = buildContextFromTemplates(selectedTemplates);
+    const ragResult = await retrieveComponents(prompt, blueprint.sectionOrder, 15);
+    const componentContext = buildCompressedCatalogue(ragResult);
     const codeGenSystemPrompt = buildCodeSystem(finalDNA, blueprint, componentContext);
 
     const selectedHero = selectedTemplates.find(t => t.category === 'hero')?.id ?? 'none';
