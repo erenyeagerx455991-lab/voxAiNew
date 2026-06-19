@@ -64,12 +64,15 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 });
 
 // ── Phase 4 + Phase 3: Rate limiting & auth on protected routes ───────────────
-// /api/healthz, /api/security/metrics — public, no auth required
-// /api/agents/* — strictest limits + auth
+// Public:  /api/healthz only
+// Auth required: /api/agents/*, /api/chat/*, /api/security/*
 app.use("/api/agents", generalRateLimiter, buildRateLimiter, authMiddleware);
 
 // /api/chat/* — chat limits + auth
 app.use("/api/chat", generalRateLimiter, chatRateLimiter, authMiddleware);
+
+// /api/security/* — metrics and baseline require auth (health endpoint is separate)
+app.use("/api/security", generalRateLimiter, authMiddleware);
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api", router);

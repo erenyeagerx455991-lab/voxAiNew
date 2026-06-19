@@ -1,0 +1,447 @@
+NexoGen V6.4.8.1 — Security Completion & V6.4.9 Build Pipeline Extraction
+
+Context
+
+V6.4.7 (Testing) is complete.
+
+V6.4.8 (Agents Decomposition) is only partially complete.
+
+Verified findings:
+
+- agents.ts reduced from 4748 LOC → 2129 LOC
+- Utility modules extracted successfully
+- Core "/agents/build" route still contains ~880 LOC
+- Route handler is NOT a thin orchestrator yet
+- Planner, Architecture, Frontend Generation, Repair orchestration remain inline
+- Security baseline exists but production-hardening items still require verification
+
+This task is divided into two stages:
+
+1. Security Completion (must be finished first)
+2. Build Pipeline Extraction
+
+Do not start Stage 2 until Stage 1 passes validation.
+
+---
+
+STAGE 1 — SECURITY COMPLETION
+
+Phase 1 — Production Auth Enforcement Verification
+
+Verify:
+
+- API_KEY exists
+- VITE_API_KEY exists
+- Production mode fails startup if API_KEY missing
+
+Current behavior:
+
+Development:
+
+- Auth disabled allowed
+
+Production:
+
+- Must hard fail
+
+Required:
+
+if (process.env.NODE_ENV === "production" && !process.env.API_KEY) {
+  throw new Error("API_KEY required in production");
+}
+
+Validation:
+
+- dev boots without key
+- prod refuses startup
+
+---
+
+Phase 2 — Security Metrics Endpoint Protection
+
+Current concern:
+
+Verify whether:
+
+GET /api/security/metrics
+
+is publicly accessible.
+
+Required:
+
+Metrics endpoint must require auth.
+
+Allowed:
+
+Health endpoint only.
+
+/public:
+  /health
+
+/auth:
+  /api/security/metrics
+  /api/agents/*
+  /api/chat/*
+
+Validation:
+
+Unauthenticated metrics request:
+
+401
+
+Authenticated request:
+
+200
+
+---
+
+Phase 3 — Frontend Auth Verification
+
+Verify every frontend API call includes:
+
+x-api-key
+
+Inspect:
+
+- mockAiService.ts
+- builderService.ts
+- any direct fetch wrappers
+
+Required:
+
+No API request bypasses auth middleware.
+
+Generate report:
+
+Frontend Calls Audited
+Protected Calls
+Unprotected Calls
+
+Must equal:
+
+Unprotected Calls = 0
+
+---
+
+Phase 4 — Security Validation
+
+Create:
+
+securityCompletionValidation.ts
+
+Run:
+
+- missing API key
+- invalid API key
+- valid API key
+- metrics endpoint
+- health endpoint
+- frontend request audit
+
+Output:
+
+PASS / FAIL
+
+Only continue if PASS.
+
+---
+
+STAGE 2 — TRUE BUILD PIPELINE DECOMPOSITION
+
+Important:
+
+Do NOT create another monolith.
+
+The goal is NOT:
+
+runBuildPipeline() // 800+ LOC
+
+That simply relocates the problem.
+
+The goal is:
+
+Small focused orchestration steps.
+
+---
+
+Phase 5 — Create Pipeline Modules
+
+Create:
+
+src/agents/pipeline/
+
+Files:
+
+buildPipeline.ts
+plannerStep.ts
+architectureStep.ts
+frontendStep.ts
+backendStep.ts
+repairStep.ts
+runtimeValidationStep.ts
+
+Maximum target:
+
+<300 LOC per file
+
+Preferred:
+
+100-250 LOC
+
+---
+
+Phase 6 — Planner Extraction
+
+Move all planner logic from:
+
+routes/agents.ts
+
+to:
+
+plannerStep.ts
+
+Export:
+
+runPlannerStep()
+
+Route file must not contain planner implementation.
+
+---
+
+Phase 7 — Architecture Extraction
+
+Move:
+
+- architecture generation
+- blueprint validation
+- quality gates
+
+Export:
+
+runArchitectureStep()
+
+---
+
+Phase 8 — Frontend Extraction
+
+Move:
+
+- frontend generation
+- code generation orchestration
+- design system selection
+
+Export:
+
+runFrontendStep()
+
+---
+
+Phase 9 — Backend Extraction
+
+Move:
+
+- auth generation
+- database generation
+- backend scaffolding
+
+Export:
+
+runBackendStep()
+
+---
+
+Phase 10 — Repair Extraction
+
+Move:
+
+- repair loop
+- autonomous repair
+- retry orchestration
+
+Export:
+
+runRepairStep()
+
+Repair logic must not remain inline.
+
+---
+
+Phase 11 — Runtime Validation Extraction
+
+Move:
+
+- runtime builder validation
+- preview validation
+- health checks
+
+Export:
+
+runRuntimeValidationStep()
+
+---
+
+Phase 12 — Thin Orchestrator
+
+Create:
+
+runBuildPipeline()
+
+Responsibilities ONLY:
+
+const plan = await runPlannerStep();
+
+const architecture =
+  await runArchitectureStep(plan);
+
+const frontend =
+  await runFrontendStep(architecture);
+
+const backend =
+  await runBackendStep(architecture);
+
+const repaired =
+  await runRepairStep(frontend, backend);
+
+return runRuntimeValidationStep(repaired);
+
+Target:
+
+<150 LOC
+
+No business logic allowed.
+
+Only orchestration.
+
+---
+
+Phase 13 — Route Simplification
+
+After extraction:
+
+routes/agents.ts
+
+must become:
+
+- route definitions
+- request validation
+- SSE setup
+- pipeline invocation
+
+Nothing else.
+
+Target:
+
+<1200 LOC
+
+Stretch target:
+
+<1000 LOC
+
+---
+
+Phase 14 — Contract Preservation Tests
+
+Before extraction:
+
+Capture:
+
+- SSE events
+- response payloads
+- status transitions
+
+Create:
+
+tests/integration/buildPipelineContract.test.ts
+
+Verify:
+
+- event order unchanged
+- payload shapes unchanged
+- route responses unchanged
+
+Do NOT write tests after the refactor and call them regression tests.
+
+Capture contracts first.
+
+---
+
+Phase 15 — Validation Report
+
+Create:
+
+validation/decompositionValidation.ts
+
+Report REAL numbers only.
+
+Never use estimates.
+
+Output:
+
+{
+"agentsTsBefore": number,
+"agentsTsAfter": number,
+"buildRouteBefore": number,
+"buildRouteAfter": number,
+"pipelineFilesCreated": number,
+"largestPipelineFile": number,
+"testsPassing": number,
+"coveragePercent": number
+}
+
+If targets are missed:
+
+Report them explicitly.
+
+Do not claim success if:
+
+- build route > 300 LOC
+- runBuildPipeline > 150 LOC
+- agents.ts > 1200 LOC
+
+---
+
+Success Criteria
+
+Security:
+
+✓ Production requires API key
+
+✓ Metrics endpoint protected
+
+✓ All frontend requests authenticated
+
+✓ Security validation passes
+
+Architecture:
+
+✓ No 800-line replacement monolith
+
+✓ Planner extracted
+
+✓ Architecture extracted
+
+✓ Frontend extracted
+
+✓ Backend extracted
+
+✓ Repair extracted
+
+✓ Runtime validation extracted
+
+✓ Thin orchestrator created
+
+✓ Route handler becomes orchestration layer
+
+✓ Contract tests pass
+
+✓ Real metrics reported
+
+No UI changes.
+
+No feature changes.
+
+No SSE format changes.
+
+No prompt changes.
+
+Only security completion and true pipeline decomposition.

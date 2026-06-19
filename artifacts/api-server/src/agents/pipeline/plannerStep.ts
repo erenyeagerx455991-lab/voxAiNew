@@ -1,0 +1,151 @@
+import type { Response } from "express";
+import { sse } from "../streaming/sseManager.js";
+import { callGroq } from "../llm/llmClient.js";
+import { PLANNER_MODEL } from "../llm/llmClient.js";
+import { PLANNER_SYSTEM } from "../llm/prompts.js";
+import {
+  extractDNAComposition, EMPTY_DNA, DNA_BRAND_KEYS,
+  resolveSectionOwnershipServer, generateThemeTokensServer, generateMotionProfileServer,
+  COMPOSITION_SECTIONS, buildDNAContextString,
+} from "../dna/dnaAgent.js";
+import { serverMatchTemplate, buildTemplateContextServer } from "../templates/templateAgent.js";
+import type { PageBlueprint } from "../types.js";
+import type { PlannerOutput, PipelineKeys } from "./pipelineTypes.js";
+
+export async function runPlannerStep(
+  prompt: string,
+  keys: PipelineKeys,
+  res: Response
+): Promise<PlannerOutput> {
+  const { groqKey, openrouterKey: _openrouterKey } = keys;
+
+  sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "active" });
+
+  let planText = "";
+  await callGroq(
+    groqKey, PLANNER_MODEL,
+    [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: prompt }],
+    true, 1800,
+    (token) => {
+      planText += token;
+      if (!planText.includes("---DESIGN_BRIEF---")) sse(res, { type: "token", token });
+    }
+  );
+
+  let briefText = "";
+  const briefMatch = planText.match(/---DESIGN_BRIEF---([\s\S]*?)---END_BRIEF---/);
+  if (briefMatch) briefText = briefMatch[1].trim();
+
+  let referenceSites = "none";
+  const refMatch = briefText.match(/referenceSites:\s*(.+)/);
+  if (refMatch) referenceSites = refMatch[1].trim();
+
+  let primaryReference = "none";
+  const primaryRefMatch = briefText.match(/primaryReference:\s*(.+)/);
+  if (primaryRefMatch) primaryReference = primaryRefMatch[1].trim();
+  if (primaryReference === "none" && referenceSites !== "none") {
+    primaryReference = referenceSites.split(',')[0].trim();
+  }
+
+  let secondaryReferences: string[] = [];
+  const secondaryRefMatch = briefText.match(/secondaryReferences:\s*(.+)/);
+  if (secondaryRefMatch && secondaryRefMatch[1].trim() !== "none") {
+    secondaryReferences = secondaryRefMatch[1].trim().split(',').map(s => s.trim());
+  }
+
+  const cleanPlan = planText
+    .replace(/---DESIGN_BRIEF---[\s\S]*?---END_BRIEF---/, "")
+    .replace(/---PAGE_BLUEPRINT---[\s\S]*?---END_BLUEPRINT---/, "")
+    .trim();
+
+  let blueprint: PageBlueprint = {
+    websiteType: "Generic",
+    sectionOrder: ["Navbar", "Hero", "Features", "Testimonials", "CTA", "Footer"],
+  };
+  const blueprintMatch = planText.match(/---PAGE_BLUEPRINT---([\s\S]*?)---END_BLUEPRINT---/);
+  if (blueprintMatch) {
+    try {
+      const raw = blueprintMatch[1].trim();
+      const parsed = JSON.parse(raw);
+      if (parsed.sectionOrder && Array.isArray(parsed.sectionOrder) && parsed.sectionOrder.length >= 3) {
+        blueprint = parsed as PageBlueprint;
+      }
+    } catch (e) {
+      console.error("Failed to parse page blueprint, using defaults:", e);
+    }
+  }
+
+  console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
+  console.log(`[Design] referenceSites="${referenceSites}" primaryReference="${primaryReference}"`);
+  sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
+
+  let dnaComposition = { ...EMPTY_DNA };
+  let dnaOwnership: Record<string, string> = {};
+  let dnaTheme: ReturnType<typeof generateThemeTokensServer> | null = null;
+  let dnaMotion: ReturnType<typeof generateMotionProfileServer> | null = null;
+
+  try {
+    dnaComposition = await extractDNAComposition(prompt, referenceSites, primaryReference, secondaryReferences, groqKey);
+    const activeBrands = DNA_BRAND_KEYS.filter(k => dnaComposition[k] > 0);
+    if (activeBrands.length > 0) {
+      const sectionList = [...new Set([
+        ...COMPOSITION_SECTIONS,
+        ...(blueprint.sectionOrder || []).map(s => s.toLowerCase()),
+      ])];
+      dnaOwnership = resolveSectionOwnershipServer(dnaComposition, sectionList);
+      dnaTheme = generateThemeTokensServer(dnaComposition);
+      dnaMotion = generateMotionProfileServer(dnaComposition);
+      console.log(`[DNAMixer V4.5] ${activeBrands.map(k => `${k}:${dnaComposition[k as keyof typeof dnaComposition]}%`).join(' + ')}`);
+      sse(res, {
+        type: "dna_composition",
+        composition: dnaComposition,
+        sectionOwnership: dnaOwnership,
+        themeTokens: dnaTheme,
+        motionProfile: dnaMotion,
+      });
+    }
+  } catch (e) {
+    console.error('[DNAMixer] Failed (continuing without composition):', e);
+  }
+
+  const tplMatch = serverMatchTemplate(prompt);
+  const templateContext = buildTemplateContextServer(tplMatch.template);
+  sse(res, {
+    type: "template_selected",
+    templateId: tplMatch.templateId,
+    templateName: tplMatch.template.name,
+    confidence: tplMatch.confidence,
+    pages: tplMatch.template.pages,
+    apis: tplMatch.template.apis,
+    databaseTables: tplMatch.template.databaseTables,
+    features: tplMatch.template.features,
+  });
+  console.log(`[V5.6] Template matched: ${tplMatch.template.name} (${tplMatch.confidence}% confidence)`);
+
+  const dnaContextStr = dnaTheme
+    ? buildDNAContextString(dnaComposition, dnaOwnership, dnaTheme)
+    : '';
+
+  return {
+    cleanPlan,
+    briefText,
+    referenceSites,
+    primaryReference,
+    secondaryReferences,
+    blueprint,
+    dnaComposition,
+    dnaOwnership,
+    dnaTheme: dnaTheme as Record<string, unknown> | null,
+    dnaMotion: dnaMotion as Record<string, unknown> | null,
+    templateContext,
+    templateMatch: {
+      templateId: tplMatch.templateId,
+      template: tplMatch.template as unknown as Record<string, unknown>,
+      confidence: tplMatch.confidence,
+      pages: tplMatch.template.pages,
+      apis: tplMatch.template.apis,
+      databaseTables: tplMatch.template.databaseTables,
+      features: tplMatch.template.features,
+    },
+  };
+}

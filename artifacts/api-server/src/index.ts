@@ -1,6 +1,10 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 
+if (process.env.NODE_ENV === "production" && !process.env["API_KEY"]) {
+  throw new Error("API_KEY required in production — set API_KEY environment variable before starting.");
+}
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
