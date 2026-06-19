@@ -39,6 +39,8 @@ import {
 } from "../agents/templates/templateAgent.js";
 import { getTemplatesByCategory, getRegistryCatalogue, selectTemplatesForPrompt, buildContextFromTemplates } from "../components/registry";
 import { runBuildPipeline } from "../agents/pipeline/buildPipeline.js";
+import { createLogger } from "../lib/structuredLogger.js";
+const log = createLogger("AgentsRoute");
 
 // ── Local types ───────────────────────────────────────────────────────────────
 interface OpenRouterError extends Error {
@@ -354,7 +356,7 @@ router.post("/agents/export", (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${safeName}.zip"`);
     res.send(Buffer.from(zipped));
   } catch (e: any) {
-    console.error("[Export] ZIP error:", e);
+    log.error("EXPORT_ZIP_ERROR", { error: String(e) });
     res.status(500).json({ error: e.message });
   }
 });
@@ -477,7 +479,7 @@ router.post("/agents/edit", async (req, res) => {
     const editImpact = analyzeEditImpactServer(prompt, registryFileMap, lockedComponents);
     sse(res, { type: "edit_impact", affectedSections: editImpact.affectedSections, affectedFiles: editImpact.affectedFiles, lockedConflicts: editImpact.lockedConflicts, replacementMode: editImpact.replacementMode });
     if (editImpact.lockedConflicts.length > 0) {
-      console.log(`[V5.5] Impact: locked conflicts detected — ${editImpact.lockedConflicts.join(', ')}`);
+      log.info("EDIT_LOCKED_CONFLICTS", { conflicts: editImpact.lockedConflicts });
     }
 
     // ── STEP 1: File Resolution ─────────────────────────────────────────────
@@ -492,7 +494,7 @@ router.post("/agents/edit", async (req, res) => {
       if (graphResolution.resolved && graphResolution.targetFiles.length > 0) {
         graphResolvedFiles = graphResolution.targetFiles.map(f => f.path + f.name);
         sse(res, { type: "graph_context", filesLoaded: graphResolution.filesLoaded, filesSkipped: graphResolution.filesSkipped, tokensSaved: graphResolution.tokensSaved, resolvedNodes: graphResolution.graphNodes });
-        console.log(`[KnowledgeGraph] Edit context: loaded=${graphResolution.filesLoaded} skipped=${graphResolution.filesSkipped} saved≈${graphResolution.tokensSaved} tokens`);
+        log.info("KNOWLEDGE_GRAPH_EDIT_CONTEXT", { filesLoaded: graphResolution.filesLoaded, filesSkipped: graphResolution.filesSkipped, tokensSaved: graphResolution.tokensSaved });
         for (const gf of graphResolvedFiles) { if (!intentResult.targetFiles.includes(gf)) intentResult.targetFiles.push(gf); }
       }
     }
@@ -511,7 +513,7 @@ router.post("/agents/edit", async (req, res) => {
     if (filteredResolvedFiles.length < resolvedFiles.length) {
       const excluded = resolvedFiles.filter(fp => lockedFilePaths.has(fp));
       sse(res, { type: "locked_excluded", excluded, preservedCategories: lockedComponents });
-      console.log(`[V5.5] Locked enforcement: excluded ${excluded.length} locked files from context`);
+      log.info("EDIT_LOCKED_EXCLUDED", { excluded: excluded.length, categories: lockedComponents });
     }
 
     // ── STEP 2: Patch Generation ──────────────────────────────────────────────
@@ -557,7 +559,7 @@ ${fileContext}`;
       const { system: editSystem, user: userMessage, truncated: wasTruncated } =
         truncateForGroq(dynamicEditSystem, userMessageRaw, EDIT_RESPONSE_TOKENS);
       if (wasTruncated && diffAttempt === 0) {
-        console.warn("[EditPatch] Context truncated by safety net");
+        log.warn("EDIT_CONTEXT_TRUNCATED", { attempt: diffAttempt });
         sse(res, { type: "debug", message: "context_compressed" });
       }
 
@@ -575,7 +577,7 @@ ${fileContext}`;
         const violations = modifiedFiles.filter(f => lockedFilePaths.has(f.path + f.name));
         if (violations.length > 0 && diffAttempt < 2) {
           sse(res, { type: "locked_protection", retryAttempt: diffAttempt + 1, violations: violations.map(f => f.path + f.name) });
-          console.log(`[V5.5] Diff protection retry ${diffAttempt + 1}: ${violations.map(f => f.name).join(', ')} violated`);
+          log.warn("EDIT_LOCKED_VIOLATION_RETRY", { attempt: diffAttempt + 1, violations: violations.map(f => f.name) });
           continue;
         }
         modifiedFiles = modifiedFiles.filter(f => !lockedFilePaths.has(f.path + f.name));
@@ -589,7 +591,7 @@ ${fileContext}`;
     // ── STEP 3: Quality Gate ────────────────────────────────────────────────
     sse(res, { type: "step", step: 3, agent: "Quality Gate", status: "active" });
 
-    console.log(`[EditAgent V5.5] modified=${modifiedFiles.length} deleted=${deletedPaths.length} quality=${qualityResult.score}`);
+    log.info("EDIT_AGENT_DONE", { modified: modifiedFiles.length, deleted: deletedPaths.length, quality: qualityResult.score });
     sse(res, { type: "quality_check", ...qualityResult });
     sse(res, { type: "step", step: 3, agent: "Quality Gate", status: qualityResult.passed ? "done" : "warn" });
 
@@ -635,7 +637,7 @@ ${fileContext}`;
         return null;
       }).filter(Boolean),
     });
-    console.log(`[V5.5] Registry Health V2: safety=${editSafetyScore}% preserved=${preservedComponents.length} replaced=${replacedComponents.length}`);
+    log.info("EDIT_REGISTRY_HEALTH_V2", { safety: editSafetyScore, preserved: preservedComponents.length, replaced: replacedComponents.length });
 
     sse(res, {
       type: "edit_identified",
@@ -655,7 +657,7 @@ ${fileContext}`;
 
     res.end();
   } catch (e: any) {
-    console.error("[EditAgent V5] Error:", e);
+    log.error("EDIT_AGENT_ERROR", { error: String(e) });
     sse(res, { type: "error", error: e.message });
     res.end();
   }
@@ -743,7 +745,7 @@ router.post("/agents/runtime-repair", async (req, res) => {
       confidence: classified.confidence,
       hint: classified.hint,
     });
-    console.log(`[RuntimeRepair V6.1] category="${classified.category}" confidence=${classified.confidence}%`);
+    log.info("RUNTIME_REPAIR_CLASSIFY", { category: classified.category, confidence: classified.confidence });
 
     const allAffected = resolveAffectedFilesFromGraph(error, files, knowledgeGraph);
 
@@ -765,7 +767,7 @@ router.post("/agents/runtime-repair", async (req, res) => {
       totalResolved: allAffected.length,
       skippedLocked: allAffected.length - safeAffected.length,
     });
-    console.log(`[RuntimeRepair V6.1] targets=${safeAffected.length} locked_skipped=${lockedFilePaths.size}`);
+    log.info("RUNTIME_REPAIR_TARGETS", { targets: safeAffected.length, lockedSkipped: lockedFilePaths.size });
 
     let currentFiles = [...files];
     let repairedSuccessfully = false;
@@ -867,7 +869,7 @@ Return the complete repaired file:`;
             sizeRatio: Math.round((cleaned.length / Math.max(1, failingFile.content.length)) * 100),
           },
         });
-        console.log(`[RuntimeRepair V6.1] attempt=${attemptNumber} quality=${qualityScore} file=${failingFile.name}`);
+        log.info("RUNTIME_REPAIR_ATTEMPT", { attempt: attemptNumber, quality: qualityScore, file: failingFile.name });
 
         if (qualityScore >= 80) {
           repairedSuccessfully = true;
@@ -932,7 +934,7 @@ Return the complete repaired file:`;
 
     res.end();
   } catch (e: any) {
-    console.error("[RuntimeRepair V6.1] Error:", e);
+    log.error("RUNTIME_REPAIR_ERROR", { error: String(e) });
     sse(res, { type: "error", error: e.message ?? "Runtime repair failed" });
     res.end();
   }
@@ -1055,7 +1057,7 @@ router.post("/agents/autonomous-build", async (req, res) => {
         injected: depGraph.injectedImports,
       }
     });
-    console.log(`[AutonomousBuild] Dep graph — health:${depGraph.healthScore} imports:${depGraph.totalImports} components:${depGraph.totalComponents} routes:${depGraph.totalRoutes}`);
+    log.info("AUTONOMOUS_BUILD_DEP_GRAPH", { health: depGraph.healthScore, imports: depGraph.totalImports, components: depGraph.totalComponents, routes: depGraph.totalRoutes });
 
     // ── Phase 2: Import Resolver ───────────────────────────────────────────────
     sseAB({ type: "autonomous_phase", phase: "imports", label: "Import Resolver" });
@@ -1149,7 +1151,7 @@ router.post("/agents/autonomous-build", async (req, res) => {
             }
           }
         } catch (e) {
-          console.error(`[AutonomousBuild:pass${pass + 1}] repair failed for ${file.name}:`, e);
+          log.error("AUTONOMOUS_BUILD_REPAIR_FAILED", { pass: pass + 1, file: file.name, error: String(e) });
         }
       }));
 
@@ -1184,7 +1186,7 @@ router.post("/agents/autonomous-build", async (req, res) => {
 
     runtimeManager.addTimelineEvent(cid, { phase: 'health_v3', label: 'Runtime Health V3', status: healthV3.overall >= 90 ? 'pass' : healthV3.overall >= 70 ? 'warn' : 'fail', score: healthV3.overall });
     sseAB({ type: "runtime_health_v3", healthV3, passScores, finalHealth: healthV3.overall });
-    console.log(`[AutonomousBuild] HealthV3 overall:${healthV3.overall} compile:${healthV3.compile} runtime:${healthV3.runtime} imports:${healthV3.imports} packages:${healthV3.packages} components:${healthV3.components}`);
+    log.info("AUTONOMOUS_BUILD_HEALTH_V3", { overall: healthV3.overall, compile: healthV3.compile, runtime: healthV3.runtime, imports: healthV3.imports, packages: healthV3.packages, components: healthV3.components });
 
     // ── Phase 9: Runtime Timeline ──────────────────────────────────────────────
     sseAB({ type: "autonomous_phase", phase: "timeline", label: "Runtime Timeline" });
@@ -1242,7 +1244,7 @@ router.post("/agents/autonomous-build", async (req, res) => {
       files: workingFiles,
     });
 
-    console.log(`[AutonomousBuild] Done — final health:${healthV3.overall} passes:${passScores.length} gate:${healthV3.overall >= 90}`);
+    log.info("AUTONOMOUS_BUILD_DONE", { finalHealth: healthV3.overall, passes: passScores.length, gate: healthV3.overall >= 90 });
 
   } catch (err: any) {
     sseAB({ type: "autonomous_build_error", error: err?.message ?? "Autonomous build failed" });

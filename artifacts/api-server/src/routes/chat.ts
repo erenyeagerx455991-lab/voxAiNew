@@ -294,7 +294,7 @@ router.post("/chat/code", async (req, res) => {
     let code = data.choices?.[0]?.message?.content ?? "";
     const finishReason = data.choices?.[0]?.finish_reason ?? "unknown";
 
-    console.log(`[code] finish_reason=${finishReason} chars=${code.length}`);
+    process.stdout.write(JSON.stringify({ level: "info", component: "ChatRoute", event: "CODE_DONE", finishReason, chars: code.length }) + "\n");
 
     // Strip any markdown code fences the model might add
     code = code

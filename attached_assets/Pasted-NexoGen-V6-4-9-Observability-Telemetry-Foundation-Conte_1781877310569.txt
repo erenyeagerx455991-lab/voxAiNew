@@ -1,0 +1,407 @@
+NexoGen V6.4.9 — Observability & Telemetry Foundation
+
+Context
+
+V6.4.3 Security Hardening, V6.4.6 Security Baseline, V6.4.7 Test Infrastructure, aur V6.4.8 Pipeline Decomposition complete ho chuke hain.
+
+Current status:
+
+- Security controls active
+- 129 tests passing
+- 20 contract tests passing
+- Build pipeline decomposed into step modules
+- /agents/build route reduced to thin orchestrator
+
+However V6.4.5 audit identified major observability gaps:
+
+- 102+ raw console.log calls
+- No centralized telemetry storage
+- No build duration metrics
+- No token usage tracking
+- No agent latency tracking
+- No repair-loop success metrics
+- No request tracing
+- No operational dashboard endpoint
+
+This phase focuses ONLY on observability.
+
+No UI redesign.
+No AI logic changes.
+No prompt changes.
+No build pipeline behavior changes.
+
+---
+
+Goals
+
+Create production-grade telemetry system that answers:
+
+1. Which agent is slow?
+2. Which step fails most often?
+3. How many tokens are consumed?
+4. How many repairs succeed?
+5. Average build duration?
+6. Runtime validation pass rate?
+7. Cost trends per provider?
+8. Error frequency by category?
+
+---
+
+Phase 1 — Create Telemetry Infrastructure
+
+Create:
+
+src/telemetry/
+├── metricsStore.ts
+├── traceContext.ts
+├── buildMetrics.ts
+├── agentMetrics.ts
+├── tokenMetrics.ts
+├── repairMetrics.ts
+├── runtimeMetrics.ts
+└── telemetryValidation.ts
+
+Requirements:
+
+All metrics stored in memory.
+
+No database.
+
+Thread-safe.
+
+Expose:
+
+increment()
+recordDuration()
+recordCounter()
+recordGauge()
+snapshot()
+
+---
+
+Phase 2 — Structured Logging
+
+Audit every console.log / console.warn / console.error.
+
+Replace with centralized logger.
+
+Create:
+
+src/lib/structuredLogger.ts
+
+Supported methods:
+
+logger.info()
+logger.warn()
+logger.error()
+logger.debug()
+
+Every log must include:
+
+timestamp
+requestId
+workspaceId
+projectId
+component
+event
+
+Example:
+
+{
+"event": "BUILD_STARTED",
+"workspaceId": "...",
+"requestId": "...",
+"timestamp": "..."
+}
+
+Raw console.log should only remain inside:
+
+- tests
+- validation scripts
+
+Nowhere else.
+
+---
+
+Phase 3 — Request Tracing
+
+Create:
+
+src/telemetry/traceContext.ts
+
+Generate:
+
+requestId
+buildId
+sessionId
+
+Attach to:
+
+- build route
+- chat route
+- repair route
+- runtime validation
+
+Trace IDs must survive entire pipeline.
+
+Planner → Architecture → Frontend → Repair → Runtime
+
+Must share same trace.
+
+---
+
+Phase 4 — Build Metrics
+
+Track:
+
+BUILD_STARTED
+BUILD_COMPLETED
+BUILD_FAILED
+
+Metrics:
+
+totalBuilds
+successfulBuilds
+failedBuilds
+averageBuildTime
+p95BuildTime
+
+Store duration in milliseconds.
+
+Expose helper:
+
+recordBuildStart()
+recordBuildSuccess()
+recordBuildFailure()
+
+---
+
+Phase 5 — Agent Metrics
+
+Track per-agent latency.
+
+Agents:
+
+Planner
+Architecture
+Frontend
+CodeFix
+Repair
+RuntimeValidation
+
+For each agent record:
+
+calls
+successes
+failures
+avgLatency
+p95Latency
+
+Implementation:
+
+withAgentMetrics(agentName, fn)
+
+Wrapper automatically measures.
+
+---
+
+Phase 6 — Token Metrics
+
+Track:
+
+provider
+model
+promptTokens
+completionTokens
+totalTokens
+
+Support:
+
+Groq
+OpenRouter
+
+Store:
+
+daily totals
+lifetime totals
+
+Expose:
+
+getTokenSnapshot()
+
+No billing calculations yet.
+
+Only usage tracking.
+
+---
+
+Phase 7 — Repair Loop Metrics
+
+Track:
+
+repairAttempts
+repairSuccesses
+repairFailures
+
+Per file:
+
+filePath
+attemptCount
+finalResult
+
+Metrics:
+
+averageRepairPasses
+successRate
+
+---
+
+Phase 8 — Runtime Validation Metrics
+
+Track:
+
+runtimeChecks
+runtimePasses
+runtimeFailures
+
+Metrics:
+
+runtimePassRate
+
+Record:
+
+vite build duration
+preview startup duration
+
+---
+
+Phase 9 — Dashboard Endpoint
+
+Create:
+
+GET /api/telemetry/metrics
+
+Protected by authMiddleware.
+
+Response:
+
+{
+builds: {...},
+agents: {...},
+tokens: {...},
+repairs: {...},
+runtime: {...}
+}
+
+No secrets.
+No prompts.
+No source code.
+
+Metrics only.
+
+---
+
+Phase 10 — Validation Suite
+
+Create:
+
+src/tests/unit/
+
+telemetryStore.test.ts
+buildMetrics.test.ts
+agentMetrics.test.ts
+tokenMetrics.test.ts
+repairMetrics.test.ts
+runtimeMetrics.test.ts
+
+Create:
+
+src/tests/integration/
+
+telemetryEndpoint.test.ts
+tracePropagation.test.ts
+
+Requirements:
+
+Coverage must stay above existing gates.
+
+No regressions allowed.
+
+---
+
+Phase 11 — Migration
+
+Replace all remaining raw console.log calls.
+
+Target:
+
+Before:
+102+
+
+After:
+≤ 10
+
+Only allowed locations:
+
+tests
+validation harnesses
+
+Everything else uses structuredLogger.
+
+---
+
+Phase 12 — Final Report
+
+Generate:
+
+observabilityReport.md
+
+Include ACTUAL measured values:
+
+- console.log count before/after
+- telemetry modules added
+- endpoint status
+- tests added
+- coverage impact
+
+DO NOT estimate.
+
+DO NOT invent numbers.
+
+Measure real values and report them.
+
+If target not met:
+
+explicitly mark as FAILED.
+
+No success-by-assumption.
+
+---
+
+Success Criteria
+
+Must verify:
+
+✓ Build pipeline unchanged
+
+✓ Security controls unchanged
+
+✓ 129 existing tests still pass
+
+✓ Contract tests still pass
+
+✓ Telemetry endpoint protected
+
+✓ Request tracing active
+
+✓ Agent latency visible
+
+✓ Token usage visible
+
+✓ Build duration visible
+
+✓ Runtime metrics visible
+
+✓ Raw console.log reduced below 10
+
+Deliver production-ready observability foundation without changing AI behavior.

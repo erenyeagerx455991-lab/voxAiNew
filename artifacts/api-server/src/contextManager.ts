@@ -270,7 +270,7 @@ export function truncateForGroq(
   const availableForUser = available - sysTokens;
   if (availableForUser <= 0) {
     // System prompt alone is too large — this shouldn't happen in practice
-    console.warn("[ContextManager] System prompt exceeds budget — sending as-is");
+    process.stderr.write(JSON.stringify({ level: "warn", component: "ContextManager", event: "SYSTEM_PROMPT_OVER_BUDGET" }) + "\n");
     return { system: systemPrompt, user: "", truncated: true };
   }
 
@@ -281,9 +281,7 @@ export function truncateForGroq(
   if (lastNewline > maxUserChars * 0.7) cut = cut.slice(0, lastNewline);
   cut += "\n\n// [context compressed — token budget reached]";
 
-  console.warn(
-    `[ContextManager] Prompt truncated: ${userTokens} → ${estimateTokenCount(cut)} tokens`
-  );
+  process.stderr.write(JSON.stringify({ level: "warn", component: "ContextManager", event: "PROMPT_TRUNCATED", from: userTokens, to: estimateTokenCount(cut) }) + "\n");
 
   return { system: systemPrompt, user: cut, truncated: true };
 }
@@ -295,7 +293,5 @@ export function logCompressionReport(
   agent: string,
   meta: CompressedContext
 ): void {
-  console.log(
-    `[ContextManager:${agent}] tokens=${meta.totalTokens} full=${meta.fullFiles.length} summaries=${meta.summarizedNames.length} skipped=${meta.skippedNames.length} compressed=${meta.compressionApplied}`
-  );
+  process.stdout.write(JSON.stringify({ level: "info", component: "ContextManager", event: "COMPRESSION_REPORT", agent, tokens: meta.totalTokens, full: meta.fullFiles.length, summaries: meta.summarizedNames.length, skipped: meta.skippedNames.length, compressed: meta.compressionApplied }) + "\n");
 }

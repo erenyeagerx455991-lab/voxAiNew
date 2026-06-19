@@ -5,6 +5,9 @@ import { generateEnvExample, generateReadme, generateReplitConfig, generateRepli
 import { buildKnowledgeGraphServer } from "../knowledge/knowledgeGraph.js";
 import type { ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, BackendOutput, PipelineKeys } from "./pipelineTypes.js";
+import { createLogger } from "../../lib/structuredLogger.js";
+
+const log = createLogger("BackendStep");
 
 export async function runBackendStep(
   arch: ArchitectureOutput,
@@ -33,12 +36,12 @@ export async function runBackendStep(
         generateBackendFiles(projectBlueprint.apis, projectBlueprint.entities || [], projectBlueprint.projectType, groqKey)
           .then(files => {
             backendFiles = files as ProjectFileSSE[];
-            console.log(`[BackendAgent] Generated ${files.length} backend files`);
+            log.info("BACKEND_AGENT_DONE", { fileCount: files.length });
             sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
           })
           .catch(e => {
-            console.error('[BackendAgent] Failed:', e);
-            sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "error", error: e.message });
+            log.error("BACKEND_AGENT_FAILED", { error: String(e) });
+            sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "error", error: (e as Error).message });
           })
       );
     }
@@ -49,12 +52,12 @@ export async function runBackendStep(
         generateDatabaseFiles(projectBlueprint.databaseTables, projectBlueprint.relationships || [], projectBlueprint.entities || [], groqKey)
           .then(files => {
             dbFiles = files as ProjectFileSSE[];
-            console.log(`[DatabaseAgent] Generated ${files.length} database files`);
+            log.info("DATABASE_AGENT_DONE", { fileCount: files.length });
             sse(res, { type: "step", step: 6, agent: "Database Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
           })
           .catch(e => {
-            console.error('[DatabaseAgent] Failed:', e);
-            sse(res, { type: "step", step: 6, agent: "Database Agent", status: "error", error: e.message });
+            log.error("DATABASE_AGENT_FAILED", { error: String(e) });
+            sse(res, { type: "step", step: 6, agent: "Database Agent", status: "error", error: (e as Error).message });
           })
       );
     }
@@ -65,12 +68,12 @@ export async function runBackendStep(
         generateAuthFiles(projectBlueprint.authProvider || 'JWT', groqKey)
           .then(files => {
             authFiles = files as ProjectFileSSE[];
-            console.log(`[AuthAgent] Generated ${files.length} auth files`);
+            log.info("AUTH_AGENT_DONE", { fileCount: files.length });
             sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "done", fileCount: files.length, files: files.map(f => f.path + f.name) });
           })
           .catch(e => {
-            console.error('[AuthAgent] Failed:', e);
-            sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "error", error: e.message });
+            log.error("AUTH_AGENT_FAILED", { error: String(e) });
+            sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "error", error: (e as Error).message });
           })
       );
     }
@@ -96,10 +99,16 @@ export async function runBackendStep(
     ...extraFiles,
   ];
 
-  console.log(`[Pipeline] Total files: ${allFiles.length} (frontend: ${projectFiles.length}, backend: ${backendFiles.length}, db: ${dbFiles.length}, auth: ${authFiles.length})`);
+  log.info("SCAFFOLD_COMPLETE", {
+    total: allFiles.length,
+    frontend: projectFiles.length,
+    backend: backendFiles.length,
+    db: dbFiles.length,
+    auth: authFiles.length,
+  });
 
   const pv = validateProject(allFiles, projectBlueprint);
-  console.log(`[ProjectValidator] score=${pv.score} passed=${pv.passed}${pv.issues.length ? ' — ' + pv.issues.join('; ') : ''}`);
+  log.info("PROJECT_VALIDATED", { score: pv.score, passed: pv.passed, issueCount: pv.issues.length });
   sse(res, { type: "project_validate", score: pv.score, passed: pv.passed, issues: pv.issues, fileCount: allFiles.length });
 
   sse(res, { type: "step", step: 8, agent: "Scaffold Agent", status: "done", fileCount: allFiles.length });
@@ -108,7 +117,12 @@ export async function runBackendStep(
   const knowledgeGraph = buildKnowledgeGraphServer(allFiles, projectBlueprint);
   sse(res, { type: "graph_build_done", graph: knowledgeGraph });
   sse(res, { type: "graph_health", score: knowledgeGraph.graphHealthScore, pages: knowledgeGraph.pages.length, components: knowledgeGraph.components.length, apis: knowledgeGraph.apis.length, routes: knowledgeGraph.routes.length });
-  console.log(`[KnowledgeGraph] Built — pages:${knowledgeGraph.pages.length} components:${knowledgeGraph.components.length} apis:${knowledgeGraph.apis.length} healthScore:${knowledgeGraph.graphHealthScore}`);
+  log.info("KNOWLEDGE_GRAPH_BUILT", {
+    pages: knowledgeGraph.pages.length,
+    components: knowledgeGraph.components.length,
+    apis: knowledgeGraph.apis.length,
+    healthScore: knowledgeGraph.graphHealthScore,
+  });
 
   return {
     architecture: arch,

@@ -4,6 +4,8 @@
 
 import cors from 'cors';
 import { recordCorsViolation } from './securityMetrics.js';
+import { createLogger } from '../lib/structuredLogger.js';
+const log = createLogger("CorsConfig");
 
 // ── Allowlist ─────────────────────────────────────────────────────────────────
 
@@ -45,7 +47,7 @@ export const corsMiddleware = cors({
       callback(null, true);
     } else {
       recordCorsViolation();
-      console.warn(`[CORS_VIOLATION] Blocked origin: ${origin}`);
+      log.warn("CORS_VIOLATION", { origin });
       callback(new Error(`CORS: origin '${origin}' is not allowed`));
     }
   },

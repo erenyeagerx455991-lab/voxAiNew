@@ -5,6 +5,9 @@ import { ARCHITECTURE_SYSTEM } from "../llm/prompts.js";
 import { validateProjectBlueprint, computeQualityScore } from "../config/configGenerators.js";
 import type { ProjectBlueprint } from "../types.js";
 import type { PlannerOutput, ArchitectureOutput, PipelineKeys } from "./pipelineTypes.js";
+import { createLogger } from "../../lib/structuredLogger.js";
+
+const log = createLogger("ArchitectureStep");
 
 export async function runArchitectureStep(
   plan: PlannerOutput,
@@ -57,12 +60,12 @@ export async function runArchitectureStep(
       projectBlueprint = { ...projectBlueprint, ...parsed };
     }
   } catch (e) {
-    console.error("[ArchitectureAgent] Failed (using defaults):", e);
+    log.error("ARCHITECTURE_LLM_FAILED", { error: String(e), fallback: "using defaults" });
   }
 
   let bpValidation = validateProjectBlueprint(projectBlueprint);
   if (!bpValidation.valid) {
-    console.warn(`[BlueprintValidation] FAILED: ${bpValidation.errors.join('; ')}. Retrying...`);
+    log.warn("BLUEPRINT_VALIDATION_FAILED", { errors: bpValidation.errors.join('; ') });
     sse(res, { type: "blueprint_validation_retry", errors: bpValidation.errors });
     try {
       const archRetry = await callGroq(
@@ -80,7 +83,7 @@ export async function runArchitectureStep(
         bpValidation = validateProjectBlueprint(projectBlueprint);
       }
     } catch (e) {
-      console.error('[BlueprintValidation] Retry failed:', e);
+      log.error("BLUEPRINT_RETRY_FAILED", { error: String(e) });
     }
 
     if (!bpValidation.valid) {
@@ -89,14 +92,18 @@ export async function runArchitectureStep(
     }
   }
 
-  console.log(`[Architecture V2] projectType=${projectBlueprint.projectType} pages=[${projectBlueprint.pages.join(', ')}] apis=[${projectBlueprint.apis.join(', ')}]`);
+  log.info("ARCHITECTURE_RESOLVED", {
+    projectType: projectBlueprint.projectType,
+    pages: projectBlueprint.pages,
+    apis: projectBlueprint.apis,
+  });
 
   const qg = computeQualityScore(projectBlueprint);
-  console.log(`[QualityGate V2] score=${qg.score} passed=${qg.passed}${qg.issues.length ? ' — ' + qg.issues.join('; ') : ''}`);
+  log.info("QUALITY_GATE", { score: qg.score, passed: qg.passed, issues: qg.issues });
   sse(res, { type: "quality_gate", score: qg.score, passed: qg.passed, issues: qg.issues });
 
   if (!qg.passed) {
-    console.warn(`[QualityGate V2] Score ${qg.score} < 70 — retrying Architecture Agent...`);
+    log.warn("QUALITY_GATE_RETRY", { score: qg.score, issues: qg.issues });
     try {
       const qgRetry = await callGroq(
         groqKey, PLANNER_MODEL,
@@ -111,11 +118,11 @@ export async function runArchitectureStep(
         const qgParsed = JSON.parse(qgJson[0]);
         projectBlueprint = { ...projectBlueprint, ...qgParsed };
         const qg2 = computeQualityScore(projectBlueprint);
-        console.log(`[QualityGate V2] Retry score=${qg2.score}`);
+        log.info("QUALITY_GATE_RETRY_RESULT", { score: qg2.score, passed: qg2.passed });
         sse(res, { type: "quality_gate_retry", score: qg2.score, passed: qg2.passed });
       }
     } catch (e) {
-      console.error('[QualityGate V2] Retry failed:', e);
+      log.error("QUALITY_GATE_RETRY_FAILED", { error: String(e) });
     }
   }
 

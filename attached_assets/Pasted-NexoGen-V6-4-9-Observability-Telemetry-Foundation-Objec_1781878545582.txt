@@ -1,0 +1,282 @@
+NexoGen V6.4.9 — Observability & Telemetry Foundation
+
+Objective:
+
+Replace ad-hoc logging with structured observability while preserving all existing behavior, API contracts, SSE formats, tests, and build pipeline functionality.
+
+Prerequisites (must already be complete):
+
+- V6.4.3 Security Hardening
+- V6.4.6 Security Baseline
+- V6.4.7 Test Infrastructure
+- V6.4.8.1 Build Pipeline Extraction
+
+---
+
+Phase 1 — Telemetry Architecture
+
+Create:
+
+src/telemetry/
+
+- metricsProvider.ts
+- metricsStore.ts
+- traceContext.ts
+- buildMetrics.ts
+- agentMetrics.ts
+- tokenMetrics.ts
+- repairMetrics.ts
+- runtimeMetrics.ts
+
+Rule:
+
+All telemetry writes must go through MetricsProvider.
+
+Implement MemoryMetricsProvider now.
+
+No module may write directly to metricsStore.
+
+Future Redis/Prometheus support must require zero refactoring.
+
+---
+
+Phase 2 — Structured Logger
+
+Create:
+
+src/lib/structuredLogger.ts
+
+Methods:
+
+logger.info()
+logger.warn()
+logger.error()
+logger.debug()
+
+Context:
+
+traceId
+requestId
+buildId
+sessionId
+
+JSON structured output only.
+
+No raw console.log in production paths.
+
+---
+
+Phase 3 — Trace Propagation
+
+Generate:
+
+traceId
+spanId
+parentSpanId
+
+Propagate through:
+
+routes
+buildPipeline
+pipeline steps
+llmClient
+runtime validator
+repair engine
+
+Every log line must contain trace metadata.
+
+---
+
+Phase 4 — Build Metrics
+
+Track:
+
+BUILD_STARTED
+BUILD_COMPLETED
+BUILD_FAILED
+
+Metrics:
+
+duration
+status
+buildId
+projectId
+
+Aggregation:
+
+count
+avg
+min
+max
+p50
+p95
+p99
+
+---
+
+Phase 5 — Pipeline Step Metrics
+
+Instrument:
+
+plannerStep
+architectureStep
+frontendStep
+repairStep
+backendStep
+runtimeValidationStep
+
+Capture:
+
+start
+end
+duration
+retryCount
+success
+failure
+
+No business logic changes.
+
+---
+
+Phase 6 — LLM Metrics
+
+Instrument:
+
+callGroq
+callOpenRouter
+
+Capture:
+
+provider
+model
+latency
+requestCount
+failureCount
+promptTokens
+completionTokens
+totalTokens
+estimatedCost
+
+Never log prompts or generated code.
+
+---
+
+Phase 7 — Runtime Metrics
+
+Track:
+
+vite build duration
+repair loop duration
+runtime validation duration
+
+Success/failure counts.
+
+---
+
+Phase 8 — Repair Metrics
+
+Track:
+
+attempts
+successful repairs
+failed repairs
+average repair passes
+
+Per build and global.
+
+---
+
+Phase 9 — Telemetry Endpoint
+
+Create:
+
+GET /api/telemetry/metrics
+
+Requirements:
+
+- Protected by authMiddleware
+- No dev-mode bypass
+- Returns 401 if unauthorized
+- Snapshot only (read-only)
+
+Expose:
+
+build metrics
+agent metrics
+token metrics
+runtime metrics
+repair metrics
+
+---
+
+Phase 10 — Logging Migration
+
+Replace production-path console calls with structured logger.
+
+Do NOT modify:
+
+tests/
+validationHarness/
+securityValidation/
+
+Preserve message content.
+
+Only logging mechanism changes.
+
+---
+
+Phase 11 — Tests
+
+Add:
+
+Unit:
+
+- metricsStore
+- buildMetrics
+- agentMetrics
+- tokenMetrics
+- runtimeMetrics
+- repairMetrics
+
+Integration:
+
+- telemetryEndpoint
+- tracePropagation
+
+Existing:
+129 tests + 20 contract tests
+
+Must remain green.
+
+---
+
+Phase 12 — Final Validation Report
+
+Generate:
+
+observabilityReport.md
+
+Include REAL measured values only.
+
+Report:
+
+- Console calls before vs after
+- New modules created
+- Tests added
+- Coverage impact
+- Telemetry endpoint status
+- Build duration metrics
+- Token usage metrics
+
+Do not use estimates.
+
+If targets are missed, explicitly report the actual values and why.
+
+Success Criteria:
+
+- Zero behavior changes
+- Zero SSE contract changes
+- Existing tests remain green
+- Structured telemetry operational
+- Auth-protected metrics endpoint live
+- Real measured report generated

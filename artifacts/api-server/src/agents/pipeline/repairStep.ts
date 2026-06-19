@@ -6,7 +6,9 @@ import { selectRegistryComponentsServer, computeRegistryHealthServer } from "../
 import { estimateTokenCount } from "../../contextManager.js";
 import type { ProjectFileSSE } from "../types.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
+import { createLogger } from "../../lib/structuredLogger.js";
 
+const log = createLogger("RepairStep");
 const MAX_REPAIR_PASSES = 3;
 const REPAIR_SYSTEM = 'You are a React JSX repair agent. Fix ONLY the reported issues. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
 
@@ -27,18 +29,18 @@ export async function runRepairStep(
   for (let pass = 0; pass < MAX_REPAIR_PASSES; pass++) {
     const failures = tsxTargets.filter(f => !validateTsxFile(f.name, f.content).valid);
     if (failures.length === 0) {
-      console.log(`[RepairLoop] All files valid after pass ${pass}. Done.`);
+      log.info("REPAIR_COMPLETE", { pass, status: "all_valid" });
       break;
     }
     if (pass === MAX_REPAIR_PASSES - 1) {
-      console.warn(`[RepairLoop] Pass ${pass + 1}: ${failures.length} file(s) still failing after max passes.`);
+      log.warn("REPAIR_MAX_PASSES", { pass: pass + 1, remainingFailures: failures.length });
       break;
     }
-    console.log(`[RepairLoop] Pass ${pass + 1}: Repairing ${failures.length} file(s)...`);
+    log.info("REPAIR_PASS_START", { pass: pass + 1, failures: failures.length });
 
     await Promise.all(failures.map(async (file) => {
       const validation = validateTsxFile(file.name, file.content);
-      console.warn(`[RepairLoop:pass${pass + 1}] ${file.name}: ${validation.issues.join('; ')}`);
+      log.warn("REPAIR_FILE_ISSUES", { file: file.name, pass: pass + 1, issues: validation.issues.join('; ') });
       totalRepairAttempts++;
       try {
         const fixed = await callGroq(groqKey, REPAIR_MODEL,
@@ -53,10 +55,12 @@ export async function runRepairStep(
           if (cleaned.length > file.content.length * 0.5) {
             (file as { content: string }).content = cleaned;
             totalFilesRepaired++;
-            console.log(`[RepairLoop] ✓ ${file.name} repaired (${cleaned.length} chars)`);
+            log.info("REPAIR_FILE_SUCCESS", { file: file.name, chars: cleaned.length });
           }
         }
-      } catch (e) { console.error(`[RepairLoop] ✗ ${file.name} repair failed:`, e); }
+      } catch (e) {
+        log.error("REPAIR_FILE_FAILED", { file: file.name, error: String(e) });
+      }
     }));
   }
 
@@ -68,12 +72,12 @@ export async function runRepairStep(
 
   const runtimeResult = runRuntimeValidator(projectFiles);
   if (runtimeResult.issues.length > 0) {
-    console.log(`[RuntimeValidator] ${runtimeResult.runtimeErrors} errors across ${runtimeResult.filesValidated} files`);
+    log.info("RUNTIME_VALIDATOR_ISSUES", { errors: runtimeResult.runtimeErrors, filesValidated: runtimeResult.filesValidated });
   }
 
   const routeValidation = validateRoutes(projectFiles);
   if (!routeValidation.valid) {
-    console.warn(`[RouteValidator] ${routeValidation.issues.length} route issue(s): ${routeValidation.issues.join('; ')}`);
+    log.warn("ROUTE_VALIDATION_FAILED", { issueCount: routeValidation.issues.length, issues: routeValidation.issues.join('; ') });
   }
 
   const buildHealthMetrics = {
@@ -92,7 +96,12 @@ export async function runRepairStep(
     routesValid: routeValidation.valid,
   };
 
-  console.log(`[BuildHealth] compile=${validationScore}% runtime=${runtimeResult.runtimeScore}% routes=${routeValidation.valid ? 'ok' : 'broken'} repairs=${totalRepairAttempts}`);
+  log.info("BUILD_HEALTH", {
+    compileScore: validationScore,
+    runtimeScore: runtimeResult.runtimeScore,
+    routesValid: routeValidation.valid,
+    repairAttempts: totalRepairAttempts,
+  });
   sse(res, { type: "build_health", ...buildHealthMetrics });
   if (runtimeResult.issues.length > 0) {
     sse(res, { type: "runtime_validate", issues: runtimeResult.issues, runtimeScore: runtimeResult.runtimeScore, routeIssues: routeValidation.issues });
@@ -100,7 +109,7 @@ export async function runRepairStep(
 
   if (Object.keys(registrySelection).length > 0) {
     const regHealth = computeRegistryHealthServer(registrySelection, blueprint.sectionOrder);
-    console.log(`[Registry V5.4] Health: coverage=${regHealth.coverageScore}% mapped=${regHealth.mappedSections}/${regHealth.totalSections}`);
+    log.info("REGISTRY_HEALTH", { coverage: regHealth.coverageScore, mapped: regHealth.mappedSections, total: regHealth.totalSections });
     sse(res, { type: "registry_health", ...regHealth });
   }
 

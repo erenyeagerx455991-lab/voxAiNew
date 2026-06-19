@@ -9,6 +9,9 @@ import { selectTemplatesForPrompt, buildContextFromTemplates } from "../../compo
 import { truncateForGroq } from "../../contextManager.js";
 import type { DesignDNA, ProjectFileSSE, OpenRouterError } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
+import { createLogger } from "../../lib/structuredLogger.js";
+
+const log = createLogger("FrontendStep");
 
 const REFERENCE_VERIFIERS: Record<string, (d: DesignDNA) => boolean> = {
   stripe:     (d) => d.designLanguage === "premium-gradient" && d.heroStyle === "centered-gradient" && d.colorSystem.background !== "#0a0a0a",
@@ -67,7 +70,7 @@ async function runDesignAgent(
   } catch (e: unknown) {
     const err = e as OpenRouterError;
     const errMsg = `Design Agent FAILED — model: ${DESIGN_MODEL}, status: ${err.status ?? "unknown"}, message: ${err.message}`;
-    console.error(`[DesignAgent] ${errMsg}`);
+    log.error("DESIGN_AGENT_FAILED", { errMsg });
     return { raw: "", parsed: null, error: errMsg };
   }
 }
@@ -105,9 +108,9 @@ export async function runFrontendStep(
     if (verify.passed) {
       design = attempt1.parsed;
       designAgentStatus = "success";
-      console.log(`[DesignAgent] Attempt 1 PASSED. refs="${referenceSites}"`);
+      log.info("DESIGN_DNA_PASSED", { attempt: 1, refs: referenceSites });
     } else {
-      console.warn(`[DesignAgent] DNA verification FAILED for [${verify.failedRefs.join(", ")}]. Retrying...`);
+      log.warn("DESIGN_DNA_VERIFY_FAILED", { attempt: 1, failedRefs: verify.failedRefs });
       sse(res, { type: "design_retry", reason: `DNA verification failed for: [${verify.failedRefs.join(", ")}]`, failedFields: { designLanguage: attempt1.parsed.designLanguage, background: attempt1.parsed.colorSystem.background } });
       const primLower = primaryReference.toLowerCase();
       const req = REFERENCE_DNA_REQUIREMENTS[primLower];
@@ -119,34 +122,34 @@ export async function runFrontendStep(
         const verify2 = verifyDNA(attempt2.parsed, referenceSites);
         design = attempt2.parsed;
         designAgentStatus = verify2.passed ? "retry_success" : "retry_failed";
-        if (!verify2.passed) console.warn(`[DesignAgent] Retry also failed for [${verify2.failedRefs.join(", ")}]. Using anyway.`);
+        if (!verify2.passed) log.warn("DESIGN_DNA_RETRY_FAILED", { failedRefs: verify2.failedRefs });
       } else {
         designAgentStatus = "retry_failed";
         designAgentError = attempt2.error;
-        console.error(`[DesignAgent] Retry failed: ${attempt2.error}`);
+        log.error("DESIGN_AGENT_RETRY_FAILED", { error: attempt2.error });
       }
     }
   } else {
     designAgentError = attempt1.error ?? "Design Agent returned unparseable output";
     sse(res, { type: "design_agent_error", designAgentStatus: "failed", error: designAgentError, model: DESIGN_MODEL });
-    console.error(`[DesignAgent] Using DEFAULT_DESIGN. Reason: ${designAgentError}`);
+    log.error("DESIGN_AGENT_DEFAULT", { reason: designAgentError });
   }
 
-  console.log(`[Design DNA] status=${designAgentStatus} language=${design.designLanguage} heroStyle=${design.heroStyle} bg=${design.colorSystem.background}`);
+  log.info("DESIGN_DNA_RESOLVED", { status: designAgentStatus, language: design.designLanguage, heroStyle: design.heroStyle });
   sse(res, { type: "step", step: 2, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
   const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites, primaryReference);
   const componentContext = buildContextFromTemplates(selectedTemplates);
-  console.log(`[ComponentLib] Selected ${selectedTemplates.length} templates`);
+  log.info("COMPONENT_TEMPLATES_SELECTED", { count: selectedTemplates.length });
 
   let registrySelection: Record<string, string> = {};
   try {
     registrySelection = selectRegistryComponentsServer(dnaComposition, blueprint, projectBlueprint);
     if (Object.keys(registrySelection).length > 0) {
-      console.log(`[Registry V5.4] Selected ${Object.keys(registrySelection).length} components`);
+      log.info("REGISTRY_SELECTED", { count: Object.keys(registrySelection).length });
       sse(res, { type: "registry_selection", selection: registrySelection });
     }
-  } catch (e) { console.error('[Registry V5.4] Selection failed (continuing):', e); }
+  } catch (e) { log.error("REGISTRY_SELECTION_FAILED", { error: String(e) }); }
 
   sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });
 
@@ -164,7 +167,7 @@ export async function runFrontendStep(
       8000
     );
   } catch (e) {
-    console.error("OpenRouter codegen failed, falling back to Groq:", e);
+    log.warn("CODEGEN_OPENROUTER_FALLBACK", { error: String(e) });
     generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
       [{ role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
       false, 8000
@@ -186,11 +189,11 @@ export async function runFrontendStep(
     if (fixed && fixed.length > 200) {
       fixedCode = fixed.replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
     }
-  } catch (e) { console.error("Code fix agent error (using generated code):", e); }
+  } catch (e) { log.error("CODEFIX_AGENT_FAILED", { error: String(e) }); }
   sse(res, { type: "step", step: 4, agent: "Code Fix Agent", status: "done" });
 
   const projectFiles = buildServerProjectFiles(fixedCode, projectBlueprint, blueprint.sectionOrder);
-  console.log(`[ProjectFiles] Generated ${projectFiles.length} files`);
+  log.info("PROJECT_FILES_GENERATED", { count: projectFiles.length });
 
   return {
     architecture: arch,

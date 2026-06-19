@@ -11,6 +11,9 @@ import {
 import { serverMatchTemplate, buildTemplateContextServer } from "../templates/templateAgent.js";
 import type { PageBlueprint } from "../types.js";
 import type { PlannerOutput, PipelineKeys } from "./pipelineTypes.js";
+import { createLogger } from "../../lib/structuredLogger.js";
+
+const log = createLogger("PlannerStep");
 
 export async function runPlannerStep(
   prompt: string,
@@ -71,12 +74,12 @@ export async function runPlannerStep(
         blueprint = parsed as PageBlueprint;
       }
     } catch (e) {
-      console.error("Failed to parse page blueprint, using defaults:", e);
+      log.error("BLUEPRINT_PARSE_FAILED", { error: String(e) });
     }
   }
 
-  console.log(`[Blueprint] websiteType=${blueprint.websiteType} sections=[${blueprint.sectionOrder.join(', ')}]`);
-  console.log(`[Design] referenceSites="${referenceSites}" primaryReference="${primaryReference}"`);
+  log.info("BLUEPRINT_RESOLVED", { websiteType: blueprint.websiteType, sections: blueprint.sectionOrder });
+  log.info("DESIGN_REFERENCES", { referenceSites, primaryReference });
   sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "done", blueprint });
 
   let dnaComposition = { ...EMPTY_DNA };
@@ -95,7 +98,7 @@ export async function runPlannerStep(
       dnaOwnership = resolveSectionOwnershipServer(dnaComposition, sectionList);
       dnaTheme = generateThemeTokensServer(dnaComposition);
       dnaMotion = generateMotionProfileServer(dnaComposition);
-      console.log(`[DNAMixer V4.5] ${activeBrands.map(k => `${k}:${dnaComposition[k as keyof typeof dnaComposition]}%`).join(' + ')}`);
+      log.info("DNA_COMPOSITION", { brands: activeBrands.map(k => `${k}:${dnaComposition[k as keyof typeof dnaComposition]}%`).join(' + ') });
       sse(res, {
         type: "dna_composition",
         composition: dnaComposition,
@@ -105,7 +108,7 @@ export async function runPlannerStep(
       });
     }
   } catch (e) {
-    console.error('[DNAMixer] Failed (continuing without composition):', e);
+    log.error("DNA_MIXER_FAILED", { error: String(e) });
   }
 
   const tplMatch = serverMatchTemplate(prompt);
@@ -120,7 +123,7 @@ export async function runPlannerStep(
     databaseTables: tplMatch.template.databaseTables,
     features: tplMatch.template.features,
   });
-  console.log(`[V5.6] Template matched: ${tplMatch.template.name} (${tplMatch.confidence}% confidence)`);
+  log.info("TEMPLATE_MATCHED", { templateName: tplMatch.template.name, confidence: tplMatch.confidence });
 
   const dnaContextStr = dnaTheme
     ? buildDNAContextString(dnaComposition, dnaOwnership, dnaTheme)
