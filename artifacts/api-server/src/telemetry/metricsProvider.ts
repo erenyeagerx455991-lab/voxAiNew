@@ -1,3 +1,5 @@
+import { MAX_DURATION_SAMPLES } from "./constants.js";
+
 export interface MetricsSnapshot {
   builds: Record<string, unknown>;
   agents: Record<string, unknown>;
@@ -34,6 +36,11 @@ function computePercentile(sorted: number[], p: number): number {
   return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
 }
 
+function cappedPush(arr: number[], value: number, cap: number): void {
+  arr.push(value);
+  if (arr.length > cap) arr.shift();
+}
+
 export class MemoryMetricsProvider implements MetricsProvider {
   private counters: Map<string, number> = new Map();
   private gauges: Map<string, number> = new Map();
@@ -54,9 +61,9 @@ export class MemoryMetricsProvider implements MetricsProvider {
   }
 
   recordDuration(key: string, durationMs: number): void {
-    const existing = this.histograms.get(key) ?? [];
-    existing.push(durationMs);
-    this.histograms.set(key, existing);
+    if (!this.histograms.has(key)) this.histograms.set(key, []);
+    const arr = this.histograms.get(key)!;
+    cappedPush(arr, durationMs, MAX_DURATION_SAMPLES);
   }
 
   setSection(section: 'builds' | 'agents' | 'tokens' | 'repairs' | 'runtime', data: Record<string, unknown>): void {

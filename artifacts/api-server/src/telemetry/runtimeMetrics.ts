@@ -1,4 +1,5 @@
 import { globalMetrics } from "./metricsProvider.js";
+import { MAX_DURATION_SAMPLES } from "./constants.js";
 
 let runtimeChecks = 0;
 let runtimePasses = 0;
@@ -6,6 +7,11 @@ let runtimeFailures = 0;
 const viteBuildDurations: number[] = [];
 const repairLoopDurations: number[] = [];
 const validationDurations: number[] = [];
+
+function cappedPush(arr: number[], value: number): void {
+  arr.push(value);
+  if (arr.length > MAX_DURATION_SAMPLES) arr.shift();
+}
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -26,19 +32,19 @@ export function recordRuntimeCheck(passed: boolean): void {
 }
 
 export function recordViteBuildDuration(durationMs: number): void {
-  viteBuildDurations.push(durationMs);
+  cappedPush(viteBuildDurations, durationMs);
   globalMetrics.recordDuration("runtime.vite_build", durationMs);
   syncSnapshot();
 }
 
 export function recordRepairLoopDuration(durationMs: number): void {
-  repairLoopDurations.push(durationMs);
+  cappedPush(repairLoopDurations, durationMs);
   globalMetrics.recordDuration("runtime.repair_loop", durationMs);
   syncSnapshot();
 }
 
 export function recordValidationDuration(durationMs: number): void {
-  validationDurations.push(durationMs);
+  cappedPush(validationDurations, durationMs);
   globalMetrics.recordDuration("runtime.validation", durationMs);
   syncSnapshot();
 }

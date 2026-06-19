@@ -1,4 +1,5 @@
 import { globalMetrics } from "./metricsProvider.js";
+import { MAX_DURATION_SAMPLES } from "./constants.js";
 import type { TraceContext } from "./traceContext.js";
 
 interface BuildRecord {
@@ -16,6 +17,11 @@ const durations: number[] = [];
 let totalBuilds = 0;
 let successfulBuilds = 0;
 let failedBuilds = 0;
+
+function cappedPush(arr: number[], value: number): void {
+  arr.push(value);
+  if (arr.length > MAX_DURATION_SAMPLES) arr.shift();
+}
 
 function computePercentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -39,7 +45,7 @@ export function recordBuildSuccess(buildId: string): void {
   b.durationMs = dur;
   b.status = "success";
   successfulBuilds++;
-  durations.push(dur);
+  cappedPush(durations, dur);
   globalMetrics.increment("builds.success");
   globalMetrics.recordDuration("builds.duration", dur);
   syncSnapshot();

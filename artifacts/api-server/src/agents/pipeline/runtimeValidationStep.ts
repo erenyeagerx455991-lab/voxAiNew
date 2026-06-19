@@ -8,6 +8,7 @@ import type { RealBuildError } from "../../runtime/buildExecutor.js";
 import type { ProjectFileSSE, ProjectBlueprint, ServerKnowledgeGraph } from "../types.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { recordRuntimeCheck, recordViteBuildDuration, recordRepairLoopDuration } from "../../telemetry/runtimeMetrics.js";
+import { recordRepairAttempt, recordRepairSuccess, recordRepairFailure } from "../../telemetry/repairMetrics.js";
 
 const log = createLogger("RuntimeValidationStep");
 const REAL_REPAIR_SYSTEM = 'You are a React/TypeScript build repair agent. Fix ONLY the reported build errors. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
@@ -17,6 +18,7 @@ export interface RuntimeStepInput {
   projectBlueprint: ProjectBlueprint;
   knowledgeGraph: ServerKnowledgeGraph;
   chatId: string;
+  buildId?: string;
 }
 
 export async function runRuntimeValidationStep(
@@ -25,6 +27,7 @@ export async function runRuntimeValidationStep(
   res: Response
 ): Promise<{ allFiles: ProjectFileSSE[]; finalRuntimeState: Record<string, unknown> }> {
   const { allFiles, projectBlueprint, chatId } = input;
+  const buildId = input.buildId ?? chatId;
   const { groqKey } = keys;
 
   sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: "active" });
@@ -128,6 +131,8 @@ export async function runRuntimeValidationStep(
 
         await Promise.all(repairTargets.map(async (target) => {
           totalRealRepairAttempts++;
+          const fileName = target.file.name;
+          recordRepairAttempt(buildId, fileName);
           try {
             const fixed = await callGroq(groqKey, REPAIR_MODEL,
               [{ role: 'system', content: REAL_REPAIR_SYSTEM }, { role: 'user', content: target.context }],
@@ -136,11 +141,15 @@ export async function runRuntimeValidationStep(
             if (fixed && fixed.length > 80) {
               const cleaned = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
               target.file.content = cleaned;
-              rtLog('success', `Repaired ${target.file.name} (${cleaned.length} chars)`);
+              recordRepairSuccess(buildId, fileName, pass + 1);
+              rtLog('success', `Repaired ${fileName} (${cleaned.length} chars)`);
+            } else {
+              recordRepairFailure(buildId, fileName);
             }
           } catch (repairErr: unknown) {
             const err = repairErr as Error;
-            rtLog('warn', `Repair skip ${target.file.name}: ${err?.message ?? repairErr}`);
+            recordRepairFailure(buildId, fileName);
+            rtLog('warn', `Repair skip ${fileName}: ${err?.message ?? repairErr}`);
           }
         }));
 

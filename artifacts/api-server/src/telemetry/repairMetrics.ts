@@ -1,4 +1,5 @@
 import { globalMetrics } from "./metricsProvider.js";
+import { MAX_REPAIR_SAMPLES } from "./constants.js";
 
 interface RepairRecord {
   buildId: string;
@@ -13,11 +14,17 @@ let successfulRepairs = 0;
 let failedRepairs = 0;
 const repairPassCounts: number[] = [];
 
+function cappedPush(arr: number[], value: number): void {
+  arr.push(value);
+  if (arr.length > MAX_REPAIR_SAMPLES) arr.shift();
+}
+
 export function recordRepairAttempt(buildId: string, filePath: string): void {
   let rec = repairRecords.find(r => r.buildId === buildId && r.filePath === filePath);
   if (!rec) {
     rec = { buildId, filePath, attemptCount: 0, finalResult: "in-progress" };
     repairRecords.push(rec);
+    if (repairRecords.length > MAX_REPAIR_SAMPLES) repairRecords.shift();
   }
   rec.attemptCount++;
   totalAttempts++;
@@ -29,7 +36,7 @@ export function recordRepairSuccess(buildId: string, filePath: string, passes: n
   const rec = repairRecords.find(r => r.buildId === buildId && r.filePath === filePath);
   if (rec) rec.finalResult = "success";
   successfulRepairs++;
-  repairPassCounts.push(passes);
+  cappedPush(repairPassCounts, passes);
   globalMetrics.increment("repairs.successes");
   syncSnapshot();
 }

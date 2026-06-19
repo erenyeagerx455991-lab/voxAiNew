@@ -1,27 +1,11 @@
-let _traceId: string | null = null;
-let _requestId: string | null = null;
-let _buildId: string | null = null;
-let _sessionId: string | null = null;
+import { getContext } from "../telemetry/contextStore.js";
 
-export function setLogContext(ctx: {
-  traceId?: string;
-  requestId?: string;
-  buildId?: string;
-  sessionId?: string;
-}): void {
-  if (ctx.traceId)   _traceId   = ctx.traceId;
-  if (ctx.requestId) _requestId = ctx.requestId;
-  if (ctx.buildId)   _buildId   = ctx.buildId;
-  if (ctx.sessionId) _sessionId = ctx.sessionId;
-}
-
-export function clearLogContext(): void {
-  _traceId = _requestId = _buildId = _sessionId = null;
-}
+export { runWithContext, setContext, updateContext, getContext } from "../telemetry/contextStore.js";
 
 type LogLevel = "info" | "warn" | "error" | "debug";
 
 function emit(level: LogLevel, component: string, event: string, data?: Record<string, unknown>): void {
+  const ctx = getContext();
   const entry: Record<string, unknown> = {
     level,
     timestamp: new Date().toISOString(),
@@ -29,10 +13,10 @@ function emit(level: LogLevel, component: string, event: string, data?: Record<s
     event,
     ...(data ?? {}),
   };
-  if (_traceId)   entry["traceId"]   = _traceId;
-  if (_requestId) entry["requestId"] = _requestId;
-  if (_buildId)   entry["buildId"]   = _buildId;
-  if (_sessionId) entry["sessionId"] = _sessionId;
+  if (ctx.traceId)   entry["traceId"]   = ctx.traceId;
+  if (ctx.requestId) entry["requestId"] = ctx.requestId;
+  if (ctx.buildId)   entry["buildId"]   = ctx.buildId;
+  if (ctx.sessionId) entry["sessionId"] = ctx.sessionId;
 
   const out = JSON.stringify(entry);
   switch (level) {
@@ -59,3 +43,16 @@ export function createLogger(component: string): Logger {
 }
 
 export const logger = createLogger("api-server");
+
+export function setLogContext(ctx: {
+  traceId?: string;
+  requestId?: string;
+  buildId?: string;
+  sessionId?: string;
+}): void {
+  setContext(ctx);
+}
+
+export function clearLogContext(): void {
+  setContext({ traceId: undefined, requestId: undefined, buildId: undefined, sessionId: undefined });
+}

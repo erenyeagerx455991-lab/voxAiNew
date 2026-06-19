@@ -1,4 +1,5 @@
 import { globalMetrics } from "./metricsProvider.js";
+import { MAX_DURATION_SAMPLES } from "./constants.js";
 
 export type AgentName =
   | "Planner"
@@ -30,6 +31,11 @@ function getOrCreate(name: string): AgentRecord {
   return agentRecords.get(name)!;
 }
 
+function cappedPush(arr: number[], value: number): void {
+  arr.push(value);
+  if (arr.length > MAX_DURATION_SAMPLES) arr.shift();
+}
+
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
   const idx = Math.ceil((p / 100) * sorted.length) - 1;
@@ -47,7 +53,7 @@ export async function withAgentMetrics<T>(
     const result = await fn();
     const dur = Date.now() - start;
     rec.successes++;
-    rec.latencies.push(dur);
+    cappedPush(rec.latencies, dur);
     globalMetrics.increment(`agents.${agentName}.calls`);
     globalMetrics.increment(`agents.${agentName}.successes`);
     globalMetrics.recordDuration(`agents.${agentName}.latency`, dur);

@@ -7,6 +7,7 @@ import { estimateTokenCount } from "../../contextManager.js";
 import type { ProjectFileSSE } from "../types.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
+import { recordRepairAttempt, recordRepairSuccess, recordRepairFailure } from "../../telemetry/repairMetrics.js";
 
 const log = createLogger("RepairStep");
 const MAX_REPAIR_PASSES = 3;
@@ -21,6 +22,7 @@ export async function runRepairStep(
   const { projectFiles, fixedCode, architecture, registrySelection } = frontend;
   const { plan } = architecture;
   const { blueprint } = plan;
+  const buildId = (frontend as unknown as Record<string, unknown>).buildId as string ?? "unknown";
 
   let totalRepairAttempts = 0;
   let totalFilesRepaired = 0;
@@ -34,6 +36,9 @@ export async function runRepairStep(
     }
     if (pass === MAX_REPAIR_PASSES - 1) {
       log.warn("REPAIR_MAX_PASSES", { pass: pass + 1, remainingFailures: failures.length });
+      for (const file of failures) {
+        recordRepairFailure(buildId, file.name);
+      }
       break;
     }
     log.info("REPAIR_PASS_START", { pass: pass + 1, failures: failures.length });
@@ -42,6 +47,7 @@ export async function runRepairStep(
       const validation = validateTsxFile(file.name, file.content);
       log.warn("REPAIR_FILE_ISSUES", { file: file.name, pass: pass + 1, issues: validation.issues.join('; ') });
       totalRepairAttempts++;
+      recordRepairAttempt(buildId, file.name);
       try {
         const fixed = await callGroq(groqKey, REPAIR_MODEL,
           [
@@ -55,10 +61,16 @@ export async function runRepairStep(
           if (cleaned.length > file.content.length * 0.5) {
             (file as { content: string }).content = cleaned;
             totalFilesRepaired++;
+            recordRepairSuccess(buildId, file.name, pass + 1);
             log.info("REPAIR_FILE_SUCCESS", { file: file.name, chars: cleaned.length });
+          } else {
+            recordRepairFailure(buildId, file.name);
           }
+        } else {
+          recordRepairFailure(buildId, file.name);
         }
       } catch (e) {
+        recordRepairFailure(buildId, file.name);
         log.error("REPAIR_FILE_FAILED", { file: file.name, error: String(e) });
       }
     }));

@@ -1,4 +1,5 @@
 import { globalMetrics } from "./metricsProvider.js";
+import { MAX_TOKEN_SAMPLES } from "./constants.js";
 
 export type LLMProvider = "groq" | "openrouter";
 
@@ -13,11 +14,16 @@ interface ProviderRecord {
 }
 
 const providerRecords: Record<LLMProvider, ProviderRecord> = {
-  groq: { requests: 0, failures: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, latencies: [], modelCalls: {} },
+  groq:       { requests: 0, failures: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, latencies: [], modelCalls: {} },
   openrouter: { requests: 0, failures: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, latencies: [], modelCalls: {} },
 };
 
 let lifetimeTotalTokens = 0;
+
+function cappedPush(arr: number[], value: number): void {
+  arr.push(value);
+  if (arr.length > MAX_TOKEN_SAMPLES) arr.shift();
+}
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
@@ -46,7 +52,7 @@ export function recordLLMCall(opts: {
     rec.completionTokens += ct;
     rec.totalTokens += tt;
     lifetimeTotalTokens += tt;
-    rec.latencies.push(opts.latencyMs);
+    cappedPush(rec.latencies, opts.latencyMs);
     rec.modelCalls[opts.model] = (rec.modelCalls[opts.model] ?? 0) + 1;
     globalMetrics.increment(`tokens.${opts.provider}.requests`);
     globalMetrics.increment(`tokens.${opts.provider}.total`, tt);
