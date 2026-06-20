@@ -14,6 +14,15 @@ const log = createLogger('BuildQueue');
 let _queue: Queue<BuildJobData> | null = null;
 const _localJobs = new Map<string, JobInfo>();
 
+/** Terminal statuses — only these may be evicted */
+const TERMINAL_STATUSES = new Set<JobStatus>(['done', 'failed', 'cancelled', 'timeout']);
+
+/** Maximum retained entries in _localJobs (hard cap — prevents unbounded growth) */
+const MAX_LOCAL_JOBS = 1000;
+
+/** Time-to-live for completed jobs before eviction (1 hour) */
+const TERMINAL_JOB_TTL_MS = 60 * 60 * 1000;
+
 // In-memory mode: worker registers itself so jobs execute inline when Redis is unavailable
 type InlineExecutor = (jobId: string, data: BuildJobData) => Promise<void>;
 let _inlineExecutor: InlineExecutor | null = null;
@@ -23,6 +32,35 @@ export function setInlineExecutor(fn: InlineExecutor): void {
 }
 
 export function getQueue(): Queue<BuildJobData> | null { return _queue; }
+
+/**
+ * Evicts terminal jobs from _localJobs.
+ * Rules (Phase 4 safety):
+ *   - Never removes queued, running, or retrying jobs.
+ *   - Removes terminal jobs older than TERMINAL_JOB_TTL_MS.
+ *   - If still over MAX_LOCAL_JOBS after TTL eviction, removes oldest terminal jobs first.
+ */
+export function evictTerminalJobs(): void {
+  const cutoff = Date.now() - TERMINAL_JOB_TTL_MS;
+
+  // TTL pass: remove terminal jobs whose completedAt is older than 1 hour
+  for (const [id, info] of _localJobs) {
+    if (TERMINAL_STATUSES.has(info.status) && (info.completedAt ?? 0) < cutoff) {
+      _localJobs.delete(id);
+    }
+  }
+
+  // Cap pass: if still over MAX_LOCAL_JOBS, remove oldest terminal jobs by completedAt
+  if (_localJobs.size > MAX_LOCAL_JOBS) {
+    const terminal = [..._localJobs.entries()]
+      .filter(([, info]) => TERMINAL_STATUSES.has(info.status))
+      .sort(([, a], [, b]) => (a.completedAt ?? 0) - (b.completedAt ?? 0));
+    for (const [id] of terminal) {
+      if (_localJobs.size <= MAX_LOCAL_JOBS) break;
+      _localJobs.delete(id);
+    }
+  }
+}
 
 export function initBuildQueue(): void {
   if (!isRedisAvailable()) {
@@ -47,6 +85,9 @@ export async function enqueueBuild(opts: EnqueueOptions): Promise<string> {
   const enqueuedAt = Date.now();
   const timeoutMs = opts.timeoutMs ?? DEFAULT_JOB_TIMEOUT_MS;
 
+  // Evict stale terminal jobs before adding a new one (prevents unbounded growth)
+  evictTerminalJobs();
+
   const jobData: BuildJobData = {
     prompt: opts.prompt, chatId: opts.chatId, userId: opts.userId,
     enqueuedAt, groqKey: opts.groqKey, openrouterKey: opts.openrouterKey,
@@ -54,7 +95,8 @@ export async function enqueueBuild(opts: EnqueueOptions): Promise<string> {
 
   const info: JobInfo = { jobId, status: 'queued', userId: opts.userId, enqueuedAt, retryCount: 0 };
   _localJobs.set(jobId, info);
-  recordJobEnqueued(opts.userId);
+  // Pass jobId so queueMetrics can store enqueue time under the correct key
+  recordJobEnqueued(opts.userId, jobId);
 
   return new Promise<string>((resolve) => {
     const timer = setTimeout(() => {
@@ -98,9 +140,11 @@ export function updateJobStatus(jobId: string, status: JobStatus, error?: string
   if (!info) return;
   info.status = status;
   if (status === 'running') info.startedAt = Date.now();
-  if (['done', 'failed', 'cancelled', 'timeout'].includes(status)) {
+  if (TERMINAL_STATUSES.has(status)) {
     info.completedAt = Date.now();
     info.durationMs = info.startedAt ? info.completedAt - info.startedAt : undefined;
+    // Schedule async eviction — does not block the status update
+    setImmediate(evictTerminalJobs);
   }
   if (error) info.error = error;
 }

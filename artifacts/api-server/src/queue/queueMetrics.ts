@@ -26,12 +26,13 @@ let queuedNow = 0;
 
 const waitTimes: number[] = [];
 const durations: number[] = [];
+// Key: jobId (fixed — was a random string that never matched the jobId lookup)
 const enqueueTimes = new Map<string, number>();
 const startTimes = new Map<string, number>();
 const byUser = new Map<string, { enqueued: number; completed: number; failed: number }>();
 const recentFailures: Array<{ jobId: string; userId: string; error: string; at: number }> = [];
 
-const MAX_SAMPLES = 500;
+const MAX_SAMPLES  = 500;
 const MAX_FAILURES = 50;
 
 function cappedPush<T>(arr: T[], val: T): void {
@@ -54,14 +55,20 @@ function userEntry(userId: string) {
   return byUser.get(userId)!;
 }
 
-export function recordJobEnqueued(userId: string): void {
+/**
+ * @param userId - the user who triggered the build
+ * @param jobId  - the job's UUID, used as the enqueueTimes key so recordJobStarted can look it up
+ */
+export function recordJobEnqueued(userId: string, jobId: string): void {
   enqueuedTotal++;
   queuedNow++;
-  enqueueTimes.set(`${Date.now()}-${Math.random()}`, Date.now());
+  // Store by jobId so recordJobStarted can compute real wait time
+  enqueueTimes.set(jobId, Date.now());
   userEntry(userId).enqueued++;
 }
 
 export function recordJobStarted(jobId: string, userId: string): void {
+  // Real wait time: now − time job was enqueued (key now matches jobId)
   const enqueued = enqueueTimes.get(jobId) ?? Date.now();
   const waitMs = Date.now() - enqueued;
   cappedPush(waitTimes, waitMs);
@@ -77,20 +84,24 @@ export function recordJobCompleted(jobId: string, userId: string, durationMs: nu
   activeNow = Math.max(0, activeNow - 1);
   cappedPush(durations, durationMs);
   startTimes.delete(jobId);
+  enqueueTimes.delete(jobId); // cleanup if job went queued→done without a start event
   userEntry(userId).completed++;
 }
 
 export function recordJobFailed(jobId: string, userId: string, error: string): void {
   failedTotal++;
   activeNow = Math.max(0, activeNow - 1);
+  enqueueTimes.delete(jobId); // cleanup: timeout/failed-before-start leaves entry behind
+  startTimes.delete(jobId);
   userEntry(userId).failed++;
   recentFailures.push({ jobId, userId, error, at: Date.now() });
   if (recentFailures.length > MAX_FAILURES) recentFailures.shift();
 }
 
-export function recordJobCancelled(userId: string): void {
+export function recordJobCancelled(userId: string, jobId?: string): void {
   cancelledTotal++;
   queuedNow = Math.max(0, queuedNow - 1);
+  if (jobId) enqueueTimes.delete(jobId); // cleanup: cancelled-before-start
   userEntry(userId).failed++;
 }
 
@@ -100,9 +111,9 @@ export function getQueueMetrics(): QueueSnapshot {
   return {
     enqueuedTotal, completedTotal, failedTotal, cancelledTotal,
     activeNow, queuedNow,
-    avgWaitMs: avg(sortedWait),
+    avgWaitMs:     avg(sortedWait),
     avgDurationMs: avg(sortedDur),
-    p95WaitMs: pct(sortedWait, 95),
+    p95WaitMs:     pct(sortedWait, 95),
     p95DurationMs: pct(sortedDur, 95),
     byUser: Object.fromEntries(byUser),
     recentFailures: recentFailures.slice(-10),

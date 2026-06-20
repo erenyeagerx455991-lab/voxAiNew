@@ -28,3 +28,4 @@
 - [VoxAI V7.0 Audit Findings](voxai-v70-audit.md) — enqueueBuild not wired to build route; recordTokenUsage never called; tpmWindow O(tokens) bug; _localJobs unbounded; load test hit /healthz not build endpoint; scorecard C.
 - [VoxAI V7.0.1 Queue Activation](voxai-v701-queue-activation.md) — enqueueBuild wired into agents.ts build route; SSE bridge lossless; 362 tests pass; avgWaitMs bug, token recording, _localJobs eviction still open.
 - [VoxAI V7.0.2 Token Accounting](voxai-v702-token-accounting.md) — accountTokens() in llmClient.ts; AsyncLocalStorage threads userId; stream_options fix for Groq streaming usage; checkBuildLimit enforces dailyTokenQuota; 399 tests pass.
+- [VoxAI V7.0.3 Memory Hardening](voxai-v703-memory-hardening.md) — tpmWindow O(requests) fix; _localJobs TTL+cap eviction (1h/1000); enqueueTimes key fix (avgWaitMs now real); 438 tests pass; byUser still unbounded (low-risk).

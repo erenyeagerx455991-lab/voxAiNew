@@ -1,0 +1,167 @@
+V7.0.3 — Memory Safety Hardening
+
+Context
+
+Audit findings still open:
+
+1. providerBudget.ts
+   tpmWindow grows O(tokens)
+
+2. buildQueue.ts
+   _localJobs never evicted
+
+3. queueMetrics.ts
+   avgWaitMs always 0 due to key mismatch
+
+Goal
+
+Eliminate all remaining memory-growth risks.
+
+No UI changes.
+
+No telemetry schema changes.
+
+No queue architecture changes.
+
+No budget logic changes.
+
+==================================================
+PHASE 1 — MEASURE CURRENT GROWTH
+
+Document:
+
+memoryBaseline.md
+
+Measure:
+
+- _localJobs growth rate
+- tpmWindow growth rate
+- queue metric storage growth
+
+Provide worst-case estimates.
+
+==================================================
+PHASE 2 — FIX TPM WINDOW
+
+Audit:
+
+providerBudget.ts
+
+Current behavior:
+
+1 token
+→ 1 array push
+
+10,000 token response
+→ 10,000 pushes
+
+Replace with:
+
+request-level accounting
+
+Requirement:
+
+Memory growth must be O(requests),
+not O(tokens).
+
+Preserve:
+
+- budget accuracy
+- quota accuracy
+- telemetry accuracy
+
+==================================================
+PHASE 3 — FIX LOCAL JOB RETENTION
+
+Audit:
+
+buildQueue.ts
+
+Add:
+
+bounded retention
+
+Acceptable:
+
+- TTL eviction
+- max entries
+- both
+
+Document rationale.
+
+Requirement:
+
+completed jobs must not accumulate forever.
+
+==================================================
+PHASE 4 — VERIFY ACTIVE JOB SAFETY
+
+Ensure:
+
+eviction never removes
+
+- queued jobs
+- active jobs
+- retrying jobs
+
+Only terminal jobs may be removed.
+
+==================================================
+PHASE 5 — FIX QUEUE METRICS
+
+Audit:
+
+queueMetrics.ts
+
+Find:
+
+avgWaitMs mismatch
+
+Verify:
+
+real wait times recorded.
+
+==================================================
+PHASE 6 — STRESS TESTS
+
+Simulate:
+
+100 builds
+1,000 builds
+10,000 builds
+
+Verify:
+
+memory remains bounded.
+
+==================================================
+PHASE 7 — REGRESSION TESTS
+
+Add:
+
+memorySafety.test.ts
+jobEviction.test.ts
+providerBudget.test.ts
+
+Verify:
+
+- no data loss
+- bounded memory
+- correct budget math
+
+==================================================
+PHASE 8 — FINAL AUDIT
+
+Generate:
+
+memoryHardeningReport.md
+
+Answer:
+
+1. Can memory grow without bound?
+2. What structures remain unbounded?
+3. Maximum retained jobs?
+4. Maximum retained telemetry samples?
+5. Maximum retained budget samples?
+
+Report measured values only.
