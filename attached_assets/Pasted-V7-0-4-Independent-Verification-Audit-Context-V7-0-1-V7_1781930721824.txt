@@ -1,0 +1,161 @@
+V7.0.4 — Independent Verification Audit
+
+Context
+
+V7.0.1
+V7.0.2
+V7.0.3
+
+have fixed all previously identified critical findings.
+
+Before adding more features or optimizations,
+verify that the fixes actually work under real usage.
+
+Goal
+
+Independent verification.
+
+No feature work.
+
+No refactors.
+
+No optimizations.
+
+No new telemetry.
+
+No dashboard work.
+
+==================================================
+PHASE 1 — QUEUE VERIFICATION
+
+Verify from source and runtime:
+
+- build route uses enqueueBuild()
+- worker executes builds
+- metrics increment correctly
+- no direct runBuildPipeline() bypass exists
+
+Generate:
+
+queueVerification.md
+
+==================================================
+PHASE 2 — TOKEN ACCOUNTING VERIFICATION
+
+Verify:
+
+recordTokenUsage()
+
+recordTokensUsed()
+
+are triggered from real provider responses.
+
+Check:
+
+- Groq
+- OpenRouter
+- streaming
+- fallback
+- retries
+
+Generate:
+
+tokenVerification.md
+
+==================================================
+PHASE 3 — MEMORY VERIFICATION
+
+Verify:
+
+tpmWindow
+
+_localJobs
+
+enqueueTimes
+
+cannot grow without bound.
+
+Stress-test:
+
+1k jobs
+10k jobs
+100k simulated events
+
+Measure actual retained entries.
+
+Generate:
+
+memoryVerification.md
+
+==================================================
+PHASE 4 — METRICS CORRECTNESS
+
+Verify:
+
+avgWaitMs
+completedTotal
+failedTotal
+activeNow
+queue depth
+
+all reflect real state transitions.
+
+Generate:
+
+metricsVerification.md
+
+==================================================
+PHASE 5 — LOAD TEST HONESTY
+
+Audit every benchmark report.
+
+Classify:
+
+REAL BUILD TEST
+
+or
+
+HEALTH CHECK TEST
+
+for each metric previously reported.
+
+Generate:
+
+benchmarkVerification.md
+
+==================================================
+PHASE 6 — PRODUCTION READINESS SCORE
+
+Re-score:
+
+Queue Reliability
+Persistence
+Recovery
+Observability
+Quota Enforcement
+Memory Safety
+Production Readiness
+
+Compare against:
+
+Original audit score:
+3.6 / 10
+
+Provide new measured score.
+
+==================================================
+FINAL QUESTIONS
+
+Answer:
+
+1. Which original audit findings remain open?
+2. Which fixes were verified?
+3. Which fixes are still only assumed?
+4. What is the current production-readiness score?
+5. What is now the highest-risk subsystem?
+
+Report evidence only.
+
+No estimates.
+
+No marketing language.
