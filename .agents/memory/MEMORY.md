@@ -26,3 +26,4 @@
 - [VoxAI V6.6 RAG Registry](voxai-v66-rag-registry.md) — intent-based top-K retrieval replaces full-registry injection; 80%+ token reduction; 293 tests pass; repairMetrics needs resetRepairMetrics() in beforeEach.
 - [VoxAI V7.0 Scalability Foundation](voxai-v70-scalability.md) — BullMQ+Redis queue (in-memory fallback), workspace registry, token budget, user limits; 339 tests; 2.5k–3.3k req/s at 10–100 users; autocannon load scripts in scripts/load/.
 - [VoxAI V7.0 Audit Findings](voxai-v70-audit.md) — enqueueBuild not wired to build route; recordTokenUsage never called; tpmWindow O(tokens) bug; _localJobs unbounded; load test hit /healthz not build endpoint; scorecard C.
+- [VoxAI V7.0.1 Queue Activation](voxai-v701-queue-activation.md) — enqueueBuild wired into agents.ts build route; SSE bridge lossless; 362 tests pass; avgWaitMs bug, token recording, _localJobs eviction still open.

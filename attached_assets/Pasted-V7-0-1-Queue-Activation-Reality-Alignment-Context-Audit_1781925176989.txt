@@ -1,0 +1,185 @@
+V7.0.1 — Queue Activation & Reality Alignment
+
+Context:
+
+Audit findings confirmed:
+
+CRITICAL #1:
+agents.ts still executes:
+
+runBuildPipeline()
+
+directly.
+
+enqueueBuild() exists but is not part of the live build path.
+
+As a result:
+
+- BullMQ is idle
+- Queue metrics are mostly meaningless
+- Worker recovery is unverified in production flow
+- V7.0 architecture claim is only partially true
+
+Goal:
+
+Activate the queue architecture for real.
+
+Do NOT fix any other audit finding in this release.
+
+Do NOT touch token budgets.
+Do NOT touch memory caps.
+Do NOT touch dashboards.
+Do NOT touch telemetry schemas.
+
+Focus only on queue activation.
+
+==================================================
+PHASE 1 — TRACE CURRENT BUILD PATH
+
+Document:
+
+Current flow
+
+HTTP
+→ agents.ts
+→ runBuildPipeline()
+
+Verify:
+
+- exact line numbers
+- SSE flow
+- cancellation flow
+- telemetry flow
+
+Generate:
+
+queueActivationBaseline.md
+
+==================================================
+PHASE 2 — QUEUE INTEGRATION
+
+Replace:
+
+HTTP
+→ runBuildPipeline()
+
+With:
+
+HTTP
+→ enqueueBuild()
+→ Worker
+→ runBuildPipeline()
+
+Requirements:
+
+No behavior changes.
+
+Preserve:
+
+- SSE events
+- event ordering
+- build IDs
+- trace IDs
+- telemetry events
+- repair behavior
+
+==================================================
+PHASE 3 — SSE BRIDGE
+
+Verify:
+
+Client must continue receiving:
+
+BUILD_STARTED
+STEP_STARTED
+STEP_COMPLETED
+BUILD_COMPLETED
+BUILD_FAILED
+
+without format changes.
+
+Worker execution must stream through existing SSE system.
+
+No polling.
+
+==================================================
+PHASE 4 — CANCELLATION
+
+Verify:
+
+If build cancellation already exists:
+
+preserve behavior.
+
+If it does not exist:
+
+document it.
+
+Do not invent new cancellation architecture.
+
+==================================================
+PHASE 5 — WORKER RECOVERY VALIDATION
+
+Demonstrate:
+
+1. enqueue build
+2. worker executes
+3. worker restart
+4. queued job survives
+
+If Redis unavailable:
+
+document exact behavior.
+
+No assumptions.
+
+==================================================
+PHASE 6 — QUEUE METRICS VALIDATION
+
+Verify metrics become real:
+
+queued
+active
+completed
+failed
+wait time
+
+Must change during actual build execution.
+
+==================================================
+PHASE 7 — REGRESSION TESTS
+
+Add:
+
+queueActivation.test.ts
+workerExecution.test.ts
+sseBridge.test.ts
+
+Requirements:
+
+existing tests remain green.
+
+==================================================
+PHASE 8 — FINAL VALIDATION
+
+Answer:
+
+1. Is queue now in the live build path?
+2. Does any build still bypass the queue?
+3. Does worker execute real builds?
+4. Are metrics real?
+5. Does SSE still work?
+
+Generate:
+
+queueActivationReport.md
+
+IMPORTANT:
+
+Do not claim scalability improvements.
+
+Do not claim throughput improvements.
+
+Do not run health-check benchmarks.
+
+Only report behavior verified through real build execution.

@@ -41,6 +41,7 @@ import { getTemplatesByCategory, getRegistryCatalogue, selectTemplatesForPrompt,
 import { retrieveComponents } from "../components/retrieval/retrieveComponents.js";
 import { buildCompressedCatalogue } from "../components/retrieval/buildRegistryContext.js";
 import { runBuildPipeline } from "../agents/pipeline/buildPipeline.js";
+import { enqueueBuild } from "../queue/buildQueue.js";
 import { checkBuildLimit, extractUserId, recordBuildStarted, recordBuildCompleted } from "../limits/userLimits.js";
 import { checkTokenBudget } from "../cost/tokenBudget.js";
 import { createLogger } from "../lib/structuredLogger.js";
@@ -82,9 +83,16 @@ router.post("/agents/build", async (req, res) => {
   res.flushHeaders();
 
   try {
-    await runBuildPipeline({ prompt, chatId, keys: { groqKey, openrouterKey } }, res);
+    await enqueueBuild({
+      prompt,
+      chatId,
+      userId,
+      groqKey,
+      openrouterKey,
+      onEvent: (event) => sse(res, event as Record<string, unknown>),
+    });
   } catch (err: any) {
-    sse(res, { type: "error", error: err?.message ?? "Multi-agent pipeline failed" });
+    sse(res, { type: "error", error: err?.message ?? "Queue dispatch failed" });
   } finally {
     recordBuildCompleted(userId);
   }
