@@ -59,6 +59,8 @@ export function checkBuildLimit(userId: string): { allowed: boolean; reason?: st
     return { allowed: false, reason: `Build queue full (${_config.maxQueuedBuilds} queued)` };
   if (s.dailyBuilds >= _config.dailyBuildQuota)
     return { allowed: false, reason: `Daily build quota reached (${_config.dailyBuildQuota}/day)` };
+  if (s.dailyTokens >= _config.dailyTokenQuota)
+    return { allowed: false, reason: `Daily token quota reached (${_config.dailyTokenQuota} tokens/day)` };
   return { allowed: true };
 }
 

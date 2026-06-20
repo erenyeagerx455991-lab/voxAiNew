@@ -6,6 +6,7 @@ import { emitJobEvent, emitJobDone } from './buildEventBus.js';
 import { recordJobStarted, recordJobCompleted, recordJobFailed } from './queueMetrics.js';
 import { QUEUE_NAME, WORKER_CONCURRENCY, type BuildJobData } from './queueTypes.js';
 import { runBuildPipeline } from '../agents/pipeline/buildPipeline.js';
+import { tokenContext } from '../agents/llm/tokenContext.js';
 import { createLogger } from '../lib/structuredLogger.js';
 
 const log = createLogger('QueueWorker');
@@ -48,7 +49,11 @@ export async function executeBuildJob(jobId: string, data: BuildJobData): Promis
   const bridge = makeSseBridge(jobId);
 
   try {
-    await runBuildPipeline({ prompt, chatId, keys: { groqKey, openrouterKey } }, bridge);
+    // tokenContext carries userId + buildId through the async chain to callGroq/callOpenRouter
+    // without changing any intermediate function signatures (Phase 5 — per-user accounting).
+    await tokenContext.run({ userId, buildId: jobId }, () =>
+      runBuildPipeline({ prompt, chatId, keys: { groqKey, openrouterKey } }, bridge)
+    );
     updateJobStatus(jobId, 'done');
     recordJobCompleted(jobId, userId, Date.now() - t0);
     log.info('JOB_DONE', { jobId, userId, durationMs: Date.now() - t0 });
