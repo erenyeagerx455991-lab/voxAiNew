@@ -1,6 +1,6 @@
-import { getContext } from "../telemetry/contextStore.js";
+import { getContext, setContext, runWithContext, updateContext } from "../telemetry/contextStore.js";
 
-export { runWithContext, setContext, updateContext, getContext } from "../telemetry/contextStore.js";
+export { runWithContext, setContext, updateContext, getContext };
 
 type LogLevel = "info" | "warn" | "error" | "debug";
 

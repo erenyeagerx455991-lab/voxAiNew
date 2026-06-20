@@ -1,0 +1,85 @@
+{
+  "testConfig": {
+    "concurrency": 1,
+    "prompt": "Build a minimal SaaS landing page with hero, features, and pricing sections",
+    "runAt": "2026-06-20T05:02:22.565Z",
+    "target": "http://localhost:8080/api/agents/build",
+    "note": "bash timeout hit at 115s; build was at step 9 (Runtime Agent active). Server continued running the build."
+  },
+  "success": false,
+  "timedOut": true,
+  "failureReason": "bash process timeout at 115s — Runtime Agent (step 9) was active at cutoff, server pipeline was still running",
+  "timing": {
+    "totalMs": ">115000 (incomplete)",
+    "queueWaitMs": 121,
+    "stepTimings": {
+      "step0_plannerMs": 1441,
+      "step1_architectureMs": 893,
+      "step2_designMs": 1977,
+      "step3_frontendMs": 15784,
+      "step4_codeFixMs": 65036,
+      "step5_backendMs": 28392,
+      "step6_databaseMs": 2376,
+      "step7_authMs": 2683,
+      "step8_scaffoldMs": 0,
+      "step9_runtimeMs": "INCOMPLETE — timed out"
+    },
+    "dominantBottleneck": "step4 (Code Fix Agent): 65036ms = 56% of measured elapsed time"
+  },
+  "sseValidation": {
+    "totalEventsReceived": "~40+ (including token events)",
+    "duplicates": 0,
+    "stepsReceived": 9,
+    "stepSequence": [
+      "0:Planner Agent:active",
+      "0:Planner Agent:done",
+      "1:Architecture Agent:active",
+      "1:Architecture Agent:done",
+      "2:Design Agent:active",
+      "2:Design Agent:done",
+      "3:Frontend Agent:active",
+      "3:Frontend Agent:done",
+      "4:Code Fix Agent:active",
+      "4:Code Fix Agent:done",
+      "5:Backend Agent:active",
+      "6:Database Agent:active",
+      "7:Auth Agent:active",
+      "6:Database Agent:done",
+      "7:Auth Agent:done",
+      "5:Backend Agent:done",
+      "8:Scaffold Agent:active",
+      "8:Scaffold Agent:done",
+      "9:Runtime Agent:active"
+    ],
+    "specialEvents": ["dna_composition", "template_selected", "quality_gate", "registry_selection"],
+    "streamCompletedNormally": false,
+    "droppedStream": false,
+    "note": "Stream was live and healthy. Bash timeout killed the reader process, not the server stream."
+  },
+  "tokenUsage": {
+    "groqDailyTokens": 32681,
+    "openrouterDailyTokens": 2651,
+    "totalTokensThisBuild": 35332,
+    "source": "/api/telemetry/queue post-test snapshot"
+  },
+  "postTestQueueMetrics": {
+    "enqueuedTotal": 1,
+    "completedTotal": 0,
+    "failedTotal": 0,
+    "activeNow": 1,
+    "queuedNow": 0,
+    "avgWaitMs": 0,
+    "note": "avgWaitMs shows 0 because recordJobStarted fires before the key fix takes effect in this run — wait was real (1ms per server log)"
+  },
+  "failureInjectionResults": {
+    "emptyPrompt":   { "status": 400, "body": "{\"error\":\"prompt required\"}", "expected": 400, "pass": true },
+    "missingPrompt": { "status": 400, "body": "{\"error\":\"prompt required\"}", "expected": 400, "pass": true },
+    "earlyDisconnect": { "note": "SSE stream continues server-side — confirmed by second build starting while first still active" }
+  },
+  "concurrencyLimitTest": {
+    "maxConcurrent": 2,
+    "thirdRequestResponse": "HTTP 429: {\"error\":\"Max concurrent builds reached (2)\"}",
+    "limitSource": "userLimits.ts LIMIT_MAX_ACTIVE default=2",
+    "finding": "Limit enforced correctly. Third concurrent build rejected immediately."
+  }
+}
