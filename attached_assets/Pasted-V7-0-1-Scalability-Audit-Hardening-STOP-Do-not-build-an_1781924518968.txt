@@ -1,0 +1,248 @@
+V7.0.1 — Scalability Audit & Hardening
+
+STOP. Do not build any new UI, dashboard, feature, or optimization.
+
+Your job is to independently audit the V7.0 Scalability Foundation implementation before any further development.
+
+Context:
+
+V7.0 claims:
+
+- 339/339 tests passing
+- Queue system implemented
+- Workspace lifecycle management implemented
+- User quota enforcement implemented
+- Budget controls implemented
+- Queue telemetry endpoint implemented
+- Load testing completed
+- Production scalability foundation complete
+
+Previous releases contained multiple cases where implementation reports overstated completion, so every claim must be verified from source code and runtime evidence.
+
+Rules:
+
+- Trust source code, test results, runtime behavior, and measurements only.
+- Do not trust previous reports.
+- Do not trust estimated numbers.
+- Do not trust comments.
+- Do not trust documentation unless verified.
+- Every finding must include file names and line numbers.
+- If a claim cannot be verified, mark it UNKNOWN.
+
+====================================================
+PHASE 1 — VERIFY QUEUE IMPLEMENTATION
+
+Audit:
+
+src/queue/
+
+Verify:
+
+1. Are jobs actually executed?
+2. Is the queue merely a wrapper around in-memory arrays?
+3. Is Redis optional or required?
+4. What happens when Redis is unavailable?
+5. What happens after process restart?
+6. Are queued jobs persisted?
+7. Can jobs be lost?
+8. Is worker recovery real or test-only?
+9. Is queue telemetry reporting real values?
+10. Is backpressure implemented?
+
+Produce:
+
+queueAudit.md
+
+Include:
+
+- architecture diagram
+- persistence analysis
+- failure modes
+- scalability limits
+
+====================================================
+PHASE 2 — VERIFY USER LIMITS
+
+Audit:
+
+userLimits.ts
+budget modules
+build routes
+
+Verify:
+
+- per-user limits enforced
+- bypass possibilities
+- anonymous user handling
+- API key handling
+- quota reset behavior
+- race conditions
+- concurrent request behavior
+
+Produce:
+
+quotaAudit.md
+
+====================================================
+PHASE 3 — VERIFY WORKSPACE CLEANUP
+
+Audit:
+
+workspaceRegistry
+workspaceManager
+cleanup scheduler
+
+Verify:
+
+- cleanup actually runs
+- stale detection logic
+- active build protection
+- memory leak risk
+- abandoned workspace handling
+- cleanup telemetry accuracy
+
+Produce:
+
+workspaceAudit.md
+
+====================================================
+PHASE 4 — VERIFY LOAD TEST CLAIMS
+
+Find:
+
+- actual load test scripts
+- actual results
+- actual metrics
+
+Verify:
+
+Claim:
+
+- 2488 req/s
+- 3321 req/s
+- p95 < 200ms
+
+Questions:
+
+- Were requests real build requests?
+- Were requests mocked?
+- Was queue active?
+- Was telemetry enabled?
+- Were LLM calls disabled?
+
+Determine:
+
+Does the benchmark represent real production load?
+
+Produce:
+
+loadTestAudit.md
+
+====================================================
+PHASE 5 — MEMORY & RESOURCE ANALYSIS
+
+Audit:
+
+- telemetry memory
+- queue memory
+- workspace memory
+- cache memory
+
+Measure:
+
+- bounded structures
+- unbounded structures
+- cleanup paths
+- worst-case growth
+
+Produce:
+
+resourceAudit.md
+
+====================================================
+PHASE 6 — FAILURE TESTING
+
+Simulate:
+
+1. Redis unavailable
+2. Queue worker crash
+3. Build crash
+4. Workspace deletion failure
+5. Budget exhaustion
+6. Telemetry failure
+7. Multiple simultaneous builds
+
+For each:
+
+- expected behavior
+- actual behavior
+- data loss risk
+- recovery path
+
+Produce:
+
+failureModeAudit.md
+
+====================================================
+PHASE 7 — SCALABILITY SCORECARD
+
+Create:
+
+scalabilityScorecard.md
+
+Score:
+
+Queue Reliability      /10
+Persistence            /10
+Recovery               /10
+Observability          /10
+Quota Enforcement      /10
+Memory Safety          /10
+Production Readiness   /10
+
+Provide evidence for every score.
+
+====================================================
+PHASE 8 — TOP 10 REMAINING RISKS
+
+Rank:
+
+Critical
+High
+Medium
+Low
+
+For each:
+
+- impact
+- likelihood
+- recommended fix
+- estimated effort
+
+====================================================
+FINAL OUTPUT
+
+Generate:
+
+1. queueAudit.md
+2. quotaAudit.md
+3. workspaceAudit.md
+4. loadTestAudit.md
+5. resourceAudit.md
+6. failureModeAudit.md
+7. scalabilityScorecard.md
+
+Final verdict must be one of:
+
+A — Production Ready
+B — Minor Gaps
+C — Significant Gaps
+D — Unsafe For Production
+
+Do not implement fixes.
+
+Do not modify code.
+
+Audit only.
+
+Report measured reality, not intended design.
