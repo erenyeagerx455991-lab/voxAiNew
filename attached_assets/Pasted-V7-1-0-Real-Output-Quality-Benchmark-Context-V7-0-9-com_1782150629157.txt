@@ -1,0 +1,259 @@
+V7.1.0 — Real Output Quality Benchmark
+
+Context
+
+V7.0.9 complete.
+
+Verified improvements:
+
+- Accessibility rules active
+- Design system constraints active
+- Shadcn expansion active
+- CODEFIX preservation rules active
+- Registry quality audited
+- Design DNA active
+- Quality telemetry active
+
+Current unknown:
+
+No evidence exists that generated websites are actually competitive with:
+
+- Lovable
+- Bolt
+- Vercel v0
+
+Architecture quality has been measured extensively.
+
+Output quality has not.
+
+Goal
+
+Measure real generated websites.
+
+Do not improve architecture.
+
+Do not add infrastructure.
+
+Do not add telemetry.
+
+Only evaluate output quality.
+
+PHASE 1 — Benchmark Dataset
+
+Create:
+
+artifacts/api-server/outputBenchmarkDataset.md
+
+Generate 20 websites.
+
+Categories:
+
+- SaaS
+- AI Startup
+- Fintech
+- Agency
+- Portfolio
+- Restaurant
+- Healthcare
+- Real Estate
+- E-commerce
+- Dashboard
+
+2 prompts per category.
+
+Store:
+
+- Prompt
+- Build ID
+- Generated URL
+
+PHASE 2 — Screenshot Capture
+
+For every generated website:
+
+Capture:
+
+- Desktop
+- Tablet
+- Mobile
+
+Store screenshots.
+
+Create:
+
+artifacts/api-server/screenshots/
+
+PHASE 3 — Hero Quality Audit
+
+For every website score:
+
+1. Visual hierarchy
+2. Typography
+3. CTA clarity
+4. Layout balance
+5. Brand feel
+
+Scale:
+
+1–10
+
+Create:
+
+heroQualityAudit.md
+
+PHASE 4 — Design Consistency Audit
+
+Measure:
+
+- spacing consistency
+- border radius consistency
+- color palette discipline
+- component consistency
+
+Create:
+
+designConsistencyAudit.md
+
+PHASE 5 — Accessibility Validation
+
+Run automated checks.
+
+Measure:
+
+- contrast
+- headings
+- focus states
+- aria coverage
+
+Create:
+
+accessibilityValidation.md
+
+PHASE 6 — Shadcn Adoption Audit
+
+Measure:
+
+- shadcn components used
+- custom components used
+- raw div percentage
+
+Create:
+
+shadcnUsageAudit.md
+
+PHASE 7 — Competitor Comparison
+
+Generate same prompts in:
+
+- Lovable
+- Bolt
+- v0
+
+Compare:
+
+- Hero quality
+- Layout quality
+- Component quality
+- Visual polish
+
+Create:
+
+competitorComparison.md
+
+PHASE 8 — Weak Component Detection
+
+Identify:
+
+Bottom 10 components.
+
+For each:
+
+- component name
+- quality score
+- exact issue
+
+Create:
+
+weakComponentReport.md
+
+PHASE 9 — Prompt Quality Validation
+
+Inspect:
+
+- planner prompt
+- design prompt
+- frontend prompt
+- codefix prompt
+
+Identify:
+
+- redundancy
+- missing constraints
+- conflicting instructions
+
+Create:
+
+promptOptimizationReport.md
+
+PHASE 10 — Final Scorecard
+
+Create:
+
+v7.1.0QualityScore.md
+
+Must answer:
+
+Overall score:
+?/10
+
+Compared to:
+
+- Lovable
+- Bolt
+- v0
+
+Top 5 strengths
+
+Top 5 weaknesses
+
+Highest ROI improvement
+
+Lowest ROI improvement
+
+Success Criteria
+
+20 builds generated:
+YES
+
+Screenshots captured:
+YES
+
+Competitor comparison completed:
+YES
+
+Weak components identified:
+YES
+
+Prompt issues identified:
+YES
+
+Quality score produced:
+YES
+
+No architecture changes:
+YES
+
+No telemetry work:
+YES
+
+No queue work:
+YES
+
+No infrastructure work:
+YES
+
+Only evidence-based findings.
+No assumptions.
+No estimates.
+No “should”.
+Only measured output quality.
