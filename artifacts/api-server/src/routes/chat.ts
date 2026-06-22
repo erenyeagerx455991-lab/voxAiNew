@@ -1,22 +1,7 @@
 import { Router } from "express";
+import { callAI } from "../agents/llm/aiService.js";
 
 const router: Router = Router();
-const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const PLAN_MODEL = "llama-3.1-8b-instant";   // fast + token-light for plan text
-const CODE_MODEL = "llama-3.3-70b-versatile"; // powerful for code generation
-
-function parseGroqError(raw: string): string {
-  try {
-    const outer = JSON.parse(raw);
-    const msg: string = outer?.error?.message ?? outer?.error ?? raw;
-    if (msg.toLowerCase().includes("rate limit") || msg.toLowerCase().includes("rate_limit")) {
-      return "Rate limit reached — please wait a minute and try again.";
-    }
-    return msg;
-  } catch {
-    return "AI service error. Please try again.";
-  }
-}
 
 const PLAN_SYSTEM = `You are an AI website builder assistant. Carefully analyse the user's request and generate a FULLY TAILORED, UNIQUE response every time.
 
@@ -192,10 +177,10 @@ OUTPUT FORMAT: Return ONLY the raw JS/JSX code. No markdown fences, no explanati
 
 // POST /api/chat/stream  — streams the plan text as SSE
 router.post("/chat/stream", async (req, res) => {
-  const apiKey = process.env["GROQ_API_KEY"];
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
   const { prompt } = req.body as { prompt: string };
 
-  if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
   if (!prompt) return res.status(400).json({ error: "prompt required" });
 
   res.setHeader("Content-Type", "text/event-stream");
@@ -204,54 +189,22 @@ router.post("/chat/stream", async (req, res) => {
   res.flushHeaders();
 
   try {
-    const upstream = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: PLAN_MODEL,
+    await callAI(
+      openrouterKey,
+      [{ role: "system", content: PLAN_SYSTEM }, { role: "user", content: prompt }],
+      {
+        label: "chat-plan",
+        maxTokens: 1500,
         stream: true,
-        messages: [
-          { role: "system", content: PLAN_SYSTEM },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
-
-    if (!upstream.ok || !upstream.body) {
-      const errText = await upstream.text();
-      res.write(`data: ${JSON.stringify({ error: parseGroqError(errText) })}\n\n`);
-      return res.end();
-    }
-
-    const reader = upstream.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const raw = decoder.decode(value, { stream: true });
-      for (const line of raw.split("\n")) {
-        if (!line.startsWith("data: ")) continue;
-        const payload = line.slice(6).trim();
-        if (payload === "[DONE]") {
-          res.write("data: [DONE]\n\n");
-          continue;
-        }
-        try {
-          const json = JSON.parse(payload);
-          const token: string = json.choices?.[0]?.delta?.content ?? "";
-          if (token) res.write(`data: ${JSON.stringify({ token })}\n\n`);
-        } catch {
-          // skip malformed chunks
-        }
+        onToken: (token) => {
+          res.write(`data: ${JSON.stringify({ token })}\n\n`);
+        },
       }
-    }
-  } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: "Stream connection failed. Please try again." })}\n\n`);
+    );
+    res.write("data: [DONE]\n\n");
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "AI service error. Please try again.";
+    res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
   }
 
   res.end();
@@ -259,52 +212,31 @@ router.post("/chat/stream", async (req, res) => {
 
 // POST /api/chat/code  — generates React+Tailwind component code
 router.post("/chat/code", async (req, res) => {
-  const apiKey = process.env["GROQ_API_KEY"];
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
   const { prompt } = req.body as { prompt: string };
 
-  if (!apiKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
   if (!prompt) return res.status(400).json({ error: "prompt required" });
 
   try {
-    const upstream = await fetch(GROQ_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: CODE_MODEL,
-        stream: false,
-        max_tokens: 8000,
-        messages: [
-          { role: "system", content: CODE_SYSTEM },
-          { role: "user", content: `Build a complete landing page for: ${prompt}. Include ALL sections: navbar, hero, features grid, social proof, CTA banner, and footer. Do not truncate or stop early.` },
-        ],
-      }),
-    });
+    let code = await callAI(
+      openrouterKey,
+      [
+        { role: "system", content: CODE_SYSTEM },
+        { role: "user", content: `Build a complete landing page for: ${prompt}. Include ALL sections: navbar, hero, features grid, social proof, CTA banner, and footer. Do not truncate or stop early.` },
+      ],
+      { label: "chat-code", maxTokens: 8000 }
+    );
 
-    if (!upstream.ok) {
-      const errText = await upstream.text();
-      return res.status(500).json({ error: parseGroqError(errText) });
-    }
-
-    const data = (await upstream.json()) as {
-      choices: Array<{ message: { content: string }; finish_reason: string }>;
-    };
-    let code = data.choices?.[0]?.message?.content ?? "";
-    const finishReason = data.choices?.[0]?.finish_reason ?? "unknown";
-
-    process.stdout.write(JSON.stringify({ level: "info", component: "ChatRoute", event: "CODE_DONE", finishReason, chars: code.length }) + "\n");
-
-    // Strip any markdown code fences the model might add
     code = code
       .replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/i, "")
       .replace(/\n?```\s*$/i, "")
       .trim();
 
-    res.json({ code, finishReason });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
+    res.json({ code, finishReason: "stop" });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    res.status(500).json({ error: msg });
   }
 });
 

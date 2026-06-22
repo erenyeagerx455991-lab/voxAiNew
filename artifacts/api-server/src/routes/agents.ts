@@ -56,12 +56,10 @@ const router: Router = Router();
 
 // ── /agents/build — thin orchestrator ─────────────────────────────────────────
 router.post("/agents/build", async (req, res) => {
-  const groqKey = process.env["GROQ_API_KEY"];
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   const { prompt, chatId: reqChatId } = req.body as { prompt: string; chatId?: string; selectedTemplateId?: string };
   const chatId = reqChatId ?? `build-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
   if (!prompt) return res.status(400).json({ error: "prompt required" });
 
@@ -84,7 +82,7 @@ router.post("/agents/build", async (req, res) => {
       prompt,
       chatId,
       userId,
-      groqKey,
+      groqKey: "",
       openrouterKey,
       onEvent: (event) => sse(res, event as Record<string, unknown>),
     });
@@ -99,7 +97,6 @@ router.post("/agents/build", async (req, res) => {
 
 // ── DESIGN AUDIT ENDPOINT ─────────────────────────────────────────────────────
 router.post("/agents/audit", async (req, res) => {
-  const groqKey = process.env["GROQ_API_KEY"];
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   const { prompt } = req.body as { prompt: string };
 
