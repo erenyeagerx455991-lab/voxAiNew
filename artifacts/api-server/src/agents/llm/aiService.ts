@@ -11,7 +11,11 @@
  */
 
 import { recordLLMCall } from "../../telemetry/tokenMetrics.js";
-import { recordTokenUsage } from "../../cost/tokenBudget.js";
+import {
+  checkProviderBudget,
+  recordProviderTokens,
+  recordProviderRequest,
+} from "../../cost/providerBudget.js";
 import { recordTokensUsed } from "../../limits/userLimits.js";
 import { tokenContext } from "./tokenContext.js";
 import { createLogger } from "../../lib/structuredLogger.js";
@@ -28,6 +32,8 @@ export const FALLBACK_1_MODEL = "deepseek/deepseek-chat-v3";
 export const FALLBACK_2_MODEL = "google/gemini-2.5-flash-lite";
 
 export const MODEL_CHAIN = [PRIMARY_MODEL, FALLBACK_1_MODEL, FALLBACK_2_MODEL] as const;
+
+export const PROVIDER = "openrouter" as const;
 
 export interface CallAIOptions {
   maxTokens?: number;
@@ -56,7 +62,7 @@ function shouldRetryOnModel(kind: ErrorKind): boolean {
 function accountTokens(promptTokens: number, completionTokens: number): void {
   const total = promptTokens + completionTokens;
   if (total <= 0) return;
-  recordTokenUsage("openrouter", total);
+  recordProviderTokens(PROVIDER, total);
   const ctx = tokenContext.getStore();
   if (ctx) recordTokensUsed(ctx.userId, total);
 }
@@ -198,6 +204,20 @@ export async function callAI(
   let lastError: unknown = null;
 
   for (const model of MODEL_CHAIN) {
+    // ── Provider pre-flight: check RPM/TPM/budget BEFORE any outbound request ──
+    const budgetCheck = checkProviderBudget(PROVIDER);
+    if (!budgetCheck.allowed) {
+      const err = Object.assign(new Error(budgetCheck.reason ?? "Provider budget exceeded"), {
+        code: "PROVIDER_BUDGET_EXCEEDED",
+        provider: PROVIDER,
+      });
+      log.warn("PROVIDER_BUDGET_PREFLIGHT_REJECTED", { label, model, reason: budgetCheck.reason });
+      throw err;
+    }
+
+    // Record this request in the RPM window before the network call
+    recordProviderRequest(PROVIDER);
+
     const start = Date.now();
     let success = false;
     let promptTokens = 0;
@@ -222,13 +242,15 @@ export async function callAI(
       success = true;
 
       recordLLMCall({
-        provider: "openrouter",
+        provider: PROVIDER,
         model,
         latencyMs,
         success: true,
         promptTokens,
         completionTokens,
       });
+
+      // Record actual token usage AFTER successful response only
       accountTokens(promptTokens, completionTokens);
 
       log.info("AI_CALL_SUCCESS", {
@@ -243,9 +265,13 @@ export async function callAI(
     } catch (err: unknown) {
       const latencyMs = Date.now() - start;
       const status = (err as Record<string, unknown>).status as number | undefined;
+
+      // Rethrow budget exceeded immediately — no point trying next model
+      if ((err as Record<string, unknown>).code === "PROVIDER_BUDGET_EXCEEDED") throw err;
+
       const kind = classifyError(err, status);
 
-      recordLLMCall({ provider: "openrouter", model, latencyMs, success: false });
+      recordLLMCall({ provider: PROVIDER, model, latencyMs, success: false });
 
       log.warn("AI_CALL_FAILED", {
         label,

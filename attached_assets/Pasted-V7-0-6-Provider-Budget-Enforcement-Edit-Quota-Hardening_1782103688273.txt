@@ -1,0 +1,522 @@
+V7.0.6 — Provider Budget Enforcement + Edit Quota Hardening
+
+Context (Verified Baseline)
+
+Current verified state:
+
+Working
+
+- Queue active in live build path
+- Token accounting active in llmClient.ts
+- AsyncLocalStorage user context active
+- Daily build quota active
+- Concurrent build limit active
+- Memory hardening complete
+- 438/438 tests passing
+
+Verified Remaining Gaps
+
+Gap 1 — Provider Budget Enforcement Dead Path
+
+Audit verified:
+
+- checkProviderBudget() exists
+- recordProviderTokens() exists
+- Neither participates in the live LLM execution path
+
+Current consequence:
+
+- RPM limits never trigger
+- TPM limits never trigger
+- Emergency shutdown never triggers
+- Provider budget telemetry partially disconnected
+
+Gap 2 — Edit Endpoint Quota Bypass
+
+Build route:
+
+- build limits enforced
+- token quotas enforced
+
+Edit route:
+
+- no equivalent enforcement
+- unlimited token consumption possible
+- quota bypass exists
+
+Gap 3 — Missing End-to-End Validation
+
+Current tests cover:
+
+- queue execution
+- token accounting
+- build quotas
+
+Missing:
+
+- provider budget gate activation
+- emergency shutdown validation
+- edit quota enforcement
+
+---
+
+HARD RULES
+
+DO NOT:
+
+- Change prompts
+- Change agent logic
+- Change queue behavior
+- Change SSE formats
+- Change frontend UI
+- Add providers
+- Add endpoints
+- Add duplicate quota systems
+- Add duplicate token accounting systems
+
+Only wire systems that already exist.
+
+---
+
+PHASE 1 — Provider Budget Baseline Audit
+
+Create:
+
+artifacts/api-server/providerBudgetBaseline.md
+
+Document:
+
+1. Every call site of:
+   
+   - checkProviderBudget()
+   - recordProviderTokens()
+   - recordTokenUsage()
+
+2. File name
+
+3. Exact line number
+
+4. Live or dead path status
+
+Required output:
+
+Function| File| Line| Live?
+
+No assumptions.
+
+No estimates.
+
+Only source inspection.
+
+---
+
+PHASE 1A — Dead Path Elimination Audit
+
+After implementation:
+
+Search repository for:
+
+- checkProviderBudget(
+- recordProviderTokens(
+
+Create:
+
+artifacts/api-server/providerBudgetWiringAudit.md
+
+Document:
+
+1. Every call site
+2. Which are live
+3. Which remain unreachable
+
+Success criteria:
+
+No production implementation of:
+
+- checkProviderBudget()
+- recordProviderTokens()
+
+may remain disconnected from runtime execution.
+
+If any remain unreachable:
+
+FAIL phase.
+
+---
+
+PHASE 2 — Provider Budget Pre-Flight
+
+Target:
+
+src/agents/llm/llmClient.ts
+
+Before every provider request:
+
+Groq:
+
+const provider = "groq";
+
+OpenRouter:
+
+const provider = "openrouter";
+
+Requirements:
+
+Use provider constant for:
+
+- checkProviderBudget()
+- recordProviderTokens()
+- telemetry
+- error reporting
+
+No duplicated literals.
+
+Before network request:
+
+checkProviderBudget(provider);
+
+If rejected:
+
+Throw:
+
+{
+code: "PROVIDER_BUDGET_EXCEEDED",
+provider,
+message
+}
+
+Must occur BEFORE fetch/provider SDK execution.
+
+No outbound request may occur.
+
+---
+
+PHASE 3 — Provider Token Recording
+
+Single Source of Truth:
+
+src/agents/llm/llmClient.ts
+
+No token accounting logic may exist in:
+
+- routes
+- queue worker
+- pipeline steps
+- repair agents
+
+After successful response:
+
+recordProviderTokens(provider, totalTokens);
+
+Rules:
+
+- Use actual provider usage only
+- Never estimate
+- Never infer
+- Failed requests = no recording
+- Missing usage = no recording
+
+---
+
+PHASE 4 — Streaming Budget Verification
+
+Audit Groq streaming path.
+
+Verify:
+
+stream_options.include_usage
+
+reaches:
+
+recordProviderTokens()
+
+Create:
+
+artifacts/api-server/streamingBudgetAudit.md
+
+Document:
+
+Full call chain.
+
+Example:
+
+Stream Response
+→ Usage Chunk
+→ llmClient.ts
+→ recordProviderTokens()
+→ providerBudget.ts
+
+Include exact file names and line numbers.
+
+If disconnected:
+
+Wire it.
+
+---
+
+PHASE 5 — Edit Surface Discovery
+
+Before enforcement:
+
+Search routes for:
+
+- edit
+- modify
+- patch
+- update
+- repair
+- regenerate
+
+Create:
+
+artifacts/api-server/editSurfaceAudit.md
+
+Document:
+
+Endpoint| Handler| Quota Protected?
+
+Only after inventory may enforcement begin.
+
+---
+
+PHASE 6 — Edit Route Hardening
+
+Apply:
+
+checkBuildLimit(userId)
+
+before edit execution.
+
+Reuse existing build quota system.
+
+Do NOT create edit-specific quota logic.
+
+Edit requests must inherit:
+
+- concurrent limit
+- daily build quota
+- daily token quota
+
+Single source of truth:
+
+checkBuildLimit()
+
+---
+
+PHASE 7 — Token Context Verification
+
+Verify AsyncLocalStorage survives:
+
+Route
+→ Queue
+→ Worker
+→ Pipeline
+→ LLM
+→ recordTokensUsed()
+
+Create:
+
+artifacts/api-server/tokenContextVerification.md
+
+Include:
+
+- exact call chain
+- file names
+- line numbers
+
+No assumptions.
+
+---
+
+PHASE 8 — Emergency Shutdown Validation
+
+Create tests proving:
+
+Case A
+
+Budget below threshold
+
+Expected:
+
+Requests allowed
+
+Case B
+
+Budget exceeded
+
+Expected:
+
+Requests blocked
+
+Case C
+
+Window expires
+
+Expected:
+
+Provider recovers automatically
+
+No mocks hiding behavior.
+
+Must verify actual budget logic.
+
+---
+
+PHASE 8A — Network Prevention Proof
+
+Create:
+
+tests/integration/providerBudgetPreflight.test.ts
+
+Verify:
+
+When checkProviderBudget() rejects:
+
+- fetch() never executes
+
+OR
+
+- provider SDK client never executes
+
+The test must fail if any outbound request occurs.
+
+This test is mandatory.
+
+---
+
+PHASE 9 — Integration Tests
+
+Create:
+
+tests/integration/providerBudgetGate.test.ts
+
+Verify:
+
+1. Groq blocked
+2. OpenRouter blocked
+3. Successful request records usage
+4. Failed request records nothing
+5. Streaming request records usage
+6. Emergency shutdown triggers
+
+Use real execution path.
+
+No helper-only tests.
+
+---
+
+PHASE 10 — Edit Quota Tests
+
+Create:
+
+tests/integration/editQuota.test.ts
+
+Verify:
+
+1. Edit allowed under quota
+2. Edit blocked at token quota
+3. Edit blocked at build quota
+4. Edit blocked at concurrent limit
+
+Use real middleware path.
+
+No direct helper invocation.
+
+---
+
+PHASE 11 — Production Audit
+
+Create:
+
+artifacts/api-server/v7.0.6Audit.md
+
+Every statement must include:
+
+- file name
+- line number
+- validating test
+
+Unsupported claims forbidden.
+
+Example:
+
+GOOD:
+
+llmClient.ts:84 calls checkProviderBudget("groq")
+Validated by providerBudgetGate.test.ts
+
+BAD:
+
+Provider budget now works.
+
+Must answer:
+
+Provider Budget
+
+- Is checkProviderBudget live?
+- Exact call chain?
+- Can RPM trigger?
+- Can TPM trigger?
+- Can emergency shutdown trigger?
+
+Edit Limits
+
+- Are edits quota protected?
+- Which limits apply?
+
+Coverage
+
+- Tests before
+- Tests after
+
+Remaining Verified Gaps
+
+List only source-verified gaps.
+
+No speculation.
+
+No estimates.
+
+No "should work".
+
+Only evidence.
+
+---
+
+Success Criteria
+
+Provider budget pre-flight active:
+YES
+
+Provider token recording active:
+YES
+
+Provider budget dead path removed:
+YES
+
+Streaming token accounting verified:
+YES
+
+Edit quota bypass removed:
+YES
+
+Emergency shutdown test-covered:
+YES
+
+Network prevention proven:
+YES
+
+All existing tests pass:
+YES
+
+No SSE changes:
+YES
+
+No UI changes:
+YES
+
+No prompt changes:
+YES
+
+No queue behavior changes:
+YES

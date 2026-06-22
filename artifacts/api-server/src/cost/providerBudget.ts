@@ -109,3 +109,13 @@ export function _resetProviderBudgetForTest(): void {
     _state[p] = { rpmWindow: [], tpmWindow: [], requestsBlocked: 0 };
   }
 }
+
+/** Test-only: override RPM/TPM limits for a specific provider. */
+export function _configureProviderLimitsForTest(
+  provider: Provider,
+  maxRpm: number,
+  maxTpm: number,
+): void {
+  MAX_RPM[provider] = maxRpm;
+  MAX_TPM[provider] = maxTpm;
+}

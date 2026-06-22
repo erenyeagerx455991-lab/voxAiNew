@@ -84,7 +84,7 @@ describe("Queue Activation — /agents/build route", () => {
     const call = mockEnqueue.mock.calls[0][0];
     expect(call.prompt).toBe("saas dashboard");
     expect(call.chatId).toBe("chat-qa-002");
-    expect(call.groqKey).toBe("test-groq-key");
+    expect(call.groqKey).toBe("");       // Groq removed; route hardcodes empty string
     expect(call.openrouterKey).toBe("test-or-key");
     expect(typeof call.userId).toBe("string");
     expect(call.userId.length).toBeGreaterThan(0);
@@ -138,12 +138,15 @@ describe("Queue Activation — /agents/build route", () => {
     expect(mockEnqueue).not.toHaveBeenCalled();
   });
 
-  it("rejects 500 when GROQ_API_KEY is missing", async () => {
-    delete process.env["GROQ_API_KEY"];
+  it("rejects 500 when OPENROUTER_API_KEY is missing", async () => {
+    const saved = process.env["OPENROUTER_API_KEY"];
+    delete process.env["OPENROUTER_API_KEY"];
 
     const res = await request(app)
       .post("/api/agents/build")
       .send(VALID_BODY);
+
+    process.env["OPENROUTER_API_KEY"] = saved;
 
     expect(res.status).toBe(500);
     expect(mockEnqueue).not.toHaveBeenCalled();

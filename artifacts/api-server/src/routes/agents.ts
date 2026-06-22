@@ -447,6 +447,13 @@ router.post("/agents/edit", async (req, res) => {
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
+  const userId = extractUserId(req);
+  const limitCheck = checkBuildLimit(userId);
+  if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
+  const budgetCheck = checkTokenBudget();
+  if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
+  recordBuildStarted(userId);
+
   const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents = [], registryFileMap = {} } = req.body as {
     prompt: string;
     projectFiles: ProjectFileSSE[];
@@ -679,6 +686,8 @@ ${fileContext}`;
     log.error("EDIT_AGENT_ERROR", { error: String(e) });
     sse(res, { type: "error", error: e.message });
     res.end();
+  } finally {
+    recordBuildCompleted(userId);
   }
 });
 
@@ -719,6 +728,13 @@ function resolveAffectedFilesFromGraph(
 router.post("/agents/runtime-repair", async (req, res) => {
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
+
+  const userId = extractUserId(req);
+  const limitCheck = checkBuildLimit(userId);
+  if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
+  const budgetCheck = checkTokenBudget();
+  if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
+  recordBuildStarted(userId);
 
   const {
     files,
@@ -1031,6 +1047,13 @@ router.post("/agents/templates/merge", (req, res) => {
 router.post("/agents/autonomous-build", async (req, res) => {
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
+
+  const userId = extractUserId(req);
+  const limitCheck = checkBuildLimit(userId);
+  if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
+  const budgetCheck = checkTokenBudget();
+  if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
+  recordBuildStarted(userId);
 
   const {
     chatId,
