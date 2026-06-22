@@ -13,6 +13,12 @@ interface QueueSnapshot {
   avgDurationMs: number;
   p95WaitMs: number;
   p95DurationMs: number;
+  /** Jobs that became stalled (worker crashed while processing). */
+  stalledCount: number;
+  /** Total job retry attempts recorded across all jobs. */
+  retryTotal: number;
+  /** Jobs that exhausted all retry attempts and permanently failed. */
+  deadJobCount: number;
   byUser: Record<string, { enqueued: number; completed: number; failed: number }>;
   recentFailures: Array<{ jobId: string; userId: string; error: string; at: number }>;
 }
@@ -23,6 +29,9 @@ let failedTotal = 0;
 let cancelledTotal = 0;
 let activeNow = 0;
 let queuedNow = 0;
+let stalledCount = 0;
+let retryTotal = 0;
+let deadJobCount = 0;
 
 const waitTimes: number[] = [];
 const durations: number[] = [];

@@ -1,0 +1,393 @@
+V7.0.7 — Redis Persistence + Crash Recovery Hardening
+
+Context (Verified Baseline)
+
+V7.0.6 complete.
+
+Verified working:
+
+- Queue active in live build path
+- Provider budget enforcement active
+- Token accounting active
+- User quota enforcement active
+- Edit quota enforcement active
+- Memory hardening complete
+- 460/460 tests passing
+
+Verified highest-risk remaining gap:
+
+Gap 1 — Queue Durability Unknown
+
+Current audits confirm:
+
+- enqueueBuild() is live
+- queueWorker executes builds
+- SSE bridge works
+- token accounting works
+
+Not verified:
+
+- server restart recovery
+- worker restart recovery
+- Redis disconnect behavior
+- queued-job persistence
+- in-flight build recovery
+- deployment restart survival
+
+Current production readiness blocker:
+
+A build may still be lost during restart or crash.
+
+---
+
+HARD RULES
+
+DO NOT:
+
+- Change prompts
+- Change agent logic
+- Change LLM routing
+- Change SSE format
+- Change frontend UI
+- Change token accounting
+- Change quota logic
+- Add providers
+
+Only work on:
+
+- queue durability
+- persistence
+- restart recovery
+- verification
+- observability
+
+---
+
+PHASE 1 — Queue Durability Baseline Audit
+
+Create:
+
+artifacts/api-server/queueDurabilityBaseline.md
+
+Document:
+
+1. Queue mode currently active
+   
+   - BullMQ
+   - Redis
+   - Local fallback
+
+2. Exact queue initialization path
+
+3. Exact worker initialization path
+
+4. Persistence guarantees currently provided
+
+5. What survives restart
+
+6. What is lost on restart
+
+Include:
+
+- file names
+- line numbers
+- exact source references
+
+No assumptions.
+
+---
+
+PHASE 2 — Redis Availability Audit
+
+Trace:
+
+- redisClient.ts
+- buildQueue.ts
+- queueWorker.ts
+
+Document:
+
+1. Redis connection startup
+
+2. Reconnection behavior
+
+3. Failure handling
+
+4. Startup fallback behavior
+
+5. Queue behavior if Redis unavailable
+
+Create:
+
+artifacts/api-server/redisAudit.md
+
+---
+
+PHASE 3 — Worker Recovery Verification
+
+Verify:
+
+Worker crash scenario.
+
+Measure:
+
+Case A
+
+- worker exits
+- queue remains alive
+
+Case B
+
+- worker restarts
+- queued jobs resume
+
+Case C
+
+- worker unavailable
+- jobs remain durable
+
+Document exact behavior.
+
+---
+
+PHASE 4 — Restart Recovery Harness
+
+Create:
+
+tests/integration/restartRecovery.test.ts
+
+Must verify:
+
+1. Queue job survives worker restart
+
+2. Queue job survives API restart
+
+3. Completed jobs not duplicated
+
+4. Failed jobs not duplicated
+
+5. Queue metrics remain consistent
+
+No mocks.
+
+Use actual queue path.
+
+---
+
+PHASE 5 — Redis Disconnect Harness
+
+Create:
+
+tests/integration/redisDisconnect.test.ts
+
+Verify:
+
+Case A
+
+Redis disconnected before enqueue
+
+Expected behavior documented.
+
+Case B
+
+Redis disconnected after enqueue
+
+Expected behavior documented.
+
+Case C
+
+Redis reconnects
+
+Queue resumes correctly.
+
+No assumptions.
+
+Only observed behavior.
+
+---
+
+PHASE 6 — Retry Strategy Audit
+
+Inspect:
+
+- buildQueue
+- worker
+- BullMQ config
+
+Verify:
+
+1. Retry count
+
+2. Backoff strategy
+
+3. Dead-letter behavior
+
+4. Permanent failure handling
+
+Create:
+
+artifacts/api-server/retryAudit.md
+
+---
+
+PHASE 7 — Dead Job Detection
+
+Verify:
+
+Can jobs become:
+
+- stuck
+- orphaned
+- abandoned
+
+Measure:
+
+1. Detection method
+
+2. Cleanup path
+
+3. Recovery path
+
+Create:
+
+artifacts/api-server/deadJobAudit.md
+
+---
+
+PHASE 8 — Queue Telemetry Expansion
+
+Extend existing telemetry.
+
+Expose:
+
+- queued jobs
+- active jobs
+- completed jobs
+- failed jobs
+- retry count
+- stalled count
+- dead jobs
+
+No new endpoints.
+
+Reuse existing telemetry infrastructure.
+
+---
+
+PHASE 9 — Durability Integration Tests
+
+Create:
+
+tests/integration/queueDurability.test.ts
+
+Verify:
+
+1. enqueue persists
+
+2. dequeue persists
+
+3. restart recovery
+
+4. retry recovery
+
+5. duplicate prevention
+
+6. worker recovery
+
+7. telemetry consistency
+
+---
+
+PHASE 10 — Production Readiness Audit
+
+Create:
+
+artifacts/api-server/v7.0.7Audit.md
+
+Must answer:
+
+Persistence
+
+- Are queued jobs durable?
+
+- Are running jobs durable?
+
+- What survives restart?
+
+- What is lost?
+
+Recovery
+
+- Can worker restart recover jobs?
+
+- Can API restart recover jobs?
+
+- Can Redis reconnect recover jobs?
+
+Reliability
+
+- Retry behavior?
+
+- Dead-letter behavior?
+
+- Duplicate prevention?
+
+Coverage
+
+Tests before:
+
+460
+
+Tests after:
+
+(real number)
+
+Remaining Verified Gaps
+
+List only verified gaps.
+
+No speculation.
+
+No estimates.
+
+No “should work”.
+
+Only evidence from:
+
+- source inspection
+- runtime testing
+- passing tests
+
+---
+
+Success Criteria
+
+Queue persistence verified:
+YES
+
+Restart recovery verified:
+YES
+
+Redis reconnect verified:
+YES
+
+Worker recovery verified:
+YES
+
+Duplicate execution prevented:
+YES
+
+Telemetry expanded:
+YES
+
+All existing tests still pass:
+YES
+
+No SSE changes:
+YES
+
+No UI changes:
+YES
+
+No prompt changes:
+YES
