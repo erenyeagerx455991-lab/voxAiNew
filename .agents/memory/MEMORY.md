@@ -33,3 +33,4 @@
 - [VoxAI V7.0.5 Real Build Load Test](voxai-v705-load-test.md) — real pipeline timing; Code Fix Agent 65s (56% of total); full build >115s; 35k tokens/build; esbuild re-export scope bug fixed in structuredLogger.
 - [VoxAI V7.0.6 Provider Budget Enforcement](voxai-v706-provider-budget.md) — dead budget path now live; _configureProviderLimitsForTest() added; edit/repair/autonomous-build routes quota-hardened; groqKey="" in build route.
 - [VoxAI V7.0.7 Queue Durability](voxai-v707-queue-durability.md) — stalledCount/retryTotal/deadJobCount now live in queueMetrics; BullMQ stalled+failed events wired; resetQueueMetrics fixed; 487 tests pass.
+- [VoxAI V7.0.9 Output Quality Upgrade](voxai-v709-quality-upgrade.md) — CODEFIX/DESIGN_SYSTEM/buildCodeSystem() upgraded; 5 registry templates fixed; qualityMetrics.ts + /telemetry/quality endpoint; 6.7→8.5+ score; 487 tests.

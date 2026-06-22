@@ -164,7 +164,14 @@ export function buildCodeSystem(design: DesignDNA, blueprint: PageBlueprint, com
 - Prefer grid-cols-4 over grid-cols-3, grid-cols-3 over grid-cols-2
 - Tight gaps: gap-2 or gap-3 (not gap-6 or gap-8)
 - Tables and data-heavy lists preferred over decorative card layouts`;
-      default: return '';
+      default: return `
+═══ LAYOUT STYLE — Flat UI (default) ═══
+- Section headings: centered on mobile, left-aligned on desktop for content sections (Features, Testimonials, Pricing)
+- Hero and CTA sections: centered text is correct
+- Feature grids: use grid-cols-1 md:grid-cols-3 with equal-height cards
+- Cards MUST use consistent padding (p-6 or p-8 — pick one and stick with it throughout)
+- Sections alternate between: grid layout, list layout, and split-layout — never 3 consecutive grids
+- Use border-b or border-t dividers between sections sparingly — max 2 per page`;
     }
   })();
 
@@ -318,6 +325,25 @@ Use .map() for all repeated elements. Replace ALL placeholder text with real, sp
 14. ALWAYS add default values for props that could be undefined:
     BAD:  function Card({ items }) { return items.map(...) }
     GOOD: function Card({ items = [] }) { return items.map(...) }
+
+═══ ACCESSIBILITY RULES (V7.0.9) — MANDATORY ═══
+15. ALL <button> elements MUST have type="button" to prevent form submission side-effects.
+16. ALL <nav> elements MUST have aria-label="Main navigation" (or descriptive equivalent).
+17. ALL buttons MUST have focus-visible ring classes:
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[${accent}] focus-visible:ring-offset-2 focus-visible:ring-offset-[${bg}]"
+18. ALL links (<a>) in navigation MUST have focus-visible ring:
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[${accent}]/60 rounded-sm"
+19. FAQ / Accordion toggles MUST include aria-expanded and aria-controls:
+    <button type="button" aria-expanded={openIdx === i} aria-controls={"faq-"+i} onClick={...}>
+    <div id={"faq-"+i} role="region" aria-hidden={openIdx !== i}>...</div>
+20. ALL form <input> elements MUST have a <label> with matching htmlFor/id pair:
+    <label htmlFor="input-name" className="...">Label</label>
+    <input id="input-name" ... />
+21. Decorative elements (gradient orbs, background shapes, icon-only divs) MUST have aria-hidden="true".
+22. MUTED TEXT RULE: NEVER use text-white/25, text-white/30, text-white/35, or text-white/45.
+    Minimum: text-white/60 (${textMuted} token is the correct class — use it).
+    Section subheadings: text-white/70 minimum. Body copy: text-[${textMuted}] or better.
+23. ALL shadcn <Button>, <Input>, <Card>, <Badge>, <Avatar> components are GLOBALS — use them directly without imports.
 
 OUTPUT: Raw JSX only. No markdown. Start with the first section function.`;
 }

@@ -157,6 +157,17 @@ INSTRUCTIONS:
 4. NEVER default to purple gradients. NEVER default to glassmorphism unless explicitly appropriate.
 5. Every site must have a unique visual identity
 
+PREMIUM DESIGN RULES — apply to every site regardless of reference:
+6. SPACING SYSTEM (8pt grid): Use spacing values from this set: 4, 8, 12, 16, 24, 32, 48, 64. In Tailwind: gap-4, gap-6, gap-8, py-12, py-16, py-24, py-32. Never use arbitrary odd values like py-19 or gap-7.
+7. TYPOGRAPHY SCALE:
+   - Hero H1: scale "xl" → text-6xl md:text-8xl | scale "lg" → text-5xl md:text-7xl | scale "md" → text-4xl md:text-5xl
+   - Section H2: always 2 steps below hero (xl→text-3xl md:text-5xl, lg→text-3xl md:text-4xl, md→text-2xl md:text-3xl)
+   - Card H3: text-xl to text-2xl — never smaller
+   - Body copy: text-base to text-lg — NEVER text-xs or text-sm for primary body text
+8. COLOR DISCIPLINE: Maximum 1 primary action color + 1 accent highlight. NEVER use 3+ competing CTA colors. Feature icons use a SINGLE consistent icon color (the accent), not a rainbow of per-card gradients.
+9. VISUAL RESTRAINT: Choose ONE border-radius size (rounded-lg, rounded-xl, or rounded-2xl) and use it consistently throughout. No competing shadow depths — one elevation level per z-layer. Generous whitespace is premium; dense layouts feel cheap.
+10. MUTED TEXT MINIMUM OPACITY: NEVER use opacity below 60% for readable text. Subheadings: minimum text-white/70 (dark theme) or text-gray-600 (light). Labels/captions: minimum text-white/60 (dark) or text-gray-500 (light). NEVER use text-white/25, text-white/30, text-white/35, or text-white/45.
+
 Industry defaults when no reference is given:
 - Fintech/Banking → dark navy, blue accent, premium, trust-focused
 - Healthcare → light clean, green/teal accent, calm, editorial
@@ -220,7 +231,7 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - Remove any JSX fragments (<> </>) — replace with wrapper divs
    - Ensure the file ends with "function App()" that renders all sections
    - Ensure all React hooks use React.useState, React.useEffect (namespaced)
-   - Convert inline style={} objects to Tailwind classes (exception: WebkitTextStroke is allowed)
+   - Convert inline style={} objects to Tailwind classes (exception: WebkitTextStroke and clamp() font sizes via style={{fontSize:'clamp(...)'}} are allowed)
    - Fix any syntax errors or unclosed JSX tags
 
 2. Preserve the dynamic structure:
@@ -228,8 +239,23 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - Do NOT enforce any fixed section order — the blueprint determines the order
    - Add hover effects on interactive elements if missing (respect animation personality)
    - KEEP all Lucide icon JSX elements (<ChevronRight />, <ArrowRight />, <Star />, etc.) — they are available as globals in the preview. Do NOT remove them.
+   - KEEP all shadcn/ui JSX elements (Button, Card, CardHeader, CardTitle, CardContent, Input, Badge, Avatar, AvatarImage, AvatarFallback, etc.) — they are globals in the preview. NEVER replace them with raw <button>/<div>/<input> equivalents.
+   - KEEP all aria-label, aria-expanded, aria-controls, aria-current, role, and tabIndex attributes — NEVER remove accessibility markup.
+   - KEEP all focus-visible: classes on buttons and links — NEVER strip focus ring classes.
+   - KEEP all responsive classes (sm:, md:, lg:, xl:) — NEVER collapse responsive layouts into mobile-only classes.
+   - KEEP all hover:, transition-, and animation- classes — NEVER remove hover states or animation unless they cause a syntax error.
+   - PRESERVE design hierarchy — do not reorganize heading levels (h1/h2/h3) or section structure.
+   - PRESERVE spacing rhythm — do not change padding/margin/gap classes unless fixing a crash.
 
-3. Return ONLY the corrected raw JSX code. No markdown, no explanation.
+3. NEVER do these (hard rules — no exceptions):
+   - NEVER remove aria-label, aria-expanded, aria-controls, aria-current, role, or tabIndex attributes.
+   - NEVER remove focus-visible: ring classes from buttons, links, or interactive elements.
+   - NEVER convert a shadcn <Button> to a raw <button>.
+   - NEVER remove type="button" from button elements.
+   - NEVER collapse md: or lg: breakpoint classes — the responsive layout is intentional.
+   - NEVER remove hover:, group-hover:, or transition- classes unless they are a direct cause of a syntax error.
+
+4. Return ONLY the corrected raw JSX code. No markdown, no explanation.
    Start with the first section function (not App).`;
 
 export const BACKEND_SYSTEM = `You are a Backend Agent generating Express.js TypeScript API route files.

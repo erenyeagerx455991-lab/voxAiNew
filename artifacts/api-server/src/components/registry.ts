@@ -97,18 +97,20 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     standaloneCode: `function Navbar() {
   const links = ['Features', 'Pricing', 'Docs', 'Blog'];
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/8">
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/8">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
-            <div className="w-3 h-3 bg-white rounded-sm" />
+          <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center" aria-hidden="true">
+            <div className="w-3 h-3 bg-black rounded-sm" />
           </div>
           <span className="text-white font-bold text-lg">SITE_NAME</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm font-medium transition-colors">{l}</a>)}
+          {links.map(l => (
+            <a key={l} href="#" className="text-white/65 hover:text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-sm px-1">{l}</a>
+          ))}
         </div>
-        <button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:opacity-90 transition-opacity">
+        <button type="button" aria-label="Get started with SITE_NAME" className="bg-white text-black text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">
           Get Started →
         </button>
       </div>
@@ -123,13 +125,15 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     standaloneCode: `function Navbar() {
   const links = ['Work', 'About', 'Services', 'Contact'];
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-transparent">
       <div className="max-w-6xl mx-auto px-8 flex items-center justify-between h-20">
         <span className="font-bold text-xl tracking-tight">SITE_NAME</span>
         <div className="hidden md:flex items-center gap-10">
-          {links.map(l => <a key={l} href="#" className="text-sm font-medium opacity-60 hover:opacity-100 transition-opacity">{l}</a>)}
+          {links.map(l => (
+            <a key={l} href="#" className="text-sm font-medium opacity-65 hover:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current rounded-sm px-1">{l}</a>
+          ))}
         </div>
-        <a href="#contact" className="text-sm font-semibold underline underline-offset-4">Let's talk →</a>
+        <a href="#contact" className="text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current rounded-sm">Let's talk →</a>
       </div>
     </nav>
   );
@@ -142,25 +146,33 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     industries: ['saas', 'ai', 'startup', 'fintech', 'generic'], tags: ['gradient', 'glassmorphism', 'stats', 'badge', 'dark'],
     description: 'Dark hero with badge, gradient headline, dual CTAs, stats row', priority: 10,
     standaloneCode: `function Hero() {
-  const stats = [{ value: '50K+', label: 'Users' }, { value: '99.9%', label: 'Uptime' }, { value: '4.9★', label: 'Rating' }];
+  const stats = [{ value: '50K+', label: 'Active users' }, { value: '99.9%', label: 'Uptime SLA' }, { value: '4.9★', label: 'Avg rating' }];
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a] pt-20">
-      <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8">
-        <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-        HEADLINE_BADGE
-      </div>
-      <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6 max-w-5xl">
-        <span className="bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">HEADLINE_LINE1</span>
-        <br />
-        <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">HEADLINE_LINE2</span>
-      </h1>
-      <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">SUBHEADLINE</p>
-      <div className="flex flex-col sm:flex-row gap-4 mb-16">
-        <button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base">CTA_PRIMARY</button>
-        <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all text-base">CTA_SECONDARY</button>
-      </div>
-      <div className="flex items-center gap-12">
-        {stats.map(s => <div key={s.label} className="text-center"><div className="text-2xl font-black text-white">{s.value}</div><div className="text-xs text-gray-500 mt-1">{s.label}</div></div>)}
+    <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-[#0a0a0a] pt-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent)]" aria-hidden="true" />
+      <div className="relative z-10 max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 border border-white/15 bg-white/5 text-white/70 text-xs font-semibold px-4 py-2 rounded-full mb-8">
+          <div className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" aria-hidden="true" />
+          HEADLINE_BADGE
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6">
+          <span className="text-white">HEADLINE_LINE1</span>
+          <br />
+          <span className="bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">HEADLINE_LINE2</span>
+        </h1>
+        <p className="text-lg md:text-xl text-white/65 max-w-2xl mx-auto mb-10 leading-relaxed">SUBHEADLINE</p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <button type="button" className="bg-white text-black font-semibold px-8 py-4 rounded-full hover:bg-white/90 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</button>
+          <button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+        </div>
+        <div className="flex items-center justify-center gap-12 border-t border-white/8 pt-8">
+          {stats.map(s => (
+            <div key={s.label} className="text-center">
+              <div className="text-2xl font-black text-white">{s.value}</div>
+              <div className="text-xs text-white/60 mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -430,7 +442,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               <div className="grid grid-cols-3 gap-3">
                 {kpis.map(([v, l]) => (
                   <div key={l} className="bg-white/5 rounded-xl p-4 border border-white/8">
-                    <div className="text-xs text-white/25 mb-1">{l}</div>
+                    <div className="text-xs text-white/60 mb-1">{l}</div>
                     <div className="text-2xl font-black text-white">{v}</div>
                   </div>
                 ))}
@@ -462,39 +474,39 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white leading-none mb-3">HEADLINE_LINE1</h1>
-          <p className="text-white/35 text-base max-w-lg mx-auto">SUBHEADLINE</p>
+          <p className="text-white/65 text-base max-w-lg mx-auto">SUBHEADLINE</p>
         </div>
         <div className="grid grid-cols-12 gap-3" style={{gridTemplateRows: 'repeat(3, auto)'}}>
           <div className="col-span-12 md:col-span-5 row-span-2 bg-gradient-to-br from-violet-600 to-fuchsia-600 rounded-3xl p-8 flex flex-col justify-between relative overflow-hidden min-h-[260px] hover:scale-[1.01] transition-transform">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-2xl -translate-y-12 translate-x-12" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/15 rounded-full blur-2xl -translate-y-12 translate-x-12" aria-hidden="true" />
             <div>
-              <div className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-4">FEATURE_LABEL</div>
+              <div className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-4">FEATURE_LABEL</div>
               <p className="text-white text-2xl font-bold leading-tight">HEADLINE_LINE2</p>
             </div>
-            <button className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all">CTA_PRIMARY →</button>
+            <button type="button" className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600">CTA_PRIMARY →</button>
           </div>
           <div className="col-span-12 md:col-span-4 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center gap-4 hover:border-white/20 transition-colors">
             {stats.map(([v, l]) => (
               <div key={l} className="text-center flex-1">
                 <div className="text-xl font-black text-white">{v}</div>
-                <div className="text-white/25 text-xs mt-0.5">{l}</div>
+                <div className="text-white/60 text-xs mt-0.5">{l}</div>
               </div>
             ))}
           </div>
           <div className="col-span-12 md:col-span-3 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-white/20 transition-colors min-h-[120px]">
-            <div className="text-white/30 text-xs font-semibold uppercase tracking-widest">Integrations</div>
+            <div className="text-white/65 text-xs font-semibold uppercase tracking-widest">Integrations</div>
             <div className="flex flex-wrap gap-1.5">
               {integrations.map(i => (
-                <span key={i} className="bg-white/8 text-white/45 text-xs px-2.5 py-1 rounded-lg">{i}</span>
+                <span key={i} className="bg-white/8 text-white/70 text-xs px-2.5 py-1 rounded-lg">{i}</span>
               ))}
             </div>
           </div>
           <div className="col-span-12 md:col-span-7 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center justify-between gap-4 hover:border-white/20 transition-colors">
             <div>
               <div className="text-white font-semibold text-sm mb-1">Ready to ship faster?</div>
-              <div className="text-white/25 text-xs">No setup required. Free plan forever.</div>
+              <div className="text-white/60 text-xs">No setup required. Free plan forever.</div>
             </div>
-            <button className="border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-2xl hover:bg-white/8 transition-all shrink-0">CTA_SECONDARY →</button>
+            <button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-2xl hover:bg-white/8 transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY →</button>
           </div>
         </div>
       </div>
