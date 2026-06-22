@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { getWorkerRedis, isRedisAvailable } from './redisClient.js';
 import { setInlineExecutor, updateJobStatus } from './buildQueue.js';
 import { emitJobEvent, emitJobDone } from './buildEventBus.js';
-import { recordJobStarted, recordJobCompleted, recordJobFailed } from './queueMetrics.js';
+import { recordJobStarted, recordJobCompleted, recordJobFailed, recordJobStalled, recordJobRetry, recordJobDead } from './queueMetrics.js';
 import { QUEUE_NAME, WORKER_CONCURRENCY, type BuildJobData } from './queueTypes.js';
 import { runBuildPipeline } from '../agents/pipeline/buildPipeline.js';
 import { tokenContext } from '../agents/llm/tokenContext.js';
@@ -88,7 +88,27 @@ export function initQueueWorker(): void {
 
   _worker.on('active',    (j)     => log.info ('WORKER_JOB_ACTIVE',     { jobId: j.id }));
   _worker.on('completed', (j)     => log.info ('WORKER_JOB_COMPLETED',  { jobId: j.id }));
-  _worker.on('failed',    (j, e)  => log.error('WORKER_JOB_FAILED',     { jobId: j?.id, error: e?.message }));
+  _worker.on('failed',    (j, e)  => {
+    if (!j) return;
+    const jobId   = j.id ?? 'unknown';
+    const userId  = (j.data as BuildJobData).userId ?? 'unknown';
+    const error   = e?.message ?? 'unknown';
+    const made    = j.attemptsMade ?? 0;
+    const total   = (j.opts?.attempts ?? 1);
+    if (made >= total) {
+      // All attempts exhausted — permanently dead
+      recordJobDead(jobId, userId, error);
+    } else {
+      // Will be retried by BullMQ
+      recordJobRetry(jobId, userId, made);
+    }
+    log.error('WORKER_JOB_FAILED', { jobId, error, attemptsMade: made, maxAttempts: total });
+  });
+  _worker.on('stalled',   (jobId) => {
+    // BullMQ passes jobId (string) for stalled event — data not available
+    recordJobStalled(jobId, 'unknown');
+    log.warn('WORKER_JOB_STALLED', { jobId });
+  });
   _worker.on('error',     (e)     => log.error('WORKER_ERROR',          { error: e.message }));
 
   log.info('WORKER_INITIALIZED', { concurrency: WORKER_CONCURRENCY, queue: QUEUE_NAME });

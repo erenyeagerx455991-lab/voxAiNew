@@ -32,3 +32,4 @@
 - [VoxAI V7.0.3 Memory Hardening](voxai-v703-memory-hardening.md) — tpmWindow O(requests) fix; _localJobs TTL+cap eviction (1h/1000); enqueueTimes key fix (avgWaitMs now real); 438 tests pass; byUser still unbounded (low-risk).
 - [VoxAI V7.0.5 Real Build Load Test](voxai-v705-load-test.md) — real pipeline timing; Code Fix Agent 65s (56% of total); full build >115s; 35k tokens/build; esbuild re-export scope bug fixed in structuredLogger.
 - [VoxAI V7.0.6 Provider Budget Enforcement](voxai-v706-provider-budget.md) — dead budget path now live; _configureProviderLimitsForTest() added; edit/repair/autonomous-build routes quota-hardened; groqKey="" in build route.
+- [VoxAI V7.0.7 Queue Durability](voxai-v707-queue-durability.md) — stalledCount/retryTotal/deadJobCount now live in queueMetrics; BullMQ stalled+failed events wired; resetQueueMetrics fixed; 487 tests pass.

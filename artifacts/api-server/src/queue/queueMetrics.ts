@@ -114,12 +114,34 @@ export function recordJobCancelled(userId: string, jobId?: string): void {
   userEntry(userId).failed++;
 }
 
+/** Fired by BullMQ 'stalled' event — worker lock expired while job was active. */
+export function recordJobStalled(jobId: string, userId: string): void {
+  stalledCount++;
+  activeNow = Math.max(0, activeNow - 1);
+  log.warn('JOB_STALLED', { jobId, userId, stalledCount });
+}
+
+/** Fired when BullMQ re-attempts a job (not the final failure). */
+export function recordJobRetry(jobId: string, userId: string, attemptsMade: number): void {
+  retryTotal++;
+  log.info('JOB_RETRY', { jobId, userId, attemptsMade, retryTotal });
+}
+
+/** Fired when a job exhausts all retry attempts and permanently fails. */
+export function recordJobDead(jobId: string, userId: string, error: string): void {
+  deadJobCount++;
+  recentFailures.push({ jobId, userId, error: `[DEAD] ${error}`, at: Date.now() });
+  if (recentFailures.length > MAX_FAILURES) recentFailures.shift();
+  log.error('JOB_DEAD', { jobId, userId, error, deadJobCount });
+}
+
 export function getQueueMetrics(): QueueSnapshot {
   const sortedWait = [...waitTimes].sort((a, b) => a - b);
   const sortedDur  = [...durations].sort((a, b) => a - b);
   return {
     enqueuedTotal, completedTotal, failedTotal, cancelledTotal,
     activeNow, queuedNow,
+    stalledCount, retryTotal, deadJobCount,
     avgWaitMs:     avg(sortedWait),
     avgDurationMs: avg(sortedDur),
     p95WaitMs:     pct(sortedWait, 95),
@@ -132,6 +154,7 @@ export function getQueueMetrics(): QueueSnapshot {
 export function resetQueueMetrics(): void {
   enqueuedTotal = completedTotal = failedTotal = cancelledTotal = 0;
   activeNow = queuedNow = 0;
+  stalledCount = retryTotal = deadJobCount = 0;
   waitTimes.length = durations.length = 0;
   enqueueTimes.clear();
   startTimes.clear();
