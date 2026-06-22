@@ -15,7 +15,7 @@ export async function runBackendStep(
   keys: PipelineKeys,
   res: Response
 ): Promise<BackendOutput> {
-  const { groqKey } = keys;
+  const { openrouterKey } = keys;
   const { projectBlueprint } = arch;
   const { projectFiles } = frontend;
 
@@ -33,7 +33,7 @@ export async function runBackendStep(
     if (hasApis) {
       sse(res, { type: "step", step: 5, agent: "Backend Agent", status: "active", apis: projectBlueprint.apis });
       tasks.push(
-        generateBackendFiles(projectBlueprint.apis, projectBlueprint.entities || [], projectBlueprint.projectType, groqKey)
+        generateBackendFiles(projectBlueprint.apis, projectBlueprint.entities || [], projectBlueprint.projectType, openrouterKey)
           .then(files => {
             backendFiles = files as ProjectFileSSE[];
             log.info("BACKEND_AGENT_DONE", { fileCount: files.length });
@@ -49,7 +49,7 @@ export async function runBackendStep(
     if (hasTables) {
       sse(res, { type: "step", step: 6, agent: "Database Agent", status: "active", tables: projectBlueprint.databaseTables });
       tasks.push(
-        generateDatabaseFiles(projectBlueprint.databaseTables, projectBlueprint.relationships || [], projectBlueprint.entities || [], groqKey)
+        generateDatabaseFiles(projectBlueprint.databaseTables, projectBlueprint.relationships || [], projectBlueprint.entities || [], openrouterKey)
           .then(files => {
             dbFiles = files as ProjectFileSSE[];
             log.info("DATABASE_AGENT_DONE", { fileCount: files.length });
@@ -65,7 +65,7 @@ export async function runBackendStep(
     if (needsAuth) {
       sse(res, { type: "step", step: 7, agent: "Auth Agent", status: "active", provider: projectBlueprint.authProvider });
       tasks.push(
-        generateAuthFiles(projectBlueprint.authProvider || 'JWT', groqKey)
+        generateAuthFiles(projectBlueprint.authProvider || 'JWT', openrouterKey)
           .then(files => {
             authFiles = files as ProjectFileSSE[];
             log.info("AUTH_AGENT_DONE", { fileCount: files.length });

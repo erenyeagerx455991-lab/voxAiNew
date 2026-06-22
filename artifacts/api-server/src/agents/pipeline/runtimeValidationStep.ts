@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
-import { callGroq, REPAIR_MODEL } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { resolveDependencies } from "../../runtime/dependencyResolver.js";
 import * as runtimeManager from "../../runtime/runtimeManager.js";
 import { setupWorkspace, rebuildWorkspace, teardownWorkspace, buildRepairTargets } from "../../runtime/buildExecutor.js";
@@ -23,12 +23,12 @@ export interface RuntimeStepInput {
 
 export async function runRuntimeValidationStep(
   input: RuntimeStepInput,
-  keys: { groqKey: string },
+  keys: { openrouterKey: string },
   res: Response
 ): Promise<{ allFiles: ProjectFileSSE[]; finalRuntimeState: Record<string, unknown> }> {
   const { allFiles, projectBlueprint, chatId } = input;
   const buildId = input.buildId ?? chatId;
-  const { groqKey } = keys;
+  const { openrouterKey } = keys;
 
   sse(res, { type: "step", step: 9, agent: "Runtime Agent", status: "active" });
   sse(res, { type: "runtime_install_start" });
@@ -134,9 +134,10 @@ export async function runRuntimeValidationStep(
           const fileName = target.file.name;
           recordRepairAttempt(buildId, fileName);
           try {
-            const fixed = await callGroq(groqKey, REPAIR_MODEL,
+            const fixed = await callAI(
+              openrouterKey,
               [{ role: 'system', content: REAL_REPAIR_SYSTEM }, { role: 'user', content: target.context }],
-              false, 2000
+              { label: `runtime-repair:${target.file.name}`, maxTokens: 2000 }
             );
             if (fixed && fixed.length > 80) {
               const cleaned = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();

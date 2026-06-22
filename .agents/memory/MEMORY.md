@@ -1,3 +1,4 @@
+- [VoxAI Unified AI Service](voxai-unified-ai-service.md) — all LLM calls use callAI() from aiService.ts; 3-model OpenRouter fallback chain; callGroq() kept only for tests.
 - [VoxAI Supabase secrets swap](voxai-supabase-secrets.md) — both VITE_SUPABASE_* secrets were entered as JWTs; URL is hardcoded in vite define block as workaround.
 - [VoxAI Design Agent model](voxai-design-agent-model.md) — DESIGN_MODEL must be google/gemini-2.5-flash-lite; old gemini-flash-1.5-8b was 404 on OpenRouter causing silent DNA collapse.
 - [VoxAI Hero System V2](voxai-hero-system-v2.md) — 6 hero variants with unique DOM structures; selector uses reference sites first, then DNA fallback; Groq Code Fix TPM fix.

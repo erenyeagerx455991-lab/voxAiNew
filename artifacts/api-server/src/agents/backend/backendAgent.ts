@@ -1,7 +1,6 @@
 import type { ProjectFileSSE, ExtractedFile } from "../types.js";
-import { callGroq } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { BACKEND_SYSTEM, DATABASE_SYSTEM, AUTH_SYSTEM } from "../llm/prompts.js";
-import { BACKEND_MODEL } from "../llm/llmClient.js";
 
 export function extractBackendFiles(code: string): ExtractedFile[] {
   const files: ExtractedFile[] = [];
@@ -35,7 +34,7 @@ export async function generateBackendFiles(
   apis: string[],
   entities: string[],
   projectType: string,
-  groqKey: string
+  openrouterKey: string
 ): Promise<ProjectFileSSE[]> {
   if (apis.length === 0) return [];
 
@@ -55,13 +54,13 @@ ${apiFileDelimiters}
 Generate all files now. Do not truncate.`;
 
   try {
-    const raw = await callGroq(
-      groqKey, BACKEND_MODEL,
+    const raw = await callAI(
+      openrouterKey,
       [
         { role: 'system', content: BACKEND_SYSTEM },
         { role: 'user', content: userPrompt },
       ],
-      false, 4000
+      { label: "backend-api", maxTokens: 4000 }
     );
     const extracted = extractBackendFiles(raw);
     console.log(`[BackendAgent] Extracted ${extracted.length} files from output`);
@@ -81,7 +80,7 @@ export async function generateDatabaseFiles(
   tables: string[],
   relationships: string[],
   entities: string[],
-  groqKey: string
+  openrouterKey: string
 ): Promise<ProjectFileSSE[]> {
   if (tables.length === 0) return [];
 
@@ -102,13 +101,13 @@ Required files:
 Generate both files completely. Do not truncate.`;
 
   try {
-    const raw = await callGroq(
-      groqKey, BACKEND_MODEL,
+    const raw = await callAI(
+      openrouterKey,
       [
         { role: 'system', content: DATABASE_SYSTEM },
         { role: 'user', content: userPrompt },
       ],
-      false, 3000
+      { label: "backend-database", maxTokens: 3000 }
     );
     const extracted = extractBackendFiles(raw);
     console.log(`[DatabaseAgent] Extracted ${extracted.length} files from output`);
@@ -126,7 +125,7 @@ Generate both files completely. Do not truncate.`;
 
 export async function generateAuthFiles(
   authProvider: string,
-  groqKey: string
+  openrouterKey: string
 ): Promise<ProjectFileSSE[]> {
   const provider = (authProvider || 'JWT').toUpperCase();
 
@@ -148,13 +147,13 @@ ${!['SUPABASE', 'CLERK'].includes(provider) ? 'Use jsonwebtoken + bcryptjs. Stor
 Generate all files now. Do not truncate.`;
 
   try {
-    const raw = await callGroq(
-      groqKey, BACKEND_MODEL,
+    const raw = await callAI(
+      openrouterKey,
       [
         { role: 'system', content: AUTH_SYSTEM },
         { role: 'user', content: userPrompt },
       ],
-      false, 4000
+      { label: "backend-auth", maxTokens: 4000 }
     );
     const extracted = extractBackendFiles(raw);
     console.log(`[AuthAgent] Extracted ${extracted.length} files from output`);

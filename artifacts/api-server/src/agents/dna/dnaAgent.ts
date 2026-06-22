@@ -1,5 +1,5 @@
 import type { DNAComposition } from "../types.js";
-import { callGroq } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { DNA_MIXER_SYSTEM } from "../llm/prompts.js";
 
 export type { DNAComposition };
@@ -101,7 +101,7 @@ export async function extractDNAComposition(
   referenceSites: string,
   primaryRef: string,
   secondaryRefs: string[],
-  groqKey: string
+  openrouterKey: string
 ): Promise<DNAComposition> {
   // 1. Try explicit percentage extraction first (regex, no LLM)
   const percentPattern = /(\d+)\s*%?\s*(stripe|linear|framer|vercel|notion|cursor|raycast)/gi;
@@ -132,12 +132,13 @@ export async function extractDNAComposition(
 
   // 3. Fall back to AI extraction for complex weighting language
   try {
-    const extraction = await callGroq(groqKey, 'llama-3.1-8b-instant',
+    const extraction = await callAI(
+      openrouterKey,
       [
         { role: 'system', content: DNA_MIXER_SYSTEM },
         { role: 'user', content: userPrompt },
       ],
-      false, 300
+      { label: "dna-mixer", maxTokens: 300 }
     );
     if (extraction) {
       const jsonMatch = extraction.match(/\{[\s\S]*\}/);

@@ -1,7 +1,6 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
-import { callGroq } from "../llm/llmClient.js";
-import { PLANNER_MODEL } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { PLANNER_SYSTEM } from "../llm/prompts.js";
 import {
   extractDNAComposition, EMPTY_DNA, DNA_BRAND_KEYS,
@@ -20,18 +19,22 @@ export async function runPlannerStep(
   keys: PipelineKeys,
   res: Response
 ): Promise<PlannerOutput> {
-  const { groqKey, openrouterKey: _openrouterKey } = keys;
+  const { openrouterKey } = keys;
 
   sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "active" });
 
   let planText = "";
-  await callGroq(
-    groqKey, PLANNER_MODEL,
+  await callAI(
+    openrouterKey,
     [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: prompt }],
-    true, 1800,
-    (token) => {
-      planText += token;
-      if (!planText.includes("---DESIGN_BRIEF---")) sse(res, { type: "token", token });
+    {
+      label: "planner",
+      maxTokens: 1800,
+      stream: true,
+      onToken: (token) => {
+        planText += token;
+        if (!planText.includes("---DESIGN_BRIEF---")) sse(res, { type: "token", token });
+      },
     }
   );
 
@@ -88,7 +91,7 @@ export async function runPlannerStep(
   let dnaMotion: ReturnType<typeof generateMotionProfileServer> | null = null;
 
   try {
-    dnaComposition = await extractDNAComposition(prompt, referenceSites, primaryReference, secondaryReferences, groqKey);
+    dnaComposition = await extractDNAComposition(prompt, referenceSites, primaryReference, secondaryReferences, openrouterKey);
     const activeBrands = DNA_BRAND_KEYS.filter(k => dnaComposition[k] > 0);
     if (activeBrands.length > 0) {
       const sectionList = [...new Set([

@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
-import { callGroq, PLANNER_MODEL } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { ARCHITECTURE_SYSTEM } from "../llm/prompts.js";
 import { validateProjectBlueprint, computeQualityScore } from "../config/configGenerators.js";
 import type { ProjectBlueprint } from "../types.js";
@@ -15,7 +15,7 @@ export async function runArchitectureStep(
   keys: PipelineKeys,
   res: Response
 ): Promise<ArchitectureOutput> {
-  const { groqKey } = keys;
+  const { openrouterKey } = keys;
   const { blueprint, templateContext } = plan;
 
   sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "active" });
@@ -46,13 +46,13 @@ export async function runArchitectureStep(
   const userContent = `Prompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}\n\n${templateContext}`;
 
   try {
-    const archResult = await callGroq(
-      groqKey, PLANNER_MODEL,
+    const archResult = await callAI(
+      openrouterKey,
       [
         { role: "system", content: ARCHITECTURE_SYSTEM },
         { role: "user", content: userContent },
       ],
-      false, 700
+      { label: "architecture", maxTokens: 700 }
     );
     const archJsonMatch = archResult.match(/\{[\s\S]*\}/);
     if (archJsonMatch) {
@@ -68,13 +68,13 @@ export async function runArchitectureStep(
     log.warn("BLUEPRINT_VALIDATION_FAILED", { errors: bpValidation.errors.join('; ') });
     sse(res, { type: "blueprint_validation_retry", errors: bpValidation.errors });
     try {
-      const archRetry = await callGroq(
-        groqKey, PLANNER_MODEL,
+      const archRetry = await callAI(
+        openrouterKey,
         [
           { role: "system", content: ARCHITECTURE_SYSTEM },
           { role: "user", content: `RETRY — previous blueprint was invalid (${bpValidation.errors.join(', ')}). Generate a complete valid blueprint.\n\nPrompt: ${prompt}\nWebsite type: ${blueprint.websiteType}` },
         ],
-        false, 2000
+        { label: "architecture-retry", maxTokens: 2000 }
       );
       const retryJsonMatch = archRetry.match(/\{[\s\S]*\}/);
       if (retryJsonMatch) {
@@ -105,13 +105,13 @@ export async function runArchitectureStep(
   if (!qg.passed) {
     log.warn("QUALITY_GATE_RETRY", { score: qg.score, issues: qg.issues });
     try {
-      const qgRetry = await callGroq(
-        groqKey, PLANNER_MODEL,
+      const qgRetry = await callAI(
+        openrouterKey,
         [
           { role: "system", content: ARCHITECTURE_SYSTEM },
           { role: "user", content: `QUALITY FIX — Resolve: ${qg.issues.join('; ')}\n\nPrompt: ${prompt}\nWebsite type: ${blueprint.websiteType}\nSections: ${blueprint.sectionOrder.join(', ')}\n\nPrevious blueprint scored ${qg.score}/100.` },
         ],
-        false, 2000
+        { label: "architecture-quality-gate", maxTokens: 2000 }
       );
       const qgJson = qgRetry.match(/\{[\s\S]*\}/);
       if (qgJson) {

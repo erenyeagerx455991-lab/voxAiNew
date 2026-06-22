@@ -16,10 +16,7 @@ import { buildRuntimeDependencyGraph, resolveImports, resolveComponents, resolve
 // ── Extracted module imports ──────────────────────────────────────────────────
 import type { ProjectFileSSE, ProjectBlueprint, DesignDNA, PageBlueprint } from "../agents/types.js";
 import { sse } from "../agents/streaming/sseManager.js";
-import {
-  callGroq,
-  BACKEND_MODEL, REPAIR_MODEL,
-} from "../agents/llm/llmClient.js";
+import { callAI, PRIMARY_MODEL } from "../agents/llm/aiService.js";
 import {
   EDIT_SYSTEM, INTENT_SYSTEM,
 } from "../agents/llm/prompts.js";
@@ -106,20 +103,20 @@ router.post("/agents/audit", async (req, res) => {
   const openrouterKey = process.env["OPENROUTER_API_KEY"];
   const { prompt } = req.body as { prompt: string };
 
-  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
   if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
   if (!prompt) return res.status(400).json({ error: "prompt required" });
 
   const audit: Record<string, any> = {
     prompt,
-    models: { planner: PLANNER_MODEL, design: DESIGN_MODEL, codegen: CODEGEN_MODEL, codefix: CODEFIX_MODEL },
+    models: { primary: PRIMARY_MODEL },
   };
 
   try {
     let planText = "";
-    await callGroq(groqKey, PLANNER_MODEL,
+    await callAI(
+      openrouterKey,
       [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: prompt }],
-      true, 2500, (token) => { planText += token; }
+      { label: "audit-planner", maxTokens: 2500, stream: true, onToken: (token) => { planText += token; } }
     );
     audit.plannerOutput = { raw: planText };
 
@@ -168,9 +165,10 @@ router.post("/agents/audit", async (req, res) => {
     let designAgentError: string | null = null;
 
     try {
-      designAgentRawOutput = await callOpenRouter(openrouterKey, DESIGN_MODEL,
+      designAgentRawOutput = await callAI(
+        openrouterKey,
         [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: designPrompt }],
-        1500
+        { label: "audit-design", maxTokens: 1500 }
       );
       designAgentStatus = "success";
       const jsonMatch = designAgentRawOutput.match(/\{[\s\S]*\}/);
@@ -449,8 +447,8 @@ function analyzeEditImpactServer(
 
 // ── EDIT AGENT ────────────────────────────────────────────────────────────────
 router.post("/agents/edit", async (req, res) => {
-  const groqKey = process.env["GROQ_API_KEY"];
-  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents = [], registryFileMap = {} } = req.body as {
     prompt: string;
@@ -483,13 +481,13 @@ router.post("/agents/edit", async (req, res) => {
         `PROJECT FILES:\n${fileList}\n\nEDIT REQUEST: ${prompt}`,
         600
       );
-      const intentRaw = await callGroq(
-        groqKey, PLANNER_MODEL,
+      const intentRaw = await callAI(
+        openrouterKey,
         [
           { role: "system", content: intentSys },
           { role: "user", content: intentUser },
         ],
-        false, 600
+        { label: "edit-intent", maxTokens: 600 }
       );
       const cleaned = intentRaw.replace(/```json\n?|\n?```/g, "").trim();
       const parsed = JSON.parse(cleaned);
@@ -587,10 +585,10 @@ ${fileContext}`;
         sse(res, { type: "debug", message: "context_compressed" });
       }
 
-      const editRaw = await callGroq(
-        groqKey, BACKEND_MODEL,
+      const editRaw = await callAI(
+        openrouterKey,
         [{ role: "system", content: editSystem }, { role: "user", content: userMessage }],
-        false, EDIT_RESPONSE_TOKENS
+        { label: "edit-patch", maxTokens: EDIT_RESPONSE_TOKENS }
       );
 
       modifiedFiles = extractEditFiles(editRaw);
@@ -722,8 +720,8 @@ function resolveAffectedFilesFromGraph(
 }
 
 router.post("/agents/runtime-repair", async (req, res) => {
-  const groqKey = process.env["GROQ_API_KEY"];
-  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const {
     files,
@@ -860,10 +858,10 @@ ${depContext ? `\nCONTEXT FILES:\n${depContext}` : ''}
 
 Return the complete repaired file:`;
 
-      const repairedRaw = await callGroq(
-        groqKey, REPAIR_MODEL,
+      const repairedRaw = await callAI(
+        openrouterKey,
         [{ role: "system", content: repairSystem }, { role: "user", content: repairPrompt }],
-        false, 3000
+        { label: "runtime-repair", maxTokens: 3000 }
       );
 
       sse(res, { type: "repair_apply", attempt: attemptNumber, file: failingFile.name });
@@ -1034,8 +1032,8 @@ router.post("/agents/templates/merge", (req, res) => {
 
 // ── V6.2: AUTONOMOUS RUNTIME BUILDER ─────────────────────────────────────────
 router.post("/agents/autonomous-build", async (req, res) => {
-  const groqKey = process.env["GROQ_API_KEY"];
-  if (!groqKey) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const {
     chatId,
@@ -1160,12 +1158,13 @@ router.post("/agents/autonomous-build", async (req, res) => {
         const validation = validateFiles([file] as Array<{ name: string; content: string; lang: string }>);
         const issues = validation.errors.slice(0, 3).map(e => e.message).join('; ') || 'JSX/syntax errors';
         try {
-          const repaired = await callGroq(groqKey, REPAIR_MODEL,
+          const repaired = await callAI(
+            openrouterKey,
             [
               { role: 'system', content: REPAIR_SYSTEM_AB },
               { role: 'user', content: `File: ${file.name}\nIssues: ${issues}\n\nFull file:\n${file.content.slice(0, 3000)}` },
             ],
-            false, 1500
+            { label: `autonomous-repair:${file.name}`, maxTokens: 1500 }
           );
           if (repaired && repaired.length > 80) {
             const cleaned = repaired.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
@@ -1232,12 +1231,13 @@ router.post("/agents/autonomous-build", async (req, res) => {
         sseAB({ type: "preview_gate_fail", health: healthV3.overall, threshold: 90, repairingFiles: criticalFiles.length });
         await Promise.all(criticalFiles.slice(0, 3).map(async (file) => {
           try {
-            const repaired = await callGroq(groqKey, REPAIR_MODEL,
+            const repaired = await callAI(
+              openrouterKey,
               [
                 { role: 'system', content: REPAIR_SYSTEM_AB },
                 { role: 'user', content: `CRITICAL: Fix ALL errors in this file for production preview.\nFile: ${file.name}\n\nFull file:\n${file.content.slice(0, 3000)}` },
               ],
-              false, 1500
+              { label: `autonomous-gate-repair:${file.name}`, maxTokens: 1500 }
             );
             if (repaired && repaired.length > 80) {
               const cleaned = repaired.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();

@@ -1,6 +1,6 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
-import { callGroq, REPAIR_MODEL } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { validateTsxFile, runRuntimeValidator, validateRoutes } from "../frontend/codeSystem.js";
 import { selectRegistryComponentsServer, computeRegistryHealthServer } from "../dna/dnaAgent.js";
 import { estimateTokenCount } from "../../contextManager.js";
@@ -18,7 +18,7 @@ export async function runRepairStep(
   keys: PipelineKeys,
   res: Response
 ): Promise<FrontendOutput> {
-  const { groqKey } = keys;
+  const { openrouterKey } = keys;
   const { projectFiles, fixedCode, architecture, registrySelection } = frontend;
   const { plan } = architecture;
   const { blueprint } = plan;
@@ -49,12 +49,13 @@ export async function runRepairStep(
       totalRepairAttempts++;
       recordRepairAttempt(buildId, file.name);
       try {
-        const fixed = await callGroq(groqKey, REPAIR_MODEL,
+        const fixed = await callAI(
+          openrouterKey,
           [
             { role: 'system', content: REPAIR_SYSTEM },
             { role: 'user', content: `File: ${file.name}\nIssues:\n${validation.issues.map(i => `- ${i}`).join('\n')}\n\nFull file:\n${file.content}` },
           ],
-          false, 1500
+          { label: `repair:${file.name}`, maxTokens: 1500 }
         );
         if (fixed && fixed.length > 80) {
           const cleaned = fixed.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();

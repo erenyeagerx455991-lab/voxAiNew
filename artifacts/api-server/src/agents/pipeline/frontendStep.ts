@@ -1,13 +1,13 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
-import { callGroq, callOpenRouter, DESIGN_MODEL, CODEGEN_MODEL, CODEFIX_MODEL } from "../llm/llmClient.js";
+import { callAI } from "../llm/aiService.js";
 import { DESIGN_SYSTEM, CODEFIX_SYSTEM } from "../llm/prompts.js";
 import { buildCodeSystem, DEFAULT_DESIGN } from "../frontend/codeSystem.js";
 import { buildServerProjectFiles } from "../frontend/frontendAgent.js";
 import { selectRegistryComponentsServer } from "../dna/dnaAgent.js";
 import { selectTemplatesForPrompt, buildContextFromTemplates } from "../../components/registry.js";
 import { truncateForGroq } from "../../contextManager.js";
-import type { DesignDNA, ProjectFileSSE, OpenRouterError } from "../types.js";
+import type { DesignDNA, ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -62,14 +62,14 @@ async function runDesignAgent(
   overridePrompt?: string
 ): Promise<{ raw: string; parsed: DesignDNA | null; error: string | null }> {
   try {
-    const raw = await callOpenRouter(openrouterKey, DESIGN_MODEL,
+    const raw = await callAI(
+      openrouterKey,
       [{ role: "system", content: DESIGN_SYSTEM }, { role: "user", content: overridePrompt ?? designPrompt }],
-      1500
+      { label: "design", maxTokens: 1500 }
     );
     return { raw, parsed: parseDesignRaw(raw), error: null };
   } catch (e: unknown) {
-    const err = e as OpenRouterError;
-    const errMsg = `Design Agent FAILED — model: ${DESIGN_MODEL}, status: ${err.status ?? "unknown"}, message: ${err.message}`;
+    const errMsg = `Design Agent FAILED: ${e instanceof Error ? e.message : String(e)}`;
     log.error("DESIGN_AGENT_FAILED", { errMsg });
     return { raw: "", parsed: null, error: errMsg };
   }
@@ -81,15 +81,13 @@ export async function runFrontendStep(
   keys: PipelineKeys,
   res: Response
 ): Promise<FrontendOutput> {
-  const { groqKey, openrouterKey } = keys;
+  const { openrouterKey } = keys;
   const { plan, projectBlueprint } = arch;
   const { blueprint, referenceSites, primaryReference, dnaComposition, dnaOwnership, dnaTheme, briefText, cleanPlan } = plan;
 
   sse(res, { type: "step", step: 2, agent: "Design Agent", status: "active" });
 
-  const dnaContextStr = dnaTheme
-    ? String(dnaTheme)
-    : '';
+  const dnaContextStr = dnaTheme ? String(dnaTheme) : '';
   const designPrompt = [
     `Website brief:\n${briefText || prompt}`,
     `Website type: ${blueprint.websiteType}`,
@@ -131,7 +129,7 @@ export async function runFrontendStep(
     }
   } else {
     designAgentError = attempt1.error ?? "Design Agent returned unparseable output";
-    sse(res, { type: "design_agent_error", designAgentStatus: "failed", error: designAgentError, model: DESIGN_MODEL });
+    sse(res, { type: "design_agent_error", designAgentStatus: "failed", error: designAgentError });
     log.error("DESIGN_AGENT_DEFAULT", { reason: designAgentError });
   }
 
@@ -162,16 +160,13 @@ export async function runFrontendStep(
 
   let generatedCode = "";
   try {
-    generatedCode = await callOpenRouter(openrouterKey, CODEGEN_MODEL,
+    generatedCode = await callAI(
+      openrouterKey,
       [{ role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
-      8000
+      { label: "codegen", maxTokens: 8000, stream: true, onToken: (t) => sse(res, { type: "codegen_token", token: t }) }
     );
   } catch (e) {
-    log.warn("CODEGEN_OPENROUTER_FALLBACK", { error: String(e) });
-    generatedCode = await callGroq(groqKey, "llama-3.3-70b-versatile",
-      [{ role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
-      false, 8000
-    );
+    log.error("CODEGEN_ALL_MODELS_FAILED", { error: String(e) });
   }
 
   generatedCode = generatedCode.replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
@@ -182,9 +177,10 @@ export async function runFrontendStep(
   try {
     const codeFix_userRaw = `Fix this React website code (keep all ${sectionCount} sections intact — do NOT add or remove any sections):\n\n${generatedCode}`;
     const { system: cfSystem, user: cfUser } = truncateForGroq(CODEFIX_SYSTEM, codeFix_userRaw, 5_000);
-    const fixed = await callGroq(groqKey, CODEFIX_MODEL,
+    const fixed = await callAI(
+      openrouterKey,
       [{ role: "system", content: cfSystem }, { role: "user", content: cfUser }],
-      false, 5_000
+      { label: "codefix", maxTokens: 5_000 }
     );
     if (fixed && fixed.length > 200) {
       fixedCode = fixed.replace(/^```(?:jsx?|tsx?|javascript|typescript)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
