@@ -1,0 +1,393 @@
+import type { DesignDNA } from "../types.js";
+
+export interface EvaluationInput {
+  code: string;
+  sectionOrder: string[];
+  designDNA: DesignDNA;
+}
+
+export interface EvaluationIssue {
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency';
+  severity: 'critical' | 'major' | 'minor';
+  message: string;
+}
+
+export interface EvaluationResult {
+  overallScore: number;
+  heroScore: number;
+  layoutScore: number;
+  ctaScore: number;
+  accessibilityScore: number;
+  shadcnScore: number;
+  consistencyScore: number;
+  issues: EvaluationIssue[];
+}
+
+function extractFunctionBlock(code: string, name: string): string {
+  const startPattern = new RegExp(`function\\s+${name}\\s*\\(`);
+  const match = startPattern.exec(code);
+  if (!match) return '';
+  const start = match.index;
+  let depth = 0;
+  let i = start;
+  let entered = false;
+  while (i < code.length) {
+    if (code[i] === '{') { depth++; entered = true; }
+    else if (code[i] === '}') {
+      depth--;
+      if (entered && depth === 0) return code.slice(start, i + 1);
+    }
+    i++;
+  }
+  return code.slice(start);
+}
+
+function scoreHero(code: string, sectionOrder: string[]): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  if (!sectionOrder.includes('Hero')) return { score: 5, issues: [] };
+
+  const heroBlock = extractFunctionBlock(code, 'Hero');
+
+  if (/<Badge[\s>]/.test(heroBlock) || /\bpill\b|\bbadge\b/i.test(heroBlock)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'hero', severity: 'major', message: 'Hero section is missing a badge/pill label above the headline — add a <Badge> component with a short label like "Now in beta" or "Trusted by X teams"' });
+  }
+
+  if (/<h1[\s>]/.test(heroBlock)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'hero', severity: 'critical', message: 'Hero section is missing an <h1> headline element — the hero H1 is the page focal point and must be present' });
+  }
+
+  if (/<p[\s>]/.test(heroBlock)) {
+    score += 1;
+  } else {
+    issues.push({ category: 'hero', severity: 'minor', message: 'Hero section is missing supporting copy — add a <p> element with 1–2 sentences describing the specific benefit' });
+  }
+
+  const buttonMatches = heroBlock.match(/<Button[\s>]/g) ?? [];
+  const hasOutline = /variant=["'](outline|ghost)/.test(heroBlock);
+  if (buttonMatches.length >= 2 && hasOutline) {
+    score += 3;
+  } else if (buttonMatches.length >= 2) {
+    score += 2;
+    issues.push({ category: 'hero', severity: 'minor', message: 'Hero has 2 CTA buttons but secondary is not outline/ghost — use <Button variant="outline"> for the secondary CTA to create visual hierarchy' });
+  } else if (buttonMatches.length === 1) {
+    score += 1;
+    issues.push({ category: 'hero', severity: 'major', message: 'Hero section has only 1 CTA button — add a secondary <Button variant="outline"> alongside the primary CTA (e.g. "See how it works")' });
+  } else {
+    issues.push({ category: 'hero', severity: 'critical', message: 'Hero section has no <Button> CTA components — add a primary <Button> and secondary <Button variant="outline"> in a flex row' });
+  }
+
+  const hasTrustSignal =
+    /★|⭐|rating|review|trusted by|\d[\d,]+\s*(?:user|team|customer|repo)|avatar|AvatarImage|join \d|active team|uptime|latency|logo.*cloud/i.test(heroBlock);
+  if (hasTrustSignal) {
+    score += 2;
+  } else {
+    issues.push({ category: 'hero', severity: 'major', message: 'Hero section is missing a trust signal below the CTAs — add star ratings + review count, avatar stack + user count, a logo cloud, or a key metrics strip' });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+function scoreLayout(code: string, sectionOrder: string[]): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  const sectionCount = sectionOrder.length;
+  if (sectionCount >= 6 && sectionCount <= 10) {
+    score += 2;
+  } else if (sectionCount >= 4) {
+    score += 1;
+    issues.push({ category: 'layout', severity: 'minor', message: `Section count is ${sectionCount} — optimal is 6–10 sections for a complete landing page experience` });
+  } else {
+    issues.push({ category: 'layout', severity: 'major', message: `Only ${sectionCount} sections present — a complete page needs at least 6: Navbar, Hero, Features, Social Proof, CTA, Footer` });
+  }
+
+  const bgPattern = /className=["'][^"']*\bbg-\[#([0-9a-fA-F]{3,6})\][^"']*["']/g;
+  const bgMatches: string[] = [];
+  let bgM: RegExpExecArray | null;
+  while ((bgM = bgPattern.exec(code)) !== null) bgMatches.push(bgM[1].toLowerCase());
+
+  if (bgMatches.length >= 3) {
+    const uniqueBgs = new Set(bgMatches);
+    if (uniqueBgs.size >= 2) {
+      const recent = bgMatches.slice(-8);
+      let adjDups = 0;
+      for (let i = 1; i < recent.length; i++) if (recent[i] === recent[i - 1]) adjDups++;
+      if (adjDups === 0) {
+        score += 4;
+      } else if (adjDups === 1) {
+        score += 3;
+        issues.push({ category: 'layout', severity: 'minor', message: `1 pair of adjacent sections share the same background color — alternate bg and surface colors throughout the page for visual rhythm` });
+      } else {
+        score += 2;
+        issues.push({ category: 'layout', severity: 'major', message: `${adjDups} adjacent section pairs share identical background colors — apply the bg → surface → bg alternation pattern` });
+      }
+    } else {
+      score += 1;
+      issues.push({ category: 'layout', severity: 'major', message: 'All sections use a single background color — use at least 2 alternating colors (background + surface) to create section separation without borders' });
+    }
+  } else {
+    score += 2;
+  }
+
+  const gridPattern = /\bgrid-cols-(\d+)\b/g;
+  const gridCols: string[] = [];
+  let gM: RegExpExecArray | null;
+  while ((gM = gridPattern.exec(code)) !== null) gridCols.push(gM[1]);
+  if (gridCols.length >= 3) {
+    let tripleRun = 0;
+    for (let i = 2; i < gridCols.length; i++) {
+      if (gridCols[i] === gridCols[i - 1] && gridCols[i] === gridCols[i - 2]) tripleRun++;
+    }
+    if (tripleRun === 0) {
+      score += 2;
+    } else {
+      score += 1;
+      issues.push({ category: 'layout', severity: 'major', message: `${tripleRun + 2} consecutive sections use grid-cols-${gridCols[2]} layout — break the run with a list, split layout, or table between grid sections` });
+    }
+  } else {
+    score += 2;
+  }
+
+  const hasNonCardSection =
+    /\bflex-(?:row|col)\b/.test(code) ||
+    /<(?:table|ul|ol)\b/.test(code) ||
+    /\border-[tb]\b/.test(code);
+  if (hasNonCardSection) {
+    score += 2;
+  } else {
+    issues.push({ category: 'layout', severity: 'minor', message: 'All sections use grid card layouts — add at least one non-card section (list, table, split layout, or flex row) for visual diversity' });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+function scoreCTA(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  const allButtonTags = code.match(/<Button[\s\S]*?>/g) ?? [];
+  const solidButtons = allButtonTags.filter(b => !/variant=["'](outline|ghost|secondary|destructive)/.test(b));
+  const outlineGhostButtons = allButtonTags.filter(b => /variant=["'](outline|ghost|secondary)/.test(b));
+
+  if (solidButtons.length >= 1) {
+    score += 3;
+  } else if (allButtonTags.length >= 1) {
+    score += 2;
+    issues.push({ category: 'cta', severity: 'major', message: `No solid/primary <Button> found — at least one default-variant <Button> is needed as the dominant page CTA` });
+  } else {
+    issues.push({ category: 'cta', severity: 'critical', message: 'No <Button> components found on the page — add a primary <Button> CTA and secondary <Button variant="outline"> CTA' });
+  }
+
+  if (outlineGhostButtons.length >= 1) {
+    score += 3;
+  } else if (allButtonTags.length > 1) {
+    score += 1;
+    issues.push({ category: 'cta', severity: 'minor', message: 'All buttons use the solid/default style — add <Button variant="outline"> or <Button variant="ghost"> for secondary CTAs to establish visual hierarchy' });
+  }
+
+  const buttonTextPattern = /<Button[^>]*>([\s\S]*?)<\/Button>/g;
+  const buttonTexts: string[] = [];
+  let btM: RegExpExecArray | null;
+  while ((btM = buttonTextPattern.exec(code)) !== null) {
+    const text = btM[1].replace(/<[^>]+>/g, '').trim().toLowerCase();
+    if (text.length > 2) buttonTexts.push(text);
+  }
+  const uniqueTexts = new Set(buttonTexts);
+  if (buttonTexts.length === 0 || uniqueTexts.size === buttonTexts.length) {
+    score += 2;
+  } else {
+    score += 1;
+    issues.push({ category: 'cta', severity: 'minor', message: `${buttonTexts.length - uniqueTexts.size} CTA button(s) have duplicate text — each CTA must have a unique, action-specific label` });
+  }
+
+  const vaguePattern = />\s*(get started|learn more|click here|submit|sign up)\s*</gi;
+  const vagueCTAs = code.match(vaguePattern) ?? [];
+  if (vagueCTAs.length === 0) {
+    score += 2;
+  } else {
+    score += 1;
+    issues.push({ category: 'cta', severity: 'major', message: `${vagueCTAs.length} generic CTA label(s) detected (e.g. "Get Started", "Learn More") — replace with specific action labels like "Start free trial →" or "Book a table"` });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+function scoreAccessibility(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  const rawButtons = code.match(/<button[\s>]/gi) ?? [];
+  const typedButtons = code.match(/<button[^>]*type=["']button["']/gi) ?? [];
+  const missingType = rawButtons.length - typedButtons.length;
+  if (missingType === 0) {
+    score += 3;
+  } else {
+    score += Math.max(0, 3 - missingType);
+    issues.push({ category: 'accessibility', severity: 'major', message: `${missingType} <button> element(s) missing type="button" — add type="button" to all raw <button> tags to prevent accidental form submission` });
+  }
+
+  const focusVisibleCount = (code.match(/focus-visible:ring/g) ?? []).length;
+  const interactiveCount = (code.match(/<(?:button|Button|a\s)/gi) ?? []).length;
+  if (focusVisibleCount >= Math.max(1, Math.floor(interactiveCount * 0.4))) {
+    score += 3;
+  } else if (focusVisibleCount > 0) {
+    score += 2;
+    issues.push({ category: 'accessibility', severity: 'minor', message: `focus-visible:ring present on some elements but not all — add "focus-visible:outline-none focus-visible:ring-2" to every interactive button and link` });
+  } else {
+    issues.push({ category: 'accessibility', severity: 'critical', message: 'No focus-visible:ring classes found anywhere — all interactive elements need keyboard focus indicators for WCAG 2.1 AA compliance' });
+  }
+
+  if (/aria-label=["'][^"']+["']/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'accessibility', severity: 'major', message: 'No aria-label attributes found — add aria-label="Main navigation" to <nav>, aria-label to icon-only buttons, and role="region" to major sections' });
+  }
+
+  const lowOpacity = code.match(/text-white\/(25|30|35|45)\b/g) ?? [];
+  if (lowOpacity.length === 0) {
+    score += 2;
+  } else {
+    issues.push({ category: 'accessibility', severity: 'major', message: `${lowOpacity.length} instance(s) of inaccessibly low text opacity detected (${[...new Set(lowOpacity)].join(', ')}) — minimum is text-white/60 for body text, text-white/70 for subheadings` });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+function scoreShadcn(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  if (/<Button[\s>]/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'shadcn', severity: 'critical', message: 'No <Button> shadcn component found — replace all raw <button> elements with <Button> (global, no import needed)' });
+  }
+
+  if (/<Card[\s>]/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'shadcn', severity: 'major', message: 'No <Card> shadcn component found — use <Card><CardHeader><CardTitle>...</CardTitle></CardHeader><CardContent>...</CardContent></Card> for card layouts' });
+  }
+
+  if (/<Badge[\s>]/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'shadcn', severity: 'major', message: 'No <Badge> shadcn component found — use <Badge> for status indicators, labels, category tags, and the hero badge' });
+  }
+
+  const advanced = [
+    { re: /<Avatar[\s>]/, name: 'Avatar' },
+    { re: /<Input[\s>]/, name: 'Input' },
+    { re: /<Accordion[\s>]/, name: 'Accordion' },
+    { re: /<Tabs[\s>]/, name: 'Tabs' },
+  ];
+  let advCount = 0;
+  for (const { re } of advanced) if (re.test(code)) advCount++;
+  score += Math.min(4, advCount);
+  if (advCount === 0) {
+    issues.push({ category: 'shadcn', severity: 'minor', message: 'No advanced shadcn components used (Avatar, Input, Accordion, Tabs) — add Avatar for testimonial photos, Accordion for FAQ, Tabs for multi-view pricing' });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+function scoreConsistency(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  if (!/lorem ipsum/i.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'consistency', severity: 'critical', message: 'Lorem ipsum placeholder text detected — replace every instance with real, industry-specific content relevant to the business' });
+  }
+
+  if (!/acme corp|your company|company name|john doe|jane smith|example inc/i.test(code)) {
+    score += 2;
+  } else {
+    const m = code.match(/acme corp|your company|company name|john doe|jane smith|example inc/i);
+    issues.push({ category: 'consistency', severity: 'major', message: `Generic placeholder name detected: "${m?.[0]}" — use the actual business name and realistic person names (e.g. "Sarah Chen, CTO at TechFlow")` });
+  }
+
+  const radii = ['rounded-none', 'rounded-sm', 'rounded-md', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full'];
+  const usedRadii = radii.filter(r => new RegExp(`\\b${r}\\b`).test(code));
+  if (usedRadii.length <= 2) {
+    score += 2;
+  } else if (usedRadii.length <= 3) {
+    score += 1;
+    issues.push({ category: 'consistency', severity: 'minor', message: `${usedRadii.length} border-radius values in use (${usedRadii.join(', ')}) — standardize to 1–2 radius sizes throughout for design consistency` });
+  } else {
+    issues.push({ category: 'consistency', severity: 'major', message: `${usedRadii.length} conflicting border-radius values (${usedRadii.join(', ')}) — pick one radius size (e.g. rounded-xl) and apply it consistently to all cards and buttons` });
+  }
+
+  const gradFromColors = code.match(/from-(\w+)-\d+/g) ?? [];
+  const colorFamilies = new Set(gradFromColors.map(m => m.split('-')[1]).filter(Boolean));
+  if (colorFamilies.size <= 1) {
+    score += 2;
+  } else if (colorFamilies.size <= 2) {
+    score += 1;
+    issues.push({ category: 'consistency', severity: 'minor', message: `${colorFamilies.size} gradient color families detected — feature icons should use a single consistent accent color, not a multi-color rainbow per card` });
+  } else {
+    issues.push({ category: 'consistency', severity: 'major', message: `${colorFamilies.size} different gradient color families used (${[...colorFamilies].slice(0, 4).join(', ')}) — collapse to a single accent color from the design DNA` });
+  }
+
+  if (!/text-white\/(25|30|35|45)\b/.test(code)) {
+    score += 2;
+  } else {
+    const instances = code.match(/text-white\/(25|30|35|45)\b/g) ?? [];
+    issues.push({ category: 'consistency', severity: 'major', message: `${instances.length} low-opacity text class(es) detected — replace text-white/${instances[0]?.split('/')[1]} with text-white/60 minimum` });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+const WEIGHTS = { hero: 0.25, layout: 0.20, cta: 0.15, accessibility: 0.20, shadcn: 0.10, consistency: 0.10 };
+
+export function evaluateDesign(input: EvaluationInput): EvaluationResult {
+  const { code, sectionOrder } = input;
+
+  const hero = scoreHero(code, sectionOrder);
+  const layout = scoreLayout(code, sectionOrder);
+  const cta = scoreCTA(code);
+  const accessibility = scoreAccessibility(code);
+  const shadcn = scoreShadcn(code);
+  const consistency = scoreConsistency(code);
+
+  const overallScore =
+    Math.round(
+      (hero.score * WEIGHTS.hero +
+        layout.score * WEIGHTS.layout +
+        cta.score * WEIGHTS.cta +
+        accessibility.score * WEIGHTS.accessibility +
+        shadcn.score * WEIGHTS.shadcn +
+        consistency.score * WEIGHTS.consistency) * 10
+    ) / 10;
+
+  const allIssues = [
+    ...hero.issues,
+    ...layout.issues,
+    ...cta.issues,
+    ...accessibility.issues,
+    ...shadcn.issues,
+    ...consistency.issues,
+  ].sort((a, b) => {
+    const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
+    return sev[a.severity] - sev[b.severity];
+  });
+
+  return {
+    overallScore,
+    heroScore: hero.score,
+    layoutScore: layout.score,
+    ctaScore: cta.score,
+    accessibilityScore: accessibility.score,
+    shadcnScore: shadcn.score,
+    consistencyScore: consistency.score,
+    issues: allIssues,
+  };
+}

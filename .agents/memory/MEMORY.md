@@ -37,4 +37,5 @@
 - [VoxAI V7.1.0 Quality Benchmark](voxai-v710-quality-benchmark.md) — 10 audit docs; measured 7.2/10 overall; template-level a11y 3.2/10; shadcn 0% template; DNA variety 9.5/10 leads Lovable/Bolt/v0.
 - [VoxAI V7.1.1 Template Hardening](voxai-v711-template-hardening.md) — 170+ targeted changes; score 7.2→8.1/10; 80 opacity, 62 type=button, 4 rainbow→single, 19 focus-visible, 5 body-text fixes; 487 tests pass.
 - [VoxAI V7.1.3 Prompt Intelligence](voxai-v713-prompt-intelligence.md) — PLANNER(6-10 sections, HARD PLANNING RULES, mandatory section enforcement), DESIGN(rules 11-13: alternation/hierarchy/focal-point), FRONTEND(rules 24-43: hero requirements/layout diversity/anti-generic/CTA intelligence), CODEFIX(section 5: anti-generic preservation); 487 tests pass.
+- [VoxAI V7.1.4 Design Evaluator](voxai-v714-design-evaluator.md) — pure scoring engine (6 dims, 0-10), 2-pass LLM repair loop (threshold 8.0), 4 SSE events, evaluatorMetrics in runtime.evaluator; 504 tests pass.
 - [VoxAI V7.1.2 Shadcn Migration](voxai-v712-shadcn-migration.md) — 24 global stubs; std registry 100% migrated; Accordion/Tabs via IIFE context; TCard bug fix; score 8.1→8.9/10.

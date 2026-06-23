@@ -4,6 +4,7 @@ import { runPlannerStep } from "./plannerStep.js";
 import { runArchitectureStep } from "./architectureStep.js";
 import { runFrontendStep } from "./frontendStep.js";
 import { runRepairStep } from "./repairStep.js";
+import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -47,8 +48,12 @@ export async function runBuildPipeline(
       runRepairStep(frontend, keys, res)
     );
 
+    const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
+      runDesignEvaluatorStep(repairedFrontend, keys, res)
+    );
+
     const backend = await withAgentMetrics("Scaffold", () =>
-      runBackendStep(architecture, repairedFrontend, keys, res)
+      runBackendStep(architecture, evaluatedFrontend, keys, res)
     );
 
     const runtimeResult = await withAgentMetrics("RuntimeValidation", () =>
@@ -65,7 +70,7 @@ export async function runBuildPipeline(
 
     sse(res, {
       type: "done",
-      code: repairedFrontend.fixedCode,
+      code: evaluatedFrontend.fixedCode,
       plan: cleanPlan,
       blueprint,
       projectBlueprint: architecture.projectBlueprint,
