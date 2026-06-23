@@ -1,9 +1,10 @@
-// ── V7.1.8 Design RAG — Retrieval Engine ─────────────────────────────────────
-// Quality-aware, DNA-aware ranked retrieval of design references.
+// ── V7.1.9 Design RAG — Retrieval Engine ─────────────────────────────────────
+// Quality-aware, DNA-aware, self-learning ranked retrieval of design references.
 
 import { DESIGN_CORPUS, type DesignReference, type DesignCategory, type DesignStyle } from "./designCorpus.js";
 import { getQualityScore, isComponentDeprecated } from "../quality/componentMetrics.js";
 import { recordDesignRetrieval } from "../telemetry/qualityMetrics.js";
+import { getReferenceQualityScore, recordReferenceUsages } from "./referenceMetrics.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ export interface ScoredReference extends DesignReference {
     qualityBoost: number;
     deprecationPenalty: number;
     baseQuality: number;
+    referenceQuality: number; // V7.1.9 learnt score contribution
   };
 }
 
@@ -119,15 +121,17 @@ function getDominantBrand(dna: Record<string, number>): string | null {
 
 // ── Scoring algorithm ─────────────────────────────────────────────────────────
 
-const INDUSTRY_MATCH_WEIGHT = 3;
-const STYLE_MATCH_WEIGHT    = 5;
-const DNA_MATCH_WEIGHT      = 4;
-const KEYWORD_MATCH_WEIGHT  = 2;
-const MAX_KEYWORD_BONUS     = 6;
-const QUALITY_BASE_SCALE    = 0.5; // qualityHint 0–10 → 0–5 points
-const QUALITY_LIVE_BOOST    = 2;   // if live metrics score > 8
-const CATEGORY_BONUS        = 6;   // category matches a requested section
-const DEPRECATION_PENALTY   = -10;
+const INDUSTRY_MATCH_WEIGHT       = 3;
+const STYLE_MATCH_WEIGHT          = 5;
+const DNA_MATCH_WEIGHT            = 4;
+const KEYWORD_MATCH_WEIGHT        = 2;
+const MAX_KEYWORD_BONUS           = 6;
+const QUALITY_BASE_SCALE          = 0.5; // qualityHint 0–10 → 0–5 points
+const QUALITY_LIVE_BOOST          = 2;   // if live metrics score > 8
+const CATEGORY_BONUS              = 6;   // category matches a requested section
+const DEPRECATION_PENALTY         = -10;
+// V7.1.9: learnt reference quality (0–10) → max +2.5 pts; DNA match dominates at 4–9 pts
+const REFERENCE_QUALITY_WEIGHT    = 0.25;
 
 function scoreReference(
   ref: DesignReference,
@@ -141,6 +145,7 @@ function scoreReference(
     qualityBoost: 0,
     deprecationPenalty: 0,
     baseQuality: 0,
+    referenceQuality: 0, // V7.1.9 learnt score
   };
 
   // Industry match
@@ -194,6 +199,10 @@ function scoreReference(
     breakdown.deprecationPenalty = DEPRECATION_PENALTY;
   }
 
+  // V7.1.9: learnt reference quality score influences ranking (max +2.5 pts)
+  // DNA+Style match yields 4–9 pts; quality can never flip a bad DNA match to a win.
+  breakdown.referenceQuality = getReferenceQualityScore(ref.id) * REFERENCE_QUALITY_WEIGHT;
+
   const retrievalScore =
     breakdown.industryMatch +
     breakdown.styleMatch +
@@ -202,7 +211,8 @@ function scoreReference(
     catBonus +
     breakdown.baseQuality +
     breakdown.qualityBoost +
-    breakdown.deprecationPenalty;
+    breakdown.deprecationPenalty +
+    breakdown.referenceQuality;
 
   return { ...ref, retrievalScore, scoreBreakdown: breakdown };
 }
@@ -248,6 +258,17 @@ export function retrieveDesignReferences(input: RetrievalInput): RetrievalResult
     categories: result.topCategories,
     averageQuality: result.averageQuality,
   });
+
+  // V7.1.9: record usage for self-learning ranking
+  if (top.length > 0) {
+    recordReferenceUsages(
+      top.map(r => ({
+        id: r.id,
+        category: r.category,
+        dna: r.style[0] ?? 'unknown',
+      }))
+    );
+  }
 
   return result;
 }

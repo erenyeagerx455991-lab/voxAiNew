@@ -10,6 +10,7 @@ import { getBudgetUsage } from "../cost/tokenBudget.js";
 import { getAllUserStats } from "../limits/userLimits.js";
 import { getQualityMetrics, getRetrievalMetrics } from "../telemetry/qualityMetrics.js";
 import { getComponentQualityMetrics } from "../quality/componentMetrics.js";
+import { getRagLeaderboardMetrics } from "../design-rag/referenceMetrics.js";
 
 const router: Router = Router();
 
@@ -60,6 +61,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     quality: getQualityMetrics(),
     componentQuality: getComponentQualityMetrics(),
     retrieval: getRetrievalMetrics(),
+    designRag: getRagLeaderboardMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

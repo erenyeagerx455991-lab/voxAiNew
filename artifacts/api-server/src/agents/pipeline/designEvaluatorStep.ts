@@ -4,6 +4,7 @@ import { evaluateDesign } from "../designEvaluator/evaluator.js";
 import { runDesignRepair } from "../designEvaluator/repairAgent.js";
 import { recordEvaluatorScore } from "../../telemetry/evaluatorMetrics.js";
 import { recordComponentBuildResult } from "../../quality/componentMetrics.js";
+import { recordBuildOutcome } from "../../design-rag/referenceMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -167,6 +168,23 @@ export async function runDesignEvaluatorStep(
     repairCount,
     repairApplied,
   });
+
+  // V7.1.9: feed real build outcomes back into reference performance store
+  const referencesUsedIds = frontend.retrievalReferenceIds ?? [];
+  if (referencesUsedIds.length > 0) {
+    recordBuildOutcome(
+      referencesUsedIds,
+      initialScore,
+      evalResult.overallScore,
+      repairApplied,
+    );
+    log.info("REFERENCE_OUTCOME_RECORDED", {
+      referenceCount: referencesUsedIds.length,
+      scoreBeforeRepair: initialScore,
+      scoreAfterRepair: evalResult.overallScore,
+      repairApplied,
+    });
+  }
 
   // ── V7.1.6 Phase 2+6: Record per-component metrics from registry selection ──
   const registrySelection = frontend.registrySelection ?? {};
