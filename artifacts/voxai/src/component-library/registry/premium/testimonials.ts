@@ -14,7 +14,7 @@ export const premiumTestimonialsComponents: ComponentDef[] = [
     {name:'Lisa T.',role:'Growth Lead',q:'Our dev team now ships landing pages in 20 minutes, not 2 weeks.',c:'from-amber-500 to-orange-500'},
     {name:'James W.',role:'Product Manager',q:'The AI understands what I want even when I can\'t describe it perfectly.',c:'from-indigo-500 to-violet-500'},
   ];
-  const Card = ({r}) => (
+  const TCard = ({r}) => (
     <div className="shrink-0 w-72 bg-white/[0.04] border border-white/8 rounded-2xl p-6 mx-2">
       <div className="flex gap-0.5 mb-3">{[1,2,3,4,5].map(s => <span key={s} className="text-amber-400 text-xs">★</span>)}</div>
       <p className="text-white/70 text-sm leading-relaxed mb-4">"{r.q}"</p>
@@ -32,10 +32,10 @@ export const premiumTestimonialsComponents: ComponentDef[] = [
       </div>
       <div className="relative">
         <div className="flex" style={{animation:'scroll-left 30s linear infinite'}}>
-          {[...reviews,...reviews].map((r,i) => <Card key={i} r={r} />)}
+          {[...reviews,...reviews].map((r,i) => <TCard key={i} r={r} />)}
         </div>
         <div className="flex mt-4" style={{animation:'scroll-right 25s linear infinite'}}>
-          {[...reviews.slice(3),...reviews.slice(0,3),...reviews].map((r,i) => <Card key={i} r={r} />)}
+          {[...reviews.slice(3),...reviews.slice(0,3),...reviews].map((r,i) => <TCard key={i} r={r} />)}
         </div>
       </div>
       <style dangerouslySetInnerHTML={{__html:'@keyframes scroll-left{from{transform:translateX(0)}to{transform:translateX(-50%)}}@keyframes scroll-right{from{transform:translateX(-50%)}to{transform:translateX(0)}}'}} />

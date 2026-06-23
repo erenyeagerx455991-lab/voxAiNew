@@ -36,3 +36,4 @@
 - [VoxAI V7.0.9 Output Quality Upgrade](voxai-v709-quality-upgrade.md) — CODEFIX/DESIGN_SYSTEM/buildCodeSystem() upgraded; 5 registry templates fixed; qualityMetrics.ts + /telemetry/quality endpoint; 6.7→8.5+ score; 487 tests.
 - [VoxAI V7.1.0 Quality Benchmark](voxai-v710-quality-benchmark.md) — 10 audit docs; measured 7.2/10 overall; template-level a11y 3.2/10; shadcn 0% template; DNA variety 9.5/10 leads Lovable/Bolt/v0.
 - [VoxAI V7.1.1 Template Hardening](voxai-v711-template-hardening.md) — 170+ targeted changes; score 7.2→8.1/10; 80 opacity, 62 type=button, 4 rainbow→single, 19 focus-visible, 5 body-text fixes; 487 tests pass.
+- [VoxAI V7.1.2 Shadcn Migration](voxai-v712-shadcn-migration.md) — 24 global stubs; std registry 100% migrated; Accordion/Tabs via IIFE context; TCard bug fix; score 8.1→8.9/10.

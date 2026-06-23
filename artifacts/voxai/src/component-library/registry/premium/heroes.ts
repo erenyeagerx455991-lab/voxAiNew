@@ -28,12 +28,12 @@ export const premiumHeroComponents: ComponentDef[] = [
           Describe your vision. NexoGen builds it. Deploy in seconds. No code required, but code quality guaranteed.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-16">
-          <button className="bg-white hover:bg-gray-100 text-black font-bold px-8 py-3.5 rounded-full text-sm transition-colors">
+          <Button className="bg-white hover:bg-gray-100 text-black font-bold px-8 py-3.5 rounded-full text-sm h-auto border-0">
             Start building free
-          </button>
-          <button className="text-white/40 text-sm font-medium hover:text-white/70 transition-colors flex items-center gap-1.5">
+          </Button>
+          <Button variant="ghost" className="text-white/40 text-sm font-medium hover:text-white/70 h-auto gap-1.5">
             Watch demo <span className="text-lg">›</span>
-          </button>
+          </Button>
         </div>
         <div className="flex items-center justify-center gap-6 flex-wrap">
           {['Stripe','Vercel','Linear','Notion','Figma'].map(b => <span key={b} className="text-white/15 font-semibold text-sm hover:text-white/30 transition-colors">{b}</span>)}
@@ -100,12 +100,12 @@ export const premiumHeroComponents: ComponentDef[] = [
           Millions of businesses use NexoGen to build, launch, and scale their web presence. Join them.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <button className="font-bold px-10 py-4 rounded-full text-base text-white transition-all" style={{background:'#635bff'}}>
+          <Button className="font-bold px-10 py-4 rounded-full text-base text-white h-auto border-0" style={{background:'#635bff'}}>
             Start building now
-          </button>
-          <button className="border-2 border-white/15 text-white font-semibold px-10 py-4 rounded-full hover:bg-white/5 transition-all">
+          </Button>
+          <Button variant="outline" className="border-2 border-white/15 text-white font-semibold px-10 py-4 rounded-full hover:bg-white/5 h-auto bg-transparent">
             Contact sales
-          </button>
+          </Button>
         </div>
         <div className="flex items-center justify-center gap-8 flex-wrap">
           {[['$0','Setup fee'],['99.99%','Uptime SLA'],['60s','Generation time'],['150+','Components']].map(([v,l]) => (
@@ -135,9 +135,9 @@ export const premiumHeroComponents: ComponentDef[] = [
       </div>
       <div className="relative z-10 text-center max-w-5xl w-full">
         <div className="inline-block mb-6">
-          <span className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full" style={{background:'rgba(255,107,53,0.15)',border:'1px solid rgba(255,107,53,0.3)',color:'#ff9a6c'}}>
+          <Badge className="text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full h-auto border" style={{background:'rgba(255,107,53,0.15)',borderColor:'rgba(255,107,53,0.3)',color:'#ff9a6c'}}>
             Introducing AI Website Builder
-          </span>
+          </Badge>
         </div>
         <h1 className="font-black text-white mb-8 leading-none" style={{fontSize:'clamp(3rem,9vw,7rem)',letterSpacing:'-0.05em'}}>
           Design at the
@@ -150,12 +150,12 @@ export const premiumHeroComponents: ComponentDef[] = [
           From blank canvas to live website in under a minute. The creative AI that doesn't compromise on quality.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="font-bold px-10 py-4 rounded-2xl text-base text-black transition-all hover:opacity-90" style={{background:'linear-gradient(135deg,#ff6b35,#f7c59f)'}}>
+          <Button className="font-bold px-10 py-4 rounded-2xl text-base text-black h-auto border-0 hover:opacity-90" style={{background:'linear-gradient(135deg,#ff6b35,#f7c59f)'}}>
             Start creating free
-          </button>
-          <button className="border border-white/15 text-white font-medium px-10 py-4 rounded-2xl hover:bg-white/5 transition-all">
+          </Button>
+          <Button variant="outline" className="border border-white/15 text-white font-medium px-10 py-4 rounded-2xl hover:bg-white/5 h-auto bg-transparent">
             Browse gallery →
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -198,9 +198,9 @@ export const premiumHeroComponents: ComponentDef[] = [
             </div>
           ))}
         </div>
-        <button className="bg-white text-black font-bold px-8 py-3.5 rounded-full text-sm hover:bg-gray-100 transition-colors">
+        <Button className="bg-white text-black font-bold px-8 py-3.5 rounded-full text-sm hover:bg-gray-100 h-auto border-0">
           Try it now — it's free
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -216,9 +216,9 @@ export const premiumHeroComponents: ComponentDef[] = [
     <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center relative overflow-hidden px-6 py-20">
       <div className="absolute inset-0 opacity-30" style={{backgroundImage:'linear-gradient(rgba(59,130,246,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.05) 1px, transparent 1px)',backgroundSize:'40px 40px'}} />
       <div className="relative z-10 text-center max-w-5xl w-full">
-        <div className="inline-flex items-center gap-2 text-xs font-medium text-blue-300/60 bg-blue-500/10 border border-blue-500/20 px-4 py-1.5 rounded-full mb-10">
+        <Badge className="mb-10 bg-blue-500/10 border border-blue-500/20 text-blue-300/60 text-xs font-medium px-4 py-1.5 rounded-full h-auto">
           AI that understands design
-        </div>
+        </Badge>
         <h1 className="font-black text-white mb-6 leading-none" style={{fontSize:'clamp(3rem,8vw,6rem)',letterSpacing:'-0.05em'}}>
           The AI that writes<br />
           <span style={{backgroundImage:'linear-gradient(135deg,#3b82f6,#60a5fa)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>beautiful websites</span>
@@ -242,9 +242,9 @@ export const premiumHeroComponents: ComponentDef[] = [
             <div className="text-blue-400/70">{'}'}</div>
           </div>
         </div>
-        <button className="bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold px-8 py-4 rounded-xl hover:opacity-90 transition-opacity">
+        <Button className="bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold px-8 py-4 rounded-xl hover:opacity-90 h-auto border-0">
           Try NexoGen AI free →
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -305,9 +305,9 @@ export const premiumHeroComponents: ComponentDef[] = [
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center relative overflow-hidden px-6 py-20">
       <div className="absolute inset-0" style={{backgroundImage:'radial-gradient(ellipse at 50% 20%, rgba(22,163,74,0.07) 0%, transparent 50%)'}} />
       <div className="relative z-10 text-center max-w-5xl w-full">
-        <div className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300/70 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full mb-10">
+        <Badge className="mb-10 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300/70 text-xs font-medium px-4 py-1.5 rounded-full h-auto gap-1">
           <span className="text-emerald-400">↑</span> Average 3.5% cashback earned by customers
-        </div>
+        </Badge>
         <h1 className="font-black text-white mb-6 leading-none" style={{fontSize:'clamp(3rem,8vw,6rem)',letterSpacing:'-0.05em'}}>
           Build smarter.<br />
           <span style={{backgroundImage:'linear-gradient(135deg,#4ade80,#22d3ee)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
@@ -316,12 +316,12 @@ export const premiumHeroComponents: ComponentDef[] = [
         </h1>
         <p className="text-white/40 text-xl mb-12 max-w-xl mx-auto leading-relaxed">The AI website builder that helps businesses move faster and look better. No dev team needed.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16">
-          <button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-4 rounded-full text-sm transition-colors">
+          <Button className="bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-8 py-4 rounded-full text-sm h-auto border-0">
             Request early access
-          </button>
-          <button className="border border-white/10 text-white/50 font-medium px-8 py-4 rounded-full text-sm hover:border-white/20 hover:text-white/70 transition-all">
+          </Button>
+          <Button variant="outline" className="border border-white/10 text-white/50 font-medium px-8 py-4 rounded-full text-sm hover:border-white/20 hover:text-white/70 h-auto bg-transparent">
             See how it works →
-          </button>
+          </Button>
         </div>
         <div className="inline-flex items-center gap-6 bg-white/[0.03] border border-white/8 rounded-2xl px-8 py-5 flex-wrap justify-center">
           {[['50K+','Active users'],['$12M','Websites deployed'],['4.9★','Rating'],['< 60s','Generation']].map(([v,l]) => <div key={l} className="text-center px-4"><div className="text-xl font-black text-white">{v}</div><div className="text-white/25 text-xs mt-0.5">{l}</div></div>)}
@@ -350,12 +350,12 @@ export const premiumHeroComponents: ComponentDef[] = [
           The connected workspace where better, faster websites happen. AI-powered. Design-obsessed.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12">
-          <button className="bg-black hover:bg-gray-900 text-white font-bold px-8 py-3.5 rounded-lg text-sm transition-colors">
+          <Button className="bg-black hover:bg-gray-900 text-white font-bold px-8 py-3.5 rounded-lg text-sm h-auto border border-gray-800">
             Get NexoGen free →
-          </button>
-          <button className="text-gray-400 text-sm font-medium hover:text-gray-700 transition-colors">
+          </Button>
+          <Button variant="ghost" className="text-gray-400 text-sm font-medium hover:text-gray-700 h-auto">
             Request a demo
-          </button>
+          </Button>
         </div>
         <div className="border border-gray-100 rounded-2xl p-6 bg-gray-50/50">
           <div className="flex items-center gap-3 mb-4">

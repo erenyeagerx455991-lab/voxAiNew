@@ -1,0 +1,302 @@
+V7.1.2 — Premium Component System Migration (Shadcn-First)
+
+Context
+
+V7.1.1 complete.
+
+Verified state:
+
+- Overall quality score: 8.1/10
+- Accessibility significantly improved
+- Design DNA system strong
+- Component routing strong
+- Queue, telemetry, limits mature
+- 487/487 tests passing
+
+Largest remaining measured gap:
+
+Template-level shadcn adoption is effectively 0%.
+
+Competitor analysis (Lovable, Bolt, v0) shows:
+
+- Heavy shadcn usage
+- Consistent component behavior
+- Strong visual polish
+- Higher component reuse
+- Better UI consistency
+
+Goal
+
+Transform VoxAI templates from raw Tailwind-first components into premium shadcn-first components.
+
+Do NOT:
+
+- Change queue
+- Change telemetry
+- Change limits
+- Change budgets
+- Change RAG
+- Change agent flow
+- Change prompts in this release
+
+Only modernize component templates.
+
+PHASE 1 — Component Inventory
+
+Create:
+
+artifacts/api-server/shadcnMigrationBaseline.md
+
+Audit all 75 templates.
+
+Measure:
+
+- raw div usage
+- custom button usage
+- custom card usage
+- existing shadcn usage
+
+Produce exact counts.
+
+No estimates.
+
+PHASE 2 — Wave 1 Migration (Highest ROI)
+
+Target templates:
+
+- hero-saas-v1
+- hero-dashboard-v1
+- pricing-modern-v1
+- faq-modern-v1
+- testimonials-grid-v1
+- navbar-modern-v1
+
+Replace custom UI with:
+
+- Button
+- Badge
+- Card
+- Accordion
+- Separator
+- Avatar
+
+Preserve:
+
+- layout
+- spacing
+- visual identity
+- Design DNA
+
+Only swap implementation layer.
+
+PHASE 3 — Hero Modernization
+
+Audit every hero.
+
+Requirements:
+
+- Premium CTA hierarchy
+- Badge above headline
+- Better visual rhythm
+- Consistent spacing
+- Consistent button treatment
+
+Hero score target:
+
+8.8+ average
+
+Create:
+
+heroModernizationAudit.md
+
+PHASE 4 — Pricing System Upgrade
+
+Convert pricing templates to:
+
+- Card
+- Badge
+- Separator
+- Button
+
+Requirements:
+
+- Better feature hierarchy
+- Cleaner comparison structure
+- Consistent highlight treatment
+
+Create:
+
+pricingAudit.md
+
+PHASE 5 — FAQ Modernization
+
+Replace custom FAQ implementations with:
+
+Accordion
+
+Requirements:
+
+- Accessibility preserved
+- Smooth interaction
+- Reduced custom code
+
+Create:
+
+faqAudit.md
+
+PHASE 6 — Testimonials Modernization
+
+Use:
+
+- Card
+- Avatar
+
+Requirements:
+
+- Stronger trust signals
+- Cleaner spacing
+- Better visual consistency
+
+Create:
+
+testimonialAudit.md
+
+PHASE 7 — Dashboard Component Upgrade
+
+Target:
+
+- dashboard-vercel-v1
+- dashboard-kanban-v1
+- analytics templates
+
+Adopt:
+
+- Tabs
+- Progress
+- Skeleton
+- Badge
+
+Create:
+
+dashboardAudit.md
+
+PHASE 8 — Quality Measurement
+
+Measure:
+
+Before vs After
+
+- Component consistency
+- Reusability
+- Shadcn adoption
+- Visual polish
+
+Create:
+
+componentModernizationAudit.md
+
+PHASE 9 — Benchmark Re-Run
+
+Generate benchmark builds:
+
+- SaaS
+- AI Startup
+- Fintech
+- Dashboard
+- Agency
+
+Compare:
+
+V7.1.1 vs V7.1.2
+
+Measure:
+
+- Hero quality
+- Component quality
+- Visual consistency
+- Design score
+
+Create:
+
+benchmarkDelta.md
+
+PHASE 10 — Final Audit
+
+Create:
+
+v7.1.2Audit.md
+
+Must answer:
+
+Shadcn Adoption
+
+Before:
+?
+
+After:
+?
+
+Hero Quality
+
+Before:
+?
+
+After:
+?
+
+Component Consistency
+
+Before:
+?
+
+After:
+?
+
+Overall Quality
+
+Before:
+8.1
+
+After:
+?
+
+Top 5 improvements
+
+Top 5 remaining weaknesses
+
+Success Criteria
+
+Wave 1 templates migrated:
+YES
+
+Hero modernization complete:
+YES
+
+Pricing modernization complete:
+YES
+
+FAQ modernization complete:
+YES
+
+Dashboard modernization complete:
+YES
+
+Accessibility preserved:
+YES
+
+All tests pass:
+YES
+
+No queue changes:
+YES
+
+No telemetry changes:
+YES
+
+No infrastructure changes:
+YES
+
+Only measured results.
+No assumptions.
+No fabricated scores.
+Evidence-based audit only.

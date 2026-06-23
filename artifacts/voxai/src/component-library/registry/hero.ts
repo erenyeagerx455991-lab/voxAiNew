@@ -19,10 +19,10 @@ export const heroComponents: ComponentDef[] = [
   ];
   return (
     <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-gradient-to-br from-[#0a0a0a] via-[#1a1a2e] to-[#0d0d1a] pt-20">
-      <div className="inline-flex items-center gap-2 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full mb-8">
-        <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+      <Badge className="mb-8 border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-semibold px-4 py-2 rounded-full gap-2">
+        <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse inline-block" />
         Powered by Advanced AI
-      </div>
+      </Badge>
       <h1 className="text-5xl md:text-7xl font-black leading-none tracking-tight mb-6 max-w-5xl">
         <span className="bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
           Build Smarter
@@ -36,12 +36,12 @@ export const heroComponents: ComponentDef[] = [
         The all-in-one platform that turns your ideas into production-ready products. No code required.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 mb-16">
-        <button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base">
+        <Button className="bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base h-auto">
           Start for free →
-        </button>
-        <button className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all text-base">
+        </Button>
+        <Button variant="outline" className="border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all text-base h-auto bg-transparent">
           Watch demo
-        </button>
+        </Button>
       </div>
       <div className="flex items-center gap-12">
         {stats.map(s => (
@@ -78,10 +78,10 @@ export const heroComponents: ComponentDef[] = [
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-600/20 rounded-full blur-3xl" />
       <div className="relative z-10">
-        <div className="inline-flex items-center gap-2 border border-white/10 bg-white/5 text-gray-300 text-xs font-medium px-4 py-2 rounded-full mb-8 backdrop-blur-sm">
+        <Badge className="mb-8 border border-white/10 bg-white/5 text-gray-300 text-xs font-medium px-4 py-2 rounded-full gap-2 h-auto">
           <span className="text-emerald-400">◆</span>
           AI-Native Website Builder — Try it free
-        </div>
+        </Badge>
         <h1 className="text-5xl md:text-7xl font-black leading-tight mb-6 max-w-4xl">
           <span className="text-white">Generate </span>
           <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-500 bg-clip-text text-transparent">
@@ -95,18 +95,18 @@ export const heroComponents: ComponentDef[] = [
         </p>
         <div className="flex flex-wrap justify-center gap-2 mb-10">
           {chips.map(c => (
-            <span key={c} className="bg-white/5 border border-white/10 text-gray-300 text-xs font-medium px-4 py-2 rounded-full">
+            <Badge key={c} variant="secondary" className="bg-white/5 border border-white/10 text-gray-300 text-xs font-medium px-4 py-2 rounded-full h-auto">
               {c}
-            </span>
+            </Badge>
           ))}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all text-base">
+          <Button className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all text-base h-auto">
             Build my website →
-          </button>
-          <button className="border border-white/15 text-gray-300 font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all text-base">
+          </Button>
+          <Button variant="outline" className="border-white/15 text-gray-300 font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all text-base h-auto bg-transparent">
             See examples
-          </button>
+          </Button>
         </div>
       </div>
     </section>
@@ -126,7 +126,9 @@ export const heroComponents: ComponentDef[] = [
     standaloneCode: `function HeroMinimalV3() {
   return (
     <section className="min-h-screen flex flex-col items-center justify-center text-center px-6 bg-gradient-to-b from-gray-50 to-white pt-16">
-      <span className="text-violet-600 text-sm font-semibold uppercase tracking-widest mb-4">Design Studio</span>
+      <Badge className="mb-4 bg-violet-50 text-violet-600 border border-violet-200 text-sm font-semibold uppercase tracking-widest px-4 py-1.5 rounded-full h-auto">
+        Design Studio
+      </Badge>
       <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight mb-6 max-w-3xl">
         We craft digital experiences that
         <span className="bg-gradient-to-r from-violet-600 to-blue-600 bg-clip-text text-transparent"> matter</span>
@@ -135,17 +137,19 @@ export const heroComponents: ComponentDef[] = [
         Award-winning design studio specializing in brand identity, web design, and digital strategy for forward-thinking companies.
       </p>
       <div className="flex flex-col sm:flex-row gap-4 mb-16">
-        <button className="bg-gray-900 hover:bg-gray-700 text-white font-semibold px-8 py-4 rounded-full transition-colors text-base">
+        <Button className="bg-gray-900 hover:bg-gray-700 text-white font-semibold px-8 py-4 rounded-full transition-colors text-base h-auto">
           View our work →
-        </button>
-        <button className="border border-gray-300 text-gray-700 font-semibold px-8 py-4 rounded-full hover:border-gray-400 transition-all text-base">
+        </Button>
+        <Button variant="outline" className="border-gray-300 text-gray-700 font-semibold px-8 py-4 rounded-full hover:border-gray-400 transition-all text-base h-auto">
           Get in touch
-        </button>
+        </Button>
       </div>
       <div className="flex items-center gap-3 text-sm text-gray-400">
         <div className="flex -space-x-2">
           {['bg-violet-400','bg-blue-400','bg-emerald-400','bg-pink-400'].map((c,i) => (
-            <div key={i} className={\`w-8 h-8 rounded-full \${c} border-2 border-white\`} />
+            <Avatar key={i} className={\`w-8 h-8 border-2 border-white \${c}\`}>
+              <AvatarFallback className={c} />
+            </Avatar>
           ))}
         </div>
         <span>Trusted by 200+ clients worldwide</span>
@@ -169,9 +173,9 @@ export const heroComponents: ComponentDef[] = [
     <section className="min-h-screen flex items-center bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0a0a1e] px-6 pt-20">
       <div className="max-w-7xl mx-auto w-full grid md:grid-cols-2 gap-12 items-center">
         <div>
-          <div className="inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold px-4 py-2 rounded-full mb-6">
+          <Badge className="mb-6 bg-orange-500/10 border border-orange-500/30 text-orange-400 text-xs font-bold px-4 py-2 rounded-full h-auto">
             LIMITED OFFER — 40% OFF
-          </div>
+          </Badge>
           <h1 className="text-5xl md:text-6xl font-black text-white leading-tight mb-4">
             Premium Quality<br />
             <span className="bg-gradient-to-r from-orange-400 to-pink-500 bg-clip-text text-transparent">
@@ -182,18 +186,18 @@ export const heroComponents: ComponentDef[] = [
             Shop the latest collection with free shipping, easy returns, and 24/7 support.
           </p>
           <div className="flex gap-3 mb-8">
-            <button className="bg-gradient-to-r from-orange-500 to-pink-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all text-base">
+            <Button className="bg-gradient-to-r from-orange-500 to-pink-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all text-base h-auto">
               Shop Now →
-            </button>
-            <button className="border border-white/15 text-white font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all">
+            </Button>
+            <Button variant="outline" className="border-white/15 text-white font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all h-auto bg-transparent">
               Browse catalog
-            </button>
+            </Button>
           </div>
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <span>Free Shipping</span>
-            <span className="w-1 h-1 rounded-full bg-gray-600" />
+            <Separator className="w-1 h-1 rounded-full bg-gray-600 shrink-0" />
             <span>30-Day Returns</span>
-            <span className="w-1 h-1 rounded-full bg-gray-600" />
+            <Separator className="w-1 h-1 rounded-full bg-gray-600 shrink-0" />
             <span>Secure Payment</span>
           </div>
         </div>

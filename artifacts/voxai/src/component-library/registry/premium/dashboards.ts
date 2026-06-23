@@ -71,9 +71,11 @@ export const premiumDashboardComponents: ComponentDef[] = [
               <div className="text-white font-black text-2xl">Revenue</div>
               <div className="text-white/30 text-sm mt-1">$487,320 <span className="text-emerald-400 text-xs font-semibold ml-1">↑ +34.2%</span></div>
             </div>
-            <div className="flex gap-1 bg-white/5 border border-white/8 rounded-xl p-1">
-              {['weekly','monthly','yearly'].map(p => <button key={p} onClick={() => setPeriod(p)} className={"px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all " + (p===period?"bg-white text-black":"text-white/30 hover:text-white/60")}>{p}</button>)}
-            </div>
+            <Tabs defaultValue="monthly" className="inline-flex">
+              <TabsList className="bg-white/5 border border-white/8 rounded-xl p-1 h-auto">
+                {['weekly','monthly','yearly'].map(p => <TabsTrigger key={p} value={p} onClick={() => setPeriod(p)} className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize">{p}</TabsTrigger>)}
+              </TabsList>
+            </Tabs>
           </div>
           <div className="flex items-end gap-2 h-48 mb-4">
             {data.map((d,i) => (
@@ -157,7 +159,7 @@ export const premiumDashboardComponents: ComponentDef[] = [
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="font-black text-white text-2xl">Websites</div>
-          <button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 transition-opacity">+ New website</button>
+          <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-sm px-5 py-2.5 rounded-xl hover:opacity-90 h-auto border-0">+ New website</Button>
         </div>
         <div className="bg-white/[0.02] border border-white/8 rounded-3xl overflow-hidden">
           <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5">
@@ -182,14 +184,14 @@ export const premiumDashboardComponents: ComponentDef[] = [
                     <div className="text-white/25 text-xs mt-0.5">{s.domain}</div>
                   </td>
                   <td className="px-4 py-4 hidden md:table-cell">
-                    <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + s.badge}>{s.status}</span>
+                    <Badge className={"text-xs font-semibold px-2.5 py-1 rounded-full border h-auto " + s.badge}>{s.status}</Badge>
                   </td>
                   <td className="px-4 py-4 text-white/40 text-sm hidden md:table-cell">{s.views}</td>
                   <td className="px-4 py-4 text-white/25 text-xs hidden md:table-cell">{s.gen}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex gap-2 justify-end">
-                      <button className="text-white/30 hover:text-white text-xs border border-white/8 hover:border-white/20 px-2.5 py-1.5 rounded-lg transition-all">Edit</button>
-                      <button className="text-white/30 hover:text-white text-xs border border-white/8 hover:border-white/20 px-2.5 py-1.5 rounded-lg transition-all">View</button>
+                      <Button variant="outline" className="text-white/30 hover:text-white text-xs border border-white/8 hover:border-white/20 px-2.5 py-1.5 rounded-lg h-auto bg-transparent">Edit</Button>
+                      <Button variant="outline" className="text-white/30 hover:text-white text-xs border border-white/8 hover:border-white/20 px-2.5 py-1.5 rounded-lg h-auto bg-transparent">View</Button>
                     </div>
                   </td>
                 </tr>
@@ -326,7 +328,7 @@ export const premiumDashboardComponents: ComponentDef[] = [
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="font-black text-white text-2xl">Deployments</div>
-          <button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-sm px-5 py-2 rounded-xl hover:opacity-90 transition-opacity">Deploy now</button>
+          <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold text-sm px-5 py-2 rounded-xl hover:opacity-90 h-auto border-0">Deploy now</Button>
         </div>
         <div className="bg-[#0d0d14] border border-white/8 rounded-3xl overflow-hidden">
           {deploys.map((d,i) => (
@@ -340,7 +342,7 @@ export const premiumDashboardComponents: ComponentDef[] = [
               </div>
               <div className="flex items-center gap-3 flex-wrap shrink-0">
                 <div className="bg-white/5 border border-white/8 text-white/30 text-xs px-2 py-0.5 rounded font-mono">{d.branch}</div>
-                <span className={"text-xs font-semibold px-2.5 py-1 rounded-full border " + d.color}>{d.status}</span>
+                <Badge className={"text-xs font-semibold px-2.5 py-1 rounded-full border h-auto " + d.color}>{d.status}</Badge>
                 <div className="text-white/20 text-xs">{d.dur}</div>
                 <div className="text-white/20 text-xs">{d.time}</div>
               </div>

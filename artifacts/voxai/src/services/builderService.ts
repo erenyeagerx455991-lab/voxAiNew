@@ -602,6 +602,22 @@ export function buildPreviewHtml(code: string): string {
       window.AvatarImage = function(p) { return React.createElement('img',Object.assign({},p,{className:cx('aspect-square h-full w-full object-cover',p.className)})); };
       window.AvatarFallback = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('flex h-full w-full items-center justify-center rounded-full bg-white/10 text-sm font-medium',p.className)}),p.children); };
       window.Separator = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('h-px w-full bg-white/10',p.className)})); };
+      window.Skeleton = function(p) { return React.createElement('div',Object.assign({},p,{className:cx('animate-pulse rounded-md bg-white/10',p.className)})); };
+      window.Progress = function(p) { var v=Math.min(100,Math.max(0,p.value||0)); return React.createElement('div',Object.assign({},p,{className:cx('relative h-2 w-full overflow-hidden rounded-full bg-white/10',p.className)}),React.createElement('div',{className:'h-full bg-white rounded-full transition-all',style:{width:v+'%'}})); };
+      // Accordion
+      (function(){
+        var AccCtx=React.createContext({open:null,toggle:function(){}});
+        window.Accordion=function(p){var s=React.useState(p.defaultValue||null);var open=s[0],setOpen=s[1];var toggle=function(v){setOpen(function(c){return c===v?null:v;});};return React.createElement(AccCtx.Provider,{value:{open:open,toggle:toggle}},React.createElement('div',{className:cx(p.className||'')},p.children));};
+        window.AccordionItem=function(p){return React.createElement('div',{className:cx('border-b border-white/10',p.className)},React.createElement(AccCtx.Consumer,null,function(ctx){return React.Children.map(p.children,function(child){if(!React.isValidElement(child))return child;return React.cloneElement(child,{__v:p.value,__open:ctx.open===p.value,__toggle:ctx.toggle});});}));};
+        window.AccordionTrigger=function(p){return React.createElement('button',{type:'button',onClick:function(){if(p.__toggle)p.__toggle(p.__v);},className:cx('flex w-full items-center justify-between py-4 text-sm font-medium text-left transition-all',p.className)},p.children,React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',style:{transform:p.__open?'rotate(180deg)':'rotate(0deg)',transition:'transform 0.2s',flexShrink:0}},React.createElement('path',{d:'m6 9 6 6 6-6'})));};
+        window.AccordionContent=function(p){if(!p.__open)return null;return React.createElement('div',{className:cx('pb-4 pt-0 text-sm',p.className)},p.children);};
+        // Tabs
+        var TabsCtx=React.createContext({active:null,setActive:function(){}});
+        window.Tabs=function(p){var s=React.useState(p.defaultValue||null);var active=s[0],setActive=s[1];return React.createElement(TabsCtx.Provider,{value:{active:active,setActive:setActive}},React.createElement('div',{className:cx(p.className||'')},p.children));};
+        window.TabsList=function(p){return React.createElement('div',{className:cx('inline-flex h-10 items-center justify-center rounded-lg bg-white/5 p-1 gap-1',p.className)},p.children);};
+        window.TabsTrigger=function(p){return React.createElement(TabsCtx.Consumer,null,function(ctx){var isActive=ctx.active===p.value;return React.createElement('button',{type:'button',onClick:function(){ctx.setActive(p.value);},className:cx('inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all',isActive?'bg-white text-black shadow-sm':'text-white/60 hover:text-white/90',p.className)},p.children);});};
+        window.TabsContent=function(p){return React.createElement(TabsCtx.Consumer,null,function(ctx){if(ctx.active!==p.value)return null;return React.createElement('div',{className:cx('mt-2',p.className)},p.children);});};
+      })();
     })();
   </script>
   <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">

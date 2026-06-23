@@ -31,7 +31,7 @@ export const premiumPricingComponents: ComponentDef[] = [
               <ul className="space-y-2.5 mb-8 flex-1">
                 {p.features.map(f => <li key={f} className="flex items-start gap-2.5 text-white/50 text-sm"><span className={"mt-0.5 shrink-0 " + (p.highlight?"text-violet-400":"text-white/30")}>✓</span>{f}</li>)}
               </ul>
-              <button className={"w-full py-3.5 rounded-full text-sm font-bold transition-all " + (p.highlight?"bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90":"bg-white/8 text-white hover:bg-white/12 border border-white/10")}>{p.cta}</button>
+              <Button className={"w-full py-3.5 rounded-full text-sm font-bold h-auto " + (p.highlight?"bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0":"bg-white/8 text-white hover:bg-white/12 border border-white/10")}>{p.cta}</Button>
             </div>
           ))}
         </div>
@@ -84,9 +84,9 @@ export const premiumPricingComponents: ComponentDef[] = [
                 <ul className="space-y-2.5 mb-8 flex-1">
                   {p.features.map(f => <li key={f} className="flex items-center gap-2 text-white/45 text-sm"><span className="text-violet-400 text-xs shrink-0">✓</span>{f}</li>)}
                 </ul>
-                <button className={"w-full py-3.5 rounded-full text-sm font-bold " + (p.highlight?"bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 transition-opacity":"bg-white/8 border border-white/10 text-white hover:bg-white/12 transition-colors")}>
+                <Button className={"w-full py-3.5 rounded-full text-sm font-bold h-auto " + (p.highlight?"bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:opacity-90 border-0":"bg-white/8 border border-white/10 text-white hover:bg-white/12")}>
                   {price===0?'Get started free':'Start free trial'}
-                </button>
+                </Button>
               </div>
             );
           })}
@@ -112,7 +112,7 @@ export const premiumPricingComponents: ComponentDef[] = [
           <div className="border border-white/8 rounded-3xl p-10 bg-white/[0.02] hover:border-white/12 transition-all">
             <div className="flex items-start justify-between mb-6">
               <div><div className="text-white/40 text-xs uppercase tracking-widest font-bold mb-2">Free</div><div className="text-white font-black text-4xl">$0</div><div className="text-white/25 text-sm mt-1">Forever free</div></div>
-              <button className="border border-white/15 text-white/50 hover:text-white text-sm font-semibold px-6 py-2.5 rounded-full transition-all hover:border-white/25">Get started</button>
+              <Button variant="outline" className="border border-white/15 text-white/50 hover:text-white text-sm font-semibold px-6 py-2.5 rounded-full h-auto bg-transparent">Get started</Button>
             </div>
             <div className="w-full h-px bg-white/5 mb-6" />
             <div className="grid grid-cols-2 gap-2">
@@ -122,7 +122,7 @@ export const premiumPricingComponents: ComponentDef[] = [
           <div className="border border-violet-500/40 rounded-3xl p-10 bg-gradient-to-b from-violet-950/60 to-indigo-950/40">
             <div className="flex items-start justify-between mb-6">
               <div><div className="text-violet-300 text-xs uppercase tracking-widest font-bold mb-2">Pro</div><div className="text-white font-black text-4xl">$29<span className="text-white/25 text-base font-normal">/mo</span></div><div className="text-white/25 text-sm mt-1">Billed monthly</div></div>
-              <button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold px-6 py-2.5 rounded-full hover:opacity-90 transition-opacity text-sm">Start free trial</button>
+              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold px-6 py-2.5 rounded-full hover:opacity-90 text-sm h-auto border-0">Start free trial</Button>
             </div>
             <div className="w-full h-px bg-violet-500/15 mb-6" />
             <div className="grid grid-cols-2 gap-2">
