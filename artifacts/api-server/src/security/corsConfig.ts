@@ -12,13 +12,11 @@ const log = createLogger("CorsConfig");
 const DEV_ORIGINS: RegExp[] = [
   /^https?:\/\/localhost(:\d+)?$/,
   /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
-  // Replit preview domains: *.replit.app, *.repl.co, *.repl.run, *.replit.dev
-  /^https?:\/\/[a-zA-Z0-9-]+\.replit\.app$/,
-  /^https?:\/\/[a-zA-Z0-9-]+\.repl\.co$/,
-  /^https?:\/\/[a-zA-Z0-9-]+\.repl\.run$/,
-  /^https?:\/\/[a-zA-Z0-9-]+\.replit\.dev$/,
-  // Replit workspace proxy domains
-  /^https?:\/\/[a-zA-Z0-9-]+-[a-zA-Z0-9]+\.replit\.app$/,
+  // Replit preview domains — allow any depth of subdomains
+  /^https?:\/\/[a-zA-Z0-9.-]+\.replit\.app$/,
+  /^https?:\/\/[a-zA-Z0-9.-]+\.repl\.co$/,
+  /^https?:\/\/[a-zA-Z0-9.-]+\.repl\.run$/,
+  /^https?:\/\/[a-zA-Z0-9.-]+\.replit\.dev$/,
 ];
 
 // Additional production origins from env (comma-separated)
