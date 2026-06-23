@@ -72,7 +72,7 @@ Write 4-7 TECHNICAL BUILD STEPS. Each must name a real component, library, or UI
 📄 Pages
 List 3-5 pages with 3-4 sections each, specific to this website type.
 Format: [N]. [Page Name]
-   • [specific section]
+   • [specific section] — [one-word purpose: awareness/discovery/trust/conversion/navigation]
 
 ⚙️ Technical Details
 • Tech Stack: React 18 + Tailwind CSS
@@ -110,8 +110,17 @@ Rules for sectionOrder:
 - A portfolio needs: Projects, CaseStudies, Contact — NOT Pricing or LogoCloud
 - A SaaS/AI startup needs: LogoCloud, FeaturesBento or Features, DashboardPreview, Pricing, Testimonials
 - An agency needs: Projects or CaseStudies, Testimonials, Contact
-- Minimum 5 sections, maximum 9 sections
+- Minimum 6 sections, maximum 10 sections
 - Only use section names exactly as listed above
+
+HARD PLANNING RULES (non-negotiable):
+- NEVER repeat the same section name twice (e.g., no Features AND FeaturesBento on the same page, no two CTA sections)
+- NEVER place the same category adjacent to itself (Hero must not follow Hero; CTA must not follow CTA)
+- MANDATORY for SaaS / AI / Startup / Fintech / Ecommerce: sectionOrder MUST include Hero + at least one of [Testimonials, SocialProof] + at least one of [Features, FeaturesBento] + CTA. Omitting any of these is a build error.
+- MANDATORY for Restaurant: include Hero + Gallery + Menu + Reservation or ChefStory. Never include Pricing or FeaturesBento.
+- MANDATORY for Portfolio: include Hero + Projects + Contact. CaseStudies is optional. Never include Pricing or LogoCloud.
+- SECTION DIVERSITY: No two adjacent content sections may share the same visual category (e.g., Features followed by FeaturesBento is a duplicate — pick one)
+- RATIONALE: For each section in the 📄 Pages list, append a brief reason: "Hero — establishes brand identity and primary CTA"
 
 CRITICAL REFERENCE EXTRACTION RULES (apply strictly to referenceSites / primaryReference / secondaryReferences):
 - Include ONLY sites the user explicitly named. Never infer, add competitors, or expand references.
@@ -167,6 +176,9 @@ PREMIUM DESIGN RULES — apply to every site regardless of reference:
 8. COLOR DISCIPLINE: Maximum 1 primary action color + 1 accent highlight. NEVER use 3+ competing CTA colors. Feature icons use a SINGLE consistent icon color (the accent), not a rainbow of per-card gradients.
 9. VISUAL RESTRAINT: Choose ONE border-radius size (rounded-lg, rounded-xl, or rounded-2xl) and use it consistently throughout. No competing shadow depths — one elevation level per z-layer. Generous whitespace is premium; dense layouts feel cheap.
 10. MUTED TEXT MINIMUM OPACITY: NEVER use opacity below 60% for readable text. Subheadings: minimum text-white/70 (dark theme) or text-gray-600 (light). Labels/captions: minimum text-white/60 (dark) or text-gray-500 (light). NEVER use text-white/25, text-white/30, text-white/35, or text-white/45.
+11. SECTION BACKGROUND ALTERNATION: Adjacent sections MUST alternate between the background color and the surface color. Never design two consecutive sections with identical backgrounds. Pattern: bg → surface → bg → surface. Exception: Navbar + Hero may share the same background. Alternation applies to all content sections (Hero, Features, Testimonials, Pricing, CTA, etc.).
+12. VISUAL HIERARCHY FLOW: Design the page as a conversion funnel — the DNA must support this progression: Hero (awareness: bold, expansive) → Features/FeaturesBento (understanding: structured, clear) → Social Proof/Testimonials (trust: warm, human) → CTA (conversion: action-oriented, high contrast). Each section's visual weight and spacing must step down from Hero toward CTA. The Hero is always the most visually prominent section.
+13. FOCAL POINT + CTA ANCHOR: Every page design MUST specify exactly ONE primary CTA style (highest visual weight — solid fill or gradient, maximum contrast). All other CTAs throughout the page MUST be visually subordinate (outline, ghost, or lower-contrast variant). The hero section is the page's focal point — its H1 must be the largest, most visually dominant element on the entire page.
 
 Industry defaults when no reference is given:
 - Fintech/Banking → dark navy, blue accent, premium, trust-focused
@@ -256,7 +268,15 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - NEVER remove hover:, group-hover:, or transition- classes unless they are a direct cause of a syntax error.
 
 4. Return ONLY the corrected raw JSX code. No markdown, no explanation.
-   Start with the first section function (not App).`;
+   Start with the first section function (not App).
+
+5. ANTI-GENERIC CONTENT — preserve and enforce:
+   - NEVER replace specific business names, product names, or industry-specific copy with generic placeholders.
+   - NEVER introduce "Lorem ipsum", "Acme Corp", "Your Company", "John Doe", "Jane Smith", or any generic placeholder text that was not already in the input.
+   - NEVER simplify specific metric numbers (e.g., "47,312 active users") into rounded placeholders (e.g., "50,000+").
+   - NEVER reduce a specific CTA label (e.g., "Start your free 14-day trial →") to a generic one (e.g., "Get Started").
+   - PRESERVE all industry-specific terminology, proper nouns, and specific copy already present in the code.
+   - PRESERVE CTA hierarchy: the hero primary button must remain the most visually dominant CTA on the page.`;
 
 export const BACKEND_SYSTEM = `You are a Backend Agent generating Express.js TypeScript API route files.
 

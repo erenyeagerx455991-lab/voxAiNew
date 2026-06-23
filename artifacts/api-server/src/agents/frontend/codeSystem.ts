@@ -345,6 +345,42 @@ Use .map() for all repeated elements. Replace ALL placeholder text with real, sp
     Section subheadings: text-white/70 minimum. Body copy: text-[${textMuted}] or better.
 23. ALL shadcn <Button>, <Input>, <Card>, <Badge>, <Avatar> components are GLOBALS — use them directly without imports.
 
+═══ HERO REQUIREMENTS (V7.1.3) — MANDATORY ═══
+The Hero section MUST always contain ALL of the following:
+24. HERO BADGE: A pill/badge label above the H1 using the <Badge> global — short and specific: "Now in beta", "Trusted by 10k teams", "New: AI-powered search". NEVER skip the badge.
+25. HERO HEADLINE: Full ${headingScale} H1. Must name the actual product/business — NEVER write "Welcome to our platform" or "The Future of [Category]". Write a concrete value proposition.
+26. HERO SUPPORTING COPY: 1–2 sentences max. Specific benefit, not a category description. NEVER "We help businesses grow" — write what changes for THIS user.
+27. HERO DUAL CTA — always exactly two buttons side by side:
+    PRIMARY: <Button className="bg-[${primary}] text-[${bg}] ..."> with action-specific label ("Start building free →", "Book your table", "See the demo")
+    SECONDARY: <Button variant="outline" className="border-[${borderColor}] text-[${textColor}] ..."> with exploratory label ("See how it works", "View examples", "Watch the demo")
+    Both buttons MUST use the global <Button> component — never raw <button> for hero CTAs.
+28. HERO TRUST SIGNAL — pick ONE and render it below the dual CTA row:
+    Option A: Star rating row (★★★★★ "4.9/5 from 2,340 reviews")
+    Option B: Avatar stack + user count ("Join 8,400+ teams already building")
+    Option C: Logo cloud row — 4–5 recognizable brand-style SVG wordmarks at 20–24px height
+    Option D: Metrics strip — 3 key numbers in a flex row ("47k users · 99.9% uptime · < 200ms latency")
+
+═══ LAYOUT DIVERSITY RULES (V7.1.3) ═══
+29. SECTION BACKGROUND ALTERNATION: Adjacent sections MUST alternate backgrounds. Pattern: bg-[${bg}] → bg-[${surface}] → bg-[${bg}] → bg-[${surface}]. NEVER render two consecutive sections with identical background. Navbar + Hero may share ${bg}. Every content section from Features onward must alternate.
+30. NO ADJACENT DUPLICATE CARD LAYOUTS: If a section uses "grid-cols-1 md:grid-cols-3", the immediately following content section MUST use a different layout — list row, split 2-col, table, or single-column stacked. NEVER duplicate the same grid layout back-to-back.
+31. NO ADJACENT DUPLICATE ALIGNMENT: If one section is centered (text-center), the next content section must be left-aligned or asymmetric. Never center two consecutive non-hero sections.
+32. SECTION VISUAL WEIGHT GRADIENT: Hero is visually heaviest (largest text, most decoration). Each subsequent section steps down in visual weight. CTA section near the footer should be visually lighter than the hero but still high-contrast for the button.
+
+═══ ANTI-GENERIC CONTENT RULES (V7.1.3) — HARD RULES ═══
+33. NEVER write "Lorem ipsum" or any Latin placeholder text anywhere.
+34. NEVER use placeholder names: "Acme Corp", "Your Company", "John Doe", "Jane Smith", "Example Inc". Use the actual business name from the prompt. Give testimonial authors realistic full names + job titles + company names matching the industry.
+35. NEVER write cliché hero headlines: "The Future of [X]", "Revolutionizing [Y]", "Welcome to [App]", "Empowering teams". Write a specific, concrete value proposition tied to the actual product.
+36. NEVER use vague CTA text: "Get Started", "Learn More", "Click Here", "Submit", "Sign Up". Write action-specific CTAs: "Start your free 14-day trial →", "Reserve a table for tonight", "Download the iOS app", "View our case studies".
+37. NEVER repeat the same CTA label on two different buttons on the same page.
+38. Stats and metrics MUST be realistic for the business stage: an early-stage SaaS uses "500 beta teams" not "10M users". A restaurant says "Est. 2009, 3 locations" not "1M+ happy diners". A dev tool says "Used in 12,000 repos" not "Trusted by millions".
+39. Feature descriptions MUST be concrete: not "Powerful analytics" but "See exactly where users drop off — heatmaps, session recordings, and funnel analysis in one view."
+
+═══ CTA INTELLIGENCE RULES (V7.1.3) ═══
+40. ONE dominant CTA per page: the Hero primary button is the page's highest-weight CTA. It must be a solid fill or gradient button with maximum contrast — the most visually prominent button on the entire page.
+41. ALL other buttons outside the hero (except the highlighted pricing tier) MUST be visually subordinate: use <Button variant="outline"> or <Button variant="ghost">. NEVER duplicate the hero primary button style in Features, Testimonials, or FAQ sections.
+42. The bottom CTA section is the page's second CTA. It MUST reinforce the hero's value proposition (same product promise, fresh angle) — not introduce an unrelated offer. If hero says "Build faster", CTA section says "Ready to start building?" — not "Subscribe to our newsletter".
+43. Pricing section exception: the recommended/highlighted tier may use a solid primary button. All other pricing tier buttons use outline or ghost.
+
 OUTPUT: Raw JSX only. No markdown. Start with the first section function.`;
 }
 
