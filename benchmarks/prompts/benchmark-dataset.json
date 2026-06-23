@@ -1,0 +1,287 @@
+{
+  "version": "1.0.0",
+  "description": "VoxAI Competitive Benchmark Dataset — 20 prompts across 10 categories",
+  "categories": ["SaaS", "AI", "Fintech", "Agency", "Startup", "Dashboard", "Portfolio", "Healthcare", "Ecommerce", "Restaurant"],
+  "prompts": [
+    {
+      "id": "saas-001",
+      "category": "SaaS",
+      "title": "Project Management SaaS",
+      "prompt": "Build a landing page for ProjectFlow, a project management SaaS for remote engineering teams. Features: Kanban boards, sprint planning, Slack integration, GitHub sync, and real-time collaboration. Target: CTOs and engineering managers at 10-500 person companies. Pricing starts at $12/seat/month.",
+      "targetDNA": {
+        "primaryBrand": "Linear",
+        "colorScheme": "dark",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "features", "integrations", "pricing", "testimonials", "cta"]
+      },
+      "expectedSections": ["hero", "features", "social-proof", "pricing", "faq", "cta"],
+      "minimumSections": 6
+    },
+    {
+      "id": "saas-002",
+      "category": "SaaS",
+      "title": "Customer Analytics Platform",
+      "prompt": "Build a landing page for Segment Analytics, a B2B customer data and analytics platform. Features: event tracking, user segmentation, funnel analysis, A/B testing, and no-code dashboards. Target: product managers and growth teams. Enterprise pricing from $500/month.",
+      "targetDNA": {
+        "primaryBrand": "Segment",
+        "colorScheme": "light",
+        "heroStyle": "centered",
+        "sectionOrder": ["hero", "features", "dashboard-preview", "integrations", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "features", "dashboard", "pricing", "testimonials", "cta"],
+      "minimumSections": 6
+    },
+    {
+      "id": "ai-001",
+      "category": "AI",
+      "title": "AI Writing Assistant",
+      "prompt": "Build a landing page for Quill AI, an AI-powered writing assistant for content creators, marketers, and bloggers. Features: long-form generation, tone adjustment, SEO optimization, multi-language support, and brand voice training. Free tier with 5,000 words/month, Pro at $19/month.",
+      "targetDNA": {
+        "primaryBrand": "Jasper",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "features", "demo", "pricing", "testimonials", "cta"]
+      },
+      "expectedSections": ["hero", "features", "demo", "pricing", "faq", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "ai-002",
+      "category": "AI",
+      "title": "AI Image Generation Tool",
+      "prompt": "Build a landing page for Render.ai, an AI image and video generation platform for designers and creative agencies. Features: text-to-image, image editing, style transfer, batch generation, and API access. Targets professional designers. $49/month for 500 credits.",
+      "targetDNA": {
+        "primaryBrand": "Midjourney",
+        "colorScheme": "dark",
+        "heroStyle": "full-viewport",
+        "sectionOrder": ["hero", "gallery", "features", "pricing", "api-docs", "cta"]
+      },
+      "expectedSections": ["hero", "gallery", "features", "pricing", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "fintech-001",
+      "category": "Fintech",
+      "title": "Personal Finance Tracker",
+      "prompt": "Build a landing page for WealthPath, a personal finance and budgeting app. Features: automatic bank sync, spending categorization, investment tracking, savings goals, and bill reminders. Target: millennials and Gen-Z. Free with premium at $9.99/month.",
+      "targetDNA": {
+        "primaryBrand": "Mint",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "features", "app-preview", "security", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "features", "security", "pricing", "testimonials", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "fintech-002",
+      "category": "Fintech",
+      "title": "B2B Payment Processing Platform",
+      "prompt": "Build a landing page for PayBridge, a B2B payment infrastructure for SaaS companies. Features: subscription billing, invoice management, multi-currency, instant payouts, Stripe-compatible API, and fraud detection. Target: Series A+ SaaS startups. Custom enterprise pricing.",
+      "targetDNA": {
+        "primaryBrand": "Stripe",
+        "colorScheme": "dark",
+        "heroStyle": "centered",
+        "sectionOrder": ["hero", "features", "api-preview", "security", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "features", "api", "security", "pricing", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "agency-001",
+      "category": "Agency",
+      "title": "Digital Marketing Agency",
+      "prompt": "Build a website for GrowthLab, a digital marketing and growth agency specializing in B2B SaaS companies. Services: SEO, paid ads, content marketing, email campaigns, and conversion optimization. 10+ years experience, 150+ clients, average 3x ROI improvement.",
+      "targetDNA": {
+        "primaryBrand": "Webflow",
+        "colorScheme": "dark",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "services", "case-studies", "team", "testimonials", "cta"]
+      },
+      "expectedSections": ["hero", "services", "case-studies", "testimonials", "team", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "agency-002",
+      "category": "Agency",
+      "title": "Creative Design Studio",
+      "prompt": "Build a portfolio website for Prism Studio, a creative design and branding agency. Services: brand identity, product design, motion graphics, and web design. Portfolio includes Fortune 500 clients. Awards: Awwwards, FWA, D&AD. Minimal, typographic aesthetic.",
+      "targetDNA": {
+        "primaryBrand": "Pentagram",
+        "colorScheme": "light",
+        "heroStyle": "full-viewport",
+        "sectionOrder": ["hero", "work", "services", "about", "awards", "contact"]
+      },
+      "expectedSections": ["hero", "portfolio", "services", "about", "cta"],
+      "minimumSections": 4
+    },
+    {
+      "id": "startup-001",
+      "category": "Startup",
+      "title": "Developer Productivity Tool",
+      "prompt": "Build a landing page for CodeSync, an AI-powered developer workflow tool. Features: automated PR reviews, code explanation, refactoring suggestions, test generation, and CI/CD integration. Early access, waitlist model. Target: individual developers and engineering teams.",
+      "targetDNA": {
+        "primaryBrand": "GitHub",
+        "colorScheme": "dark",
+        "heroStyle": "centered",
+        "sectionOrder": ["hero", "features", "demo", "waitlist", "faq"]
+      },
+      "expectedSections": ["hero", "features", "demo", "waitlist", "faq"],
+      "minimumSections": 4
+    },
+    {
+      "id": "startup-002",
+      "category": "Startup",
+      "title": "Remote Team Collaboration App",
+      "prompt": "Build a landing page for Orbit, a async-first collaboration app for globally distributed teams. Features: video messages, shared workspaces, timezone awareness, meeting summaries, and team rituals. Seed stage startup. Freemium model, $8/user/month for teams.",
+      "targetDNA": {
+        "primaryBrand": "Loom",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "features", "how-it-works", "testimonials", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "features", "how-it-works", "pricing", "cta"],
+      "minimumSections": 4
+    },
+    {
+      "id": "dashboard-001",
+      "category": "Dashboard",
+      "title": "Sales Analytics Dashboard",
+      "prompt": "Build a SaaS product page for RevenueIQ, a sales analytics and forecasting dashboard for B2B revenue teams. Features: pipeline visualization, deal tracking, quota attainment, forecast models, and CRM sync. Target: VP Sales and Revenue Operations. $299/seat/month.",
+      "targetDNA": {
+        "primaryBrand": "Salesforce",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "dashboard-preview", "features", "integrations", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "dashboard", "features", "integrations", "pricing", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "dashboard-002",
+      "category": "Dashboard",
+      "title": "Admin CRM Dashboard",
+      "prompt": "Build a landing page for AdminPro, an all-in-one CRM and admin dashboard platform for SMBs. Features: contact management, email sequences, task automation, reporting, and mobile app. Target: sales teams of 5-50. $29/month flat for up to 10 users.",
+      "targetDNA": {
+        "primaryBrand": "HubSpot",
+        "colorScheme": "light",
+        "heroStyle": "centered",
+        "sectionOrder": ["hero", "features", "dashboard-preview", "pricing", "testimonials", "cta"]
+      },
+      "expectedSections": ["hero", "features", "preview", "pricing", "testimonials", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "portfolio-001",
+      "category": "Portfolio",
+      "title": "Developer Portfolio",
+      "prompt": "Build a personal portfolio website for Alex Chen, a full-stack engineer with 6 years of experience in React, Node.js, and cloud infrastructure. Highlights: 3 open-source projects (10k+ GitHub stars), ex-Google, ex-Stripe. Seeking founding engineer roles.",
+      "targetDNA": {
+        "primaryBrand": "Linear",
+        "colorScheme": "dark",
+        "heroStyle": "centered",
+        "sectionOrder": ["hero", "about", "projects", "experience", "skills", "contact"]
+      },
+      "expectedSections": ["hero", "about", "projects", "experience", "contact"],
+      "minimumSections": 4
+    },
+    {
+      "id": "portfolio-002",
+      "category": "Portfolio",
+      "title": "UX Designer Portfolio",
+      "prompt": "Build a portfolio website for Maya Patel, a senior UX/product designer specializing in fintech and enterprise software. 8 years experience. Clients include Stripe, Plaid, and Brex. Focus on case studies with measurable business impact.",
+      "targetDNA": {
+        "primaryBrand": "Framer",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "work", "about", "process", "contact"]
+      },
+      "expectedSections": ["hero", "portfolio", "about", "skills", "contact"],
+      "minimumSections": 4
+    },
+    {
+      "id": "healthcare-001",
+      "category": "Healthcare",
+      "title": "Telemedicine Platform",
+      "prompt": "Build a landing page for MediConnect, a telemedicine platform connecting patients with licensed physicians. Features: video consultations, prescription delivery, lab results, specialist referrals, and 24/7 availability. Accepts most major insurance. HIPAA compliant.",
+      "targetDNA": {
+        "primaryBrand": "Forward",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "how-it-works", "features", "specialties", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "how-it-works", "features", "security", "pricing", "cta"],
+      "minimumSections": 5
+    },
+    {
+      "id": "healthcare-002",
+      "category": "Healthcare",
+      "title": "Mental Health App",
+      "prompt": "Build a landing page for Calm Mind, a mental health and therapy app. Features: licensed therapist matching, guided meditation, mood tracking, CBT exercises, and crisis support. HIPAA compliant. $89/month for unlimited therapy access.",
+      "targetDNA": {
+        "primaryBrand": "Calm",
+        "colorScheme": "light",
+        "heroStyle": "full-viewport",
+        "sectionOrder": ["hero", "features", "how-it-works", "therapists", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "features", "how-it-works", "pricing", "cta"],
+      "minimumSections": 4
+    },
+    {
+      "id": "ecommerce-001",
+      "category": "Ecommerce",
+      "title": "Online Fashion Store",
+      "prompt": "Build a landing page for Récolte, a sustainable luxury fashion brand. Features: curated seasonal collections, size inclusivity, carbon-neutral shipping, and sustainable materials. Target: conscious consumers, 25-45. Price range $150-$800 per item.",
+      "targetDNA": {
+        "primaryBrand": "AllBirds",
+        "colorScheme": "light",
+        "heroStyle": "full-viewport",
+        "sectionOrder": ["hero", "collections", "features", "sustainability", "bestsellers", "cta"]
+      },
+      "expectedSections": ["hero", "collections", "features", "sustainability", "cta"],
+      "minimumSections": 4
+    },
+    {
+      "id": "ecommerce-002",
+      "category": "Ecommerce",
+      "title": "Specialty Food Marketplace",
+      "prompt": "Build a landing page for Harvest Table, a curated specialty food marketplace connecting small artisan producers with consumers. Features: weekly boxes, producer stories, dietary filters, gift subscriptions, and next-day delivery. Starting at $49/box.",
+      "targetDNA": {
+        "primaryBrand": "Erewhon",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "how-it-works", "producers", "boxes", "pricing", "cta"]
+      },
+      "expectedSections": ["hero", "how-it-works", "products", "pricing", "testimonials", "cta"],
+      "minimumSections": 4
+    },
+    {
+      "id": "restaurant-001",
+      "category": "Restaurant",
+      "title": "Fine Dining Restaurant",
+      "prompt": "Build a website for Élan, a Michelin-starred fine dining restaurant in San Francisco. Chef-driven seasonal menu with California-French cuisine. Features: reservations (OpenTable), private dining, wine cellar, and chef's tasting menu at $195/person. Minimalist luxury aesthetic.",
+      "targetDNA": {
+        "primaryBrand": "Noma",
+        "colorScheme": "dark",
+        "heroStyle": "full-viewport",
+        "sectionOrder": ["hero", "menu", "story", "reservations", "private-dining", "contact"]
+      },
+      "expectedSections": ["hero", "menu", "story", "reservations", "gallery", "contact"],
+      "minimumSections": 4
+    },
+    {
+      "id": "restaurant-002",
+      "category": "Restaurant",
+      "title": "Fast-Casual Restaurant with Online Ordering",
+      "prompt": "Build a website for Bowl & Branch, a fast-casual healthy bowl restaurant chain with 12 locations in NYC. Features: online ordering, customizable bowls, loyalty rewards, catering for offices, and nutritional info. Bold, fresh visual identity.",
+      "targetDNA": {
+        "primaryBrand": "Sweetgreen",
+        "colorScheme": "light",
+        "heroStyle": "split",
+        "sectionOrder": ["hero", "menu", "how-it-works", "locations", "loyalty", "cta"]
+      },
+      "expectedSections": ["hero", "menu", "ordering", "locations", "loyalty", "cta"],
+      "minimumSections": 5
+    }
+  ]
+}

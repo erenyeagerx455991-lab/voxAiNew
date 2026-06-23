@@ -12,6 +12,7 @@ import { getQualityMetrics, getRetrievalMetrics } from "../telemetry/qualityMetr
 import { getComponentQualityMetrics } from "../quality/componentMetrics.js";
 import { getRagLeaderboardMetrics } from "../design-rag/referenceMetrics.js";
 import { getMultiCandidateMetrics } from "../telemetry/multiCandidateMetrics.js";
+import { getBenchmarkMetrics } from "../benchmarks/benchmarkMetrics.js";
 
 const router: Router = Router();
 
@@ -64,6 +65,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     retrieval: getRetrievalMetrics(),
     designRag: getRagLeaderboardMetrics(),
     multiCandidate: getMultiCandidateMetrics(),
+    benchmark: getBenchmarkMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

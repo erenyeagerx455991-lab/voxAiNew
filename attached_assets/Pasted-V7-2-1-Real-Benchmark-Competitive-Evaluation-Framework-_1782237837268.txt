@@ -1,0 +1,284 @@
+V7.2.1 — Real Benchmark & Competitive Evaluation Framework
+
+Context
+
+V7.2.0 complete.
+
+Verified active:
+
+- Design DNA
+- Design RAG
+- Reference Learning
+- Component Intelligence
+- Design Evaluator
+- Auto Repair
+- Multi-Candidate Selection
+
+Current limitation:
+
+We do not know objectively:
+
+- how VoxAI compares to Lovable
+- how VoxAI compares to Bolt
+- how VoxAI compares to v0
+
+All quality claims are internal.
+
+No real benchmark exists.
+
+---
+
+Goal
+
+Create a repeatable benchmark framework.
+
+Measure:
+
+VoxAI
+Lovable
+Bolt
+v0
+
+using identical prompts.
+
+---
+
+PHASE 1 — Benchmark Dataset
+
+Create:
+
+benchmarks/prompts/
+
+20 benchmark prompts.
+
+Categories:
+
+- SaaS
+- AI
+- Fintech
+- Agency
+- Startup
+- Dashboard
+- Portfolio
+- Healthcare
+- Ecommerce
+- Restaurant
+
+2 prompts per category.
+
+Store:
+
+prompt
+target DNA
+expected sections
+
+---
+
+PHASE 2 — Build Capture
+
+Create:
+
+benchmarks/results/
+
+Store:
+
+provider
+promptId
+timestamp
+html
+tsx
+css
+metadata
+
+Providers:
+
+- VoxAI
+- Lovable
+- Bolt
+- v0
+
+---
+
+PHASE 3 — Screenshot Capture
+
+Create:
+
+benchmarks/screenshots/
+
+Generate:
+
+Desktop
+Tablet
+Mobile
+
+for every build.
+
+---
+
+PHASE 4 — Lighthouse Scoring
+
+Capture:
+
+Performance
+Accessibility
+Best Practices
+SEO
+
+Store results.
+
+---
+
+PHASE 5 — Evaluator Integration
+
+Run existing evaluator on:
+
+- VoxAI output
+- Lovable output
+- Bolt output
+- v0 output
+
+Capture:
+
+Hero
+Layout
+CTA
+Accessibility
+Shadcn
+Consistency
+
+scores.
+
+---
+
+PHASE 6 — Comparison Engine
+
+Create:
+
+benchmarkComparison.ts
+
+Calculate:
+
+average scores
+
+per category
+
+per provider
+
+overall rankings
+
+---
+
+PHASE 7 — Quality Delta
+
+Compute:
+
+VoxAI vs Lovable
+
+VoxAI vs Bolt
+
+VoxAI vs v0
+
+for:
+
+- evaluator
+- accessibility
+- lighthouse
+- repair rate
+
+---
+
+PHASE 8 — Weakness Detection
+
+Automatically identify:
+
+Top 10 recurring weaknesses.
+
+Example:
+
+- Hero score lower than Lovable
+- CTA score lower than Bolt
+- Accessibility lower than v0
+
+Evidence only.
+
+No assumptions.
+
+---
+
+PHASE 9 — Telemetry
+
+Extend:
+
+/telemetry/quality
+
+Add:
+
+benchmark:
+
+{
+runs,
+providers,
+averageScores,
+categoryScores,
+weaknesses
+}
+
+No new endpoint.
+
+---
+
+PHASE 10 — Audit
+
+Create:
+
+artifacts/api-server/v7.2.1BenchmarkAudit.md
+
+Must answer:
+
+How does VoxAI compare?
+
+Where does VoxAI win?
+
+Where does VoxAI lose?
+
+Largest quality gaps?
+
+Highest ROI fixes?
+
+Only evidence.
+
+No speculation.
+
+---
+
+Success Criteria
+
+20 benchmark prompts:
+YES
+
+Screenshots captured:
+YES
+
+Evaluator comparison:
+YES
+
+Lighthouse comparison:
+YES
+
+Quality deltas computed:
+YES
+
+Weakness detection:
+YES
+
+Telemetry integrated:
+YES
+
+No queue changes:
+YES
+
+No provider changes:
+YES
+
+No evaluator changes:
+YES
