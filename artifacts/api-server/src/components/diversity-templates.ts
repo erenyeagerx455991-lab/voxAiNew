@@ -174,7 +174,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
                 <span key={i} className="text-gray-400 text-sm font-medium flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />{item}</span>
               ))}
             </div>
-            <button className="border border-white/20 text-white text-sm font-semibold px-6 py-2.5 rounded-lg hover:bg-white/5 transition-colors shrink-0">BENTO_STRIP_CTA →</button>
+            <button type="button" className="border border-white/20 text-white text-sm font-semibold px-6 py-2.5 rounded-lg hover:bg-white/5 transition-colors shrink-0">BENTO_STRIP_CTA →</button>
           </div>
         </div>
       </div>
@@ -268,7 +268,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <h3 className="text-xl font-bold text-white mb-2">MOSAIC_FEAT_3_TITLE</h3>
               <p className="text-gray-500 text-sm leading-relaxed">MOSAIC_FEAT_3_DESC</p>
             </div>
-            <button className="shrink-0 border border-white/20 text-white text-sm px-6 py-3 rounded-lg hover:bg-white/5 transition-colors font-semibold">MOSAIC_CTA →</button>
+            <button type="button" className="shrink-0 border border-white/20 text-white text-sm px-6 py-3 rounded-lg hover:bg-white/5 transition-colors font-semibold">MOSAIC_CTA →</button>
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center gap-3">
           <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors hidden md:block">NAV_LOGIN</a>
-          <button className="border border-white/20 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-white/5 transition-colors">NAV_CTA</button>
+          <button type="button" className="border border-white/20 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-white/5 transition-colors">NAV_CTA</button>
         </div>
       </div>
     </nav>
@@ -325,7 +325,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="hidden md:flex items-center gap-8">
           {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-xs font-semibold tracking-wide uppercase transition-colors">{l}</a>)}
-          <button className="text-black bg-white text-xs font-bold px-5 py-2 rounded hover:opacity-90 transition-opacity">NAV_CTA →</button>
+          <button type="button" className="text-black bg-white text-xs font-bold px-5 py-2 rounded hover:opacity-90 transition-opacity">NAV_CTA →</button>
         </div>
       </div>
     </nav>
@@ -355,8 +355,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
             {mainLinks.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{l}</a>)}
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <button className="border border-white/15 text-white text-sm px-4 py-2 rounded hover:bg-white/5 transition-colors">NAV_DEMO</button>
-            <button className="bg-white text-black text-sm font-semibold px-4 py-2 rounded hover:bg-gray-100 transition-colors">NAV_CTA</button>
+            <button type="button" className="border border-white/15 text-white text-sm px-4 py-2 rounded hover:bg-white/5 transition-colors">NAV_DEMO</button>
+            <button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded hover:bg-gray-100 transition-colors">NAV_CTA</button>
           </div>
         </div>
       </div>
@@ -381,8 +381,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <input className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-xs text-gray-400 placeholder-gray-600 outline-none focus:border-white/20" placeholder="NAV_SEARCH_PLACEHOLDER" readOnly />
       </div>
       <div className="ml-auto flex items-center gap-3">
-        <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◆</button>
-        <button className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◉</button>
+        <button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◆</button>
+        <button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◉</button>
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">U</div>
       </div>
     </nav>
@@ -406,7 +406,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
           {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-xs font-medium transition-colors">{l}</a>)}
         </div>
         <div className="w-px h-4 bg-white/15 hidden md:block" />
-        <button className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity shrink-0">NAV_CTA</button>
+        <button type="button" className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity shrink-0">NAV_CTA</button>
       </div>
     </nav>
   );
@@ -432,7 +432,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center gap-8 flex-1 justify-end">
           {rightLinks.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm transition-colors hidden md:block">{l}</a>)}
-          <button className="border border-white/20 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-white/5 transition-colors">NAV_CTA</button>
+          <button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-white/5 transition-colors">NAV_CTA</button>
         </div>
       </div>
     </nav>
@@ -461,8 +461,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
             <p className="text-gray-400 max-w-md leading-relaxed">CTA_SUBTEXT</p>
             <div className="flex items-center gap-6">
-              <a href="#" className="text-white text-xl font-black hover:text-gray-400 transition-colors">CTA_PRIMARY →</a>
-              <a href="#" className="text-gray-500 text-sm hover:text-white transition-colors">CTA_SECONDARY</a>
+              <a href="#" className="text-white text-xl font-black hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_PRIMARY →</a>
+              <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_SECONDARY</a>
             </div>
           </div>
         </div>
@@ -484,8 +484,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tight">CTA_HEADLINE</h2>
         <p className="text-gray-400 mb-10 leading-relaxed">CTA_SUBTEXT</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button className="border border-white/25 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/5 transition-colors text-sm">CTA_PRIMARY</button>
-          <button className="text-gray-500 hover:text-white font-medium px-6 py-3 text-sm transition-colors">CTA_SECONDARY →</button>
+          <button type="button" className="border border-white/25 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/5 transition-colors text-sm">CTA_PRIMARY</button>
+          <button type="button" className="text-gray-500 hover:text-white font-medium px-6 py-3 text-sm transition-colors">CTA_SECONDARY →</button>
         </div>
       </div>
     </section>
@@ -515,8 +515,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
             ))}
           </ul>
           <div className="flex gap-4">
-            <button className="bg-white text-black font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm">CTA_PRIMARY</button>
-            <button className="text-gray-400 hover:text-white text-sm py-3 transition-colors">CTA_SECONDARY →</button>
+            <button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm">CTA_PRIMARY</button>
+            <button type="button" className="text-gray-400 hover:text-white text-sm py-3 transition-colors">CTA_SECONDARY →</button>
           </div>
         </div>
         <div className="bg-white/4 border border-white/10 rounded-2xl p-6 hidden md:block">
@@ -578,7 +578,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <label className="text-gray-400 text-xs mb-1.5 block">CTA_FIELD_MESSAGE</label>
               <div className="w-full bg-white/5 border border-white/10 rounded-lg h-20" />
             </div>
-            <button className="w-full bg-white text-black font-bold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm mt-2">CTA_FORM_SUBMIT →</button>
+            <button type="button" className="w-full bg-white text-black font-bold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm mt-2">CTA_FORM_SUBMIT →</button>
             <p className="text-gray-600 text-xs text-center">CTA_FORM_NOTE</p>
           </div>
         </div>
@@ -611,8 +611,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="border-t border-white/10 pt-12">
           <h3 className="text-2xl md:text-3xl font-black text-white mb-4">CTA_HEADLINE</h3>
           <div className="flex gap-4 justify-center">
-            <button className="bg-white text-black font-bold px-8 py-3 rounded-full hover:opacity-90 transition-opacity text-sm">CTA_PRIMARY</button>
-            <button className="border border-white/20 text-white font-medium px-8 py-3 rounded-full hover:bg-white/5 transition-colors text-sm">CTA_SECONDARY</button>
+            <button type="button" className="bg-white text-black font-bold px-8 py-3 rounded-full hover:opacity-90 transition-opacity text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</button>
+            <button type="button" className="border border-white/20 text-white font-medium px-8 py-3 rounded-full hover:bg-white/5 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
           </div>
         </div>
       </div>
@@ -641,7 +641,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <h3 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{p.heading}</h3>
               <p className="text-gray-400 leading-relaxed">{p.desc}</p>
             </div>
-            <button className={\`self-start border font-bold px-6 py-3 rounded-lg text-sm transition-colors hover:bg-white/5 \${p.accent==='indigo'?'border-indigo-500/40 text-indigo-300':'border-emerald-500/40 text-emerald-300'}\`}>{p.cta} →</button>
+            <button type="button" className={\`self-start border font-bold px-6 py-3 rounded-lg text-sm transition-colors hover:bg-white/5 \${p.accent==='indigo'?'border-indigo-500/40 text-indigo-300':'border-emerald-500/40 text-emerald-300'}\`}>{p.cta} →</button>
           </div>
         ))}
       </div>
@@ -679,7 +679,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex flex-col">
           {faqs.map((f, i) => (
             <div key={i} className="border-t border-white/8 py-8 grid grid-cols-12 gap-6">
-              <span className="text-gray-700 font-mono text-xs mt-1 col-span-1">0{i+1}</span>
+              <span className="text-gray-500 font-mono text-xs mt-1 col-span-1" aria-hidden="true">0{i+1}</span>
               <div className="col-span-11">
                 <h3 className="text-white font-semibold text-lg mb-3">{f.q}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{f.a}</p>
@@ -756,7 +756,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col gap-1">
             {cats.map(c => (
-              <button key={c} onClick={() => { setCat(c); setOpen(null); }}
+              <button type="button" key={c} onClick={() => { setCat(c); setOpen(null); }}
                 className={\`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors \${cat===c ? 'bg-white/8 text-white' : 'text-gray-500 hover:text-white'}\`}>
                 {c}
               </button>
@@ -765,7 +765,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
           <div className="md:col-span-3 flex flex-col gap-2">
             {items.map((f, i) => (
               <div key={i} className="border border-white/8 rounded-xl overflow-hidden">
-                <button className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/3 transition-colors" onClick={() => setOpen(open===i?null:i)}>
+                <button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/3 transition-colors" onClick={() => setOpen(open===i?null:i)}>
                   <span className="text-white font-medium text-sm pr-4">{f.q}</span>
                   <span className={\`text-gray-500 text-lg shrink-0 transition-transform duration-200 \${open===i?'rotate-45':''}\`}>+</span>
                 </button>
@@ -847,7 +847,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex gap-1 p-1 bg-white/4 border border-white/8 rounded-xl mb-8">
           {tabs.map(t => (
-            <button key={t} onClick={() => { setTab(t); setOpen(null); }}
+            <button type="button" key={t} onClick={() => { setTab(t); setOpen(null); }}
               className={\`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all \${tab===t ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}\`}>
               {t}
             </button>
@@ -856,7 +856,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex flex-col gap-2">
           {(data[tab]||[]).map((f, i) => (
             <div key={i} className="bg-white/3 border border-white/8 rounded-xl overflow-hidden">
-              <button className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/5 transition-colors" onClick={() => setOpen(open===i?null:i)}>
+              <button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/5 transition-colors" onClick={() => setOpen(open===i?null:i)}>
                 <span className="text-white font-medium text-sm pr-4">{f.q}</span>
                 <span className={\`text-gray-500 text-xl shrink-0 transition-transform duration-200 \${open===i?'rotate-45':''}\`}>+</span>
               </button>
@@ -898,14 +898,14 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="columns-1 md:columns-2 lg:columns-3 gap-5">
           {quotes.map((q, i) => (
             <div key={i} className="break-inside-avoid mb-5 bg-white/3 border border-white/8 rounded-2xl p-6">
-              <p className="text-white/80 text-sm leading-relaxed mb-5">"{q.text}"</p>
+              <p className="text-white/80 text-base leading-relaxed mb-5">"{q.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                <div className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center text-white text-xs font-bold shrink-0" aria-hidden="true">
                   {q.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div>
                   <p className="text-white text-sm font-semibold">{q.name}</p>
-                  <p className="text-gray-500 text-xs">{q.role} · {q.company}</p>
+                  <p className="text-gray-400 text-xs">{q.role} · {q.company}</p>
                 </div>
               </div>
             </div>
@@ -997,7 +997,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center justify-center gap-2">
           {quotes.map((_, i) => (
-            <button key={i} onClick={() => setIdx(i)}
+            <button type="button" key={i} onClick={() => setIdx(i)}
               className={\`h-1.5 rounded-full transition-all \${i===idx ? 'bg-white w-8' : 'bg-white/20 w-2'}\`}/>
           ))}
         </div>
