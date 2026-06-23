@@ -1,0 +1,426 @@
+V7.1.8 — Design RAG Foundation + Integration
+
+Context
+
+Current State:
+
+- V7.1.6 Component Intelligence active
+- V7.1.5 Design System active
+- V7.1.4 Design Evaluator active
+- Auto Repair Loop active
+- Design DNA active
+- Component Quality Scoring active
+- 530+ tests passing
+
+Current generation flow:
+
+User Prompt
+↓
+Planner
+↓
+Architecture
+↓
+Frontend
+↓
+Code Fix
+↓
+Design Evaluator
+↓
+Repair
+↓
+Final Output
+
+Current problem:
+
+Frontend agent still generates layouts mostly from prompts and registry selection.
+
+Result:
+
+- Layout quality varies
+- Some outputs remain generic
+- High-quality design patterns are not consistently reused
+
+Goal:
+
+Create a Design Retrieval System (Design RAG) that retrieves premium design patterns before generation.
+
+Target flow:
+
+User Prompt
+↓
+Intent Extraction
+↓
+Design Retrieval
+↓
+Planner
+↓
+Frontend
+↓
+Design Evaluator
+↓
+Repair
+↓
+Final Output
+
+---
+
+HARD RULES
+
+DO NOT:
+
+- Change queue system
+- Change SSE format
+- Change providers
+- Change build pipeline order
+- Change evaluator scoring
+- Change repair logic
+- Change API providers
+
+Only add Design Retrieval capabilities.
+
+---
+
+PHASE 1 — Design Corpus
+
+Create:
+
+src/design-rag/designCorpus.ts
+
+DesignReference structure:
+
+{
+id,
+category,
+industry,
+style,
+layout,
+tags,
+description,
+componentIds
+}
+
+Supported categories:
+
+- hero
+- features
+- pricing
+- testimonials
+- dashboard
+- faq
+- cta
+- navbar
+
+Supported styles:
+
+- linear
+- stripe
+- vercel
+- framer
+- notion
+- apple
+
+Seed corpus from:
+
+- existing registry templates
+- premium registry templates
+- hero variants
+- pricing variants
+- dashboard variants
+
+Target:
+
+100+ references minimum.
+
+---
+
+PHASE 2 — Retrieval Engine
+
+Create:
+
+src/design-rag/retriever.ts
+
+Input:
+
+{
+industry,
+style,
+keywords,
+pageType
+}
+
+Output:
+
+Top design references.
+
+Scoring factors:
+
+- industry match
+- style match
+- category relevance
+- quality score
+- component success rate
+
+Return top 5.
+
+---
+
+PHASE 3 — Component Intelligence Integration
+
+Use existing component quality metrics.
+
+Prefer:
+
+- high quality components
+- low repair-rate components
+- non-deprecated components
+
+Penalize:
+
+- deprecated components
+- high repair-rate components
+
+Retrieval must be quality-aware.
+
+---
+
+PHASE 4 — Planner Integration
+
+Before planner execution:
+
+Retrieve references.
+
+Inject:
+
+Retrieved Design References:
+
+Hero:
+hero-saas-v1
+
+Pricing:
+pricing-modern-v2
+
+Testimonials:
+testimonials-wall-v1
+
+Rules:
+
+Use structure as inspiration.
+
+Do not copy content.
+
+Do not copy text.
+
+Do not duplicate layouts exactly.
+
+Planner must use references only as design guidance.
+
+---
+
+PHASE 5 — Frontend Agent Integration
+
+Inject retrieval results into frontend generation.
+
+Provide:
+
+- layout patterns
+- section patterns
+- component recommendations
+- design DNA
+
+Frontend agent should reuse proven structures.
+
+Avoid generating completely new layouts when strong references exist.
+
+---
+
+PHASE 6 — Design DNA Integration
+
+Retrieval must respect DNA.
+
+Examples:
+
+Linear:
+
+- minimal
+- dark
+- clean
+
+Stripe:
+
+- gradient
+- enterprise
+- visual hierarchy
+
+Vercel:
+
+- monochrome
+- spacing-heavy
+
+Apple:
+
+- premium
+- whitespace
+
+Retriever must rank matching DNA higher.
+
+---
+
+PHASE 7 — Telemetry
+
+Extend existing quality telemetry.
+
+Track:
+
+retrievalCount
+referencesUsed
+retrievalHitRate
+retrievalStyle
+retrievalCategory
+retrievalQualityAverage
+
+Expose through existing telemetry system.
+
+No new telemetry endpoint.
+
+---
+
+PHASE 8 — Evaluator Awareness
+
+Evaluator should record:
+
+componentsUsed
+referencesUsed
+
+Output:
+
+retrievalImpactScore
+
+Track:
+
+scoreBeforeRepair
+scoreAfterRepair
+referencesUsed
+
+Purpose:
+
+Measure whether Design RAG improves quality.
+
+---
+
+PHASE 9 — Tests
+
+Create:
+
+tests/design-rag/retriever.test.ts
+
+Verify:
+
+- style matching
+- industry matching
+- category matching
+- quality ranking
+- deprecated filtering
+- deterministic ordering
+
+Create:
+
+tests/design-rag/plannerIntegration.test.ts
+
+Verify:
+
+- planner receives references
+- planner prompt contains references
+- references remain bounded
+- no duplicate references
+
+Target:
+
+100% passing.
+
+---
+
+PHASE 10 — Audit
+
+Create:
+
+artifacts/api-server/v7.1.8DesignRAGAudit.md
+
+Must answer:
+
+Design Corpus
+
+- total references
+- categories
+- styles
+
+Retrieval
+
+- ranking algorithm
+- quality integration
+
+Planner
+
+- exact injection point
+
+Frontend
+
+- exact injection point
+
+Telemetry
+
+- metrics added
+
+Tests
+
+- count
+- status
+
+Remaining Gaps
+
+Only verified gaps.
+
+No assumptions.
+
+No speculation.
+
+No estimated claims.
+
+---
+
+SUCCESS CRITERIA
+
+Design Corpus Active:
+YES
+
+Retrieval Active:
+YES
+
+Planner Uses Retrieval:
+YES
+
+Frontend Uses Retrieval:
+YES
+
+DNA-Aware Ranking:
+YES
+
+Quality-Aware Ranking:
+YES
+
+Telemetry Active:
+YES
+
+Tests Passing:
+YES
+
+No Queue Changes:
+YES
+
+No Provider Changes:
+YES
+
+No SSE Changes:
+YES
+
+No Evaluator Changes:
+YES

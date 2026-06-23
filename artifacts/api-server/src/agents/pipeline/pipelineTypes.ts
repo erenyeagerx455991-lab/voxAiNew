@@ -39,6 +39,8 @@ export interface FrontendOutput {
   fixedCode: string;
   buildHealthMetrics: Record<string, unknown>;
   registrySelection: Record<string, string>;
+  retrievalContext: string;
+  retrievalReferenceIds: string[];
 }
 
 export interface BackendOutput {

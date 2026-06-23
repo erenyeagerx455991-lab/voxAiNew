@@ -24,6 +24,10 @@ export interface EvaluatorResult {
   repairCount: number;
   repairApplied: boolean;
   componentsUsed: Array<{ componentId: string; category: string }>;
+  referencesUsed: string[];
+  scoreBeforeRepair: number;
+  scoreAfterRepair: number;
+  retrievalImpactScore: number;
 }
 
 export interface EvaluatorStepOutput extends FrontendOutput {
@@ -78,6 +82,8 @@ export async function runDesignEvaluatorStep(
     repairRequired: evalResult.overallScore < REPAIR_THRESHOLD,
     threshold: REPAIR_THRESHOLD,
   });
+
+  const initialScore = evalResult.overallScore; // Phase 8: track score before any repair
 
   while (evalResult.overallScore < REPAIR_THRESHOLD && repairCount < MAX_DESIGN_REPAIR_PASSES) {
     repairCount++;
@@ -197,6 +203,10 @@ export async function runDesignEvaluatorStep(
     repairCount,
     repairApplied,
     componentsUsed,
+    referencesUsed: frontend.retrievalReferenceIds ?? [],
+    scoreBeforeRepair: initialScore,
+    scoreAfterRepair: evalResult.overallScore,
+    retrievalImpactScore: evalResult.overallScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

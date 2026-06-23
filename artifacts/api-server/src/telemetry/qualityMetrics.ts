@@ -106,6 +106,55 @@ export function getQualityMetrics() {
   };
 }
 
+// ── V7.1.8 Design RAG retrieval telemetry ────────────────────────────────────
+
+export interface DesignRetrievalInput {
+  count: number;
+  style: string;
+  categories: string[];
+  averageQuality: number;
+}
+
+let retrievalCount = 0;
+let retrievalHitCount = 0;
+let totalReferencesUsed = 0;
+let sumRetrievalQuality = 0;
+const retrievalStyleUsage = new Map<string, number>();
+const retrievalCategoryUsage = new Map<string, number>();
+
+export function recordDesignRetrieval(input: DesignRetrievalInput): void {
+  retrievalCount++;
+  if (input.count > 0) retrievalHitCount++;
+  totalReferencesUsed += input.count;
+  sumRetrievalQuality += input.averageQuality;
+  retrievalStyleUsage.set(input.style, (retrievalStyleUsage.get(input.style) ?? 0) + 1);
+  for (const cat of input.categories) {
+    retrievalCategoryUsage.set(cat, (retrievalCategoryUsage.get(cat) ?? 0) + 1);
+  }
+  globalMetrics.increment("rag.retrievalCount");
+  if (input.count > 0) globalMetrics.increment("rag.retrievalHit");
+}
+
+export function getRetrievalMetrics() {
+  return {
+    retrievalCount,
+    retrievalHitCount,
+    retrievalHitRate: retrievalCount > 0
+      ? ((retrievalHitCount / retrievalCount) * 100).toFixed(1) + '%'
+      : 'n/a',
+    referencesUsed: totalReferencesUsed,
+    retrievalQualityAverage: retrievalCount > 0
+      ? Math.round((sumRetrievalQuality / retrievalCount) * 100) / 100
+      : 0,
+    topStyles: [...retrievalStyleUsage.entries()]
+      .sort((a, b) => b[1] - a[1]).slice(0, 5)
+      .map(([style, count]) => ({ style, count })),
+    topCategories: [...retrievalCategoryUsage.entries()]
+      .sort((a, b) => b[1] - a[1]).slice(0, 8)
+      .map(([category, count]) => ({ category, count })),
+  };
+}
+
 export function resetQualityMetrics(): void {
   records.length = 0;
   totalRecorded = 0;
@@ -115,4 +164,10 @@ export function resetQualityMetrics(): void {
   sumReuse = 0;
   heroUsageCounts.clear();
   dnaUsageCounts.clear();
+  retrievalCount = 0;
+  retrievalHitCount = 0;
+  totalReferencesUsed = 0;
+  sumRetrievalQuality = 0;
+  retrievalStyleUsage.clear();
+  retrievalCategoryUsage.clear();
 }

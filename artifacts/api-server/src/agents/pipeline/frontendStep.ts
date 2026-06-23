@@ -11,6 +11,7 @@ import type { DesignDNA, ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
+import { extractRetrievalIntent, retrieveDesignReferences, buildRetrievalContext } from "../../design-rag/retriever.js";
 
 const log = createLogger("FrontendStep");
 
@@ -166,6 +167,22 @@ export async function runFrontendStep(
     }
   } catch (e) { log.error("REGISTRY_SELECTION_FAILED", { error: String(e) }); }
 
+  // ── V7.1.8 Phase 4+5: Design RAG retrieval ────────────────────────────────
+  let retrievalCtx = '';
+  let retrievalReferenceIds: string[] = [];
+  try {
+    const ragIntent = extractRetrievalIntent(
+      prompt,
+      blueprint.sectionOrder,
+      design.designLanguage ?? 'monochrome',
+      dnaComposition as Record<string, number>,
+    );
+    const ragResult = retrieveDesignReferences(ragIntent);
+    retrievalCtx = buildRetrievalContext(ragResult);
+    retrievalReferenceIds = ragResult.references.map(r => r.id);
+    log.info("DESIGN_RAG_RETRIEVED", { count: ragResult.references.length, style: ragResult.topStyle, categories: ragResult.topCategories });
+  } catch (e) { log.error("DESIGN_RAG_FAILED", { error: String(e) }); }
+
   sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });
 
   const sectionCount = blueprint.sectionOrder.length;
@@ -179,7 +196,7 @@ export async function runFrontendStep(
   try {
     generatedCode = await callAI(
       openrouterKey,
-      [{ role: "system", content: buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
+      [{ role: "system", content: retrievalCtx ? `${buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection)}\n\n${retrievalCtx}` : buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
       { label: "codegen", maxTokens: 8000, stream: true, onToken: (t) => sse(res, { type: "codegen_token", token: t }) }
     );
   } catch (e) {
@@ -217,5 +234,7 @@ export async function runFrontendStep(
     fixedCode,
     buildHealthMetrics: {},
     registrySelection,
+    retrievalContext: retrievalCtx,
+    retrievalReferenceIds,
   };
 }
