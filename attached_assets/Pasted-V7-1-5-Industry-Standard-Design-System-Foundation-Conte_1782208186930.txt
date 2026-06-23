@@ -1,0 +1,348 @@
+V7.1.5 — Industry Standard Design System Foundation
+
+Context
+
+VoxAI currently has:
+
+- Queue system production-ready
+- Design Evaluator Agent active
+- Auto Repair Loop active
+- 150+ component roadmap
+- Design DNA system (Linear, Stripe, Vercel, Framer, Notion, Apple)
+- Shadcn migration partially complete
+- Accessibility significantly improved
+- 504+ tests passing
+
+Current measured quality:
+
+- Overall Quality: ~8.1–8.9/10
+- Design DNA: Strong
+- Accessibility: Improved
+- Prompt Intelligence: Strong
+
+Remaining gap versus Lovable / Bolt / v0:
+
+- Component consistency
+- Design system enforcement
+- Shadcn adoption depth
+- Visual polish
+- Layout predictability
+- Typography hierarchy consistency
+
+---
+
+Goal
+
+Transform VoxAI from:
+
+"AI generates pages using templates"
+
+into
+
+"AI generates pages using a professional design system"
+
+similar to:
+
+- Lovable
+- Bolt
+- v0
+
+while preserving VoxAI's superior Design DNA system.
+
+---
+
+PHASE 1 — Shadcn-First Generation Rules
+
+Upgrade all generation prompts.
+
+Every generated page must prefer:
+
+- Button
+- Card
+- Badge
+- Accordion
+- Tabs
+- Avatar
+- Separator
+- Input
+- Dialog
+- Sheet
+- Tooltip
+- DropdownMenu
+- Progress
+- Skeleton
+
+before creating custom HTML.
+
+Rule:
+
+Never generate raw button markup when Button component exists.
+
+Never generate custom accordion when Accordion exists.
+
+Never generate custom tabs when Tabs exists.
+
+---
+
+PHASE 2 — Typography System
+
+Create mandatory typography hierarchy.
+
+Hero:
+
+- text-5xl minimum desktop
+- text-4xl minimum tablet
+- text-3xl minimum mobile
+
+Section Titles:
+
+- text-3xl
+
+Card Titles:
+
+- text-xl
+
+Body:
+
+- text-base
+
+Small text:
+
+- text-sm
+
+Rules:
+
+No arbitrary text sizing.
+
+No text-xs for content.
+
+No inconsistent typography scales.
+
+---
+
+PHASE 3 — Spacing System
+
+Enforce 8pt grid.
+
+Allowed spacing:
+
+- 4
+- 8
+- 12
+- 16
+- 24
+- 32
+- 48
+- 64
+- 96
+
+Disallow random spacing.
+
+Examples:
+
+Avoid:
+
+- p-7
+- mt-11
+- gap-13
+
+Prefer:
+
+- p-8
+- mt-12
+- gap-6
+
+---
+
+PHASE 4 — Color Discipline
+
+Rules:
+
+Maximum:
+
+- 1 primary color
+- 1 accent color
+
+Disallow:
+
+- rainbow gradients
+- multi-accent UI
+- 5-color cards
+
+Allow:
+
+Stripe:
+
+- Indigo + Violet
+
+Linear:
+
+- Neutral + Purple
+
+Vercel:
+
+- Neutral + White
+
+Apple:
+
+- Neutral + Blue
+
+Framer:
+
+- Purple + Pink
+
+---
+
+PHASE 5 — Motion System
+
+All animations must use Framer Motion.
+
+Allowed:
+
+- fade
+- slide
+- scale
+- stagger
+
+Disallow:
+
+- spinning elements
+- bouncing elements
+- excessive parallax
+
+Animation duration:
+
+150–400ms only.
+
+---
+
+PHASE 6 — Layout Intelligence
+
+Every page must follow:
+
+Hero
+↓
+Features
+↓
+Trust
+↓
+Proof
+↓
+CTA
+
+Rules:
+
+No repeated section categories.
+
+No duplicate layouts back-to-back.
+
+No 3 consecutive card grids.
+
+---
+
+PHASE 7 — Accessibility Foundation
+
+Every generated component must include:
+
+Buttons:
+
+- type="button"
+
+Links:
+
+- focus-visible:ring
+
+Forms:
+
+- label + htmlFor
+
+Icons:
+
+- aria-hidden="true"
+
+FAQ:
+
+- aria-expanded
+
+Navigation:
+
+- aria-label
+
+---
+
+PHASE 8 — Component Quality Scoring
+
+Add quality score per component.
+
+Metrics:
+
+- usageCount
+- successRate
+- repairRate
+- designScore
+- accessibilityScore
+
+Planner should prefer:
+
+Highest quality components first.
+
+---
+
+PHASE 9 — Design Benchmark Dataset
+
+Create:
+
+20 benchmark prompts.
+
+Categories:
+
+- SaaS
+- Fintech
+- AI
+- Agency
+- Portfolio
+- Restaurant
+- Healthcare
+- Ecommerce
+- Startup
+- Dashboard
+
+Generate pages from:
+
+- VoxAI
+- Lovable
+- Bolt
+- v0
+
+Capture:
+
+- screenshots
+- code
+- Lighthouse
+- accessibility
+- evaluator scores
+
+Store all results.
+
+---
+
+PHASE 10 — Success Criteria
+
+Output should satisfy:
+
+- Accessibility ≥ 9/10
+- Design Consistency ≥ 9/10
+- Typography ≥ 9/10
+- Shadcn Usage ≥ 90%
+- Evaluator Score ≥ 8.5
+- Repair Rate ≤ 15%
+
+No prompt changes outside design system.
+
+No queue changes.
+
+No API changes.
+
+No provider changes.
+
+Focus entirely on output quality.

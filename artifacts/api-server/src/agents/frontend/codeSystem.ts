@@ -255,14 +255,58 @@ Selected component variants for this build. ENFORCE these structural patterns �
 ${Object.entries(registrySelection).map(([cat, hint]) => `${cat.toUpperCase()}: ${hint}`).join('\n')}
 
 For each section listed above, follow the described layout and visual pattern EXACTLY.
-Do NOT deviate from the selected component variant's structural style.\n\n` : ''}═══ SHADCN/UI COMPONENTS ═══
-The following components are available as globals (no import needed). Use them for interactive UI elements:
-- <Button variant="default|outline|ghost|secondary|destructive" size="default|sm|lg">...</Button>
-- <Card className="..."><CardHeader><CardTitle>Title</CardTitle></CardHeader><CardContent>...</CardContent></Card>
-- <Input placeholder="..." className="..." type="text|email|password" />
-- <Badge variant="default|secondary|outline">Status</Badge>
-- <Avatar><AvatarImage src="..." /><AvatarFallback>AB</AvatarFallback></Avatar>
-Prefer these over raw <button> / <input> / <div> for form elements and action buttons.
+Do NOT deviate from the selected component variant's structural style.\n\n` : ''}═══ SHADCN-FIRST RULES (V7.1.5) — MANDATORY ═══
+ALWAYS prefer shadcn/ui components over raw HTML. These rules are NON-NEGOTIABLE:
+- NEVER write a raw <button> element — ALWAYS use <Button> with appropriate variant
+- NEVER write a raw <input> element — ALWAYS use <Input>
+- NEVER build a custom accordion with <details>/<summary> — ALWAYS use <Accordion>/<AccordionItem>/<AccordionTrigger>/<AccordionContent>
+- NEVER build custom tabs with div toggles — ALWAYS use <Tabs>/<TabsList>/<TabsTrigger>/<TabsContent>
+- NEVER write a plain <textarea> — ALWAYS use <Textarea>
+- NEVER write a plain <select> — ALWAYS use <Select>/<SelectTrigger>/<SelectContent>/<SelectItem>
+- NEVER build a custom badge/pill with a raw div — ALWAYS use <Badge>
+- NEVER build a custom card layout from scratch — ALWAYS use <Card>/<CardHeader>/<CardContent>/<CardTitle>
+- NEVER build a custom progress bar — ALWAYS use <Progress value={n} />
+- NEVER build a custom loading skeleton — ALWAYS use <Skeleton>
+- NEVER build a custom dropdown menu — ALWAYS use <DropdownMenu>/<DropdownMenuTrigger>/<DropdownMenuContent>/<DropdownMenuItem>
+- NEVER build a custom toggle switch — ALWAYS use <Switch>
+- NEVER build a custom avatar/initials — ALWAYS use <Avatar>/<AvatarImage>/<AvatarFallback>
+Shadcn usage target: ≥90% of interactive UI elements must use shadcn components.
+
+═══ SHADCN/UI COMPONENTS (V7.1.5) — ALL GLOBALS ═══
+The following components are ALL available as globals (no import needed):
+
+Buttons & Actions:
+- <Button variant="default|outline|ghost|secondary|destructive" size="default|sm|lg|icon">...</Button>
+- <Switch checked={bool} onCheckedChange={fn} />
+
+Forms & Inputs:
+- <Input placeholder="..." type="text|email|password|search" id="field-id" />
+- <Textarea placeholder="..." rows={4} />
+- <Label htmlFor="field-id">Label text</Label>
+- <Select><SelectTrigger><SelectValue placeholder="..." /></SelectTrigger><SelectContent><SelectItem value="v">Option</SelectItem></SelectContent></Select>
+
+Display & Layout:
+- <Card className="..."><CardHeader><CardTitle>Title</CardTitle><CardDescription>...</CardDescription></CardHeader><CardContent>...</CardContent><CardFooter>...</CardFooter></Card>
+- <Badge variant="default|secondary|outline|destructive">Status</Badge>
+- <Avatar><AvatarImage src="..." alt="..." /><AvatarFallback>AB</AvatarFallback></Avatar>
+- <Separator className="..." />
+- <Skeleton className="h-4 w-full" />
+- <Progress value={75} className="..." />
+
+Navigation & Overlay:
+- <Tabs defaultValue="tab1"><TabsList><TabsTrigger value="tab1">Tab 1</TabsTrigger></TabsList><TabsContent value="tab1">...</TabsContent></Tabs>
+- <Accordion type="single" collapsible><AccordionItem value="item-1"><AccordionTrigger>Question</AccordionTrigger><AccordionContent>Answer</AccordionContent></AccordionItem></Accordion>
+- <DropdownMenu><DropdownMenuTrigger><Button>Open</Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem>Item</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+- <Dialog><DialogContent><DialogHeader><DialogTitle>Title</DialogTitle></DialogHeader></DialogContent></Dialog>
+- <Sheet><SheetContent side="right"><SheetHeader><SheetTitle>Title</SheetTitle></SheetHeader></SheetContent></Sheet>
+- <TooltipProvider><Tooltip><TooltipTrigger><Button>Hover</Button></TooltipTrigger><TooltipContent>Tip text</TooltipContent></Tooltip></TooltipProvider>
+
+Motion (Framer Motion — globally available as window.motion):
+- <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>...</motion.div>
+- <motion.div whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 30 }} transition={{ duration: 0.4, delay: 0.1 }}>...</motion.div>
+- <motion.h1 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>...</motion.h1>
+- <AnimatePresence>...</AnimatePresence>
+All motion.* tags (div, section, p, h1-h6, span, ul, li, a, button, header, footer, main, article) are available.
 
 ═══ MULTI-FILE STRUCTURE ═══
 Each section function will be extracted into its own TypeScript file. Mark file boundaries with delimiter comments:
@@ -340,10 +384,71 @@ Use .map() for all repeated elements. Replace ALL placeholder text with real, sp
     <label htmlFor="input-name" className="...">Label</label>
     <input id="input-name" ... />
 21. Decorative elements (gradient orbs, background shapes, icon-only divs) MUST have aria-hidden="true".
+    ALL Lucide icon components used as decorative icons (not standalone buttons) MUST have aria-hidden="true": <Star aria-hidden="true" /> <Check aria-hidden="true" />
+    Icon-only buttons MUST have aria-label: <Button aria-label="Close menu" type="button"><X size={20} aria-hidden="true" /></Button>
 22. MUTED TEXT RULE: NEVER use text-white/25, text-white/30, text-white/35, or text-white/45.
     Minimum: text-white/60 (${textMuted} token is the correct class — use it).
     Section subheadings: text-white/70 minimum. Body copy: text-[${textMuted}] or better.
-23. ALL shadcn <Button>, <Input>, <Card>, <Badge>, <Avatar> components are GLOBALS — use them directly without imports.
+23. ALL shadcn components listed above are GLOBALS — use them directly without imports. This includes: Button, Card, Input, Badge, Avatar, Separator, Skeleton, Progress, Accordion, Tabs, Dialog, Sheet, Tooltip, DropdownMenu, Select, Switch, Label, Textarea.
+
+═══ TYPOGRAPHY SYSTEM (V7.1.5) — MANDATORY MINIMUM SIZES ═══
+These are hard minimums. NEVER go below these sizes:
+- Hero H1: MINIMUM text-5xl md:text-6xl (use ${headingScale} from TYPOGRAPHY above)
+- Section H2 titles: MINIMUM text-3xl — NEVER text-2xl or smaller for section headings
+- Card H3 titles: MINIMUM text-xl — NEVER text-lg or smaller for card headings
+- Body copy: ALWAYS text-base or text-lg — NEVER text-sm or text-xs for paragraph/body text
+- Small labels / captions: text-sm minimum — NEVER text-xs for user-readable content
+- Badge text: text-xs is acceptable ONLY inside <Badge> components
+Rules:
+- NO arbitrary font sizes (no text-[15px], no text-[13px])
+- NO inconsistent scale jumps — heading hierarchy must step down consistently: H1 > H2 > H3
+- NEVER use the same text size for H2 and body copy
+
+═══ SPACING SYSTEM (V7.1.5) — 8PT GRID ENFORCEMENT ═══
+ONLY use spacing values from this whitelist: 0, 1, 2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96
+In Tailwind terms: gap-0 gap-1 gap-2 gap-4 gap-6 gap-8 gap-12 gap-16 gap-24
+Section padding: py-12 py-16 py-24 py-32 px-6 px-8 px-12 px-16
+Margins: mt-4 mt-6 mt-8 mt-12 mt-16 mt-24 mb-4 mb-6 mb-8 mb-12
+FORBIDDEN spacing values (never use these):
+- p-7, py-7, px-7, mt-7, mb-7, gap-7 (odd off-grid)
+- p-11, py-11, mt-11, mb-11, gap-11
+- p-13, py-13, gap-13
+- p-19, py-19, gap-19
+- Any arbitrary spacing: p-[17px], mt-[23px], gap-[15px]
+Rule: If you need "more space", step up to the next 8pt grid value — NEVER use the in-between value.
+
+═══ COLOR DISCIPLINE (V7.1.5) — HARD LIMITS ═══
+- MAXIMUM 1 primary action color + 1 accent highlight per page
+- The primary color is: ${primary}. The accent color is: ${accent}.
+- NEVER use 3 or more competing button/CTA colors on a single page
+- NEVER apply per-card different gradient colors (no rainbow feature icon cards)
+- Feature section icons MUST all use the SAME single color: ${accent} — no per-card color variation
+- Gradient backgrounds: maximum 1 gradient per page, and ONLY in the hero section
+- NEVER use competing gradients in multiple sections
+
+═══ FRAMER MOTION ANIMATION RULES (V7.1.5) — MANDATORY ═══
+Use Framer Motion (window.motion) for ALL scroll-triggered and entrance animations. Tailwind transitions remain for hover states only.
+
+ALLOWED animation patterns (use these):
+- Fade in: initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.35 }}
+- Slide up: initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+- Slide in: initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}
+- Scale in: initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.3 }}
+- Stagger (whileInView on parent items): Use transition={{ delay: index * 0.1 }} on each child
+
+WHILEINVIEW (preferred for section content):
+- Cards and feature items: <motion.div whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 20 }} transition={{ duration: 0.4, delay: i * 0.08 }}>
+- Section headings: <motion.h2 whileInView={{ opacity: 1, y: 0 }} initial={{ opacity: 0, y: 16 }} transition={{ duration: 0.35 }}>
+- Hero content: use animate (not whileInView) since it's above the fold
+
+FORBIDDEN animation patterns:
+- NO spinning elements (animate={{ rotate: 360 }}, spin class)
+- NO bouncing (animate={{ y: [-5, 0, -5] }}) 
+- NO excessive parallax (scrollY-based transforms)
+- NO animation duration outside 150–400ms range (0.15s–0.4s)
+- NO more than 0.5s total stagger delay across a card grid
+
+HOVER states: Keep using Tailwind hover: classes (hover:scale-[1.02], hover:opacity-90, hover:-translate-y-1) — these are for micro-interactions, NOT for entrance animations.
 
 ═══ HERO REQUIREMENTS (V7.1.3) — MANDATORY ═══
 The Hero section MUST always contain ALL of the following:

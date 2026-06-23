@@ -113,6 +113,18 @@ Rules for sectionOrder:
 - Minimum 6 sections, maximum 10 sections
 - Only use section names exactly as listed above
 
+CONVERSION FUNNEL ORDER (V7.1.5) — apply to all SaaS/AI/Startup/Fintech sites:
+The sections MUST follow this funnel progression:
+1. Hero (awareness — bold, expansive, above the fold)
+2. LogoCloud or SocialProof (credibility — immediately after hero for trust)
+3. Features or FeaturesBento (understanding — show what it does)
+4. DashboardPreview (proof — show it working, optional but strongly recommended)
+5. Testimonials (social proof — real users, warm and human)
+6. Pricing (decision — clear tiers)
+7. CTA (conversion — final action, reinforces hero promise)
+8. FAQ (objection handling — optional, place before CTA or after)
+Never invert Trust/Proof before Features. Never place CTA before Testimonials on a SaaS page.
+
 HARD PLANNING RULES (non-negotiable):
 - NEVER repeat the same section name twice (e.g., no Features AND FeaturesBento on the same page, no two CTA sections)
 - NEVER place the same category adjacent to itself (Hero must not follow Hero; CTA must not follow CTA)
@@ -251,7 +263,9 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - Do NOT enforce any fixed section order — the blueprint determines the order
    - Add hover effects on interactive elements if missing (respect animation personality)
    - KEEP all Lucide icon JSX elements (<ChevronRight />, <ArrowRight />, <Star />, etc.) — they are available as globals in the preview. Do NOT remove them.
-   - KEEP all shadcn/ui JSX elements (Button, Card, CardHeader, CardTitle, CardContent, Input, Badge, Avatar, AvatarImage, AvatarFallback, etc.) — they are globals in the preview. NEVER replace them with raw <button>/<div>/<input> equivalents.
+   - KEEP all shadcn/ui JSX elements — they are globals in the preview. NEVER replace them with raw HTML equivalents. Full list: Button, Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter, Input, Badge, Avatar, AvatarImage, AvatarFallback, Separator, Skeleton, Progress, Accordion, AccordionItem, AccordionTrigger, AccordionContent, Tabs, TabsList, TabsTrigger, TabsContent, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose, Tooltip, TooltipProvider, TooltipTrigger, TooltipContent, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, Select, SelectTrigger, SelectContent, SelectItem, SelectValue, Switch, Label, Textarea.
+   - KEEP all Framer Motion JSX elements (motion.div, motion.section, motion.h1, motion.h2, motion.p, motion.span, motion.article, AnimatePresence, etc.) — they are globals. NEVER remove motion.* elements or replace them with plain div/section equivalents.
+   - KEEP all motion props (initial, animate, whileInView, transition, exit, variants, viewport) on motion.* elements — do NOT strip these props.
    - KEEP all aria-label, aria-expanded, aria-controls, aria-current, role, and tabIndex attributes — NEVER remove accessibility markup.
    - KEEP all focus-visible: classes on buttons and links — NEVER strip focus ring classes.
    - KEEP all responsive classes (sm:, md:, lg:, xl:) — NEVER collapse responsive layouts into mobile-only classes.

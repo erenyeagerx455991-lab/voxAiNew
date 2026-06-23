@@ -618,6 +618,130 @@ export function buildPreviewHtml(code: string): string {
         window.TabsTrigger=function(p){return React.createElement(TabsCtx.Consumer,null,function(ctx){var isActive=ctx.active===p.value;return React.createElement('button',{type:'button',onClick:function(){ctx.setActive(p.value);},className:cx('inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all',isActive?'bg-white text-black shadow-sm':'text-white/60 hover:text-white/90',p.className)},p.children);});};
         window.TabsContent=function(p){return React.createElement(TabsCtx.Consumer,null,function(ctx){if(ctx.active!==p.value)return null;return React.createElement('div',{className:cx('mt-2',p.className)},p.children);});};
       })();
+      // Dialog
+      (function(){
+        window.Dialog=function(p){var s=React.useState(!!p.defaultOpen);var open=p.open!==undefined?p.open:s[0],setOpen=s[1];if(!open)return null;return React.createElement(React.Fragment,null,React.createElement('div',{className:'fixed inset-0 z-50 bg-black/80',onClick:function(){if(p.onOpenChange)p.onOpenChange(false);else setOpen(false);}}),React.createElement('div',{className:cx('fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg rounded-xl border border-white/10 bg-[#111] p-6 shadow-2xl',p.className)},p.children));};
+        window.DialogTrigger=function(p){return React.createElement(React.Fragment,null,p.children);};
+        window.DialogContent=function(p){return React.createElement('div',{className:cx('',p.className)},p.children);};
+        window.DialogHeader=function(p){return React.createElement('div',{className:cx('mb-4',p.className)},p.children);};
+        window.DialogFooter=function(p){return React.createElement('div',{className:cx('mt-4 flex justify-end gap-2',p.className)},p.children);};
+        window.DialogTitle=function(p){return React.createElement('h2',{className:cx('text-lg font-semibold',p.className)},p.children);};
+        window.DialogDescription=function(p){return React.createElement('p',{className:cx('text-sm opacity-60 mt-1',p.className)},p.children);};
+        window.DialogClose=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100',p.className)}),p.children||React.createElement('span',null,'✕'));};
+      })();
+      // Sheet
+      (function(){
+        window.Sheet=function(p){var s=React.useState(!!p.defaultOpen);var open=p.open!==undefined?p.open:s[0];if(!open)return null;return React.createElement('div',null,p.children);};
+        window.SheetTrigger=function(p){return React.createElement(React.Fragment,null,p.children);};
+        window.SheetContent=function(p){var side=p.side||'right';var pos={right:'right-0 top-0 h-full w-80',left:'left-0 top-0 h-full w-80',top:'top-0 left-0 w-full h-80',bottom:'bottom-0 left-0 w-full h-80'}[side]||'right-0 top-0 h-full w-80';return React.createElement('div',{className:cx('fixed z-50 border-l border-white/10 bg-[#111] p-6 shadow-2xl',pos,p.className)},p.children);};
+        window.SheetHeader=function(p){return React.createElement('div',{className:cx('mb-4',p.className)},p.children);};
+        window.SheetTitle=function(p){return React.createElement('h2',{className:cx('text-lg font-semibold',p.className)},p.children);};
+        window.SheetDescription=function(p){return React.createElement('p',{className:cx('text-sm opacity-60 mt-1',p.className)},p.children);};
+        window.SheetFooter=function(p){return React.createElement('div',{className:cx('mt-4 flex justify-end gap-2',p.className)},p.children);};
+        window.SheetClose=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('',p.className)}),p.children||'Close');};
+      })();
+      // Tooltip
+      (function(){
+        window.TooltipProvider=function(p){return React.createElement(React.Fragment,null,p.children);};
+        window.Tooltip=function(p){var s=React.useState(false);var shown=s[0],setShown=s[1];return React.createElement('div',{className:'relative inline-flex',onMouseEnter:function(){setShown(true);},onMouseLeave:function(){setShown(false);}},p.children,shown&&React.createElement('div',{role:'tooltip',className:'absolute -top-8 left-1/2 -translate-x-1/2 z-50 whitespace-nowrap rounded bg-[#222] border border-white/10 px-2 py-1 text-xs text-white shadow-lg pointer-events-none'},''));};
+        window.TooltipTrigger=function(p){return React.createElement(React.Fragment,null,p.children);};
+        window.TooltipContent=function(p){return React.createElement('div',{role:'tooltip',className:cx('z-50 rounded bg-[#222] border border-white/10 px-2 py-1 text-xs text-white shadow-lg',p.className)},p.children);};
+      })();
+      // DropdownMenu
+      (function(){
+        var DdCtx=React.createContext({open:false,setOpen:function(){}});
+        window.DropdownMenu=function(p){var s=React.useState(false);var open=s[0],setOpen=s[1];return React.createElement(DdCtx.Provider,{value:{open:open,setOpen:setOpen}},React.createElement('div',{className:'relative inline-flex'},p.children));};
+        window.DropdownMenuTrigger=function(p){return React.createElement(DdCtx.Consumer,null,function(ctx){return React.createElement('div',{onClick:function(){ctx.setOpen(function(o){return !o;});}},p.children);});};
+        window.DropdownMenuContent=function(p){return React.createElement(DdCtx.Consumer,null,function(ctx){if(!ctx.open)return null;return React.createElement('div',{className:cx('absolute right-0 top-full z-50 mt-1 min-w-[10rem] rounded-xl border border-white/10 bg-[#1a1a1a] p-1 shadow-xl',p.className)},p.children);});};
+        window.DropdownMenuItem=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10 transition-colors cursor-pointer',p.className)}),p.children);};
+        window.DropdownMenuLabel=function(p){return React.createElement('div',{className:cx('px-3 py-1.5 text-xs font-semibold opacity-50',p.className)},p.children);};
+        window.DropdownMenuSeparator=function(p){return React.createElement('div',{className:cx('my-1 h-px bg-white/10',p.className)});};
+        window.DropdownMenuGroup=function(p){return React.createElement('div',null,p.children);};
+        window.DropdownMenuSub=function(p){return React.createElement('div',null,p.children);};
+        window.DropdownMenuSubTrigger=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10',p.className)}),p.children);};
+        window.DropdownMenuSubContent=function(p){return React.createElement('div',{className:cx('absolute left-full top-0 z-50 ml-1 min-w-[10rem] rounded-xl border border-white/10 bg-[#1a1a1a] p-1 shadow-xl',p.className)},p.children);};
+        window.DropdownMenuCheckboxItem=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10',p.className)}),p.checked&&React.createElement('span',null,'✓'),p.children);};
+        window.DropdownMenuRadioGroup=function(p){return React.createElement('div',null,p.children);};
+        window.DropdownMenuRadioItem=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-white/10',p.className)}),p.children);};
+      })();
+      // Select
+      (function(){
+        window.Select=function(p){return React.createElement('div',{className:'relative'},p.children);};
+        window.SelectTrigger=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex h-9 w-full items-center justify-between rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm',p.className)}),p.children,React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round'},React.createElement('path',{d:'m6 9 6 6 6-6'})));};
+        window.SelectValue=function(p){return React.createElement('span',null,p.placeholder||p.children);};
+        window.SelectContent=function(p){return React.createElement('div',{className:cx('absolute top-full left-0 z-50 mt-1 w-full rounded-xl border border-white/10 bg-[#1a1a1a] p-1 shadow-xl',p.className)},p.children);};
+        window.SelectItem=function(p){return React.createElement('div',{className:cx('cursor-pointer rounded-lg px-3 py-2 text-sm hover:bg-white/10',p.className)},p.children);};
+        window.SelectGroup=function(p){return React.createElement('div',null,p.children);};
+        window.SelectLabel=function(p){return React.createElement('div',{className:cx('px-3 py-1.5 text-xs font-semibold opacity-50',p.className)},p.children);};
+        window.SelectSeparator=function(p){return React.createElement('div',{className:cx('my-1 h-px bg-white/10',p.className)});};
+      })();
+      // Switch
+      window.Switch=function(p){var s=React.useState(!!p.defaultChecked);var checked=p.checked!==undefined?p.checked:s[0],setChecked=s[1];return React.createElement('button',{type:'button',role:'switch','aria-checked':checked,onClick:function(){var n=!checked;setChecked(n);if(p.onCheckedChange)p.onCheckedChange(n);},className:cx('relative inline-flex h-6 w-11 cursor-pointer rounded-full transition-colors',checked?'bg-white':'bg-white/20',p.className)},React.createElement('span',{className:cx('block h-5 w-5 rounded-full bg-[#111] shadow transition-transform mt-0.5',checked?'translate-x-5 ml-0.5':'translate-x-0.5')}));};
+      // Label
+      window.Label=function(p){return React.createElement('label',Object.assign({},p,{className:cx('text-sm font-medium leading-none',p.className)}),p.children);};
+      // Textarea
+      window.Textarea=function(p){return React.createElement('textarea',Object.assign({},p,{className:cx('flex min-h-[80px] w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none',p.className)}));};
+      // ── Framer Motion Shim (V7.1.5) ──────────────────────────────────────────
+      (function() {
+        var TAGS = ['div','section','article','p','h1','h2','h3','h4','h5','h6','span','ul','li','a','button','header','footer','main','aside','nav','figure','form','img','svg','path'];
+        function applyState(el, state) {
+          if (!el || !state) return;
+          if (state.opacity != null) el.style.opacity = String(state.opacity);
+          var t = [];
+          if (state.y != null) t.push('translateY('+state.y+'px)');
+          if (state.x != null) t.push('translateX('+state.x+'px)');
+          if (state.scale != null) t.push('scale('+state.scale+')');
+          if (state.rotate != null) t.push('rotate('+state.rotate+'deg)');
+          if (t.length) el.style.transform = t.join(' ');
+        }
+        function MotionComp(tag) {
+          return function(props) {
+            var elRef = React.useRef(null);
+            var rest = {};
+            for (var k in props) {
+              if (k !== 'initial' && k !== 'animate' && k !== 'exit' && k !== 'transition' && k !== 'whileHover' && k !== 'whileInView' && k !== 'whileTap' && k !== 'variants' && k !== 'viewport' && k !== 'layout' && k !== 'layoutId' && k !== 'ref') {
+                rest[k] = props[k];
+              }
+            }
+            React.useEffect(function() {
+              var el = elRef.current; if (!el) return;
+              var ini = props.initial; var target = props.whileInView || props.animate;
+              if (!ini && !target) return;
+              var dur = (props.transition && props.transition.duration != null) ? props.transition.duration : 0.35;
+              var delay = (props.transition && props.transition.delay != null) ? props.transition.delay : 0;
+              el.style.transition = 'opacity '+dur+'s ease '+delay+'s, transform '+dur+'s ease '+delay+'s';
+              if (ini) applyState(el, ini);
+              if (props.whileInView) {
+                var obs = new IntersectionObserver(function(entries) {
+                  if (entries[0].isIntersecting) { requestAnimationFrame(function(){ applyState(el, target); }); obs.disconnect(); }
+                }, { threshold: 0.1 });
+                obs.observe(el);
+                return function() { obs.disconnect(); };
+              } else if (target) {
+                requestAnimationFrame(function(){ requestAnimationFrame(function(){ applyState(el, target); }); });
+              }
+            }, []);
+            return React.createElement(tag, Object.assign({}, rest, { ref: elRef }));
+          };
+        }
+        var motion = {};
+        TAGS.forEach(function(t) { motion[t] = MotionComp(t); });
+        window.motion = motion;
+        window.AnimatePresence = function(p) { return p.children || null; };
+        window.useAnimation = function() { return { start: function() {}, stop: function() {} }; };
+        window.useInView = function(ref, opts) {
+          var s = React.useState(false);
+          React.useEffect(function() {
+            if (!ref || !ref.current) return;
+            var ob = new IntersectionObserver(function(e) {
+              if (e[0].isIntersecting) { s[1](true); if (opts && opts.once !== false) ob.disconnect(); }
+            }, { threshold: 0.1 });
+            ob.observe(ref.current);
+            return function() { ob.disconnect(); };
+          }, []);
+          return s[0];
+        };
+      })();
     })();
   </script>
   <script type="text/babel" data-presets="react,typescript" data-plugins="transform-class-properties">
