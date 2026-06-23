@@ -11,7 +11,8 @@ import type { DesignDNA, ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
-import { extractRetrievalIntent, retrieveDesignReferences, buildRetrievalContext } from "../../design-rag/retriever.js";
+import { extractRetrievalIntent } from "../../design-rag/retriever.js";
+import { retrieveAllSections, buildSectionRetrievalContext } from "../../design-rag/sectionRetriever.js";
 
 const log = createLogger("FrontendStep");
 
@@ -167,7 +168,7 @@ export async function runFrontendStep(
     }
   } catch (e) { log.error("REGISTRY_SELECTION_FAILED", { error: String(e) }); }
 
-  // ── V7.1.8 Phase 4+5: Design RAG retrieval ────────────────────────────────
+  // ── V7.2.2 Phase 4+5: Section-Level Design RAG retrieval ─────────────────
   let retrievalCtx = '';
   let retrievalReferenceIds: string[] = [];
   try {
@@ -177,10 +178,20 @@ export async function runFrontendStep(
       design.designLanguage ?? 'monochrome',
       dnaComposition as Record<string, number>,
     );
-    const ragResult = retrieveDesignReferences(ragIntent);
-    retrievalCtx = buildRetrievalContext(ragResult);
-    retrievalReferenceIds = ragResult.references.map(r => r.id);
-    log.info("DESIGN_RAG_RETRIEVED", { count: ragResult.references.length, style: ragResult.topStyle, categories: ragResult.topCategories });
+    const sectionResult = retrieveAllSections(blueprint.sectionOrder, {
+      dna:            (dnaComposition as Record<string, number>) ?? {},
+      designLanguage: design.designLanguage ?? 'monochrome',
+      industry:       ragIntent.industry,
+      keywords:       ragIntent.keywords,
+      prompt,
+    });
+    retrievalCtx = buildSectionRetrievalContext(sectionResult);
+    retrievalReferenceIds = sectionResult.allReferenceIds;
+    log.info("SECTION_RAG_RETRIEVED", {
+      sections: sectionResult.totalRetrievals,
+      refs:     sectionResult.allReferenceIds.length,
+      hitRate:  sectionResult.hitRate,
+    });
   } catch (e) { log.error("DESIGN_RAG_FAILED", { error: String(e) }); }
 
   sse(res, { type: "step", step: 3, agent: "Frontend Agent", status: "active" });

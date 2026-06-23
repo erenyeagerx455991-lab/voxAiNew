@@ -13,6 +13,8 @@ import { getComponentQualityMetrics } from "../quality/componentMetrics.js";
 import { getRagLeaderboardMetrics } from "../design-rag/referenceMetrics.js";
 import { getMultiCandidateMetrics } from "../telemetry/multiCandidateMetrics.js";
 import { getBenchmarkMetrics } from "../benchmarks/benchmarkMetrics.js";
+import { getSectionRagMetrics } from "../design-rag/sectionRagMetrics.js";
+import { SECTION_CORPUS } from "../design-rag/sectionCorpus.js";
 
 const router: Router = Router();
 
@@ -66,6 +68,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     designRag: getRagLeaderboardMetrics(),
     multiCandidate: getMultiCandidateMetrics(),
     benchmark: getBenchmarkMetrics(),
+    sectionRag: getSectionRagMetrics(SECTION_CORPUS.length),
     generatedAt: new Date().toISOString(),
   });
 });
