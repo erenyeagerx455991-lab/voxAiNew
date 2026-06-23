@@ -42,3 +42,5 @@
 - [VoxAI V7.1.8 Design RAG](voxai-v718-design-rag.md) — 104-ref corpus, quality-aware retriever, codegen injection in frontendStep; EvaluatorResult Phase 8 fields; 591 tests pass.
 - [VoxAI V7.1.6 Component Intelligence](voxai-v716-component-intelligence.md) — quality scoring engine; deprecation; planner swaps; 530 tests pass.
 - [VoxAI V7.1.5 Design System Foundation](voxai-v715-design-system.md) — 10-phase upgrade: shadcn-first rules, typography minimums, 8pt spacing grid, color discipline, Framer Motion shim, conversion funnel order, icon a11y; Dialog/Sheet/Tooltip/DropdownMenu/Select/Switch/Label/Textarea globals added.
+- [VoxAI V7.1.9 Design RAG Feedback Loop](voxai-v719-rag-feedback.md) — referenceMetrics.ts per-ref store; dynamic quality score (4-factor formula); auto promotion/demotion after 5 outcomes; leaderboard; designRag in /telemetry/quality; 634 tests pass.
+- [VoxAI V7.2.0 Multi-Candidate Generation](voxai-v720-multi-candidate.md) — A/B/C candidates parallel; evaluator selects best; tie-break on accessibility→shadcn→consistency; only winner to repair; multiCandidate in /telemetry/quality; 656 tests pass.

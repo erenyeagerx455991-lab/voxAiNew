@@ -11,6 +11,7 @@ import { getAllUserStats } from "../limits/userLimits.js";
 import { getQualityMetrics, getRetrievalMetrics } from "../telemetry/qualityMetrics.js";
 import { getComponentQualityMetrics } from "../quality/componentMetrics.js";
 import { getRagLeaderboardMetrics } from "../design-rag/referenceMetrics.js";
+import { getMultiCandidateMetrics } from "../telemetry/multiCandidateMetrics.js";
 
 const router: Router = Router();
 
@@ -62,6 +63,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     componentQuality: getComponentQualityMetrics(),
     retrieval: getRetrievalMetrics(),
     designRag: getRagLeaderboardMetrics(),
+    multiCandidate: getMultiCandidateMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

@@ -1,0 +1,321 @@
+V7.2.0 — Multi-Candidate Generation + Best-of-N Selection
+
+Context
+
+V7.1.9 complete.
+
+Verified active:
+
+- Design DNA
+- Design RAG
+- Design Evaluator
+- Auto Repair
+- Component Intelligence
+- Reference Learning
+- Auto Promotion / Demotion
+- Quality Telemetry
+
+Current limitation:
+
+One prompt produces one page.
+
+Pipeline:
+
+Prompt
+↓
+Frontend Generation
+↓
+Repair
+↓
+Evaluator
+↓
+Done
+
+Result:
+
+If generation quality is mediocre:
+
+Repair can improve it.
+
+But the system never explores alternatives.
+
+Lovable / Bolt style systems frequently generate multiple candidates internally and select the strongest.
+
+---
+
+Goal
+
+Upgrade VoxAI to:
+
+Prompt
+↓
+Candidate A
+Candidate B
+Candidate C
+↓
+Evaluator
+↓
+Best Candidate
+↓
+Repair
+↓
+Final Output
+
+Without:
+
+- changing queue architecture
+- changing providers
+- changing SSE format
+- changing evaluator scoring
+
+---
+
+PHASE 1 — Candidate Generator
+
+Create:
+
+src/agents/frontend/candidateGenerator.ts
+
+Generate:
+
+3 independent candidates
+
+Candidate A:
+
+Safe
+Conventional
+High consistency
+
+Candidate B:
+
+Design-forward
+More visual
+Higher contrast
+
+Candidate C:
+
+Experimental
+Layout-diverse
+Aggressive hierarchy
+
+All use same Design DNA.
+
+---
+
+PHASE 2 — Diversity Injection
+
+Each candidate must vary:
+
+- section ordering
+- layout style
+- hero variant
+- card layout
+- CTA structure
+
+Must NOT vary:
+
+- business content
+- brand
+- user requirements
+
+---
+
+PHASE 3 — Parallel Generation
+
+Run:
+
+A
+B
+C
+
+in parallel.
+
+Use existing provider system.
+
+No new providers.
+
+---
+
+PHASE 4 — Candidate Evaluation
+
+Run evaluator on:
+
+A
+B
+C
+
+independently.
+
+Capture:
+
+overallScore
+
+dimension scores:
+
+- Hero
+- Layout
+- CTA
+- Accessibility
+- Shadcn
+- Consistency
+
+---
+
+PHASE 5 — Best Candidate Selection
+
+Select:
+
+highest evaluator score
+
+Rules:
+
+If score difference < 0.2
+
+Prefer:
+
+higher accessibility
+
+Then:
+
+higher shadcn
+
+Then:
+
+higher consistency
+
+---
+
+PHASE 6 — Repair Only Winner
+
+Only winning candidate enters:
+
+Repair Loop
+
+Do not repair losers.
+
+Reduces cost.
+
+---
+
+PHASE 7 — Telemetry
+
+Extend:
+
+/telemetry/quality
+
+Add:
+
+multiCandidate:
+
+{
+candidateCount,
+candidateScores,
+winnerScore,
+averageCandidateScore,
+selectionDelta
+}
+
+selectionDelta:
+
+winnerScore
+
+averageScore
+
+Measures quality lift.
+
+---
+
+PHASE 8 — RAG Feedback Integration
+
+Winning candidate updates:
+
+referenceMetrics
+
+Losing candidates do NOT.
+
+Only successful designs teach the system.
+
+---
+
+PHASE 9 — Tests
+
+Create:
+
+tests/multi-candidate/
+
+Verify:
+
+- 3 candidates generated
+- evaluator runs 3 times
+- best score selected
+- tie breaker works
+- only winner repaired
+- telemetry updated
+- reference metrics updated only for winner
+
+---
+
+PHASE 10 — Audit
+
+Create:
+
+artifacts/api-server/v7.2.0Audit.md
+
+Must answer:
+
+Average score before selection?
+
+Average score after selection?
+
+Selection lift?
+
+Repair reduction?
+
+Telemetry verified?
+
+Tests added?
+
+Remaining gaps?
+
+Evidence only.
+
+No estimates.
+
+No assumptions.
+
+---
+
+Success Criteria
+
+3 candidates generated:
+YES
+
+Best candidate selected:
+YES
+
+Repair winner only:
+YES
+
+Telemetry active:
+YES
+
+RAG learns only from winner:
+YES
+
+Tests passing:
+YES
+
+No queue changes:
+YES
+
+No SSE changes:
+YES
+
+No provider changes:
+YES
+
+Expected quality improvement:
+
++0.5 to +1.2 evaluator score
+
+without changing models.

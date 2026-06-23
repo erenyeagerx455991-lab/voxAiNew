@@ -3,6 +3,7 @@ import { sse } from "../streaming/sseManager.js";
 import { runPlannerStep } from "./plannerStep.js";
 import { runArchitectureStep } from "./architectureStep.js";
 import { runFrontendStep } from "./frontendStep.js";
+import { runCandidateSelectionStep } from "./candidateSelectionStep.js";
 import { runRepairStep } from "./repairStep.js";
 import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runBackendStep } from "./backendStep.js";
@@ -44,8 +45,14 @@ export async function runBuildPipeline(
       runFrontendStep(architecture, prompt, keys, res)
     );
 
+    // V7.2.0: generate B+C candidates, evaluate all 3, select best
+    const { winner } = await withAgentMetrics("CandidateSelection", () =>
+      runCandidateSelectionStep(frontend, prompt, keys, res, buildId)
+    );
+
+    // Phase 6: only the winning candidate enters the repair loop
     const repairedFrontend = await withAgentMetrics("Repair", () =>
-      runRepairStep(frontend, keys, res)
+      runRepairStep(winner, keys, res)
     );
 
     const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
