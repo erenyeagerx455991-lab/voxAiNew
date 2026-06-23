@@ -3,6 +3,7 @@ import { sse } from "../streaming/sseManager.js";
 import { evaluateDesign } from "../designEvaluator/evaluator.js";
 import { runDesignRepair } from "../designEvaluator/repairAgent.js";
 import { recordEvaluatorScore } from "../../telemetry/evaluatorMetrics.js";
+import { recordComponentBuildResult } from "../../quality/componentMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -22,6 +23,7 @@ export interface EvaluatorResult {
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
+  componentsUsed: Array<{ componentId: string; category: string }>;
 }
 
 export interface EvaluatorStepOutput extends FrontendOutput {
@@ -160,6 +162,29 @@ export async function runDesignEvaluatorStep(
     repairApplied,
   });
 
+  // ── V7.1.6 Phase 2+6: Record per-component metrics from registry selection ──
+  const registrySelection = frontend.registrySelection ?? {};
+  const componentsUsed = Object.entries(registrySelection)
+    .filter(([, hint]) => typeof hint === "string" && hint.length > 0)
+    .map(([category, hint]) => ({
+      category,
+      componentId: hint.split(/\s/)[0] ?? hint,
+    }));
+
+  if (componentsUsed.length > 0) {
+    const designScore =
+      (evalResult.heroScore + evalResult.layoutScore + evalResult.ctaScore +
+       evalResult.shadcnScore + evalResult.consistencyScore) / 5;
+    recordComponentBuildResult({
+      componentsUsed,
+      overallScore: evalResult.overallScore,
+      designScore,
+      accessibilityScore: evalResult.accessibilityScore,
+      repairApplied,
+    });
+    log.info("COMPONENT_METRICS_RECORDED", { count: componentsUsed.length, repairApplied });
+  }
+
   log.info("DESIGN_EVAL_COMPLETE", {
     finalScore: evalResult.overallScore,
     repairCount,
@@ -171,6 +196,7 @@ export async function runDesignEvaluatorStep(
     ...evalResult,
     repairCount,
     repairApplied,
+    componentsUsed,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

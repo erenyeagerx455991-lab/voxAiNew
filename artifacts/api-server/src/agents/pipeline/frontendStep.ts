@@ -10,6 +10,7 @@ import { truncateForGroq } from "../../contextManager.js";
 import type { DesignDNA, ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
+import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
 
 const log = createLogger("FrontendStep");
 
@@ -143,6 +144,22 @@ export async function runFrontendStep(
   let registrySelection: Record<string, string> = {};
   try {
     registrySelection = selectRegistryComponentsServer(dnaComposition, blueprint, projectBlueprint);
+
+    // ── V7.1.6 Phase 4: Swap deprecated components with best alternatives ──
+    for (const [category, hint] of Object.entries(registrySelection)) {
+      const componentId = hint.split(/\s/)[0];
+      if (componentId && isComponentDeprecated(componentId)) {
+        const alt = getBestAlternativeInCategory(category, componentId);
+        if (alt) {
+          registrySelection[category] = alt;
+          log.warn("REGISTRY_DEPRECATED_SWAPPED", { category, from: componentId, to: alt });
+        } else {
+          delete registrySelection[category];
+          log.warn("REGISTRY_DEPRECATED_REMOVED", { category, componentId });
+        }
+      }
+    }
+
     if (Object.keys(registrySelection).length > 0) {
       log.info("REGISTRY_SELECTED", { count: Object.keys(registrySelection).length });
       sse(res, { type: "registry_selection", selection: registrySelection });

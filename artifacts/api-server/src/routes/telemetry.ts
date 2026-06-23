@@ -9,6 +9,7 @@ import { getBudgetMetrics } from "../cost/budgetMetrics.js";
 import { getBudgetUsage } from "../cost/tokenBudget.js";
 import { getAllUserStats } from "../limits/userLimits.js";
 import { getQualityMetrics } from "../telemetry/qualityMetrics.js";
+import { getComponentQualityMetrics } from "../quality/componentMetrics.js";
 
 const router: Router = Router();
 
@@ -57,6 +58,7 @@ router.get("/telemetry/queue", authMiddleware, (_req, res) => {
 router.get("/telemetry/quality", authMiddleware, (_req, res) => {
   res.json({
     quality: getQualityMetrics(),
+    componentQuality: getComponentQualityMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });
