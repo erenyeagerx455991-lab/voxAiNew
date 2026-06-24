@@ -440,6 +440,425 @@ export const DIVERSITY_TEMPLATES: any[] = [
 }`,
   },
 
+  // ══════════════════════════════════════════════════════════════════
+  // NAVBAR V3 — 5 NavigationMenu-first premium templates (V7.2.5)
+  // All templates: NavigationMenu + Sheet mobile + full a11y
+  // Priority: 15 (highest — always preferred over V2)
+  // ══════════════════════════════════════════════════════════════════
+
+  {
+    id: 'navbar-navigation-v1', name: 'Navbar NavigationMenu SaaS', category: 'navbar',
+    industries: ['saas', 'ai', 'startup', 'generic'],
+    tags: ['navigation-menu', 'sheet-mobile', 'dropdown', 'linear-dna', 'vercel-dna', 'a11y'],
+    description: 'Clean SaaS navbar: NavigationMenu desktop nav with 1 dropdown trigger + Sheet mobile menu. Linear/Vercel DNA.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-8">
+          <span className="text-white font-bold text-base tracking-tight">SITE_NAME</span>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_PRODUCT</NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <div className="p-2 w-56">
+                      <NavigationMenuLink href="#" className="mb-0.5 text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_FEATURE_1</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_FEATURE_2</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_DOCS</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
+          <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0d0d0d] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-base tracking-tight mb-5 px-4 block">SITE_NAME</span>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DOCS</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</a>
+            <div className="border-t border-white/8 mt-3 pt-4 px-4">
+              <Button type="button" className="w-full bg-white text-black font-semibold text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-navigation-v2', name: 'Navbar NavigationMenu Mega Menu', category: 'navbar',
+    industries: ['saas', 'startup', 'agency', 'ai'],
+    tags: ['navigation-menu', 'mega-menu', 'sheet-mobile', 'two-triggers', 'framer-dna', 'a11y'],
+    description: 'Creative mega-menu navbar: 2 NavigationMenu triggers with rich content panels + Sheet mobile. Framer DNA.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#080808]/95 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-8 flex items-center justify-between h-16">
+        <div className="flex items-center gap-10">
+          <div>
+            <div className="text-white font-black text-lg tracking-tight leading-none">SITE_NAME</div>
+          </div>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_PRODUCTS</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[380px]">
+                    <div className="p-4 grid grid-cols-2 gap-2">
+                      <div className="col-span-2 mb-1">
+                        <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600 px-2 mb-1">NAV_CAT_BUILD</p>
+                      </div>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">
+                        <span className="font-medium text-white block text-xs">NAV_PRODUCT_1</span>
+                        <span className="text-[11px] text-gray-500 mt-0.5 block leading-snug">NAV_PRODUCT_1_DESC</span>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">
+                        <span className="font-medium text-white block text-xs">NAV_PRODUCT_2</span>
+                        <span className="text-[11px] text-gray-500 mt-0.5 block leading-snug">NAV_PRODUCT_2_DESC</span>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">
+                        <span className="font-medium text-white block text-xs">NAV_PRODUCT_3</span>
+                        <span className="text-[11px] text-gray-500 mt-0.5 block leading-snug">NAV_PRODUCT_3_DESC</span>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">
+                        <span className="font-medium text-white block text-xs">NAV_PRODUCT_4</span>
+                        <span className="text-[11px] text-gray-500 mt-0.5 block leading-snug">NAV_PRODUCT_4_DESC</span>
+                      </NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_SOLUTIONS</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[260px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_1</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_2</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_3</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <NavigationMenuLink href="#" className="hidden md:flex text-xs font-semibold tracking-wide uppercase text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
+          <Button type="button" className="text-black bg-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA →</Button>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#080808] border-r border-white/8 w-[300px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-black text-lg tracking-tight mb-5 px-4 block">SITE_NAME</span>
+            <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600 px-4 mb-1">NAV_CAT_BUILD</p>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_1</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_2</a>
+            <Separator className="bg-white/8 my-2" />
+            <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600 px-4 mb-1">NAV_CAT_SOLUTIONS</p>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_1</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</a>
+            <div className="border-t border-white/8 mt-3 pt-4 px-4">
+              <Button type="button" className="w-full bg-white text-black font-bold text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA →</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-navigation-v3', name: 'Navbar NavigationMenu Enterprise', category: 'navbar',
+    industries: ['saas', 'fintech', 'startup', 'generic'],
+    tags: ['navigation-menu', 'enterprise', 'three-triggers', 'sheet-mobile', 'utility-bar', 'badge', 'a11y'],
+    description: 'Enterprise navbar: 3-trigger NavigationMenu, top utility bar, Badge on new feature, Sheet mobile. Full a11y.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 flex flex-col">
+      <div className="bg-white/3 border-b border-white/5 hidden md:block">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-end h-8 gap-6">
+          <a href="#" className="text-gray-600 hover:text-gray-300 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-sm">NAV_STATUS</a>
+          <a href="#" className="text-gray-600 hover:text-gray-300 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-sm">NAV_CHANGELOG</a>
+          <a href="#" className="text-gray-600 hover:text-gray-300 text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-sm">NAV_LOGIN</a>
+        </div>
+      </div>
+      <div className="bg-black/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 flex items-center h-14 gap-8">
+          <span className="text-white font-bold text-base shrink-0 tracking-tight">SITE_NAME</span>
+          <div className="hidden md:flex flex-1">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_PRODUCT</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[280px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_FEATURE_1</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_FEATURE_2</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_FEATURE_3</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_SOLUTIONS</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[260px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_ENTERPRISE</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTION_STARTUP</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">
+                    NAV_RESOURCES
+                    <Badge className="ml-2 text-[9px] px-1.5 py-0 bg-indigo-500/20 text-indigo-300 border-indigo-500/30">NEW</Badge>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[240px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_DOCS</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_BLOG</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_COMMUNITY</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+          <div className="flex items-center gap-3 shrink-0 ml-auto">
+            <Button type="button" variant="outline" className="border-white/15 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/5 hidden md:flex focus-visible:ring-2 focus-visible:ring-white/40">NAV_DEMO</Button>
+            <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+            <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+              <span aria-hidden="true" className="text-base font-bold">☰</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[290px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-base tracking-tight mb-5 px-4 block">SITE_NAME</span>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_SOLUTIONS</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_RESOURCES</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</a>
+            <a href="#" className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</a>
+            <div className="border-t border-white/8 mt-3 pt-4 px-4 flex flex-col gap-2">
+              <Button type="button" variant="outline" className="w-full border-white/15 text-white text-sm rounded-lg hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-white/40">NAV_DEMO</Button>
+              <Button type="button" className="w-full bg-white text-black font-semibold text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-navigation-enterprise-v1', name: 'Navbar NavigationMenu Wide Mega', category: 'navbar',
+    industries: ['fintech', 'saas', 'startup'],
+    tags: ['navigation-menu', 'wide-mega-menu', 'stripe-dna', 'sheet-mobile', 'five-columns', 'a11y'],
+    description: 'Stripe-DNA enterprise navbar: full-width mega menu with 4-column product grid + Sheet mobile + CTA.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-10">
+          <span className="text-white font-bold text-base tracking-tight shrink-0">SITE_NAME</span>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_PRODUCTS</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[560px]">
+                    <div className="p-5">
+                      <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600 mb-3">NAV_CAT_PAYMENTS</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <NavigationMenuLink href="#" className="text-sm focus-visible:ring-2 focus-visible:ring-white/40">
+                          <span className="font-semibold text-white text-xs block">NAV_PRODUCT_A</span>
+                          <span className="text-[11px] text-gray-500 leading-snug block mt-0.5">NAV_PRODUCT_A_DESC</span>
+                        </NavigationMenuLink>
+                        <NavigationMenuLink href="#" className="text-sm focus-visible:ring-2 focus-visible:ring-white/40">
+                          <span className="font-semibold text-white text-xs block">NAV_PRODUCT_B</span>
+                          <span className="text-[11px] text-gray-500 leading-snug block mt-0.5">NAV_PRODUCT_B_DESC</span>
+                        </NavigationMenuLink>
+                        <NavigationMenuLink href="#" className="text-sm focus-visible:ring-2 focus-visible:ring-white/40">
+                          <span className="font-semibold text-white text-xs block">NAV_PRODUCT_C</span>
+                          <span className="text-[11px] text-gray-500 leading-snug block mt-0.5">NAV_PRODUCT_C_DESC</span>
+                        </NavigationMenuLink>
+                        <NavigationMenuLink href="#" className="text-sm focus-visible:ring-2 focus-visible:ring-white/40">
+                          <span className="font-semibold text-white text-xs block">NAV_PRODUCT_D</span>
+                          <span className="text-[11px] text-gray-500 leading-snug block mt-0.5">NAV_PRODUCT_D_DESC</span>
+                        </NavigationMenuLink>
+                      </div>
+                      <Separator className="my-3 bg-white/8" />
+                      <div className="flex items-center gap-2">
+                        <NavigationMenuLink href="#" className="text-xs text-indigo-400 hover:text-indigo-300 focus-visible:ring-2 focus-visible:ring-white/40 px-2 py-1">NAV_EXPLORE_ALL →</NavigationMenuLink>
+                      </div>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_DEVELOPERS</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[260px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_API_DOCS</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_SDK</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_CHANGELOG</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-4 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_SIGN_IN</NavigationMenuLink>
+          <Button type="button" className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_START_FREE</Button>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[290px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-base tracking-tight mb-5 px-4 block">SITE_NAME</span>
+            <p className="text-[10px] font-semibold tracking-widest uppercase text-gray-600 px-4 mb-1">NAV_CAT_PAYMENTS</p>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_A</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT_B</a>
+            <Separator className="bg-white/8 my-2" />
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DEVELOPERS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</a>
+            <div className="border-t border-white/8 mt-3 pt-4 px-4">
+              <Button type="button" className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_START_FREE</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-navigation-saas-v1', name: 'Navbar NavigationMenu SaaS Badge CTA', category: 'navbar',
+    industries: ['saas', 'startup', 'ai', 'generic'],
+    tags: ['navigation-menu', 'badge-cta', 'sheet-mobile', 'announcement-badge', 'notion-dna', 'a11y'],
+    description: 'SaaS navbar with NavigationMenu links, announcement Badge, ghost login, solid CTA + Sheet mobile. No dropdowns.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const links = [
+    { label: 'NAV_FEATURES', href: '#' },
+    { label: 'NAV_PRICING', href: '#' },
+    { label: 'NAV_BLOG', href: '#' },
+    { label: 'NAV_ABOUT', href: '#' },
+  ];
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#0c0c0c]/96 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-white flex items-center justify-center" aria-hidden="true">
+              <div className="w-3 h-3 rounded-sm bg-black" />
+            </div>
+            <span className="text-white font-bold text-base tracking-tight">SITE_NAME</span>
+          </div>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                {links.map(link => (
+                  <NavigationMenuItem key={link.label}>
+                    <NavigationMenuLink href={link.href} className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">
+                      {link.label}
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <a href="#" className="hidden md:flex items-center gap-2 bg-white/6 hover:bg-white/10 border border-white/10 rounded-full px-3 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+            <Badge className="bg-indigo-500/20 text-indigo-300 border-indigo-500/30 text-[10px] px-1.5 py-0 rounded-full">NAV_BADGE_LABEL</Badge>
+            <span className="text-gray-300 text-xs font-medium">NAV_ANNOUNCEMENT</span>
+            <span aria-hidden="true" className="text-gray-600 text-xs">→</span>
+          </a>
+          <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
+          <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0c0c0c] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2.5 mb-5 px-4">
+              <div className="w-6 h-6 rounded-md bg-white flex items-center justify-center" aria-hidden="true">
+                <div className="w-2.5 h-2.5 rounded-sm bg-black" />
+              </div>
+              <span className="text-white font-bold text-sm tracking-tight">SITE_NAME</span>
+            </div>
+            {links.map(link => (
+              <a key={link.label} href={link.href} className="px-4 py-3 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+                {link.label}
+              </a>
+            ))}
+            <div className="border-t border-white/8 mt-3 pt-4 px-4 flex flex-col gap-2">
+              <a href="#" className="w-full text-center py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</a>
+              <Button type="button" className="w-full bg-white text-black font-semibold text-sm rounded-lg focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
 
   // ══════════════════════════════════════════════════════════════════
   // CTA V2 — 6 architecturally distinct CTA layouts

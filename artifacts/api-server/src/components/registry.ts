@@ -1306,24 +1306,30 @@ const PRICING_REFERENCE_MAP: Record<string, string> = {
   'figma':    'pricing-cardstack-v1',
 };
 
-// Phase 3 — Maps reference site keywords to navbar template IDs (V2)
+// Phase 3 + V7.2.5 — Maps reference site keywords to navbar template IDs
+// V7.2.5: All major DNA brands now route to NavigationMenu-based templates (priority 15)
 const NAVBAR_REFERENCE_MAP: Record<string, string> = {
-  'linear':      'navbar-minimal-v2',
-  'vercel':      'navbar-minimal-v2',
-  'cursor':      'navbar-minimal-v2',
-  'notion':      'navbar-editorial-v2',
-  'framer':      'navbar-editorial-v2',
-  'webflow':     'navbar-editorial-v2',
-  'stripe':      'navbar-enterprise-v2',
-  'paypal':      'navbar-enterprise-v2',
+  'linear':      'navbar-navigation-v1',     // Clean SaaS NavigationMenu (Linear DNA)
+  'vercel':      'navbar-navigation-v1',     // Clean SaaS NavigationMenu (Vercel DNA)
+  'cursor':      'navbar-navigation-v1',     // Clean SaaS NavigationMenu
+  'notion':      'navbar-navigation-saas-v1', // Badge CTA + NavigationMenu links (Notion DNA)
+  'framer':      'navbar-navigation-v2',     // Mega menu 2-trigger (Framer DNA)
+  'webflow':     'navbar-navigation-v2',     // Mega menu (Webflow DNA)
+  'stripe':      'navbar-navigation-enterprise-v1', // Wide mega menu (Stripe DNA)
+  'paypal':      'navbar-navigation-enterprise-v1', // Wide mega menu (Fintech DNA)
+  'apple':       'navbar-navigation-v3',     // Enterprise 3-trigger (Apple DNA)
 };
 
-// Phase 3 — Navbar routing by industry (when no primaryReference)
+// V7.2.5 — Navbar routing by industry (when no primaryReference)
+// All default to NavigationMenu-based templates
 const NAVBAR_INDUSTRY_MAP: Record<string, string> = {
-  'agency':     'navbar-floating-v2',
-  'portfolio':  'navbar-floating-v2',
-  'restaurant': 'navbar-minimal-v1',
-  'fintech':    'navbar-enterprise-v2',
+  'agency':     'navbar-navigation-v2',        // Mega menu creative DNA
+  'portfolio':  'navbar-navigation-v1',        // Clean SaaS NavigationMenu
+  'restaurant': 'navbar-navigation-saas-v1',  // Simple links NavigationMenu
+  'fintech':    'navbar-navigation-enterprise-v1', // Wide mega menu
+  'saas':       'navbar-navigation-v1',        // Default SaaS
+  'ai':         'navbar-navigation-v1',        // Default AI
+  'startup':    'navbar-navigation-saas-v1',  // Announcement badge CTA
 };
 
 // Phase 2 — Maps reference site keywords to bento template IDs (V2)

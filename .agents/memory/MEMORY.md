@@ -45,3 +45,4 @@
 - [VoxAI V7.1.9 Design RAG Feedback Loop](voxai-v719-rag-feedback.md) — referenceMetrics.ts per-ref store; dynamic quality score (4-factor formula); auto promotion/demotion after 5 outcomes; leaderboard; designRag in /telemetry/quality; 634 tests pass.
 - [VoxAI V7.2.0 Multi-Candidate Generation](voxai-v720-multi-candidate.md) — A/B/C candidates parallel; evaluator selects best; tie-break on accessibility→shadcn→consistency; only winner to repair; multiCandidate in /telemetry/quality; 656 tests pass.
 - [VoxAI V7.2.1 Benchmark Framework](voxai-v721-benchmark.md) — 20 prompts × 10 categories; comparison engine; Phase 6+7+8 deltas+weakness detection; benchmarkMetrics seeded with reference baselines; benchmark in /telemetry/quality; 693 tests pass.
+- [VoxAI V7.2.5 NavigationMenu Foundation](voxai-v725-navigation.md) — 5 priority-15 navbar templates; navigationScore 8th evaluator dim; NAVBAR_REFERENCE_MAP updated; navigationMetrics.ts; 910 tests pass.

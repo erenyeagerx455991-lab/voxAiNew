@@ -82,9 +82,9 @@ const SECTION_DEFAULTS: Record<string, RecommendationResult> = {
     rationale: 'CTA: solid <Button> + optional email <Input>; <Dialog> for confirmation flow',
   },
   navbar: {
-    primary:   ['Button', 'NavigationMenu'],
-    secondary: ['DropdownMenu', 'Sheet', 'Drawer'],
-    rationale: 'Navbar: <NavigationMenu> for links, <Sheet>/<Drawer> for mobile menu',
+    primary:   ['NavigationMenu', 'NavigationMenuList', 'NavigationMenuItem', 'NavigationMenuLink', 'Button', 'Sheet'],
+    secondary: ['NavigationMenuTrigger', 'NavigationMenuContent', 'Badge', 'Separator'],
+    rationale: 'Navbar: ALWAYS use <NavigationMenu><NavigationMenuList><NavigationMenuItem> for desktop links — NEVER raw divs. ALWAYS use <Sheet><SheetContent side="left"> for mobile menu. Add aria-label="Main navigation" to <nav>.',
   },
   footer: {
     primary:   ['Separator'],
@@ -160,15 +160,17 @@ function getDominantDNA(dna: Record<string, number>): string {
 }
 
 const DNA_EXTRAS: Record<string, string[]> = {
-  linear:     ['Command', 'DataTable', 'Menubar'],
-  vercel:     ['Tabs', 'Command', 'NavigationMenu'],
-  stripe:     ['DataTable', 'Tabs', 'Dialog'],
-  notion:     ['Command', 'Tabs', 'HoverCard'],
-  shadcn:     ['Command', 'DataTable', 'Menubar', 'Calendar'],
-  figma:      ['Tabs', 'Tooltip', 'HoverCard'],
-  loom:       ['Dialog', 'Progress', 'Skeleton'],
-  discord:    ['DropdownMenu', 'Menubar', 'Sheet'],
-  github:     ['Tabs', 'Badge', 'DataTable', 'Command'],
+  linear:     ['NavigationMenu', 'Command', 'DataTable', 'Menubar'],
+  vercel:     ['NavigationMenu', 'Tabs', 'Command'],
+  stripe:     ['NavigationMenu', 'DataTable', 'Tabs', 'Dialog'],
+  notion:     ['NavigationMenu', 'Command', 'Tabs', 'HoverCard'],
+  framer:     ['NavigationMenu', 'Tabs', 'Tooltip', 'HoverCard'],
+  apple:      ['NavigationMenu', 'Separator', 'Badge'],
+  shadcn:     ['NavigationMenu', 'Command', 'DataTable', 'Menubar', 'Calendar'],
+  figma:      ['NavigationMenu', 'Tabs', 'Tooltip', 'HoverCard'],
+  loom:       ['NavigationMenu', 'Dialog', 'Progress', 'Skeleton'],
+  discord:    ['NavigationMenu', 'DropdownMenu', 'Menubar', 'Sheet'],
+  github:     ['NavigationMenu', 'Tabs', 'Badge', 'DataTable', 'Command'],
 };
 
 // ── Phase 5 — Component coverage audit ───────────────────────────────────────

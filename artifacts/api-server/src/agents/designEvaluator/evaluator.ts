@@ -8,7 +8,7 @@ export interface EvaluationInput {
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -21,6 +21,7 @@ export interface EvaluationResult {
   accessibilityScore: number;
   shadcnScore: number;
   coverageScore: number;
+  navigationScore: number;
   consistencyScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
@@ -316,6 +317,58 @@ function scoreShadcn(code: string): { score: number; issues: EvaluationIssue[] }
   return { score: Math.min(10, score), issues };
 }
 
+// V7.2.5: Navigation quality score (0–10)
+// Checks NavigationMenu usage, Sheet mobile menu, aria attributes, focus states
+function scoreNavigation(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  // 1. NavigationMenu component (+3) — core requirement
+  if (/<NavigationMenu[\s>]/.test(code)) {
+    score += 3;
+  } else {
+    issues.push({ category: 'navigation', severity: 'critical', message: 'No <NavigationMenu> component found in navbar — replace raw div navigation with <NavigationMenu><NavigationMenuList><NavigationMenuItem> for structured, accessible desktop navigation' });
+  }
+
+  // 2. aria-label="Main navigation" on nav element (+2)
+  if (/aria-label=["']Main navigation["']/i.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'navigation', severity: 'major', message: 'Missing aria-label="Main navigation" on the <nav> element — add it for screen-reader landmark navigation compliance (WCAG 2.4.1)' });
+  }
+
+  // 3. Sheet for mobile menu (+2) — no custom overlays
+  if (/<Sheet[\s>]/.test(code) || /<SheetContent[\s>]/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'navigation', severity: 'major', message: 'No <Sheet> mobile menu found — replace custom hamburger overlays with <Sheet><SheetContent side="left"> for a consistent, accessible mobile navigation drawer' });
+  }
+
+  // 4. focus-visible:ring on nav links (+2) — keyboard navigation
+  const navBlock = extractFunctionBlock(code, 'Navbar');
+  const focusVisibleInNav = (navBlock.match(/focus-visible:ring/g) ?? []).length;
+  if (focusVisibleInNav >= 2) {
+    score += 2;
+  } else if (focusVisibleInNav === 1) {
+    score += 1;
+    issues.push({ category: 'navigation', severity: 'minor', message: 'Only 1 focus-visible:ring in Navbar — add focus-visible:outline-none focus-visible:ring-2 to all nav links, buttons, and the mobile toggle for keyboard accessibility' });
+  } else {
+    issues.push({ category: 'navigation', severity: 'major', message: 'No focus-visible:ring in Navbar component — keyboard users cannot see which nav item is focused; add focus-visible:ring-2 to every interactive element' });
+  }
+
+  // 5. Mobile toggle has type="button" + aria-expanded (+1)
+  const hasMobileToggle = /aria-expanded={mobileOpen}/.test(code) || /aria-expanded=["']/.test(code);
+  const hasTypeButton = /<button\s[^>]*type=["']button["'][^>]*aria-label=["'][^"']*menu/i.test(code) ||
+                        /aria-label=["'][^"']*menu[^"']*["'][^>]*type=["']button["']/i.test(code);
+  if (hasMobileToggle || hasTypeButton) {
+    score += 1;
+  } else if (/<button.*aria-label.*toggle|open.*menu/i.test(code)) {
+    score += 1;
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
 // V7.2.4: Component diversity coverage score (0–10)
 function scoreCoverage(code: string): { score: number; issues: EvaluationIssue[]; coveragePercent: number; componentUsage: Record<string, number> } {
   const issues: EvaluationIssue[] = [];
@@ -396,28 +449,39 @@ function scoreConsistency(code: string): { score: number; issues: EvaluationIssu
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.4: coverage replaces part of shadcn weight for richer scoring
-const WEIGHTS = { hero: 0.25, layout: 0.20, cta: 0.15, accessibility: 0.20, shadcn: 0.08, coverage: 0.07, consistency: 0.05 };
+// V7.2.5: navigation added; weights redistributed to sum to 1.00
+const WEIGHTS = {
+  hero:         0.22,
+  layout:       0.18,
+  cta:          0.14,
+  accessibility: 0.18,
+  shadcn:       0.08,
+  coverage:     0.07,
+  navigation:   0.08,
+  consistency:  0.05,
+};
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const { code, sectionOrder } = input;
 
-  const hero = scoreHero(code, sectionOrder);
-  const layout = scoreLayout(code, sectionOrder);
-  const cta = scoreCTA(code);
+  const hero         = scoreHero(code, sectionOrder);
+  const layout       = scoreLayout(code, sectionOrder);
+  const cta          = scoreCTA(code);
   const accessibility = scoreAccessibility(code);
-  const shadcn = scoreShadcn(code);
-  const coverage = scoreCoverage(code);
-  const consistency = scoreConsistency(code);
+  const shadcn       = scoreShadcn(code);
+  const coverage     = scoreCoverage(code);
+  const navigation   = scoreNavigation(code);
+  const consistency  = scoreConsistency(code);
 
   const overallScore =
     Math.round(
-      (hero.score * WEIGHTS.hero +
-        layout.score * WEIGHTS.layout +
-        cta.score * WEIGHTS.cta +
+      (hero.score         * WEIGHTS.hero +
+        layout.score      * WEIGHTS.layout +
+        cta.score         * WEIGHTS.cta +
         accessibility.score * WEIGHTS.accessibility +
-        shadcn.score * WEIGHTS.shadcn +
-        coverage.score * WEIGHTS.coverage +
+        shadcn.score      * WEIGHTS.shadcn +
+        coverage.score    * WEIGHTS.coverage +
+        navigation.score  * WEIGHTS.navigation +
         consistency.score * WEIGHTS.consistency) * 10
     ) / 10;
 
@@ -428,6 +492,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...accessibility.issues,
     ...shadcn.issues,
     ...coverage.issues,
+    ...navigation.issues,
     ...consistency.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
@@ -436,15 +501,16 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
 
   return {
     overallScore,
-    heroScore: hero.score,
-    layoutScore: layout.score,
-    ctaScore: cta.score,
+    heroScore:         hero.score,
+    layoutScore:       layout.score,
+    ctaScore:          cta.score,
     accessibilityScore: accessibility.score,
-    shadcnScore: shadcn.score,
-    coverageScore: coverage.score,
-    consistencyScore: consistency.score,
-    coveragePercent: coverage.coveragePercent,
-    componentUsage: coverage.componentUsage,
-    issues: allIssues,
+    shadcnScore:       shadcn.score,
+    coverageScore:     coverage.score,
+    navigationScore:   navigation.score,
+    consistencyScore:  consistency.score,
+    coveragePercent:   coverage.coveragePercent,
+    componentUsage:    coverage.componentUsage,
+    issues:            allIssues,
   };
 }
