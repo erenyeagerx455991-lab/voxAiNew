@@ -7,6 +7,7 @@ import { runCandidateSelectionStep } from "./candidateSelectionStep.js";
 import { runRepairStep } from "./repairStep.js";
 import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runDesignCriticStep } from "./designCriticStep.js";
+import { runConversionStep } from "./conversionStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -65,8 +66,13 @@ export async function runBuildPipeline(
       runDesignCriticStep(evaluatedFrontend, keys, res)
     );
 
+    // V7.3.1: Conversion Intelligence Engine — CRO analysis + targeted repair
+    const conversionFrontend = await withAgentMetrics("ConversionIntelligence", () =>
+      runConversionStep(criticFrontend, keys, res)
+    );
+
     const backend = await withAgentMetrics("Scaffold", () =>
-      runBackendStep(architecture, criticFrontend, keys, res)
+      runBackendStep(architecture, conversionFrontend, keys, res)
     );
 
     const runtimeResult = await withAgentMetrics("RuntimeValidation", () =>
@@ -83,7 +89,7 @@ export async function runBuildPipeline(
 
     sse(res, {
       type: "done",
-      code: criticFrontend.fixedCode,
+      code: conversionFrontend.fixedCode,
       plan: cleanPlan,
       blueprint,
       projectBlueprint: architecture.projectBlueprint,

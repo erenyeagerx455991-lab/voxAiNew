@@ -1,0 +1,324 @@
+V7.3.1 — Conversion Intelligence Engine
+
+Context
+
+VoxAI already includes:
+
+- V7.3.0 Design Critic Agent
+- Motion Intelligence
+- Design Evaluator
+- Multi-Candidate Generation
+- Section-Level Design RAG
+- Dashboard Intelligence
+- Forms Intelligence
+- Auth Intelligence
+- Design DNA System
+
+Current Quality:
+
+- Design Quality ≈ 9.8
+- Accessibility ≈ 9.5+
+- Motion ≈ 9.2+
+- Critic Score ≈ 9.0+
+
+Remaining gap:
+
+- Conversion optimization
+- Trust sequencing
+- CTA psychology
+- Pricing psychology
+- Offer framing
+- Funnel optimization
+
+---
+
+Goal
+
+Upgrade VoxAI from:
+
+"Beautiful websites"
+
+to
+
+"Beautiful websites that convert"
+
+similar to:
+
+- Stripe
+- Linear
+- Ramp
+- Notion
+- Shopify
+
+---
+
+PHASE 1 — Conversion Analyzer
+
+Create:
+
+conversionAnalyzer.ts
+
+Analyze:
+
+- CTA placement
+- Trust placement
+- Social proof
+- Pricing clarity
+- Offer clarity
+- Friction points
+- CTA hierarchy
+- Decision flow
+
+Output:
+
+ConversionReport
+
+---
+
+PHASE 2 — Trust Signal Intelligence
+
+Detect:
+
+- customer logos
+- testimonials
+- metrics
+- awards
+- ratings
+- review counts
+- user counts
+
+Score:
+
+trustScore
+
+0–10
+
+Rules:
+
+Hero CTA without trust signal = penalty
+
+Pricing without proof = penalty
+
+---
+
+PHASE 3 — CTA Intelligence
+
+Detect:
+
+Primary CTA
+
+Secondary CTA
+
+Micro CTA
+
+Rules:
+
+One dominant CTA only.
+
+Disallow:
+
+- 4 equal buttons
+- competing CTAs
+- CTA overload
+
+---
+
+PHASE 4 — Pricing Psychology
+
+Evaluate:
+
+- highlighted plan
+- savings badge
+- annual toggle
+- feature comparison
+- risk reversal
+
+Detect:
+
+pricing confusion
+
+pricing overload
+
+pricing parity
+
+---
+
+PHASE 5 — Offer Clarity
+
+Detect:
+
+- vague value propositions
+- generic promises
+- weak differentiation
+
+Bad:
+
+"Transform your business"
+
+Good:
+
+"Reduce support tickets by 42% using AI workflows"
+
+---
+
+PHASE 6 — Funnel Sequencing
+
+Ideal flow:
+
+Hero
+↓
+Trust
+↓
+Features
+↓
+Proof
+↓
+Pricing
+↓
+CTA
+
+Detect:
+
+missing stages
+
+out-of-order stages
+
+repeated stages
+
+---
+
+PHASE 7 — Conversion Score
+
+Add:
+
+conversionScore
+
+Weight:
+
+0.05
+
+Checks:
+
+trust
+CTA hierarchy
+offer clarity
+pricing psychology
+funnel structure
+
+Score:
+
+0–10
+
+---
+
+PHASE 8 — Conversion Repair
+
+If:
+
+conversionScore < 8.5
+
+Run:
+
+conversionRepair()
+
+Fix:
+
+- CTA placement
+- trust placement
+- proof ordering
+- pricing emphasis
+
+Never alter:
+
+business identity
+DNA
+core content
+
+---
+
+PHASE 9 — Conversion Telemetry
+
+Create:
+
+conversionMetrics.ts
+
+Track:
+
+conversionScore
+trustScore
+ctaScore
+pricingScore
+repairRate
+
+Expose:
+
+GET /api/telemetry/quality
+
+conversionQuality
+
+---
+
+PHASE 10 — Learning Loop
+
+Track:
+
+Which conversion fixes increase:
+
+- evaluatorScore
+- criticScore
+- finalScore
+
+Promote:
+
+high-impact fixes
+
+Demote:
+
+ineffective fixes
+
+Create:
+
+conversionLearning.ts
+
+---
+
+Success Criteria
+
+Conversion Score:
+≥ 9.2
+
+Trust Score:
+≥ 9.3
+
+CTA Quality:
+≥ 9.5
+
+Pricing Quality:
+≥ 9.0
+
+Repair Rate:
+≤ 10%
+
+Overall Quality:
+≥ 9.9
+
+---
+
+Hard Constraints
+
+Do NOT modify:
+
+- Queue system
+- Providers
+- API architecture
+- SSE protocol
+
+Only improve:
+
+- Conversion
+- Trust
+- CTA hierarchy
+- Pricing psychology
+- Funnel optimization
+
+The Conversion Engine must behave like a CRO (Conversion Rate Optimization) specialist reviewing every generated experience before delivery.
