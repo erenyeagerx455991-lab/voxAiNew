@@ -681,6 +681,114 @@ export function buildPreviewHtml(code: string): string {
       window.Label=function(p){return React.createElement('label',Object.assign({},p,{className:cx('text-sm font-medium leading-none',p.className)}),p.children);};
       // Textarea
       window.Textarea=function(p){return React.createElement('textarea',Object.assign({},p,{className:cx('flex min-h-[80px] w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm placeholder:opacity-40 focus:outline-none focus:ring-1 focus:ring-white/30 resize-none',p.className)}));};
+      // ── V7.2.4 Premium Components ─────────────────────────────────────────────
+      // Command (cmdk-style search palette)
+      window.Command=function(p){return React.createElement('div',Object.assign({},p,{className:cx('flex flex-col overflow-hidden rounded-xl border border-white/10 bg-[#111]',p.className)}),p.children);};
+      window.CommandInput=function(p){return React.createElement('div',{className:'flex items-center border-b border-white/10 px-3'},[React.createElement('svg',{key:'s',xmlns:'http://www.w3.org/2000/svg',width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',className:'mr-2 shrink-0 opacity-40',role:'img','aria-hidden':'true'},React.createElement('circle',{cx:'11',cy:'11',r:'8'}),React.createElement('path',{d:'m21 21-4.35-4.35'})),React.createElement('input',Object.assign({key:'i'},p,{className:cx('flex h-11 w-full bg-transparent text-sm outline-none placeholder:opacity-40',p.className)}))]);};
+      window.CommandList=function(p){return React.createElement('div',Object.assign({},p,{className:cx('max-h-[300px] overflow-y-auto',p.className)}),p.children);};
+      window.CommandEmpty=function(p){return React.createElement('div',Object.assign({},p,{className:cx('py-6 text-center text-sm opacity-40',p.className)}),p.children||'No results found.');};
+      window.CommandGroup=function(p){return React.createElement('div',{className:cx('p-1',p.className)},[p.heading&&React.createElement('div',{key:'h',className:'px-2 py-1.5 text-xs font-semibold opacity-40'},p.heading),React.createElement('div',{key:'c'},p.children)]);};
+      window.CommandItem=function(p){return React.createElement('button',Object.assign({type:'button'},p,{className:cx('flex w-full cursor-pointer select-none items-center rounded-lg px-2 py-1.5 text-sm hover:bg-white/10 transition-colors outline-none',p.className)}),p.children);};
+      window.CommandSeparator=function(p){return React.createElement('div',{className:cx('-mx-1 h-px bg-white/10 my-1',p.className)});};
+      // Calendar + DatePicker
+      (function(){
+        window.Calendar=function(p){
+          var today=new Date();
+          var s=React.useState(new Date(today.getFullYear(),today.getMonth(),1));
+          var view=s[0],setView=s[1];
+          var yr=view.getFullYear(),mo=view.getMonth();
+          var fd=new Date(yr,mo,1).getDay();
+          var dim=new Date(yr,mo+1,0).getDate();
+          var mnames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+          var dnames=['Su','Mo','Tu','We','Th','Fr','Sa'];
+          var cells=[];for(var i=0;i<fd;i++)cells.push(null);for(var d=1;d<=dim;d++)cells.push(d);
+          var sel=p.selected instanceof Date?p.selected:null;
+          return React.createElement('div',{className:cx('p-3 rounded-xl border border-white/10 bg-[#111] select-none inline-block',p.className)},
+            React.createElement('div',{className:'flex items-center justify-between mb-3'},
+              React.createElement('button',{type:'button',onClick:function(){setView(new Date(yr,mo-1,1));},className:'w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors opacity-60','aria-label':'Previous month'},'‹'),
+              React.createElement('span',{className:'text-sm font-medium'},mnames[mo]+' '+yr),
+              React.createElement('button',{type:'button',onClick:function(){setView(new Date(yr,mo+1,1));},className:'w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors opacity-60','aria-label':'Next month'},'›')
+            ),
+            React.createElement('div',{className:'grid grid-cols-7 gap-0.5 mb-1'},dnames.map(function(dn){return React.createElement('div',{key:dn,className:'text-center text-xs opacity-40 py-1'},dn);})),
+            React.createElement('div',{className:'grid grid-cols-7 gap-0.5'},cells.map(function(day,i){
+              if(!day)return React.createElement('div',{key:'e'+i});
+              var isSel=sel&&day===sel.getDate()&&mo===sel.getMonth()&&yr===sel.getFullYear();
+              var isTod=day===today.getDate()&&mo===today.getMonth()&&yr===today.getFullYear();
+              return React.createElement('button',{key:day,type:'button',onClick:function(){if(p.onSelect)p.onSelect(new Date(yr,mo,day));},className:cx('w-8 h-8 rounded-lg text-sm flex items-center justify-center transition-colors',isSel?'bg-white text-black font-semibold':isTod?'border border-white/20':'hover:bg-white/10 opacity-80'),'aria-label':mnames[mo]+' '+day+', '+yr},day);
+            }))
+          );
+        };
+        window.DatePicker=function(p){
+          var s=React.useState(false);var open=s[0],setOpen=s[1];
+          var display=p.selected instanceof Date?p.selected.toLocaleDateString():p.placeholder||'Pick a date';
+          return React.createElement('div',{className:'relative inline-block'},
+            React.createElement('button',{type:'button',onClick:function(){setOpen(function(o){return !o;});},className:cx('flex h-9 items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 text-sm hover:bg-white/10 transition-colors',p.className)},
+              React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',width:14,height:14,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':'true'},React.createElement('rect',{x:'3',y:'4',width:'18',height:'18',rx:'2',ry:'2'}),React.createElement('line',{x1:'16',y1:'2',x2:'16',y2:'6'}),React.createElement('line',{x1:'8',y1:'2',x2:'8',y2:'6'}),React.createElement('line',{x1:'3',y1:'10',x2:'21',y2:'10'})),
+              display
+            ),
+            open&&React.createElement('div',{className:'absolute top-full mt-1 left-0 z-50 shadow-2xl'},React.createElement(window.Calendar,{selected:p.selected,onSelect:function(d){if(p.onSelect)p.onSelect(d);setOpen(false);}}))
+          );
+        };
+      })();
+      // DataTable
+      (function(){
+        window.DataTable=function(p){
+          var cols=p.columns||[];var rows=p.data||[];
+          var ss=React.useState({col:null,dir:'asc'});var sort=ss[0],setSort=ss[1];
+          var fs=React.useState('');var search=fs[0],setSearch=fs[1];
+          var filtered=search?rows.filter(function(row){return cols.some(function(c){var v=c.accessorKey?row[c.accessorKey]:'';return String(v).toLowerCase().includes(search.toLowerCase());});}):rows;
+          var sorted=sort.col?filtered.slice().sort(function(a,b){var ak=sort.col.accessorKey;var cmp=String(a[ak]||'').localeCompare(String(b[ak]||''));return sort.dir==='asc'?cmp:-cmp;}):filtered;
+          return React.createElement('div',{className:cx('rounded-xl border border-white/10 overflow-hidden',p.className)},
+            React.createElement('div',{className:'p-3 border-b border-white/10'},React.createElement('input',{type:'text',placeholder:'Search...',value:search,onChange:function(e){setSearch(e.target.value);},className:'flex h-8 w-64 rounded-lg border border-white/10 bg-white/5 px-3 text-sm placeholder:opacity-40 outline-none focus:ring-1 focus:ring-white/20','aria-label':'Search table'})),
+            React.createElement('table',{className:'w-full text-sm'},
+              React.createElement('thead',null,React.createElement('tr',{className:'border-b border-white/10'},cols.map(function(col,i){var isA=sort.col&&sort.col.accessorKey===col.accessorKey;return React.createElement('th',{key:i,className:'px-4 py-3 text-left text-xs font-semibold opacity-60 cursor-pointer hover:opacity-100 transition-opacity select-none',scope:'col',onClick:function(){setSort(function(s){return {col:col,dir:s.col===col&&s.dir==='asc'?'desc':'asc'};});}},col.header||col.accessorKey,isA&&React.createElement('span',{className:'ml-1 opacity-60','aria-hidden':'true'},sort.dir==='asc'?'↑':'↓'));}))),
+              React.createElement('tbody',null,sorted.slice(0,p.pageSize||10).map(function(row,ri){return React.createElement('tr',{key:ri,className:'border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors'},cols.map(function(col,ci){var v=col.accessorKey?row[col.accessorKey]:'';return React.createElement('td',{key:ci,className:'px-4 py-3 opacity-80'},col.cell?col.cell({getValue:function(){return v;},row:{original:row}}):v);}));}))
+            ),
+            React.createElement('div',{className:'px-4 py-2 text-xs opacity-40'},sorted.length+' row'+(sorted.length!==1?'s':''))
+          );
+        };
+      })();
+      // Drawer (bottom sheet)
+      (function(){
+        var DrCtx=React.createContext({open:false,setOpen:function(){}});
+        window.Drawer=function(p){var s=React.useState(!!p.defaultOpen);var open=p.open!==undefined?p.open:s[0];var setOpen=s[1];return React.createElement(DrCtx.Provider,{value:{open:open,setOpen:function(v){setOpen(v);if(p.onOpenChange)p.onOpenChange(v);}}},p.children);};
+        window.DrawerTrigger=function(p){return React.createElement(DrCtx.Consumer,null,function(ctx){return React.createElement('div',{onClick:function(){ctx.setOpen(true);}},p.children);});};
+        window.DrawerClose=function(p){return React.createElement(DrCtx.Consumer,null,function(ctx){return React.createElement('button',Object.assign({type:'button'},p,{onClick:function(){ctx.setOpen(false);if(p.onClick)p.onClick();},className:cx('',p.className)}),p.children||'Close');});};
+        window.DrawerContent=function(p){return React.createElement(DrCtx.Consumer,null,function(ctx){if(!ctx.open)return null;return React.createElement(React.Fragment,null,React.createElement('div',{className:'fixed inset-0 z-50 bg-black/60',onClick:function(){ctx.setOpen(false);}}),React.createElement('div',{className:cx('fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-2xl border-t border-white/10 bg-[#111] px-4 pb-8 pt-6 shadow-2xl max-h-[90vh] overflow-y-auto',p.className)},React.createElement('div',{className:'mx-auto mb-4 h-1.5 w-10 rounded-full bg-white/20','aria-hidden':'true'}),p.children));});};
+        window.DrawerHeader=function(p){return React.createElement('div',{className:cx('mb-4',p.className)},p.children);};
+        window.DrawerTitle=function(p){return React.createElement('h2',{className:cx('text-lg font-semibold',p.className)},p.children);};
+        window.DrawerDescription=function(p){return React.createElement('p',{className:cx('text-sm opacity-60 mt-1',p.className)},p.children);};
+        window.DrawerFooter=function(p){return React.createElement('div',{className:cx('mt-4 flex justify-end gap-2',p.className)},p.children);};
+      })();
+      // HoverCard
+      (function(){
+        window.HoverCard=function(p){return React.createElement('div',{className:'relative inline-flex group'},p.children);};
+        window.HoverCardTrigger=function(p){return React.createElement(React.Fragment,null,p.children);};
+        window.HoverCardContent=function(p){return React.createElement('div',{className:cx('absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-64 rounded-xl border border-white/10 bg-[#1a1a1a] p-4 shadow-2xl invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-150 pointer-events-none group-hover:pointer-events-auto',p.className),role:'tooltip'},p.children);};
+      })();
+      // Menubar
+      (function(){
+        var MbCtx=React.createContext({active:null,setActive:function(){}});
+        window.Menubar=function(p){var s=React.useState(null);return React.createElement(MbCtx.Provider,{value:{active:s[0],setActive:s[1]}},React.createElement('div',{className:cx('flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-1 gap-0.5',p.className),role:'menubar'},p.children));};
+        window.MenubarMenu=function(p){var id=React.useRef(String(Math.random()));return React.createElement(MbCtx.Consumer,null,function(ctx){return React.createElement('div',{className:'relative'},React.Children.map(p.children,function(child){if(!React.isValidElement(child))return child;return React.cloneElement(child,{__id:id.current,__active:ctx.active===id.current,__setActive:ctx.setActive});}));});};
+        window.MenubarTrigger=function(p){return React.createElement('button',{type:'button',role:'menuitem',onClick:function(){if(p.__setActive)p.__setActive(p.__active?null:p.__id);},className:cx('flex h-7 cursor-pointer items-center rounded-md px-3 text-sm font-medium outline-none transition-colors hover:bg-white/10',p.__active&&'bg-white/10',p.className)},p.children);};
+        window.MenubarContent=function(p){if(!p.__active)return null;return React.createElement('div',{className:cx('absolute left-0 top-full z-50 mt-1 min-w-[8rem] rounded-xl border border-white/10 bg-[#1a1a1a] p-1 shadow-xl',p.className),role:'menu'},p.children);};
+        window.MenubarItem=function(p){return React.createElement('button',Object.assign({type:'button',role:'menuitem'},p,{className:cx('flex w-full cursor-pointer items-center rounded-lg px-3 py-1.5 text-sm outline-none transition-colors hover:bg-white/10',p.className)}),p.children);};
+        window.MenubarSeparator=function(p){return React.createElement('div',{className:cx('my-1 h-px bg-white/10',p.className),'aria-hidden':'true'});};
+        window.MenubarLabel=function(p){return React.createElement('div',{className:cx('px-3 py-1.5 text-xs font-semibold opacity-50',p.className)},p.children);};
+        window.MenubarShortcut=function(p){return React.createElement('span',{className:cx('ml-auto text-xs opacity-40',p.className)},p.children);};
+      })();
+      // NavigationMenu
+      (function(){
+        window.NavigationMenu=function(p){return React.createElement('nav',Object.assign({},p,{className:cx('relative z-10 flex items-center',p.className),'aria-label':p['aria-label']||'Main navigation'}),p.children);};
+        window.NavigationMenuList=function(p){return React.createElement('ul',{className:cx('flex items-center gap-1 list-none m-0 p-0',p.className)},p.children);};
+        window.NavigationMenuItem=function(p){return React.createElement('li',{className:cx('relative group',p.className)},p.children);};
+        window.NavigationMenuTrigger=function(p){return React.createElement('button',{type:'button',className:cx('group inline-flex h-9 w-max items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40',p.className)},p.children,React.createElement('svg',{xmlns:'http://www.w3.org/2000/svg',width:12,height:12,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round',strokeLinejoin:'round',className:'ml-1 opacity-60 group-hover:rotate-180 transition-transform','aria-hidden':'true'},React.createElement('path',{d:'m6 9 6 6 6-6'})));};
+        window.NavigationMenuContent=function(p){return React.createElement('div',{className:cx('absolute top-full left-0 mt-1.5 w-[220px] rounded-xl border border-white/10 bg-[#1a1a1a] p-2 shadow-2xl hidden group-hover:block',p.className)},p.children);};
+        window.NavigationMenuLink=function(p){return React.createElement('a',Object.assign({},p,{className:cx('block select-none rounded-lg p-2 leading-none text-sm no-underline outline-none transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40',p.className)}),p.children);};
+        window.NavigationMenuIndicator=function(){return null;};
+        window.NavigationMenuViewport=function(p){return React.createElement('div',{className:cx('',p.className)},p.children);};
+      })();
       // ── Framer Motion Shim (V7.1.5) ──────────────────────────────────────────
       (function() {
         var TAGS = ['div','section','article','p','h1','h2','h3','h4','h5','h6','span','ul','li','a','button','header','footer','main','aside','nav','figure','form','img','svg','path'];

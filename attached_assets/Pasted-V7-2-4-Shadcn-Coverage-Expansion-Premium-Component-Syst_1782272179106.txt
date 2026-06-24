@@ -1,0 +1,318 @@
+V7.2.4 — Shadcn Coverage Expansion + Premium Component System
+
+Context
+
+V7.2.3 complete.
+
+Verified active:
+
+- Design DNA
+- Section-Level RAG
+- Section Learning
+- Multi-Candidate Generation
+- Design Evaluator
+- Auto Repair
+- Benchmark Framework
+- Component Intelligence
+
+Current benchmark gap:
+
+Shadcn depth remains lower than:
+
+- v0
+- Lovable
+- Bolt
+
+Reason:
+
+Only core components are consistently available.
+
+Missing advanced UI primitives commonly found in premium products.
+
+---
+
+Goal
+
+Increase:
+
+Shadcn Usage
+
+from
+
+~75%
+
+to
+
+90%+
+
+while preserving:
+
+- Design DNA
+- Accessibility
+- Evaluator
+- Repair Loop
+
+---
+
+PHASE 1
+
+Expand Preview Globals
+
+Add support for:
+
+- Command
+- CommandInput
+- CommandList
+- CommandItem
+- Combobox
+- Calendar
+- DatePicker
+- DataTable
+- Drawer
+- HoverCard
+- Menubar
+- NavigationMenu
+
+Target:
+
+builderService.ts
+
+---
+
+PHASE 2
+
+Generation Rules
+
+Upgrade:
+
+codeSystem.ts
+
+Add:
+
+SHADCN PRIORITY TABLE
+
+Search:
+→ Command
+
+Date Selection:
+→ Calendar
+
+Large Data:
+→ DataTable
+
+Mobile Panels:
+→ Drawer
+
+Navigation:
+→ NavigationMenu
+
+Never build custom versions when equivalent component exists.
+
+---
+
+PHASE 3
+
+Premium Dashboard Upgrade
+
+Upgrade dashboard templates.
+
+Prefer:
+
+- Tabs
+- DataTable
+- Command
+- Progress
+- Skeleton
+
+Remove custom table implementations.
+
+---
+
+PHASE 4
+
+Premium SaaS Upgrade
+
+Upgrade:
+
+- pricing
+- testimonials
+- faq
+- feature sections
+
+Replace custom patterns with:
+
+- Accordion
+- Avatar
+- Badge
+- Separator
+- Dialog
+
+---
+
+PHASE 5
+
+Registry Audit
+
+Audit every template.
+
+Measure:
+
+{
+componentUsage,
+customMarkup,
+accessibilityCoverage
+}
+
+Generate report.
+
+---
+
+PHASE 6
+
+Evaluator Upgrade
+
+Add:
+
+Shadcn Coverage Score
+
+Metrics:
+
+0–10
+
+Score based on:
+
+Component diversity.
+
+Not raw count.
+
+---
+
+PHASE 7
+
+Component Recommendation Engine
+
+Create:
+
+recommendBestComponents()
+
+Input:
+
+{
+industry,
+sectionType,
+dna
+}
+
+Output:
+
+Best component stack.
+
+Example:
+
+Fintech Pricing:
+
+Badge
+Card
+Separator
+Dialog
+
+AI Dashboard:
+
+Tabs
+Command
+DataTable
+Progress
+
+---
+
+PHASE 8
+
+Telemetry
+
+Extend:
+
+GET /telemetry/quality
+
+Add:
+
+componentCoverage:
+
+{
+coveragePercent,
+componentUsage,
+mostUsed,
+leastUsed,
+recommendations
+}
+
+---
+
+PHASE 9
+
+Tests
+
+Create:
+
+40+ tests
+
+Verify:
+
+- component availability
+- generator preferences
+- evaluator scoring
+- telemetry
+- recommendation engine
+
+---
+
+PHASE 10
+
+Audit
+
+Create:
+
+v7.2.4Audit.md
+
+Must answer:
+
+Coverage Before
+
+Coverage After
+
+Most Used Components
+
+Least Used Components
+
+Benchmark Delta
+
+Verified Gaps
+
+Evidence only.
+
+---
+
+Success Criteria
+
+Shadcn coverage:
+90%+
+
+Accessibility:
+No regression
+
+Tests:
+All pass
+
+Evaluator:
+Integrated
+
+Telemetry:
+Active
+
+No queue changes:
+YES
+
+No provider changes:
+YES
+
+No benchmark regressions:
+YES

@@ -255,7 +255,7 @@ Selected component variants for this build. ENFORCE these structural patterns �
 ${Object.entries(registrySelection).map(([cat, hint]) => `${cat.toUpperCase()}: ${hint}`).join('\n')}
 
 For each section listed above, follow the described layout and visual pattern EXACTLY.
-Do NOT deviate from the selected component variant's structural style.\n\n` : ''}═══ SHADCN-FIRST RULES (V7.1.5) — MANDATORY ═══
+Do NOT deviate from the selected component variant's structural style.\n\n` : ''}═══ SHADCN-FIRST RULES (V7.2.4) — MANDATORY ═══
 ALWAYS prefer shadcn/ui components over raw HTML. These rules are NON-NEGOTIABLE:
 - NEVER write a raw <button> element — ALWAYS use <Button> with appropriate variant
 - NEVER write a raw <input> element — ALWAYS use <Input>
@@ -270,7 +270,27 @@ ALWAYS prefer shadcn/ui components over raw HTML. These rules are NON-NEGOTIABLE
 - NEVER build a custom dropdown menu — ALWAYS use <DropdownMenu>/<DropdownMenuTrigger>/<DropdownMenuContent>/<DropdownMenuItem>
 - NEVER build a custom toggle switch — ALWAYS use <Switch>
 - NEVER build a custom avatar/initials — ALWAYS use <Avatar>/<AvatarImage>/<AvatarFallback>
+- NEVER build a custom search/command palette with raw inputs — ALWAYS use <Command><CommandInput /><CommandList>...</CommandList></Command>
+- NEVER build a custom HTML table from scratch for data — ALWAYS use <DataTable columns={cols} data={rows} />
+- NEVER build a custom bottom sheet or slide-up panel — ALWAYS use <Drawer><DrawerTrigger>...</DrawerTrigger><DrawerContent>...</DrawerContent></Drawer>
+- NEVER build a custom date input — ALWAYS use <Calendar mode="single" selected={date} onSelect={setDate} /> or <DatePicker selected={date} onSelect={setDate} />
+- NEVER build a custom horizontal nav menu bar — ALWAYS use <NavigationMenu><NavigationMenuList>...</NavigationMenuList></NavigationMenu>
+- NEVER build a custom hover popup card — ALWAYS use <HoverCard><HoverCardTrigger>...</HoverCardTrigger><HoverCardContent>...</HoverCardContent></HoverCard>
 Shadcn usage target: ≥90% of interactive UI elements must use shadcn components.
+
+═══ SHADCN PRIORITY TABLE (V7.2.4) — SECTION-SPECIFIC RULES ═══
+Use this table to select the RIGHT component for each section type:
+
+HERO section:        <Badge> above H1 (required) + dual <Button> CTA (required) + <Avatar> stack for trust signal
+FEATURES section:    <Card><CardHeader><CardTitle> grid (required) + <Badge> category labels + <Tabs> for multi-view
+PRICING section:     <Card> per tier + <Badge variant="secondary"> for recommended + <Separator> between tiers + <Switch> for billing toggle + <Dialog> for feature breakdown
+TESTIMONIALS section: <Avatar><AvatarImage><AvatarFallback> (required) + <Card> for quote blocks
+FAQ section:         <Accordion> (required, NEVER raw details/summary) + optional <CommandInput>-style search
+DASHBOARD section:   <Tabs> for views (required) + <DataTable> for records (required) + <Progress> for metrics + <Skeleton> during loading + <Command> for search
+NAVBAR section:      <NavigationMenu> for links + <Button> for CTA + <Sheet> or <Drawer> for mobile menu
+CTA section:         <Button> (solid primary) + <Input> for email capture + optional <Dialog> confirmation
+STATS section:       <Progress> for metrics + <Skeleton> loading + <Badge> for change indicators
+FOOTER section:      <Separator> between columns + <Input> for newsletter
 
 ═══ SHADCN/UI COMPONENTS (V7.1.5) — ALL GLOBALS ═══
 The following components are ALL available as globals (no import needed):
