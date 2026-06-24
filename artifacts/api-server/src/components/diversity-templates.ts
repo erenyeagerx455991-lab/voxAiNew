@@ -879,9 +879,17 @@ export const DIVERSITY_TEMPLATES: any[] = [
           <h2 className="text-5xl md:text-8xl font-black text-white leading-none tracking-tighter mb-12 max-w-5xl">CTA_HEADLINE_LINE1<br/><span className="text-gray-500">CTA_HEADLINE_LINE2</span></h2>
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
             <p className="text-gray-400 max-w-md leading-relaxed">CTA_SUBTEXT</p>
-            <div className="flex items-center gap-6">
-              <a href="#" className="text-white text-xl font-black hover:text-gray-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_PRIMARY →</a>
-              <a href="#" className="text-gray-400 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_SECONDARY</a>
+            <div className="flex flex-col gap-5 items-start">
+              <div className="flex items-center gap-6">
+                <Button type="button" className="bg-white text-black font-black text-lg px-8 py-4 rounded-xl hover:bg-white/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60">CTA_PRIMARY →</Button>
+                <Button type="button" variant="ghost" className="text-gray-400 text-sm hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 px-0">CTA_SECONDARY</Button>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {['A','B','C'].map((l,i) => <Avatar key={i} className="w-7 h-7 border-2 border-[#0a0a0a]"><AvatarFallback className="text-xs bg-white/15 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+                </div>
+                <span className="text-gray-500 text-xs">Joined by 8,000+ teams this year</span>
+              </div>
             </div>
           </div>
         </div>
@@ -901,7 +909,13 @@ export const DIVERSITY_TEMPLATES: any[] = [
     <section className="py-24 border-t border-white/8">
       <div className="max-w-2xl mx-auto px-6 text-center">
         <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tight">CTA_HEADLINE</h2>
-        <p className="text-gray-400 mb-10 leading-relaxed">CTA_SUBTEXT</p>
+        <p className="text-gray-400 mb-8 leading-relaxed">CTA_SUBTEXT</p>
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <div className="flex -space-x-2">
+            {['A','B','C','D'].map((l,i) => <Avatar key={i} className="w-8 h-8 border-2 border-black"><AvatarFallback className="text-xs bg-white/20 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+          </div>
+          <span className="text-gray-500 text-sm"><span className="text-white font-semibold">5,000+</span> teams already inside</span>
+        </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button type="button" className="border border-white/25 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/5 transition-colors text-sm">CTA_PRIMARY</Button>
           <Button type="button" className="text-gray-500 hover:text-white font-medium px-6 py-3 text-sm transition-colors">CTA_SECONDARY →</Button>

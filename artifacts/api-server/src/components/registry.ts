@@ -447,6 +447,12 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           <Button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</Button>
           <Button type="button" className="border border-white/10 text-white/70 font-medium px-6 py-3 rounded-xl text-sm hover:border-white/25 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
         </div>
+        <div className="mt-6 flex items-center justify-center gap-3">
+          <div className="flex -space-x-2">
+            {['A','B','C','D'].map((l,i) => <Avatar key={i} className="w-7 h-7 border-2 border-[#09090b]"><AvatarFallback className="text-[10px] bg-white/15 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+          </div>
+          <span className="text-white/60 text-sm"><span className="text-white font-semibold">2,400+</span> teams trust us</span>
+        </div>
       </div>
       <div className="max-w-6xl mx-auto px-4">
         <div className="rounded-t-2xl border border-white/10 border-b-0 bg-[#111113] overflow-hidden shadow-2xl">
@@ -502,6 +508,10 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     <section className="min-h-screen bg-[#0c0c0f] pt-24 pb-10 px-4 md:px-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-white/60 text-xs px-4 py-2 rounded-full mb-4">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            HEADLINE_BADGE
+          </div>
           <h1 className="text-5xl md:text-6xl font-black tracking-tighter text-white leading-none mb-3">HEADLINE_LINE1</h1>
           <p className="text-white/65 text-base max-w-lg mx-auto">SUBHEADLINE</p>
         </div>
@@ -514,13 +524,21 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             </div>
             <Button type="button" className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600">CTA_PRIMARY →</Button>
           </div>
-          <div className="col-span-12 md:col-span-4 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center gap-4 hover:border-white/20 transition-colors">
-            {stats.map(([v, l]) => (
-              <div key={l} className="text-center flex-1">
-                <div className="text-xl font-black text-white">{v}</div>
-                <div className="text-white/60 text-xs mt-0.5">{l}</div>
+          <div className="col-span-12 md:col-span-4 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex flex-col gap-3 hover:border-white/20 transition-colors">
+            <div className="flex items-center gap-2">
+              {stats.map(([v, l]) => (
+                <div key={l} className="text-center flex-1">
+                  <div className="text-xl font-black text-white">{v}</div>
+                  <div className="text-white/60 text-xs mt-0.5">{l}</div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 border-t border-white/8 pt-3">
+              <div className="flex -space-x-2">
+                {['A','B','C'].map((l,i) => <Avatar key={i} className="w-6 h-6 border-2 border-[#18181b]"><AvatarFallback className="text-[9px] bg-white/15 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
               </div>
-            ))}
+              <span className="text-white/60 text-[10px]">Loved by 10K+ teams</span>
+            </div>
           </div>
           <div className="col-span-12 md:col-span-3 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex flex-col justify-between hover:border-white/20 transition-colors min-h-[120px]">
             <div className="text-white/65 text-xs font-semibold uppercase tracking-widest">Integrations</div>

@@ -404,12 +404,17 @@ export const SECTION_TEMPLATES: any[] = [
               ))}
             </div>
             <div className="flex-1 bg-[#0a0a0a] p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
                   <span className="text-white/60 text-sm font-semibold">PROJ_2_NAME</span>
-                  <span className="ml-3 bg-yellow-400/15 text-yellow-400 text-xs px-2 py-0.5 rounded-full font-semibold">Building</span>
+                  <Badge className="bg-yellow-400/15 text-yellow-400 border-yellow-400/30 text-xs">Building</Badge>
                 </div>
                 <span className="text-white/60 text-xs font-mono">feat/dashboard</span>
+              </div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-white/50 text-xs shrink-0">Build progress</span>
+                <Progress value={65} className="h-1 flex-1" />
+                <span className="text-white/50 text-xs font-mono shrink-0">65%</span>
               </div>
               <div className="bg-black/50 rounded-xl border border-white/8 p-4 font-mono text-xs space-y-1.5 min-h-[200px]">
                 {logs.map((l, i) => (
@@ -474,6 +479,12 @@ export const SECTION_TEMPLATES: any[] = [
               {['Board','List','Timeline'].map(v => <Button type="button" key={v} className={\`text-xs px-3 py-1.5 rounded-md \${v==='Board'?'bg-white/10 text-white':'text-white/65 hover:text-white/60'} transition-colors\`}>{v}</Button>)}
             </div>
           </div>
+          <div className="flex items-center gap-3 px-5 py-2 border-b border-white/5 bg-[#0c0c0c]">
+            <span className="text-white/50 text-[11px]">Sprint progress</span>
+            <Progress value={72} className="h-1 flex-1" />
+            <span className="text-white/50 text-[11px]">72%</span>
+            <Skeleton className="h-4 w-16 bg-white/8 ml-2 rounded" />
+          </div>
           <div className="grid grid-cols-3 divide-x divide-white/8 min-h-[320px]">
             {cols.map((col, ci) => (
               <div key={ci} className="p-4">
@@ -489,7 +500,7 @@ export const SECTION_TEMPLATES: any[] = [
                         <span className="text-white/70 text-xs leading-relaxed">{item.title}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="bg-[#5E6AD2]/15 text-[#5E6AD2] text-[10px] px-2 py-0.5 rounded-full font-medium">{item.label}</span>
+                        <Badge variant="outline" className="border-[#5E6AD2]/40 text-[#5E6AD2] text-[10px] px-2 py-0.5 h-5">{item.label}</Badge>
                         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center text-white text-[9px] font-bold">{item.avatar}</div>
                       </div>
                     </div>
@@ -546,9 +557,16 @@ export const SECTION_TEMPLATES: any[] = [
               ))}
             </div>
             <div className="bg-[#0F3460]/40 border border-white/8 rounded-xl p-5">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-white/60 text-sm font-semibold">Revenue over time</span>
-                <span className="text-white/65 text-xs">Last 12 months</span>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-12 bg-white/8 rounded" />
+                  <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">+18.2%</Badge>
+                </div>
+              </div>
+              <Progress value={78} className="h-0.5 mb-3" />
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-white/50 text-xs">Last 12 months</span>
               </div>
               <svg viewBox="0 0 500 80" className="w-full h-16" preserveAspectRatio="none">
                 <defs>
@@ -578,7 +596,7 @@ export const SECTION_TEMPLATES: any[] = [
                   </div>
                   <div className="text-right">
                     <div className="text-emerald-400 text-sm font-semibold">{t.amount}</div>
-                    <div className={t.status === 'Paid' ? 'text-emerald-400/60 text-xs' : 'text-yellow-400/60 text-xs'}>{t.status}</div>
+                    <Badge className={\`text-[10px] py-0 \${t.status === 'Paid' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30'}\`}>{t.status}</Badge>
                   </div>
                 </div>
               ))}
@@ -616,11 +634,17 @@ export const SECTION_TEMPLATES: any[] = [
           <div className="flex items-center gap-2 px-5 py-3 bg-[#0a0a0a] border-b border-white/8">
             <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/40"/><div className="w-3 h-3 rounded-full bg-yellow-500/40"/><div className="w-3 h-3 rounded-full bg-green-500/40"/></div>
             <span className="text-white/65 text-xs ml-3">AI Pipeline · Run #247</span>
-            <span className="ml-auto flex items-center gap-1.5 bg-[#FF3D57]/15 text-[#FF3D57] text-xs px-3 py-1 rounded-full">
+            <Badge className="ml-auto bg-[#FF3D57]/15 text-[#FF3D57] border-[#FF3D57]/30 text-xs flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full bg-[#FF3D57] animate-pulse"/>Processing
-            </span>
+            </Badge>
           </div>
           <div className="p-8">
+            <div className="flex items-center gap-3 mb-5">
+              <span className="text-white/50 text-xs shrink-0">Pipeline</span>
+              <Progress value={60} className="h-1.5 flex-1" />
+              <span className="text-[#FF3D57] text-xs font-semibold shrink-0">3/5</span>
+              <Skeleton className="h-4 w-14 bg-white/5 rounded ml-1" />
+            </div>
             <div className="flex items-center justify-between gap-2 mb-8 overflow-x-auto">
               {nodes.map((n, i) => (
                 <React.Fragment key={i}>
@@ -671,8 +695,8 @@ export const SECTION_TEMPLATES: any[] = [
     priority: 12,
     standaloneCode: `function Pricing() {
   const plans = [
-    { name: 'Starter', price: '$0', period: 'forever', cta: 'Start free', active: false },
-    { name: 'Pro', price: '$24', period: 'per month', cta: 'Start trial', active: true },
+    { name: 'Starter', price: '$0', period: 'forever', cta: 'Start free', active: false, badge: null },
+    { name: 'Pro', price: '$24', period: 'per month', cta: 'Start trial', active: true, badge: 'Most Popular' },
   ];
   const features = [
     { label: 'FEATURE_1', starter: '5', pro: 'Unlimited' },
@@ -695,7 +719,10 @@ export const SECTION_TEMPLATES: any[] = [
           </div>
           {plans.map((p, i) => (
             <div key={i} className={\`p-6 \${i===0?'border-r border-white/8':''} \${p.active?'bg-white/3':''}\`}>
-              <div className="text-white/65 text-xs font-semibold uppercase tracking-wider mb-4">{p.name}</div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="text-white/65 text-xs font-semibold uppercase tracking-wider">{p.name}</div>
+                {p.badge && <Badge variant="secondary" className="text-xs py-0 h-5">{p.badge}</Badge>}
+              </div>
               <div className="mb-4">
                 <span className="text-white font-black text-4xl">{p.price}</span>
                 <span className="text-white/65 text-xs ml-2">{p.period}</span>
@@ -721,6 +748,11 @@ export const SECTION_TEMPLATES: any[] = [
               ))}
             </React.Fragment>
           ))}
+        </div>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <Badge variant="outline" className="border-white/15 text-white/50 text-xs">SOC 2 Type II</Badge>
+          <Badge variant="outline" className="border-white/15 text-white/50 text-xs">GDPR Ready</Badge>
+          <span className="text-white/40 text-xs">· No credit card required · Cancel anytime</span>
         </div>
       </div>
     </section>
@@ -803,6 +835,10 @@ export const SECTION_TEMPLATES: any[] = [
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="mt-10 text-center space-y-3">
+          <p className="text-[#A8B4C0] text-sm">14-day free trial included · <Badge variant="secondary" className="text-xs">Save 20% annually</Badge></p>
+          <Button type="button" variant="outline" className="border-white/20 text-[#A8B4C0] text-sm hover:text-white focus-visible:outline-none focus-visible:ring-2">Questions? See our FAQ →</Button>
         </div>
       </div>
     </section>
