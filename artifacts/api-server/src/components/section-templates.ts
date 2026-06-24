@@ -973,6 +973,154 @@ export const SECTION_TEMPLATES: any[] = [
 }`,
   },
 
+  // ══════════════════════════════════════════════════════════════════
+  // PREMIUM DASHBOARD TEMPLATES V7.2.4 — shadcn-first (Tabs/DataTable/Command/Progress/Skeleton)
+  // ══════════════════════════════════════════════════════════════════
+
+  {
+    id: 'dashboard-shadcn-analytics-v1', name: 'Dashboard Analytics (shadcn-first)', category: 'dashboard-preview',
+    industries: ['saas', 'fintech', 'ai', 'startup'], tags: ['analytics', 'tabs', 'datatable', 'progress', 'skeleton', 'shadcn'],
+    description: 'Premium analytics dashboard using <Tabs> for views, <DataTable> for records, <Progress> for KPIs, <Skeleton> loading states. V7.2.4 reference.',
+    priority: 15,
+    standaloneCode: `function DashboardPreview() {
+  const [activeTab, setActiveTab] = React.useState('overview');
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => { const t = setTimeout(() => setLoading(false), 800); return () => clearTimeout(t); }, []);
+  const kpis = [
+    { label: 'Monthly Revenue', value: '$METRIC_1_VALUE', pct: 78, delta: '+METRIC_1_DELTA', up: true },
+    { label: 'Active Users', value: 'METRIC_2_VALUE', pct: 62, delta: '+METRIC_2_DELTA', up: true },
+    { label: 'Conversion Rate', value: 'METRIC_3_VALUE%', pct: 45, delta: 'METRIC_3_DELTA', up: false },
+    { label: 'Churn Rate', value: 'METRIC_4_VALUE%', pct: 12, delta: '-METRIC_4_DELTA', up: false },
+  ];
+  const cols = [
+    { header: 'Customer', accessorKey: 'customer' },
+    { header: 'Plan', accessorKey: 'plan' },
+    { header: 'MRR', accessorKey: 'mrr' },
+    { header: 'Status', accessorKey: 'status' },
+  ];
+  const rows = [
+    { customer: 'TXN_1_NAME', plan: 'Pro', mrr: '$TXN_1_AMOUNT/mo', status: 'Active' },
+    { customer: 'TXN_2_NAME', plan: 'Enterprise', mrr: '$TXN_2_AMOUNT/mo', status: 'Active' },
+    { customer: 'TXN_3_NAME', plan: 'Starter', mrr: '$TXN_3_AMOUNT/mo', status: 'Trial' },
+    { customer: 'TXN_4_NAME', plan: 'Pro', mrr: '$TXN_4_AMOUNT/mo', status: 'Active' },
+  ];
+  return (
+    <section className="py-20 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">PREVIEW_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-3">PREVIEW_HEADING</h2>
+          <p className="text-white/65 text-base max-w-xl mx-auto">PREVIEW_SUBHEADING</p>
+        </div>
+        <Card className="bg-[#111] border-white/10 shadow-2xl">
+          <CardContent className="p-0">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <div className="border-b border-white/8 px-4">
+                <TabsList className="bg-transparent h-12 gap-1">
+                  <TabsTrigger value="overview" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10 rounded-lg">Overview</TabsTrigger>
+                  <TabsTrigger value="customers" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10 rounded-lg">Customers</TabsTrigger>
+                  <TabsTrigger value="revenue" className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10 rounded-lg">Revenue</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="overview" className="p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {kpis.map((k, i) => (
+                    <Card key={i} className="bg-white/3 border-white/8">
+                      <CardContent className="p-4">
+                        {loading ? <Skeleton className="h-4 w-20 mb-2" /> : <p className="text-white/65 text-xs mb-1">{k.label}</p>}
+                        {loading ? <Skeleton className="h-8 w-24 mb-2" /> : <p className="text-white text-2xl font-black mb-2">{k.value}</p>}
+                        <Progress value={k.pct} className="h-1 mb-1" />
+                        {loading ? <Skeleton className="h-3 w-12" /> : <p className={k.up ? 'text-emerald-400 text-xs' : 'text-rose-400 text-xs'}>{k.delta}</p>}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="customers" className="p-6">
+                <DataTable columns={cols} data={rows} />
+              </TabsContent>
+              <TabsContent value="revenue" className="p-6">
+                <div className="flex flex-col gap-3">
+                  {kpis.map((k, i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <span className="text-white/65 text-sm w-36 shrink-0">{k.label}</span>
+                      <Progress value={k.pct} className="flex-1 h-2" />
+                      <span className="text-white/60 text-sm w-16 text-right">{k.value}</span>
+                      <Badge variant={k.up ? 'default' : 'destructive'} className="text-xs">{k.delta}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}`,
+  },
+
+  {
+    id: 'dashboard-shadcn-command-v1', name: 'Dashboard with Command Search (shadcn-first)', category: 'dashboard-preview',
+    industries: ['saas', 'ai', 'developer', 'devtools'], tags: ['command', 'search', 'datatable', 'badge', 'shadcn'],
+    description: 'SaaS app dashboard with <Command> search palette, <DataTable> records, <Badge> statuses. Linear/Vercel DNA. V7.2.4.',
+    priority: 15,
+    standaloneCode: `function DashboardPreview() {
+  const [query, setQuery] = React.useState('');
+  const items = [
+    { id: 'ITEM_1_ID', name: 'ITEM_1_NAME', status: 'Active', type: 'ITEM_1_TYPE', updated: 'ITEM_1_DATE' },
+    { id: 'ITEM_2_ID', name: 'ITEM_2_NAME', status: 'Draft', type: 'ITEM_2_TYPE', updated: 'ITEM_2_DATE' },
+    { id: 'ITEM_3_ID', name: 'ITEM_3_NAME', status: 'Active', type: 'ITEM_3_TYPE', updated: 'ITEM_3_DATE' },
+    { id: 'ITEM_4_ID', name: 'ITEM_4_NAME', status: 'Archived', type: 'ITEM_4_TYPE', updated: 'ITEM_4_DATE' },
+  ];
+  const filtered = items.filter(it => !query || it.name.toLowerCase().includes(query.toLowerCase()));
+  const cols = [
+    { header: 'Name', accessorKey: 'name' },
+    { header: 'Type', accessorKey: 'type' },
+    { header: 'Status', accessorKey: 'status' },
+    { header: 'Updated', accessorKey: 'updated' },
+  ];
+  return (
+    <section className="py-20 bg-[#0F0F0F]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-10">
+          <Badge variant="outline" className="mb-4 border-white/20 text-white/65">PREVIEW_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-3">PREVIEW_HEADING</h2>
+          <p className="text-white/65 text-base max-w-xl">PREVIEW_SUBHEADING</p>
+        </div>
+        <Card className="bg-[#111] border-white/10 shadow-2xl">
+          <CardHeader className="border-b border-white/8 pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white text-lg font-semibold">DASHBOARD_TITLE</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">DASHBOARD_BADGE_1</Badge>
+                <Badge variant="outline" className="border-white/20">DASHBOARD_BADGE_2</Badge>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4">
+            <Command className="mb-4 border border-white/8">
+              <CommandInput placeholder="Search DASHBOARD_ENTITY..." value={query} onValueChange={setQuery} />
+              {query && (
+                <CommandList>
+                  {filtered.map(it => (
+                    <CommandItem key={it.id} onSelect={() => setQuery('')}>
+                      <span className="text-white/70">{it.name}</span>
+                      <Badge variant="outline" className="ml-auto text-xs border-white/20">{it.status}</Badge>
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              )}
+            </Command>
+            <DataTable columns={cols} data={filtered} />
+          </CardContent>
+        </Card>
+      </div>
+    </section>
+  );
+}`,
+  },
+
   {
     id: 'dashboard-activity-v1', name: 'Dashboard Activity Timeline', category: 'dashboard-preview',
     industries: ['saas', 'startup', 'ai', 'fintech', 'generic'], tags: ['timeline', 'activity', 'log'],

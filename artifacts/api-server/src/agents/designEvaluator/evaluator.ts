@@ -1,4 +1,5 @@
 import type { DesignDNA } from "../types.js";
+import { computeComponentCoverage } from "../../quality/componentRecommendations.js";
 
 export interface EvaluationInput {
   code: string;
@@ -7,7 +8,7 @@ export interface EvaluationInput {
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -19,7 +20,10 @@ export interface EvaluationResult {
   ctaScore: number;
   accessibilityScore: number;
   shadcnScore: number;
+  coverageScore: number;
   consistencyScore: number;
+  coveragePercent: number;
+  componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
 }
 
@@ -281,20 +285,66 @@ function scoreShadcn(code: string): { score: number; issues: EvaluationIssue[] }
     issues.push({ category: 'shadcn', severity: 'major', message: 'No <Badge> shadcn component found — use <Badge> for status indicators, labels, category tags, and the hero badge' });
   }
 
-  const advanced = [
+  const standard = [
     { re: /<Avatar[\s>]/, name: 'Avatar' },
     { re: /<Input[\s>]/, name: 'Input' },
     { re: /<Accordion[\s>]/, name: 'Accordion' },
     { re: /<Tabs[\s>]/, name: 'Tabs' },
   ];
-  let advCount = 0;
-  for (const { re } of advanced) if (re.test(code)) advCount++;
-  score += Math.min(4, advCount);
-  if (advCount === 0) {
+  let stdCount = 0;
+  for (const { re } of standard) if (re.test(code)) stdCount++;
+  score += Math.min(2, stdCount);
+  if (stdCount === 0) {
     issues.push({ category: 'shadcn', severity: 'minor', message: 'No advanced shadcn components used (Avatar, Input, Accordion, Tabs) — add Avatar for testimonial photos, Accordion for FAQ, Tabs for multi-view pricing' });
   }
 
+  // V7.2.4: Premium component bonus (Command, DataTable, NavigationMenu, Drawer, HoverCard, Calendar, Menubar)
+  const premium = [
+    { re: /<Command[\s>]/, name: 'Command' },
+    { re: /<DataTable[\s>]/, name: 'DataTable' },
+    { re: /<NavigationMenu[\s>]/, name: 'NavigationMenu' },
+    { re: /<Drawer[\s>]/, name: 'Drawer' },
+    { re: /<HoverCard[\s>]/, name: 'HoverCard' },
+    { re: /<Calendar[\s>]/, name: 'Calendar' },
+    { re: /<DatePicker[\s>]/, name: 'DatePicker' },
+    { re: /<Menubar[\s>]/, name: 'Menubar' },
+  ];
+  let premiumCount = 0;
+  for (const { re } of premium) if (re.test(code)) premiumCount++;
+  score += Math.min(2, premiumCount);
+
   return { score: Math.min(10, score), issues };
+}
+
+// V7.2.4: Component diversity coverage score (0–10)
+function scoreCoverage(code: string): { score: number; issues: EvaluationIssue[]; coveragePercent: number; componentUsage: Record<string, number> } {
+  const issues: EvaluationIssue[] = [];
+  const coverage = computeComponentCoverage(code);
+  const { coveragePercent, componentUsage, totalUnique } = coverage;
+
+  // Score: 0 unique = 0, 5 = 5pts, 10+ = 8pts, 14+ = 10pts
+  let score: number;
+  if (totalUnique >= 14) {
+    score = 10;
+  } else if (totalUnique >= 10) {
+    score = 8;
+  } else if (totalUnique >= 7) {
+    score = 6;
+  } else if (totalUnique >= 5) {
+    score = 4;
+  } else if (totalUnique >= 3) {
+    score = 2;
+  } else {
+    score = Math.min(2, totalUnique);
+  }
+
+  if (coveragePercent < 50) {
+    issues.push({ category: 'coverage', severity: 'major', message: `Shadcn coverage is ${coveragePercent}% (${totalUnique} unique components) — target ≥90%; use Command for search, DataTable for data, NavigationMenu for nav, Drawer for mobile panels` });
+  } else if (coveragePercent < 75) {
+    issues.push({ category: 'coverage', severity: 'minor', message: `Shadcn coverage is ${coveragePercent}% — add premium components like Command, DataTable, or NavigationMenu to push toward 90%+` });
+  }
+
+  return { score: Math.min(10, score), issues, coveragePercent, componentUsage };
 }
 
 function scoreConsistency(code: string): { score: number; issues: EvaluationIssue[] } {
@@ -346,7 +396,8 @@ function scoreConsistency(code: string): { score: number; issues: EvaluationIssu
   return { score: Math.min(10, score), issues };
 }
 
-const WEIGHTS = { hero: 0.25, layout: 0.20, cta: 0.15, accessibility: 0.20, shadcn: 0.10, consistency: 0.10 };
+// V7.2.4: coverage replaces part of shadcn weight for richer scoring
+const WEIGHTS = { hero: 0.25, layout: 0.20, cta: 0.15, accessibility: 0.20, shadcn: 0.08, coverage: 0.07, consistency: 0.05 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const { code, sectionOrder } = input;
@@ -356,6 +407,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const cta = scoreCTA(code);
   const accessibility = scoreAccessibility(code);
   const shadcn = scoreShadcn(code);
+  const coverage = scoreCoverage(code);
   const consistency = scoreConsistency(code);
 
   const overallScore =
@@ -365,6 +417,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
         cta.score * WEIGHTS.cta +
         accessibility.score * WEIGHTS.accessibility +
         shadcn.score * WEIGHTS.shadcn +
+        coverage.score * WEIGHTS.coverage +
         consistency.score * WEIGHTS.consistency) * 10
     ) / 10;
 
@@ -374,6 +427,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...cta.issues,
     ...accessibility.issues,
     ...shadcn.issues,
+    ...coverage.issues,
     ...consistency.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
@@ -387,7 +441,10 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ctaScore: cta.score,
     accessibilityScore: accessibility.score,
     shadcnScore: shadcn.score,
+    coverageScore: coverage.score,
     consistencyScore: consistency.score,
+    coveragePercent: coverage.coveragePercent,
+    componentUsage: coverage.componentUsage,
     issues: allIssues,
   };
 }

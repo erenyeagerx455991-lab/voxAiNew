@@ -16,6 +16,7 @@ import { getBenchmarkMetrics } from "../benchmarks/benchmarkMetrics.js";
 import { getSectionRagMetrics } from "../design-rag/sectionRagMetrics.js";
 import { getSectionLearningMetrics } from "../design-rag/sectionReferenceMetrics.js";
 import { SECTION_CORPUS } from "../design-rag/sectionCorpus.js";
+import { getComponentCoverageMetrics, recommendBestComponents } from "../quality/componentRecommendations.js";
 
 const router: Router = Router();
 
@@ -62,6 +63,13 @@ router.get("/telemetry/queue", authMiddleware, (_req, res) => {
 });
 
 router.get("/telemetry/quality", authMiddleware, (_req, res) => {
+  const coverageMetrics = getComponentCoverageMetrics();
+  const sampleRecommendations = {
+    'saas-dashboard':   recommendBestComponents({ industry: ['saas'], sectionType: 'dashboard', dna: {} }),
+    'fintech-pricing':  recommendBestComponents({ industry: ['fintech'], sectionType: 'pricing', dna: {} }),
+    'ai-features':      recommendBestComponents({ industry: ['ai'], sectionType: 'features', dna: {} }),
+    'generic-faq':      recommendBestComponents({ industry: [], sectionType: 'faq', dna: {} }),
+  };
   res.json({
     quality: getQualityMetrics(),
     componentQuality: getComponentQualityMetrics(),
@@ -71,6 +79,10 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     benchmark: getBenchmarkMetrics(),
     sectionRag:      getSectionRagMetrics(SECTION_CORPUS.length),
     sectionLearning: getSectionLearningMetrics(),
+    componentCoverage: {
+      ...coverageMetrics,
+      recommendations: sampleRecommendations,
+    },
     generatedAt: new Date().toISOString(),
   });
 });

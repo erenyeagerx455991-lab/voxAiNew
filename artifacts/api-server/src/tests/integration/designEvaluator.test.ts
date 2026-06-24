@@ -199,7 +199,7 @@ describe('Design Evaluator — Unit Tests', () => {
     expect(result.issues.length).toBeGreaterThan(0);
     for (const issue of result.issues) {
       expect(issue.message.length).toBeGreaterThan(30);
-      expect(['hero', 'layout', 'cta', 'accessibility', 'shadcn', 'consistency']).toContain(issue.category);
+      expect(['hero', 'layout', 'cta', 'accessibility', 'shadcn', 'consistency', 'coverage']).toContain(issue.category);
       expect(['critical', 'major', 'minor']).toContain(issue.severity);
     }
   });

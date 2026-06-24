@@ -1055,6 +1055,243 @@ export const DIVERSITY_TEMPLATES: any[] = [
 }`,
   },
 
+  // ══════════════════════════════════════════════════════════════════
+  // PREMIUM SAAS TEMPLATES V7.2.4 — shadcn-first
+  // ══════════════════════════════════════════════════════════════════
+
+  {
+    id: 'pricing-shadcn-v1', name: 'Pricing Tiers (shadcn-first)', category: 'pricing',
+    industries: ['saas', 'startup', 'ai', 'fintech'], tags: ['pricing', 'card', 'badge', 'separator', 'dialog', 'switch', 'shadcn'],
+    description: 'Premium 3-tier pricing using <Card> per plan, <Badge> recommended, <Separator>, <Switch> billing toggle, <Dialog> feature breakdown. V7.2.4.',
+    priority: 15,
+    standaloneCode: `function Pricing() {
+  const [annual, setAnnual] = React.useState(false);
+  const [showDialog, setShowDialog] = React.useState(false);
+  const [dialogPlan, setDialogPlan] = React.useState(null);
+  const plans = [
+    { name: 'PLAN_1_NAME', price: annual ? 'PLAN_1_ANNUAL' : 'PLAN_1_MONTHLY', desc: 'PLAN_1_DESC', badge: null, highlight: false, features: ['PLAN_1_FEAT_1','PLAN_1_FEAT_2','PLAN_1_FEAT_3'] },
+    { name: 'PLAN_2_NAME', price: annual ? 'PLAN_2_ANNUAL' : 'PLAN_2_MONTHLY', desc: 'PLAN_2_DESC', badge: 'Most Popular', highlight: true, features: ['PLAN_2_FEAT_1','PLAN_2_FEAT_2','PLAN_2_FEAT_3','PLAN_2_FEAT_4'] },
+    { name: 'PLAN_3_NAME', price: annual ? 'PLAN_3_ANNUAL' : 'PLAN_3_MONTHLY', desc: 'PLAN_3_DESC', badge: null, highlight: false, features: ['PLAN_3_FEAT_1','PLAN_3_FEAT_2','PLAN_3_FEAT_3','PLAN_3_FEAT_4','PLAN_3_FEAT_5'] },
+  ];
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">PRICING_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">PRICING_HEADING</h2>
+          <p className="text-white/65 max-w-xl mx-auto mb-8">PRICING_SUBHEADING</p>
+          <div className="flex items-center justify-center gap-3">
+            <span className="text-white/65 text-sm">Monthly</span>
+            <Switch checked={annual} onCheckedChange={setAnnual} aria-label="Toggle annual billing" />
+            <span className="text-white/65 text-sm">Annual <Badge variant="outline" className="ml-1 text-xs border-emerald-500/40 text-emerald-400">Save 20%</Badge></span>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {plans.map((plan, i) => (
+            <Card key={i} className={\`border transition-all \${plan.highlight ? 'border-white/40 scale-105 bg-white/5' : 'border-white/10 bg-[#111]'}\`}>
+              <CardHeader>
+                <div className="flex items-center justify-between mb-2">
+                  <CardTitle className="text-white text-lg">{plan.name}</CardTitle>
+                  {plan.badge && <Badge variant="secondary">{plan.badge}</Badge>}
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-black text-white">{plan.price}</span>
+                  <span className="text-white/50 text-sm">/mo</span>
+                </div>
+                <CardDescription className="text-white/60">{plan.desc}</CardDescription>
+              </CardHeader>
+              <Separator className="bg-white/8" />
+              <CardContent className="pt-4">
+                <ul className="space-y-2 mb-6">
+                  {plan.features.map((f, fi) => (
+                    <li key={fi} className="flex items-center gap-2 text-white/70 text-sm">
+                      <span className="text-emerald-400 text-xs">✓</span>{f}
+                    </li>
+                  ))}
+                </ul>
+                <Button type="button" className="w-full focus-visible:outline-none focus-visible:ring-2" variant={plan.highlight ? 'default' : 'outline'} onClick={() => { setDialogPlan(plan); setShowDialog(true); }}>PRICING_CTA_TEXT</Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Dialog open={showDialog} onOpenChange={setShowDialog}>
+          <DialogContent className="bg-[#111] border-white/10">
+            <DialogHeader>
+              <DialogTitle className="text-white">{dialogPlan?.name} — Full Features</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              {dialogPlan?.features.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 text-white/70 text-sm"><span className="text-emerald-400">✓</span>{f}</div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </section>
+  );
+}`,
+  },
+
+  {
+    id: 'testimonials-shadcn-v1', name: 'Testimonials (shadcn-first)', category: 'testimonials',
+    industries: ['saas', 'enterprise', 'marketing', 'ai', 'startup'], tags: ['testimonials', 'avatar', 'card', 'badge', 'separator', 'shadcn'],
+    description: 'Premium testimonials using <Avatar><AvatarImage><AvatarFallback>, <Card>, <Badge>, <Separator>. V7.2.4.',
+    priority: 15,
+    standaloneCode: `function Testimonials() {
+  const quotes = [
+    { name: 'TESTIMONIAL_1_NAME', role: 'TESTIMONIAL_1_ROLE', company: 'TESTIMONIAL_1_COMPANY', text: 'TESTIMONIAL_1_QUOTE', avatar: 'TESTIMONIAL_1_AVATAR', badge: 'TESTIMONIAL_1_BADGE' },
+    { name: 'TESTIMONIAL_2_NAME', role: 'TESTIMONIAL_2_ROLE', company: 'TESTIMONIAL_2_COMPANY', text: 'TESTIMONIAL_2_QUOTE', avatar: 'TESTIMONIAL_2_AVATAR', badge: 'TESTIMONIAL_2_BADGE' },
+    { name: 'TESTIMONIAL_3_NAME', role: 'TESTIMONIAL_3_ROLE', company: 'TESTIMONIAL_3_COMPANY', text: 'TESTIMONIAL_3_QUOTE', avatar: 'TESTIMONIAL_3_AVATAR', badge: 'TESTIMONIAL_3_BADGE' },
+  ];
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">TESTIMONIALS_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">TESTIMONIALS_HEADING</h2>
+          <p className="text-white/65 max-w-xl mx-auto">TESTIMONIALS_SUBHEADING</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {quotes.map((q, i) => (
+            <Card key={i} className="bg-[#111] border-white/10 flex flex-col">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src={q.avatar} alt={q.name} />
+                    <AvatarFallback className="bg-white/10 text-white text-sm font-bold">{q.name.slice(0,2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-white text-sm font-semibold">{q.name}</p>
+                    <p className="text-white/50 text-xs">{q.role} · {q.company}</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto border-white/20 text-white/60 text-xs">{q.badge}</Badge>
+                </div>
+              </CardHeader>
+              <Separator className="bg-white/6" />
+              <CardContent className="pt-4 flex-1">
+                <p className="text-white/70 text-sm leading-relaxed">"{q.text}"</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+
+  {
+    id: 'faq-shadcn-v1', name: 'FAQ (shadcn-first Accordion)', category: 'faq',
+    industries: ['saas', 'enterprise', 'fintech', 'ai', 'generic'], tags: ['faq', 'accordion', 'badge', 'separator', 'shadcn'],
+    description: 'Premium FAQ using <Accordion><AccordionItem><AccordionTrigger><AccordionContent> — never raw details/summary. V7.2.4.',
+    priority: 15,
+    standaloneCode: `function FAQ() {
+  const faqs = [
+    { q: 'FAQ_QUESTION_1', a: 'FAQ_ANSWER_1', tag: 'FAQ_TAG_1' },
+    { q: 'FAQ_QUESTION_2', a: 'FAQ_ANSWER_2', tag: 'FAQ_TAG_2' },
+    { q: 'FAQ_QUESTION_3', a: 'FAQ_ANSWER_3', tag: 'FAQ_TAG_3' },
+    { q: 'FAQ_QUESTION_4', a: 'FAQ_ANSWER_4', tag: 'FAQ_TAG_4' },
+    { q: 'FAQ_QUESTION_5', a: 'FAQ_ANSWER_5', tag: 'FAQ_TAG_5' },
+  ];
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-3xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">FAQ_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">FAQ_HEADING</h2>
+          <p className="text-white/65 max-w-xl mx-auto">FAQ_SUBHEADING</p>
+        </div>
+        <Accordion type="single" collapsible className="space-y-2">
+          {faqs.map((f, i) => (
+            <AccordionItem key={i} value={\`faq-\${i}\`} className="bg-[#111] border border-white/10 rounded-xl px-4">
+              <AccordionTrigger className="text-white text-left hover:no-underline py-4">
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline" className="border-white/20 text-white/60 text-xs shrink-0">{f.tag}</Badge>
+                  <span className="font-medium">{f.q}</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="text-white/65 text-sm leading-relaxed pb-4">{f.a}</AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+        <Separator className="bg-white/8 my-12" />
+        <div className="text-center">
+          <p className="text-white/65 text-sm mb-4">FAQ_CONTACT_TEXT</p>
+          <Button type="button" variant="outline" className="border-white/20 text-white focus-visible:outline-none focus-visible:ring-2">FAQ_CONTACT_CTA</Button>
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  },
+
+  {
+    id: 'features-shadcn-tabs-v1', name: 'Features with Tabs (shadcn-first)', category: 'features',
+    industries: ['saas', 'ai', 'developer', 'startup'], tags: ['features', 'tabs', 'card', 'badge', 'progress', 'shadcn'],
+    description: 'Features section using <Tabs> for multi-view, <Card> grid with <Badge> labels, <Progress> for metrics. V7.2.4.',
+    priority: 15,
+    standaloneCode: `function Features() {
+  const tabs = [
+    {
+      id: 'FEATURES_TAB_1_ID', label: 'FEATURES_TAB_1_LABEL',
+      items: [
+        { title: 'FEAT_1_TITLE', desc: 'FEAT_1_DESC', badge: 'FEAT_1_BADGE', pct: 92 },
+        { title: 'FEAT_2_TITLE', desc: 'FEAT_2_DESC', badge: 'FEAT_2_BADGE', pct: 88 },
+        { title: 'FEAT_3_TITLE', desc: 'FEAT_3_DESC', badge: 'FEAT_3_BADGE', pct: 95 },
+      ],
+    },
+    {
+      id: 'FEATURES_TAB_2_ID', label: 'FEATURES_TAB_2_LABEL',
+      items: [
+        { title: 'FEAT_4_TITLE', desc: 'FEAT_4_DESC', badge: 'FEAT_4_BADGE', pct: 79 },
+        { title: 'FEAT_5_TITLE', desc: 'FEAT_5_DESC', badge: 'FEAT_5_BADGE', pct: 84 },
+        { title: 'FEAT_6_TITLE', desc: 'FEAT_6_DESC', badge: 'FEAT_6_BADGE', pct: 91 },
+      ],
+    },
+  ];
+  return (
+    <section className="py-24 bg-[#0a0a0a]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-12">
+          <Badge variant="secondary" className="mb-4">FEATURES_EYEBROW</Badge>
+          <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">FEATURES_HEADING</h2>
+          <p className="text-white/65 max-w-xl mx-auto">FEATURES_SUBHEADING</p>
+        </div>
+        <Tabs defaultValue={tabs[0].id}>
+          <TabsList className="mb-8 bg-white/5 border border-white/10">
+            {tabs.map(t => <TabsTrigger key={t.id} value={t.id} className="text-white/65 data-[state=active]:text-white data-[state=active]:bg-white/10">{t.label}</TabsTrigger>)}
+          </TabsList>
+          {tabs.map(tab => (
+            <TabsContent key={tab.id} value={tab.id}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {tab.items.map((item, i) => (
+                  <Card key={i} className="bg-[#111] border-white/10 hover:border-white/20 transition-all">
+                    <CardHeader>
+                      <div className="flex items-center justify-between mb-1">
+                        <CardTitle className="text-white text-lg">{item.title}</CardTitle>
+                        <Badge variant="secondary" className="text-xs">{item.badge}</Badge>
+                      </div>
+                      <CardDescription className="text-white/60">{item.desc}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/50 text-xs">Performance</span>
+                        <span className="text-white/70 text-xs font-semibold">{item.pct}%</span>
+                      </div>
+                      <Progress value={item.pct} className="h-1.5" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
+    </section>
+  );
+}`,
+  },
+
   {
     id: 'testimonials-data-v1', name: 'Testimonials Metrics + Social Proof', category: 'testimonials',
     industries: ['saas', 'enterprise', 'fintech', 'ai', 'startup'], tags: ['metrics', 'data', 'social-proof'],
