@@ -1,0 +1,287 @@
+V7.2.6 — Auth-Aware Navigation & User Context System
+
+Goal
+
+Transform VoxAI navigation from:
+
+Static Navbar
+
+to
+
+Context-Aware Navigation System
+
+similar to:
+
+- Linear
+- Notion
+- Stripe Dashboard
+- Vercel
+- GitHub
+
+---
+
+Phase 1 — Auth State Awareness
+
+Add support for navigation states:
+
+Guest
+Authenticated
+Team
+Admin
+
+Planner must decide:
+
+- Which state is appropriate
+- Which navigation variant to use
+
+Examples:
+
+Guest:
+Home
+Features
+Pricing
+Login
+Get Started
+
+Authenticated:
+Dashboard
+Projects
+Billing
+Settings
+Profile Menu
+
+Admin:
+Dashboard
+Users
+Analytics
+Settings
+Audit Logs
+
+---
+
+Phase 2 — DropdownMenu User Pattern
+
+Replace plain Login link.
+
+Use:
+
+DropdownMenu
+Avatar
+AvatarFallback
+Badge
+
+Structure:
+
+Avatar
+↓
+DropdownMenuTrigger
+↓
+DropdownMenuContent
+
+Items:
+
+Profile
+Settings
+Billing
+Team
+Support
+Logout
+
+Never generate custom profile menus.
+
+Always use DropdownMenu.
+
+---
+
+Phase 3 — Avatar Intelligence
+
+Use:
+
+Avatar
+AvatarFallback
+
+Examples:
+
+JD
+AK
+VS
+
+Never use random placeholder images.
+
+Fallback initials required.
+
+---
+
+Phase 4 — Navbar Recommendation Engine Upgrade
+
+Update:
+
+recommendBestComponents()
+
+Guest:
+NavigationMenu
+Button
+
+Authenticated:
+NavigationMenu
+Avatar
+DropdownMenu
+
+Dashboard:
+NavigationMenu
+Avatar
+DropdownMenu
+Sheet
+
+Admin:
+NavigationMenu
+Avatar
+DropdownMenu
+Command
+
+---
+
+Phase 5 — Command Palette Navigation
+
+For:
+
+Dashboard
+SaaS
+Developer Tools
+
+Use:
+
+Command
+CommandInput
+CommandList
+CommandItem
+
+Examples:
+
+Search projects
+Search docs
+Jump to settings
+Open billing
+
+Never use raw search modal.
+
+Always use Command.
+
+---
+
+Phase 6 — Mobile Navigation Standard
+
+Always:
+
+Sheet
+↓
+SheetContent
+
+Rules:
+
+No custom overlays
+No custom slide panels
+
+Use Sheet only.
+
+---
+
+Phase 7 — Navigation Evaluator Upgrade
+
+Add:
+
+accountMenuScore
+
+Checks:
+
+DropdownMenu used
+Avatar used
+Proper trigger
+Accessible menu items
+Logout action exists
+
+Weight:
+
+0.05
+
+---
+
+Phase 8 — Navigation Telemetry
+
+Track:
+
+avatarUsage
+dropdownUsage
+commandUsage
+sheetUsage
+
+Expose:
+
+GET /api/telemetry/quality
+
+navigationIntelligence
+
+---
+
+Phase 9 — Premium Templates
+
+Create:
+
+navbar-auth-v1
+navbar-auth-v2
+navbar-admin-v1
+navbar-dashboard-v1
+navbar-command-v1
+
+Priority:
+
+15
+
+DNA Mapping:
+
+Linear → dashboard-v1
+Stripe → admin-v1
+Vercel → auth-v1
+Notion → command-v1
+GitHub → auth-v2
+
+---
+
+Phase 10 — Success Criteria
+
+Target:
+
+Navigation Score ≥ 9.5
+
+DropdownMenu Usage ≥ 90%
+
+Avatar Usage ≥ 90%
+
+Sheet Usage ≥ 95%
+
+Accessibility ≥ 9.5
+
+No raw account menus
+
+No custom mobile drawers
+
+No custom dropdowns
+
+Only shadcn patterns
+
+Expected Impact:
+
+Overall Quality:
+8.9 → 9.2+
+
+Navigation Score:
+8.5 → 9.7
+
+Lovable Parity:
+Achieved
+
+Bolt Quality:
+Exceeded
+
+v0 Quality:
+Matched
