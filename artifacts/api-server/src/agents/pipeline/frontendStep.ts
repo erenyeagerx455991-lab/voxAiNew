@@ -8,7 +8,8 @@ import { selectRegistryComponentsServer } from "../dna/dnaAgent.js";
 import { selectTemplatesForPrompt, buildContextFromTemplates } from "../../components/registry.js";
 import { truncateForGroq } from "../../contextManager.js";
 import type { DesignDNA, ProjectFileSSE } from "../types.js";
-import type { ArchitectureOutput, FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
+import type { ArchitectureOutput, FrontendOutput, PipelineKeys, PageTree } from "./pipelineTypes.js";
+import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
 import { extractRetrievalIntent } from "../../design-rag/retriever.js";
@@ -83,7 +84,8 @@ export async function runFrontendStep(
   arch: ArchitectureOutput,
   prompt: string,
   keys: PipelineKeys,
-  res: Response
+  res: Response,
+  tree?: PageTree
 ): Promise<FrontendOutput> {
   const { openrouterKey } = keys;
   const { plan, projectBlueprint } = arch;
@@ -225,11 +227,21 @@ export async function runFrontendStep(
     ? `Build a ${projectBlueprint.projectType} with these pages: ${projectBlueprint.pages.join(', ')}.\n\nPrompt: ${prompt}\nPlan: ${cleanPlan}${authNavbarInstruction}\n\nApply the design DNA above to ALL pages. Do not truncate.`
     : `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}${authNavbarInstruction}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.`;
 
+  // V7.3.2: Inject Component Tree context into codegen prompt
+  let treeCtx = '';
+  try {
+    if (tree) {
+      treeCtx = buildTreeContextString(tree);
+      log.info("COMPONENT_TREE_INJECTED", { sections: tree.statistics.sectionCount, nodes: tree.statistics.totalNodes });
+    }
+  } catch (e) { log.error("COMPONENT_TREE_CONTEXT_FAILED", { error: String(e) }); }
+
   let generatedCode = "";
   try {
     const codegenSystemParts = [buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection)];
     if (retrievalCtx) codegenSystemParts.push(retrievalCtx);
     if (motionCtx) codegenSystemParts.push(motionCtx);
+    if (treeCtx) codegenSystemParts.push(treeCtx);
     generatedCode = await callAI(
       openrouterKey,
       [{ role: "system", content: codegenSystemParts.join('\n\n') }, { role: "user", content: codegenUserPrompt }],
@@ -272,5 +284,6 @@ export async function runFrontendStep(
     registrySelection,
     retrievalContext: retrievalCtx,
     retrievalReferenceIds,
+    componentTree: tree,
   };
 }

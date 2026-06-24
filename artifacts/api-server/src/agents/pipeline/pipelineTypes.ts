@@ -1,6 +1,8 @@
 import type { PageBlueprint, ProjectBlueprint, DesignDNA, ProjectFileSSE, ServerKnowledgeGraph, DNAComposition } from "../types.js";
+import type { PageTree } from "../../component-tree/componentTreeTypes.js";
 
 export type { PageBlueprint, ProjectBlueprint, DesignDNA, ProjectFileSSE, ServerKnowledgeGraph, DNAComposition };
+export type { PageTree };
 
 export interface PlannerOutput {
   cleanPlan: string;
@@ -44,6 +46,7 @@ export interface FrontendOutput {
   registrySelection: Record<string, string>;
   retrievalContext: string;
   retrievalReferenceIds: string[];
+  componentTree?: PageTree;
 }
 
 export interface BackendOutput {

@@ -9,6 +9,7 @@ import { recordSectionOutcome } from "../../design-rag/sectionReferenceMetrics.j
 import { normalizeSectionType } from "../../design-rag/sectionRetriever.js";
 import { recordDashboardScore } from "../../telemetry/dashboardMetrics.js";
 import { recordFormScore } from "../../telemetry/formMetrics.js";
+import { scoreTree } from "../../component-tree/treeValidator.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -31,6 +32,7 @@ export interface EvaluatorResult {
   dashboardScore: number;
   formScore: number;
   motionScore: number;
+  treeQualityScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -282,6 +284,10 @@ export async function runDesignEvaluatorStep(
     thresholdMet: evalResult.overallScore >= REPAIR_THRESHOLD,
   });
 
+  // V7.3.2: Score the component tree as an additional quality dimension
+  const treeQualityScore = scoreTree(frontend.componentTree);
+  log.info("TREE_QUALITY_SCORED", { treeQualityScore, hasTree: !!frontend.componentTree });
+
   const evaluationResult: EvaluatorResult = {
     ...evalResult,
     repairCount,
@@ -294,6 +300,7 @@ export async function runDesignEvaluatorStep(
     dashboardScore: evalResult.dashboardScore,
     formScore: evalResult.formScore,
     motionScore: evalResult.motionScore,
+    treeQualityScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

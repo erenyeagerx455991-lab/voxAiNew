@@ -11,6 +11,7 @@ import { recordCriticRun } from "../../telemetry/criticMetrics.js";
 import { recordCriticOutcome } from "../designCritic/criticLearning.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import type { EvaluatorStepOutput } from "./designEvaluatorStep.js";
+import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("DesignCriticStep");
@@ -33,11 +34,26 @@ export async function runDesignCriticStep(
 
   const scoreBeforeCritic = evaluationResult.overallScore;
 
+  // V7.3.2: Build tree context prefix so critic can inspect component architecture
+  let treeAwareCode = fixedCode;
+  try {
+    if (evaluated.componentTree) {
+      const treeCtx = buildTreeContextString(evaluated.componentTree);
+      treeAwareCode = `/* COMPONENT ARCHITECTURE TREE:\n${treeCtx}\n*/\n\n${fixedCode}`;
+      log.info("TREE_CONTEXT_INJECTED_FOR_CRITIC", {
+        sections: evaluated.componentTree.statistics.sectionCount,
+        nodes: evaluated.componentTree.statistics.totalNodes,
+      });
+    }
+  } catch (e) {
+    log.error("TREE_CRITIC_CONTEXT_FAILED", { error: String(e) });
+  }
+
   // ── Phase 1-6: Run critic engine ─────────────────────────────────────────────
   let critiqueReport: CritiqueReport;
   try {
     critiqueReport = await runDesignCritic({
-      code:                fixedCode,
+      code:                treeAwareCode,
       evaluationResult,
       designDNA:           design,
       retrievalReferences: evaluationResult.referencesUsed ?? [],

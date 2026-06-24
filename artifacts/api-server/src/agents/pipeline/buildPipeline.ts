@@ -15,6 +15,9 @@ import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
 import { recordBuildStart, recordBuildSuccess, recordBuildFailure } from "../../telemetry/buildMetrics.js";
 import { withAgentMetrics } from "../../telemetry/agentMetrics.js";
+import { buildComponentTree } from "../../component-tree/treeBuilder.js";
+import { validateTree } from "../../component-tree/treeValidator.js";
+import { recordTreeBuild } from "../../telemetry/componentTreeMetrics.js";
 
 export interface BuildPipelineInput {
   prompt: string;
@@ -43,8 +46,13 @@ export async function runBuildPipeline(
       runArchitectureStep(plan, prompt, keys, res)
     );
 
+    // V7.3.2: Build component tree between architecture and frontend
+    const componentTree = buildComponentTree({ plan, architecture, buildId: chatId });
+    const treeValidation = validateTree(componentTree);
+    recordTreeBuild(componentTree, treeValidation.score, treeValidation.errors.length, treeValidation.warnings.length);
+
     const frontend = await withAgentMetrics("Frontend", () =>
-      runFrontendStep(architecture, prompt, keys, res)
+      runFrontendStep(architecture, prompt, keys, res, componentTree)
     );
 
     // V7.2.0: generate B+C candidates, evaluate all 3, select best
