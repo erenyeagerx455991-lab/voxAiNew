@@ -10,6 +10,7 @@ import { type DesignStyle } from './designCorpus.js';
 import { getQualityScore, isComponentDeprecated } from '../quality/componentMetrics.js';
 import { getReferenceQualityScore, recordReferenceUsages } from './referenceMetrics.js';
 import { recordSectionRetrieval } from './sectionRagMetrics.js';
+import { getSectionQualityScore } from './sectionReferenceMetrics.js';
 import { detectIndustries, extractKeywords, dnaLangToStyle } from './retriever.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -27,14 +28,15 @@ export interface SectionRetrievalInput {
 export interface SectionScoredRef extends SectionRef {
   retrievalScore: number;
   scoreBreakdown: {
-    industryMatch:    number;
-    styleMatch:       number;
-    dnaMatch:         number;
-    keywordMatch:     number;
-    baseQuality:      number;
-    qualityBoost:     number;
-    referenceQuality: number;
+    industryMatch:     number;
+    styleMatch:        number;
+    dnaMatch:          number;
+    keywordMatch:      number;
+    baseQuality:       number;
+    qualityBoost:      number;
+    referenceQuality:  number;
     deprecationPenalty: number;
+    sectionLearning:   number;   // V7.2.3: outcome-feedback contribution
   };
 }
 
@@ -54,15 +56,19 @@ export interface PageSectionRetrievalResult {
 }
 
 // ── Scoring weights ───────────────────────────────────────────────────────────
-const INDUSTRY_W    = 3;
-const STYLE_W       = 6;
-const DNA_W         = 4;
-const KEYWORD_W     = 2;
-const MAX_KW_BONUS  = 6;
-const QUALITY_SCALE = 0.5;
-const LIVE_BOOST    = 2;
-const REF_QUALITY_W = 0.25;
-const DEPRECATION   = -10;
+const INDUSTRY_W        = 3;
+const STYLE_W           = 6;
+const DNA_W             = 4;
+const KEYWORD_W         = 2;
+const MAX_KW_BONUS      = 6;
+const QUALITY_SCALE     = 0.5;
+const LIVE_BOOST        = 2;
+const REF_QUALITY_W     = 0.25;
+const DEPRECATION       = -10;
+// V7.2.3: Section learning — outcome-driven quality, max ~20% of total score.
+// Quality score is 0-10, neutral=5. Contribution = (score-5) × 1.6 → range -8..+8.
+// Theoretical max baseline ≈ 40, so +8 ≈ 20%. DNA (STYLE_W+DNA_W=10) always dominates.
+const SECTION_LEARNING_W = 1.6;
 
 // ── Scoring function (within a section-filtered corpus) ───────────────────────
 
@@ -81,6 +87,7 @@ function scoreSectionRef(
   const b = {
     industryMatch: 0, styleMatch: 0, dnaMatch: 0, keywordMatch: 0,
     baseQuality: 0, qualityBoost: 0, referenceQuality: 0, deprecationPenalty: 0,
+    sectionLearning: 0,
   };
 
   // Industry match
@@ -126,10 +133,13 @@ function scoreSectionRef(
   // V7.1.9 learnt reference quality
   b.referenceQuality = getReferenceQualityScore(ref.id) * REF_QUALITY_W;
 
+  // V7.2.3 section outcome feedback — neutral refs get 0, improved/demoted shift ±8
+  b.sectionLearning = (getSectionQualityScore(ref.id) - 5) * SECTION_LEARNING_W;
+
   const retrievalScore =
     b.industryMatch + b.styleMatch + b.dnaMatch +
     b.keywordMatch + b.baseQuality + b.qualityBoost +
-    b.referenceQuality + b.deprecationPenalty;
+    b.referenceQuality + b.deprecationPenalty + b.sectionLearning;
 
   return { ...ref, retrievalScore, scoreBreakdown: b };
 }

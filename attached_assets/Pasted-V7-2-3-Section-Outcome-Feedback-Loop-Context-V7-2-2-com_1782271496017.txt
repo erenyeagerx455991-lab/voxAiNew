@@ -1,0 +1,461 @@
+V7.2.3 — Section Outcome Feedback Loop
+
+Context
+
+V7.2.2 complete.
+
+Verified active:
+
+- Design DNA System
+- Design RAG
+- Section-Level Design RAG
+- 260+ Section References
+- Design Evaluator
+- Auto Repair Loop
+- Multi-Candidate Selection
+- Benchmark Framework
+- Component Intelligence
+
+Current limitation:
+
+Section references are retrieved.
+
+Section references are used.
+
+Section references are tracked.
+
+But section references are NOT learning from outcomes.
+
+Current flow:
+
+Section Reference
+↓
+Generation
+↓
+Evaluation
+↓
+Repair
+↓
+End
+
+Missing:
+
+Outcome Learning
+
+Result:
+
+High-performing hero references are not promoted.
+
+Weak pricing references are not demoted.
+
+System is retrieval-aware but not outcome-aware.
+
+---
+
+Goal
+
+Create a self-improving section retrieval system.
+
+References that consistently produce:
+
+- higher evaluator scores
+- fewer repairs
+- stronger accessibility
+- stronger conversion structure
+
+must automatically rank higher over time.
+
+Poor references must automatically rank lower.
+
+---
+
+PHASE 1 — Section Reference Metrics Store
+
+Create:
+
+src/design-rag/sectionReferenceMetrics.ts
+
+Track per reference:
+
+{
+referenceId,
+sectionType,
+
+usageCount,
+
+successCount,
+
+repairCount,
+
+avgScore,
+
+avgAccessibility,
+
+avgLayout,
+
+avgCTA,
+
+avgHero,
+
+avgConsistency,
+
+lastUsedAt,
+
+qualityScore
+}
+
+Rules:
+
+No database required.
+
+Reuse existing metrics architecture.
+
+---
+
+PHASE 2 — Outcome Recording
+
+Create:
+
+recordSectionOutcome()
+
+Input:
+
+{
+referenceId,
+sectionType,
+
+overallScore,
+
+heroScore,
+layoutScore,
+ctaScore,
+accessibilityScore,
+consistencyScore,
+
+repairTriggered
+}
+
+Must execute after:
+
+Design Evaluator
+
+and after:
+
+Repair Loop
+
+Final score only.
+
+Never record pre-repair score.
+
+---
+
+PHASE 3 — Quality Score Formula
+
+Create:
+
+calculateSectionQuality()
+
+Formula:
+
+qualityScore =
+
+overallScore × 0.40
++
+accessibilityScore × 0.20
++
+layoutScore × 0.15
++
+ctaScore × 0.10
++
+heroScore × 0.10
++
+(1 - repairRate) × 0.05
+
+Normalize:
+
+0–10
+
+Rules:
+
+New references:
+
+Default score = 5
+
+Avoid cold-start bias.
+
+---
+
+PHASE 4 — Retriever Upgrade
+
+Upgrade:
+
+sectionRetriever.ts
+
+Current:
+
+DNA Match
++
+Industry Match
++
+Design Match
+
+New:
+
+DNA Match
++
+Industry Match
++
+Design Match
++
+Section Quality Score
+
+Weight:
+
+Section Quality Score
+
+max contribution = 20%
+
+Never allow quality score to overpower DNA matching.
+
+DNA remains dominant.
+
+---
+
+PHASE 5 — Auto Promotion
+
+Promote references when:
+
+usageCount >= 5
+
+AND
+
+avgScore >= 9
+
+AND
+
+repairRate < 15%
+
+Bonus:
+
++1.5 retrieval points
+
+Promotion must be reversible.
+
+---
+
+PHASE 6 — Auto Demotion
+
+Demote references when:
+
+usageCount >= 5
+
+AND
+
+avgScore < 7
+
+OR
+
+repairRate > 50%
+
+Penalty:
+
+-2 retrieval points
+
+Demotion reversible.
+
+---
+
+PHASE 7 — Section Leaderboards
+
+Create:
+
+getTopHeroReferences()
+
+getTopFeatureReferences()
+
+getTopPricingReferences()
+
+getTopTestimonialReferences()
+
+getTopCTAReferences()
+
+Return:
+
+Top 20 references.
+
+Sorted by:
+
+qualityScore
+
+descending.
+
+---
+
+PHASE 8 — Telemetry
+
+Extend:
+
+GET /telemetry/quality
+
+Add:
+
+sectionLearning:
+
+{
+referencesTracked,
+
+topHeroReferences,
+topPricingReferences,
+topFeatureReferences,
+topCTAReferences,
+
+promotedCount,
+demotedCount,
+
+averageQualityScore,
+
+averageRepairRate
+}
+
+No new endpoint.
+
+---
+
+PHASE 9 — Tests
+
+Create:
+
+tests/design-rag/sectionOutcomeFeedback.test.ts
+
+Verify:
+
+1. Outcome recording works
+
+2. Quality score calculation works
+
+3. Promotion triggers
+
+4. Demotion triggers
+
+5. DNA dominance preserved
+
+6. New references start at neutral score
+
+7. Telemetry updates
+
+8. Rankings sort correctly
+
+9. Repair rate affects score
+
+10. Quality score bounded 0–10
+
+Minimum:
+
+40+ tests
+
+No mocks hiding logic.
+
+---
+
+PHASE 10 — Audit
+
+Create:
+
+artifacts/api-server/v7.2.3Audit.md
+
+Must answer:
+
+Learning System
+
+- Is section learning active?
+- Exact call chain?
+- When are outcomes recorded?
+
+Promotion
+
+- Conditions?
+- Reversible?
+
+Demotion
+
+- Conditions?
+- Reversible?
+
+Retriever
+
+- Is quality score live?
+- Weight percentage?
+
+Coverage
+
+- Tests before
+- Tests after
+
+Telemetry
+
+- New fields added?
+
+Remaining gaps
+
+Only verified gaps.
+
+No assumptions.
+
+No speculation.
+
+No "should work".
+
+Evidence only.
+
+---
+
+HARD RULES
+
+DO NOT:
+
+- Change queue system
+- Change providers
+- Change evaluator scoring
+- Change repair logic
+- Change candidate selection
+- Change SSE formats
+- Change API contracts
+
+Only extend learning.
+
+---
+
+Success Criteria
+
+Section outcome recording active:
+YES
+
+Quality scoring active:
+YES
+
+Promotion active:
+YES
+
+Demotion active:
+YES
+
+Retriever learning active:
+YES
+
+Leaderboards active:
+YES
+
+Telemetry active:
+YES
+
+40+ tests passing:
+YES
+
+No regressions:
+YES
+
+No queue changes:
+YES
+
+No provider changes:
+YES

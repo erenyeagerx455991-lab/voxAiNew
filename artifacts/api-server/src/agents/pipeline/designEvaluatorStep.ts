@@ -5,6 +5,8 @@ import { runDesignRepair } from "../designEvaluator/repairAgent.js";
 import { recordEvaluatorScore } from "../../telemetry/evaluatorMetrics.js";
 import { recordComponentBuildResult } from "../../quality/componentMetrics.js";
 import { recordBuildOutcome } from "../../design-rag/referenceMetrics.js";
+import { recordSectionOutcome } from "../../design-rag/sectionReferenceMetrics.js";
+import { normalizeSectionType } from "../../design-rag/sectionRetriever.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -183,6 +185,29 @@ export async function runDesignEvaluatorStep(
       scoreBeforeRepair: initialScore,
       scoreAfterRepair: evalResult.overallScore,
       repairApplied,
+    });
+
+    // V7.2.3: section-level outcome feedback — final score only (never pre-repair)
+    for (const refId of referencesUsedIds) {
+      const sectionType = normalizeSectionType(refId);
+      if (sectionType) {
+        recordSectionOutcome({
+          referenceId:       refId,
+          sectionType,
+          overallScore:      evalResult.overallScore,
+          heroScore:         evalResult.heroScore,
+          layoutScore:       evalResult.layoutScore,
+          ctaScore:          evalResult.ctaScore,
+          accessibilityScore: evalResult.accessibilityScore,
+          consistencyScore:  evalResult.consistencyScore,
+          repairTriggered:   repairApplied,
+        });
+      }
+    }
+    log.info("SECTION_OUTCOME_RECORDED", {
+      referenceCount: referencesUsedIds.length,
+      finalScore:     evalResult.overallScore,
+      repairTriggered: repairApplied,
     });
   }
 
