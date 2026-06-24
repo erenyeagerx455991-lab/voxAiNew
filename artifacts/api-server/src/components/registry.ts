@@ -194,6 +194,10 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           <Button type="button" className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-10 py-4 rounded-sm transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">Reserve a Table</Button>
           <Button type="button" className="border border-stone-500 text-stone-300 font-medium px-10 py-4 rounded-sm hover:border-stone-300 transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">View Menu</Button>
         </div>
+        <div className="mt-12 flex items-center justify-center gap-2">
+          <div className="flex gap-0.5">{[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-sm">★</span>)}</div>
+          <span className="text-stone-400 text-xs ml-2">4.9 · <span className="text-stone-500">1,200+ reviews on Google</span></span>
+        </div>
       </div>
     </section>
   );
@@ -207,15 +211,25 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
   return (
     <section className="min-h-screen flex flex-col justify-center px-8 md:px-16 pt-24 bg-[#0c0c0c]">
       <div className="max-w-6xl mx-auto w-full">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-emerald-400 text-sm font-medium">Available for work</span>
+        <div className="mb-8">
+          <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-xs font-medium px-3 py-1.5 inline-flex items-center gap-1.5 bg-emerald-500/5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" aria-hidden="true" />
+            Available for work
+          </Badge>
         </div>
         <h1 className="text-7xl md:text-9xl font-black leading-none tracking-tighter text-white mb-6">
           YOUR<br /><span className="text-transparent" style={{WebkitTextStroke: '1px rgba(255,255,255,0.3)'}}>NAME</span>
         </h1>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-          <p className="text-gray-400 text-lg max-w-md leading-relaxed">ROLE_DESCRIPTION</p>
+          <div>
+            <p className="text-gray-400 text-lg max-w-md leading-relaxed mb-6">ROLE_DESCRIPTION</p>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {['A','B','C'].map((l, i) => <Avatar key={i} className="w-7 h-7 border-2 border-[#0c0c0c]"><AvatarFallback className="text-xs bg-gradient-to-br from-violet-500 to-blue-500 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+              </div>
+              <span className="text-gray-500 text-xs">50+ clients worldwide</span>
+            </div>
+          </div>
           <div className="flex gap-6">
             <Button type="button" className="bg-white text-black font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">View Work</Button>
             <Button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/5 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">Contact</Button>
@@ -247,11 +261,17 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         </h1>
         <p className="text-lg text-gray-400 max-w-xl mx-auto mb-8">SUBHEADLINE</p>
         <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {chips.map(c => <span key={c} className="bg-white/5 border border-white/10 text-gray-300 text-xs font-medium px-4 py-2 rounded-full">{c}</span>)}
+          {chips.map(c => <Badge key={c} variant="outline" className="border-white/15 text-gray-300 text-xs font-medium px-4 py-2 rounded-full bg-white/5">{c}</Badge>)}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button type="button" className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</Button>
           <Button type="button" className="border border-white/15 text-gray-300 font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
+        </div>
+        <div className="mt-8 flex items-center justify-center gap-3">
+          <div className="flex -space-x-2">
+            {['A','B','C'].map((l, i) => <Avatar key={i} className="w-7 h-7 border-2 border-[#050510]"><AvatarFallback className="text-xs bg-gradient-to-br from-violet-500 to-blue-500 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+          </div>
+          <span className="text-gray-400 text-xs">Trusted by <span className="text-white font-semibold">10K+</span> teams</span>
         </div>
       </div>
     </section>
@@ -374,6 +394,9 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
   return (
     <section className="min-h-screen bg-[#0F0F0F] flex flex-col pt-28 pb-16 px-8 md:px-16 overflow-hidden">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-center">
+        <div className="mb-8">
+          <Badge variant="outline" className="border-[#5E6AD2]/40 text-[#a78bfa] text-xs font-semibold px-3 py-1.5 bg-[#5E6AD2]/10">HEADLINE_BADGE</Badge>
+        </div>
         <h1 className="font-bold leading-[0.90] tracking-[-0.04em] text-white mb-0"
           style={{fontSize: 'clamp(52px, 9vw, 128px)'}}>
           HEADLINE_LINE1
@@ -388,6 +411,12 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           <p className="text-white/65 text-base leading-relaxed">SUBHEADLINE</p>
         </div>
         <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 mr-2">
+            <div className="flex -space-x-2">
+              {['M','S','J'].map((l, i) => <Avatar key={i} className="w-7 h-7 border-2 border-[#0F0F0F]"><AvatarFallback className="text-xs bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+            </div>
+            <span className="text-white/50 text-xs">50K+ teams</span>
+          </div>
           <Button type="button" className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F0F]">CTA_PRIMARY</Button>
           <Button type="button" className="text-white/70 hover:text-white text-sm font-medium transition-colors tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_SECONDARY →</Button>
         </div>
@@ -526,7 +555,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
         <div className="flex items-center gap-4 mb-12">
           <div className="w-10 h-px bg-gray-800" />
-          <span className="text-xs font-semibold tracking-widest uppercase text-gray-400">TAGLINE</span>
+          <Badge variant="outline" className="border-gray-300 text-gray-400 text-xs font-semibold tracking-widest uppercase bg-transparent rounded-none px-3 py-1">TAGLINE</Badge>
         </div>
         <div className="flex-1 flex flex-col justify-center">
           <h1 className="font-black leading-[0.88] tracking-[-0.04em] text-gray-900 max-w-5xl mb-12"
@@ -542,8 +571,17 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
                 <span key={s} className="text-xs font-semibold tracking-widest uppercase text-gray-400 border border-gray-200 px-4 py-2 rounded-full">{s}</span>
               ))}
             </div>
-            <div className="md:ml-auto shrink-0">
-              <Button type="button" className="bg-gray-900 text-white font-bold text-sm px-8 py-4 rounded-full hover:bg-gray-700 transition-all">CTA_PRIMARY →</Button>
+            <div className="md:ml-auto shrink-0 flex flex-col items-end gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex -space-x-2">
+                  {['A','B','C'].map((l, i) => <Avatar key={i} className="w-6 h-6 border-2 border-[#f5f5f0]"><AvatarFallback className="text-xs bg-gray-700 text-white font-semibold">{l}</AvatarFallback></Avatar>)}
+                </div>
+                <span className="text-gray-400 text-xs">50+ happy clients</span>
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" className="bg-gray-900 text-white font-bold text-sm px-8 py-4 rounded-full hover:bg-gray-700 transition-all">CTA_PRIMARY →</Button>
+                <Button type="button" className="border border-gray-300 text-gray-600 font-semibold text-sm px-6 py-4 rounded-full hover:border-gray-500 transition-all">CTA_SECONDARY</Button>
+              </div>
             </div>
           </div>
         </div>
@@ -671,12 +709,26 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     industries: ['saas', 'ai', 'fintech', 'startup'], tags: ['product-shot', 'mockup', 'dark'],
     description: 'Product/dashboard UI mockup section with decorative browser frame', priority: 9,
     standaloneCode: `function DashboardPreview() {
-  const metrics = [{ label: 'Revenue', value: '$124K', change: '+18%', up: true }, { label: 'Users', value: '8,402', change: '+32%', up: true }, { label: 'Churn', value: '1.2%', change: '-0.4%', up: false }];
-  const rows = ['ITEM_1', 'ITEM_2', 'ITEM_3', 'ITEM_4'];
+  const [activeTab, setActiveTab] = React.useState('overview');
+  const metrics = [
+    { label: 'MRR', value: '$124K', change: '+18%', up: true },
+    { label: 'Active Users', value: '8,402', change: '+32%', up: true },
+    { label: 'Churn Rate', value: '1.2%', change: '-0.4%', up: false },
+    { label: 'Avg Session', value: '4.7m', change: '+12%', up: true },
+  ];
+  const rows = [
+    { id: '#1024', name: 'CUSTOMER_1', plan: 'Pro', status: 'active', mrr: '$99' },
+    { id: '#1023', name: 'CUSTOMER_2', plan: 'Enterprise', status: 'active', mrr: '$299' },
+    { id: '#1022', name: 'CUSTOMER_3', plan: 'Starter', status: 'trial', mrr: '$0' },
+    { id: '#1021', name: 'CUSTOMER_4', plan: 'Pro', status: 'active', mrr: '$99' },
+  ];
+  const barHeights = [32, 48, 36, 60, 42, 55, 38, 65, 44, 52, 40, 68];
+  const statusColor = { active: 'bg-emerald-500', trial: 'bg-amber-500', churned: 'bg-rose-500' };
   return (
     <section className="py-24 bg-[#0a0a0a] overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
+          <Badge variant="outline" className="border-white/15 text-white/60 text-xs mb-4 px-3 py-1 inline-flex">PREVIEW_EYEBROW</Badge>
           <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">PREVIEW_HEADING</h2>
           <p className="text-gray-400 text-lg max-w-xl mx-auto">PREVIEW_SUBHEADING</p>
         </div>
@@ -685,33 +737,66 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             <div className="w-3 h-3 rounded-full bg-red-500/70" />
             <div className="w-3 h-3 rounded-full bg-yellow-500/70" />
             <div className="w-3 h-3 rounded-full bg-emerald-500/70" />
-            <div className="ml-4 bg-white/5 rounded-md px-4 py-1 text-gray-500 text-xs">app.SITE_NAME.com/dashboard</div>
+            <div className="ml-4 bg-white/5 rounded-md px-4 py-1 text-gray-500 text-xs flex-1 max-w-48">app.SITE_NAME.com</div>
+            <Badge className="ml-auto bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs px-2 py-0.5">● Live</Badge>
           </div>
           <div className="p-6">
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {metrics.map((m, i) => (
-                <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5">
-                  <p className="text-gray-500 text-xs mb-1">{m.label}</p>
-                  <p className="text-white font-black text-2xl">{m.value}</p>
-                  <p className={\`text-xs mt-1 font-medium \${m.up ? 'text-emerald-400' : 'text-rose-400'}\`}>{m.change} vs last month</p>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="bg-white/5 border border-white/8 mb-6">
+                <TabsTrigger value="overview" className="text-xs data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-500">Overview</TabsTrigger>
+                <TabsTrigger value="customers" className="text-xs data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-500">Customers</TabsTrigger>
+                <TabsTrigger value="revenue" className="text-xs data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-500">Revenue</TabsTrigger>
+              </TabsList>
+              <TabsContent value="overview">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {metrics.map((m, i) => (
+                    <div key={i} className="bg-white/5 rounded-xl p-4 border border-white/5">
+                      <p className="text-gray-500 text-xs mb-1">{m.label}</p>
+                      <p className="text-white font-black text-xl">{m.value}</p>
+                      <Badge className={\`mt-1 text-xs px-1.5 py-0.5 border \${m.up ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30'}\`}>{m.change}</Badge>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="bg-white/5 rounded-xl border border-white/5 overflow-hidden">
-              <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
-                <span className="text-white text-sm font-semibold">Recent Activity</span>
-                <span className="text-gray-500 text-xs">View all →</span>
-              </div>
-              {rows.map((row, i) => (
-                <div key={i} className="px-4 py-3 border-b border-white/5 last:border-0 flex items-center justify-between hover:bg-white/5 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-blue-500" />
-                    <span className="text-gray-300 text-sm">{row}</span>
+                <div className="bg-white/5 rounded-xl border border-white/5 p-4">
+                  <div className="flex items-end gap-0.5 h-28">
+                    {barHeights.map((h, i) => <div key={i} className="flex-1 rounded-sm bg-violet-600/40 hover:bg-violet-500/60 transition-colors" style={{height: h + 'px'}} />)}
                   </div>
-                  <span className="text-gray-600 text-xs">Just now</span>
                 </div>
-              ))}
-            </div>
+              </TabsContent>
+              <TabsContent value="customers">
+                <div className="rounded-xl border border-white/8 overflow-hidden">
+                  <div className="grid grid-cols-5 px-4 py-2 border-b border-white/5 text-gray-600 text-xs font-semibold uppercase tracking-wider">
+                    <span>ID</span><span>Customer</span><span>Plan</span><span>Status</span><span>MRR</span>
+                  </div>
+                  {rows.map((r, i) => (
+                    <div key={i} className="grid grid-cols-5 px-4 py-3 border-b border-white/5 last:border-0 hover:bg-white/4 transition-colors items-center">
+                      <span className="text-gray-600 text-xs font-mono">{r.id}</span>
+                      <span className="text-gray-300 text-xs font-medium">{r.name}</span>
+                      <span className="text-gray-400 text-xs">{r.plan}</span>
+                      <span className="flex items-center gap-1.5"><span className={\`w-1.5 h-1.5 rounded-full \${statusColor[r.status]}\`} /><span className="text-gray-400 text-xs capitalize">{r.status}</span></span>
+                      <span className="text-white text-xs font-semibold">{r.mrr}</span>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+              <TabsContent value="revenue">
+                <div className="space-y-3">
+                  {metrics.slice(0, 3).map((m, i) => (
+                    <div key={i} className="flex items-center gap-4 bg-white/4 rounded-xl p-4 border border-white/5">
+                      <span className="text-gray-400 text-xs w-24">{m.label}</span>
+                      <div className="flex-1 h-2 bg-white/8 rounded-full overflow-hidden"><div className="h-full bg-violet-500 rounded-full" style={{width: \`\${[68, 82, 35][i]}%\`}} /></div>
+                      <span className="text-white font-semibold text-sm">{m.value}</span>
+                      <Badge className={\`text-xs px-1.5 border \${m.up ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/15 text-rose-400 border-rose-500/30'}\`}>{m.change}</Badge>
+                    </div>
+                  ))}
+                  <div className="bg-white/4 rounded-xl p-4 border border-white/5 space-y-2">
+                    <Skeleton className="h-3 w-24 bg-white/10" />
+                    <Skeleton className="h-8 w-32 bg-white/10" />
+                    <Skeleton className="h-3 w-16 bg-white/10" />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
@@ -1075,6 +1160,11 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             </div>
           ))}
         </div>
+        <div className="mt-10 text-center flex items-center justify-center gap-4 flex-wrap">
+          <Badge variant="outline" className="border-white/10 text-gray-500 text-xs px-3 py-1.5">🔒 SOC 2 Type II</Badge>
+          <Badge variant="outline" className="border-white/10 text-gray-500 text-xs px-3 py-1.5">✓ GDPR Compliant</Badge>
+          <Badge variant="outline" className="border-white/10 text-gray-500 text-xs px-3 py-1.5">🔄 30-day money back</Badge>
+        </div>
       </div>
     </section>
   );
@@ -1097,6 +1187,10 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
   const initials = name => name.split(' ').map(n => n[0]).join('');
   return (
     <section className="py-24 bg-gradient-to-b from-[#0a0a0a] to-[#0d0d1a]">
+      <div className="text-center mb-4">
+        <div className="flex items-center justify-center gap-1 mb-2">{[...Array(5)].map((_, i) => <span key={i} className="text-amber-400 text-sm">★</span>)}</div>
+        <p className="text-gray-500 text-xs">4.9 average · <span className="text-white/60">2,000+ reviews</span></p>
+      </div>
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">TESTIMONIALS_HEADING</h2>
@@ -1107,7 +1201,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               <div className="flex gap-1 mb-4">{[...Array(r.stars)].map((_, j) => <span key={j} className="text-amber-400 text-sm">★</span>)}</div>
               <p className="text-gray-300 text-sm leading-relaxed flex-1 mb-6">"{r.quote}"</p>
               <div className="flex items-center gap-3">
-                <div className={\`w-10 h-10 rounded-full bg-gradient-to-br \${colors[i]} flex items-center justify-center text-white text-sm font-bold\`}>{initials(r.name)}</div>
+                <Avatar className="w-10 h-10"><AvatarFallback className={\`bg-gradient-to-br \${colors[i]} text-white text-sm font-bold\`}>{initials(r.name)}</AvatarFallback></Avatar>
                 <div><div className="text-white font-semibold text-sm">{r.name}</div><div className="text-gray-500 text-xs">{r.role}</div></div>
               </div>
             </div>
@@ -1137,6 +1231,12 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               <Button type="button" className="bg-white text-violet-700 font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all">CTA_PRIMARY</Button>
               <Button type="button" className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all">CTA_SECONDARY</Button>
             </div>
+            <div className="mt-8 flex items-center justify-center gap-3">
+              <div className="flex -space-x-2">
+                {['A','B','C','D'].map((l, i) => <Avatar key={i} className="w-8 h-8 border-2 border-violet-600"><AvatarFallback className="text-xs bg-white/20 text-white font-bold">{l}</AvatarFallback></Avatar>)}
+              </div>
+              <p className="text-white/70 text-sm"><span className="text-white font-semibold">10,000+</span> teams already building</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1151,7 +1251,6 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
     industries: ['saas', 'ai', 'startup', 'generic'], tags: ['accordion', 'dark', 'animated'],
     description: 'Dark animated FAQ accordion', priority: 9,
     standaloneCode: `function FAQ() {
-  const [open, setOpen] = React.useState(null);
   const faqs = [
     { q: 'FAQ_Q1', a: 'FAQ_A1' },
     { q: 'FAQ_Q2', a: 'FAQ_A2' },
@@ -1163,18 +1262,20 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
       <div className="max-w-3xl mx-auto px-6">
         <div className="text-center mb-14">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Frequently asked questions</h2>
+          <p className="text-gray-500 text-base">Everything you need to know. FAQ_SUBHEADING</p>
         </div>
-        <div className="flex flex-col gap-3">
+        <Accordion type="single" collapsible className="flex flex-col gap-3">
           {faqs.map((faq, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <Button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left" onClick={() => setOpen(open === i ? null : i)}>
-                <span className="text-white font-semibold text-sm md:text-base pr-4">{faq.q}</span>
-                <span className={\`text-gray-400 text-xl transition-transform duration-200 \${open === i ? 'rotate-45' : ''}\`}>+</span>
-              </Button>
-              {open === i && <div className="px-6 pb-5"><p className="text-gray-400 text-sm leading-relaxed border-t border-white/5 pt-4">{faq.a}</p></div>}
-            </div>
+            <AccordionItem key={i} value={\`item-\${i}\`} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden px-2">
+              <AccordionTrigger className="px-4 py-5 text-white font-semibold text-sm md:text-base hover:no-underline hover:text-white/90 text-left">
+                {faq.q}
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-5 text-gray-400 text-sm leading-relaxed">
+                {faq.a}
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );

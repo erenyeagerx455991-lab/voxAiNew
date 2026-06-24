@@ -104,6 +104,9 @@ export const SECTION_TEMPLATES: any[] = [
             </div>
           ))}
         </div>
+        <div className="mt-10 flex justify-center">
+          <Button type="button" className="bg-white text-black font-bold px-10 py-4 rounded-full hover:bg-white/90 transition-all text-sm">FEATURES_CTA →</Button>
+        </div>
       </div>
     </section>
   );
@@ -143,6 +146,10 @@ export const SECTION_TEMPLATES: any[] = [
             </div>
           </div>
         ))}
+        <div className="mt-12 pt-10 border-t border-white/8 flex items-center justify-between">
+          <p className="text-white/65 text-sm">FEATURES_CTA_LABEL</p>
+          <Button type="button" className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm">FEATURES_CTA →</Button>
+        </div>
       </div>
     </section>
   );
@@ -272,6 +279,9 @@ export const SECTION_TEMPLATES: any[] = [
               </div>
             );
           })}
+        </div>
+        <div className="mt-16 text-center">
+          <Button type="button" className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold px-10 py-4 rounded-2xl hover:opacity-90 transition-all">FEATURES_CTA →</Button>
         </div>
       </div>
     </section>

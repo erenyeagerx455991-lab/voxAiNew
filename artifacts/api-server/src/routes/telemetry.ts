@@ -26,6 +26,7 @@ import { getCriticQualityMetrics } from "../telemetry/criticMetrics.js";
 import { getCriticLearningMetrics } from "../agents/designCritic/criticLearning.js";
 import { getConversionQualityMetrics } from "../telemetry/conversionMetrics.js";
 import { getConversionLearningMetrics } from "../agents/conversion/conversionLearning.js";
+import { getPremiumRegistryQuality } from "../quality/registryLeaderboard.js";
 
 const router: Router = Router();
 
@@ -101,6 +102,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     criticLearning: getCriticLearningMetrics(),
     conversionQuality: getConversionQualityMetrics(),
     conversionLearning: getConversionLearningMetrics(),
+    premiumRegistryQuality: getPremiumRegistryQuality(),
     generatedAt: new Date().toISOString(),
   });
 });
