@@ -19,6 +19,7 @@ import { SECTION_CORPUS } from "../design-rag/sectionCorpus.js";
 import { getComponentCoverageMetrics, recommendBestComponents } from "../quality/componentRecommendations.js";
 import { getNavigationQualityMetrics } from "../telemetry/navigationMetrics.js";
 import { getAuthRoutingMetrics } from "../auth/authRoutingMetrics.js";
+import { getDashboardQualityMetrics } from "../telemetry/dashboardMetrics.js";
 
 const router: Router = Router();
 
@@ -87,6 +88,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     },
     navigationQuality: getNavigationQualityMetrics(),
     authRouting: getAuthRoutingMetrics(),
+    dashboardQuality: getDashboardQualityMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

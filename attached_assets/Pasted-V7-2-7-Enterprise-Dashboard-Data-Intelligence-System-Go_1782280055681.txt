@@ -1,0 +1,245 @@
+V7.2.7 — Enterprise Dashboard & Data Intelligence System
+
+Goal
+
+Transform VoxAI dashboards from:
+
+"Cards + charts"
+
+into
+
+"Production-grade SaaS dashboards"
+
+similar to:
+
+- Linear
+- Stripe Dashboard
+- Vercel Analytics
+- Retool
+- Notion Workspace
+- GitHub Insights
+
+---
+
+Phase 1 — Dashboard Component Library
+
+Add premium dashboard primitives.
+
+Required Components:
+
+DataTable
+Tabs
+Badge
+Progress
+Skeleton
+Command
+Avatar
+DropdownMenu
+Sheet
+Calendar
+DatePicker
+HoverCard
+
+Rules:
+
+Never use raw HTML tables.
+
+Always prefer DataTable.
+
+Never create custom filter dropdowns.
+
+Always use DropdownMenu.
+
+---
+
+Phase 2 — Dashboard Layout System
+
+Supported layouts:
+
+Analytics Dashboard
+Admin Dashboard
+CRM Dashboard
+Project Dashboard
+Finance Dashboard
+Operations Dashboard
+
+Planner must classify dashboard type.
+
+---
+
+Phase 3 — DataTable Standard
+
+Every dashboard table must support:
+
+Sorting
+Pagination
+Search
+Status Badges
+
+Columns must use:
+
+Badge
+Avatar
+DropdownMenu
+
+No plain text status fields.
+
+---
+
+Phase 4 — Filter Architecture
+
+Always use:
+
+Tabs
+DropdownMenu
+Calendar
+DatePicker
+
+Examples:
+
+Today
+Last 7 Days
+Last 30 Days
+Custom Range
+
+Never build custom date pickers.
+
+---
+
+Phase 5 — Dashboard Design DNA
+
+Linear:
+Minimal
+Dense
+Dark
+
+Stripe:
+Financial
+Metrics-first
+
+Vercel:
+Analytics
+Performance
+
+GitHub:
+Repository-centric
+
+Notion:
+Workspace-centric
+
+---
+
+Phase 6 — Dashboard Evaluator
+
+Add:
+
+dashboardScore
+
+Checks:
+
+DataTable usage
+Tabs usage
+Filter quality
+Status badges
+Loading states
+Command palette
+
+Weight:
+
+0.06
+
+---
+
+Phase 7 — Dashboard RAG
+
+Create:
+
+dashboard analytics refs
+dashboard finance refs
+dashboard crm refs
+dashboard admin refs
+dashboard workspace refs
+
+Target:
+
++150 dashboard references
+
+---
+
+Phase 8 — Dashboard Telemetry
+
+Track:
+
+datatableUsage
+tabsUsage
+calendarUsage
+commandUsage
+dashboardScore
+
+Expose:
+
+GET /api/telemetry/quality
+
+dashboardQuality
+
+---
+
+Phase 9 — Premium Templates
+
+Create:
+
+dashboard-analytics-v2
+dashboard-finance-v1
+dashboard-admin-v2
+dashboard-crm-v1
+dashboard-workspace-v1
+
+Priority:
+
+15
+
+All use:
+
+DataTable
+Tabs
+Command
+Badge
+Skeleton
+
+---
+
+Phase 10 — Success Criteria
+
+DataTable Usage:
+≥95%
+
+Dashboard Score:
+≥9.2
+
+Command Usage:
+≥80%
+
+Filter Quality:
+≥9.0
+
+Shadcn Coverage:
+≥92%
+
+Evaluator Score:
+≥9.0
+
+Expected Impact
+
+Overall Quality:
+9.2 → 9.5
+
+Dashboard Quality:
+8.0 → 9.6
+
+Enterprise Readiness:
+Major Upgrade
+
+Benchmark Position:
+Beat Lovable
+Match / exceed v0 dashboards
+Close gap with enterprise SaaS UI builders

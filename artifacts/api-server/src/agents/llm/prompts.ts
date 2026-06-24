@@ -290,7 +290,16 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - NEVER simplify specific metric numbers (e.g., "47,312 active users") into rounded placeholders (e.g., "50,000+").
    - NEVER reduce a specific CTA label (e.g., "Start your free 14-day trial →") to a generic one (e.g., "Get Started").
    - PRESERVE all industry-specific terminology, proper nouns, and specific copy already present in the code.
-   - PRESERVE CTA hierarchy: the hero primary button must remain the most visually dominant CTA on the page.`;
+   - PRESERVE CTA hierarchy: the hero primary button must remain the most visually dominant CTA on the page.
+
+6. DASHBOARD & DATA TABLE STANDARDS — enforce when dashboard content is present:
+   - NEVER use raw <table>, <tbody>, <tr>, <td> for data grids — always use the DataTable shadcn pattern (Table, TableHeader, TableBody, TableRow, TableHead, TableCell).
+   - NEVER write custom dropdown filters for dashboard sections — use DropdownMenu/DropdownMenuContent/DropdownMenuItem.
+   - NEVER write custom date pickers — use the Calendar shadcn component with Popover.
+   - ALWAYS use Badge for status columns: active/inactive/pending/failed/draft must be wrapped in <Badge variant="..."> not raw spans.
+   - ALWAYS include at least one Tabs/TabsList/TabsTrigger block in any dashboard section (e.g., Overview / Analytics / Settings tabs).
+   - ALWAYS include Skeleton placeholders in dashboard components to represent loading states.
+   - Table columns MUST include: a search/filter bar (Input + DropdownMenu), column headers with sort indicators (↑↓ chevrons), and a row-count indicator.`;
 
 export const BACKEND_SYSTEM = `You are a Backend Agent generating Express.js TypeScript API route files.
 

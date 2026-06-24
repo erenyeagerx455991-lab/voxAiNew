@@ -9,7 +9,7 @@ export interface EvaluationInput {
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing' | 'dashboard';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -26,6 +26,7 @@ export interface EvaluationResult {
   accountMenuScore: number;
   authNavbarAlignmentScore: number;
   consistencyScore: number;
+  dashboardScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
@@ -544,11 +545,70 @@ function scoreAuthNavbarAlignment(code: string, authState?: string): { score: nu
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.6.1: weights redistributed to sum to 1.00 (10 dimensions)
+// ── V7.2.7: Dashboard Quality Scorer ──────────────────────────────────────────
+// Scores dashboard-type sections on DataTable, Tabs, Badge, Skeleton, Command.
+// Non-dashboard builds receive a neutral 10 (no penalty).
+function scoreDashboard(code: string, isDashboard: boolean): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+
+  // Detect actual dashboard content (not just a decorative DashboardPreview card)
+  const hasTableContent   = /\b(DataTable|<table|<tbody|<thead)\b/i.test(code);
+  const hasDataGrid       = /\b(sortable|pagination|row.?action|column)\b/i.test(code) && /\b(filter|search)\b/i.test(code);
+  const hasDashboardData  = /\b(transactions|invoices|user.?management|audit.?log|user.?table)\b/i.test(code);
+
+  const hasDashboardContent = isDashboard || hasTableContent || hasDataGrid || hasDashboardData;
+
+  // Landing pages get full credit — dashboard score only penalises bad dashboards
+  if (!hasDashboardContent) return { score: 10, issues: [] };
+
+  let score = 0;
+
+  // DataTable or proper table structure (+3)
+  if (/\bDataTable\b/.test(code)) {
+    score += 3;
+  } else if (/<table|<tbody/i.test(code)) {
+    score += 1;
+    issues.push({ category: 'dashboard', severity: 'major', message: 'Dashboard uses raw HTML table — use shadcn DataTable with sorting, search, and pagination' });
+  } else {
+    issues.push({ category: 'dashboard', severity: 'major', message: 'Dashboard missing data table — add DataTable with sortable columns, search, and row actions' });
+  }
+
+  // Tabs navigation (+2)
+  if (/\bTabsList\b|\bTabsTrigger\b/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'dashboard', severity: 'minor', message: 'Dashboard missing Tabs — use Tabs/TabsList/TabsTrigger for view switching (Overview, Analytics, Settings)' });
+  }
+
+  // Badge for status fields (+2)
+  if (/\bBadge\b/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'dashboard', severity: 'minor', message: 'Dashboard missing Badge — use Badge for status indicators (Active, Pending, Failed, etc.)' });
+  }
+
+  // Skeleton loading states (+2)
+  if (/\bSkeleton\b/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'dashboard', severity: 'minor', message: 'Dashboard missing Skeleton — add Skeleton loading placeholders for tables and metric cards' });
+  }
+
+  // Command palette or filter DropdownMenu (+1)
+  if (/\bCommandInput\b|\bCommandList\b/.test(code)) {
+    score += 1;
+  } else if (/\bDropdownMenuContent\b/.test(code)) {
+    score += 1;
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+// V7.2.7: weights redistributed to sum to 1.00 (11 dimensions)
 const WEIGHTS = {
-  hero:                  0.19,
-  layout:                0.16,
-  cta:                   0.12,
+  hero:                  0.17,  // was 0.19
+  layout:                0.14,  // was 0.16
+  cta:                   0.10,  // was 0.12
   accessibility:         0.16,
   shadcn:                0.07,
   coverage:              0.06,
@@ -556,10 +616,12 @@ const WEIGHTS = {
   accountMenu:           0.05,
   authNavbarAlignment:   0.04,
   consistency:           0.05,
+  dashboard:             0.06,  // new V7.2.7
 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const { code, sectionOrder, authState } = input;
+  const isDashboard = input.isDashboard ?? false;
 
   const hero               = scoreHero(code, sectionOrder);
   const layout             = scoreLayout(code, sectionOrder);
@@ -571,6 +633,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const accountMenu        = scoreAccountMenu(code);
   const authNavbarAlignment = scoreAuthNavbarAlignment(code, authState);
   const consistency        = scoreConsistency(code);
+  const dashboard          = scoreDashboard(code, isDashboard);
 
   const overallScore =
     Math.round(
@@ -583,7 +646,8 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
         navigation.score             * WEIGHTS.navigation +
         accountMenu.score            * WEIGHTS.accountMenu +
         authNavbarAlignment.score    * WEIGHTS.authNavbarAlignment +
-        consistency.score            * WEIGHTS.consistency) * 10
+        consistency.score            * WEIGHTS.consistency +
+        dashboard.score              * WEIGHTS.dashboard) * 10
     ) / 10;
 
   const allIssues = [
@@ -597,6 +661,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...accountMenu.issues,
     ...authNavbarAlignment.issues,
     ...consistency.issues,
+    ...dashboard.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
     return sev[a.severity] - sev[b.severity];
@@ -614,6 +679,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     accountMenuScore:          accountMenu.score,
     authNavbarAlignmentScore:  authNavbarAlignment.score,
     consistencyScore:          consistency.score,
+    dashboardScore:            dashboard.score,
     coveragePercent:           coverage.coveragePercent,
     componentUsage:            coverage.componentUsage,
     issues:                    allIssues,

@@ -7,6 +7,7 @@ import { recordComponentBuildResult } from "../../quality/componentMetrics.js";
 import { recordBuildOutcome } from "../../design-rag/referenceMetrics.js";
 import { recordSectionOutcome } from "../../design-rag/sectionReferenceMetrics.js";
 import { normalizeSectionType } from "../../design-rag/sectionRetriever.js";
+import { recordDashboardScore } from "../../telemetry/dashboardMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -26,6 +27,7 @@ export interface EvaluatorResult {
   navigationScore: number;
   accountMenuScore: number;
   authNavbarAlignmentScore: number;
+  dashboardScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -178,6 +180,20 @@ export async function runDesignEvaluatorStep(
     repairApplied,
   });
 
+  // V7.2.7: record dashboard quality metrics
+  const hasDashboardIssues = evalResult.issues.some(i => i.category === 'dashboard');
+  const isDashboardBuild = evalResult.dashboardScore < 10 || hasDashboardIssues;
+  recordDashboardScore({
+    score:          evalResult.dashboardScore,
+    isDashboard:    isDashboardBuild,
+    datatableUsage: /\bDataTable\b/.test(currentCode),
+    tabsUsage:      /\bTabsList\b|\bTabsTrigger\b/.test(currentCode),
+    badgeUsage:     /\bBadge\b/.test(currentCode),
+    skeletonUsage:  /\bSkeleton\b/.test(currentCode),
+    commandUsage:   /\bCommandInput\b|\bCommandList\b/.test(currentCode),
+    dropdownUsage:  /\bDropdownMenuContent\b/.test(currentCode),
+  });
+
   // V7.1.9: feed real build outcomes back into reference performance store
   const referencesUsedIds = frontend.retrievalReferenceIds ?? [];
   if (referencesUsedIds.length > 0) {
@@ -257,6 +273,7 @@ export async function runDesignEvaluatorStep(
     scoreBeforeRepair: initialScore,
     scoreAfterRepair: evalResult.overallScore,
     retrievalImpactScore: evalResult.overallScore,
+    dashboardScore: evalResult.dashboardScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied
