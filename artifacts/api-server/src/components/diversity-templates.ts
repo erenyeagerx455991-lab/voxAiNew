@@ -174,7 +174,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
                 <span key={i} className="text-gray-400 text-sm font-medium flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />{item}</span>
               ))}
             </div>
-            <button type="button" className="border border-white/20 text-white text-sm font-semibold px-6 py-2.5 rounded-lg hover:bg-white/5 transition-colors shrink-0">BENTO_STRIP_CTA →</button>
+            <Button type="button" className="border border-white/20 text-white text-sm font-semibold px-6 py-2.5 rounded-lg hover:bg-white/5 transition-colors shrink-0">BENTO_STRIP_CTA →</Button>
           </div>
         </div>
       </div>
@@ -268,7 +268,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <h3 className="text-xl font-bold text-white mb-2">MOSAIC_FEAT_3_TITLE</h3>
               <p className="text-gray-500 text-sm leading-relaxed">MOSAIC_FEAT_3_DESC</p>
             </div>
-            <button type="button" className="shrink-0 border border-white/20 text-white text-sm px-6 py-3 rounded-lg hover:bg-white/5 transition-colors font-semibold">MOSAIC_CTA →</button>
+            <Button type="button" className="shrink-0 border border-white/20 text-white text-sm px-6 py-3 rounded-lg hover:bg-white/5 transition-colors font-semibold">MOSAIC_CTA →</Button>
           </div>
         </div>
       </div>
@@ -301,7 +301,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center gap-3">
           <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors hidden md:block">NAV_LOGIN</a>
-          <button type="button" className="border border-white/20 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-white/5 transition-colors">NAV_CTA</button>
+          <Button type="button" className="border border-white/20 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-white/5 transition-colors">NAV_CTA</Button>
         </div>
       </div>
     </nav>
@@ -325,7 +325,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="hidden md:flex items-center gap-8">
           {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-xs font-semibold tracking-wide uppercase transition-colors">{l}</a>)}
-          <button type="button" className="text-black bg-white text-xs font-bold px-5 py-2 rounded hover:opacity-90 transition-opacity">NAV_CTA →</button>
+          <Button type="button" className="text-black bg-white text-xs font-bold px-5 py-2 rounded hover:opacity-90 transition-opacity">NAV_CTA →</Button>
         </div>
       </div>
     </nav>
@@ -355,8 +355,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
             {mainLinks.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm transition-colors">{l}</a>)}
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <button type="button" className="border border-white/15 text-white text-sm px-4 py-2 rounded hover:bg-white/5 transition-colors">NAV_DEMO</button>
-            <button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded hover:bg-gray-100 transition-colors">NAV_CTA</button>
+            <Button type="button" className="border border-white/15 text-white text-sm px-4 py-2 rounded hover:bg-white/5 transition-colors">NAV_DEMO</Button>
+            <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded hover:bg-gray-100 transition-colors">NAV_CTA</Button>
           </div>
         </div>
       </div>
@@ -378,11 +378,11 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <span className="text-white font-semibold text-sm hidden md:block">SITE_NAME</span>
       </div>
       <div className="flex-1 hidden md:block max-w-xs">
-        <input className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-xs text-gray-400 placeholder-gray-600 outline-none focus:border-white/20" placeholder="NAV_SEARCH_PLACEHOLDER" readOnly />
+        <Input className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-xs text-gray-400 placeholder-gray-600 outline-none focus:border-white/20" placeholder="NAV_SEARCH_PLACEHOLDER" readOnly />
       </div>
       <div className="ml-auto flex items-center gap-3">
-        <button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◆</button>
-        <button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◉</button>
+        <Button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◆</Button>
+        <Button type="button" className="w-8 h-8 rounded-lg bg-white/5 border border-white/8 flex items-center justify-center text-gray-400 text-xs hover:bg-white/10 transition-colors">◉</Button>
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold">U</div>
       </div>
     </nav>
@@ -406,7 +406,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
           {links.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-xs font-medium transition-colors">{l}</a>)}
         </div>
         <div className="w-px h-4 bg-white/15 hidden md:block" />
-        <button type="button" className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity shrink-0">NAV_CTA</button>
+        <Button type="button" className="bg-white text-black text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 transition-opacity shrink-0">NAV_CTA</Button>
       </div>
     </nav>
   );
@@ -432,7 +432,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center gap-8 flex-1 justify-end">
           {rightLinks.map(l => <a key={l} href="#" className="text-gray-400 hover:text-white text-sm transition-colors hidden md:block">{l}</a>)}
-          <button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-white/5 transition-colors">NAV_CTA</button>
+          <Button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2 rounded-lg hover:bg-white/5 transition-colors">NAV_CTA</Button>
         </div>
       </div>
     </nav>
@@ -484,9 +484,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-3">
           <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
           <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -572,9 +572,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-3">
           <NavigationMenuLink href="#" className="hidden md:flex text-xs font-semibold tracking-wide uppercase text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
           <Button type="button" className="text-black bg-white text-xs font-bold px-5 py-2.5 rounded-lg hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA →</Button>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -663,9 +663,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
           <div className="flex items-center gap-3 shrink-0 ml-auto">
             <Button type="button" variant="outline" className="border-white/15 text-white text-sm px-4 py-2 rounded-lg hover:bg-white/5 hidden md:flex focus-visible:ring-2 focus-visible:ring-white/40">NAV_DEMO</Button>
             <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
-            <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
               <span aria-hidden="true" className="text-base font-bold">☰</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -756,9 +756,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-3">
           <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_SIGN_IN</NavigationMenuLink>
           <Button type="button" className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_START_FREE</Button>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -828,9 +828,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
           </a>
           <NavigationMenuLink href="#" className="hidden md:flex text-sm text-gray-400 hover:text-white px-3 py-1.5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_LOGIN</NavigationMenuLink>
           <Button type="button" className="bg-white text-black text-sm font-semibold px-4 py-2 rounded-lg hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">NAV_CTA</Button>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -903,8 +903,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <h2 className="text-3xl md:text-5xl font-black text-white mb-6 leading-tight tracking-tight">CTA_HEADLINE</h2>
         <p className="text-gray-400 mb-10 leading-relaxed">CTA_SUBTEXT</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button type="button" className="border border-white/25 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/5 transition-colors text-sm">CTA_PRIMARY</button>
-          <button type="button" className="text-gray-500 hover:text-white font-medium px-6 py-3 text-sm transition-colors">CTA_SECONDARY →</button>
+          <Button type="button" className="border border-white/25 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/5 transition-colors text-sm">CTA_PRIMARY</Button>
+          <Button type="button" className="text-gray-500 hover:text-white font-medium px-6 py-3 text-sm transition-colors">CTA_SECONDARY →</Button>
         </div>
       </div>
     </section>
@@ -934,8 +934,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
             ))}
           </ul>
           <div className="flex gap-4">
-            <button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm">CTA_PRIMARY</button>
-            <button type="button" className="text-gray-400 hover:text-white text-sm py-3 transition-colors">CTA_SECONDARY →</button>
+            <Button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm">CTA_PRIMARY</Button>
+            <Button type="button" className="text-gray-400 hover:text-white text-sm py-3 transition-colors">CTA_SECONDARY →</Button>
           </div>
         </div>
         <div className="bg-white/4 border border-white/10 rounded-2xl p-6 hidden md:block">
@@ -997,7 +997,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <label className="text-gray-400 text-xs mb-1.5 block">CTA_FIELD_MESSAGE</label>
               <div className="w-full bg-white/5 border border-white/10 rounded-lg h-20" />
             </div>
-            <button type="button" className="w-full bg-white text-black font-bold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm mt-2">CTA_FORM_SUBMIT →</button>
+            <Button type="button" className="w-full bg-white text-black font-bold py-3 rounded-lg hover:opacity-90 transition-opacity text-sm mt-2">CTA_FORM_SUBMIT →</Button>
             <p className="text-gray-600 text-xs text-center">CTA_FORM_NOTE</p>
           </div>
         </div>
@@ -1030,8 +1030,8 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="border-t border-white/10 pt-12">
           <h3 className="text-2xl md:text-3xl font-black text-white mb-4">CTA_HEADLINE</h3>
           <div className="flex gap-4 justify-center">
-            <button type="button" className="bg-white text-black font-bold px-8 py-3 rounded-full hover:opacity-90 transition-opacity text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</button>
-            <button type="button" className="border border-white/20 text-white font-medium px-8 py-3 rounded-full hover:bg-white/5 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+            <Button type="button" className="bg-white text-black font-bold px-8 py-3 rounded-full hover:opacity-90 transition-opacity text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</Button>
+            <Button type="button" className="border border-white/20 text-white font-medium px-8 py-3 rounded-full hover:bg-white/5 transition-colors text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
           </div>
         </div>
       </div>
@@ -1060,7 +1060,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <h3 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{p.heading}</h3>
               <p className="text-gray-400 leading-relaxed">{p.desc}</p>
             </div>
-            <button type="button" className={\`self-start border font-bold px-6 py-3 rounded-lg text-sm transition-colors hover:bg-white/5 \${p.accent==='indigo'?'border-indigo-500/40 text-indigo-300':'border-emerald-500/40 text-emerald-300'}\`}>{p.cta} →</button>
+            <Button type="button" className={\`self-start border font-bold px-6 py-3 rounded-lg text-sm transition-colors hover:bg-white/5 \${p.accent==='indigo'?'border-indigo-500/40 text-indigo-300':'border-emerald-500/40 text-emerald-300'}\`}>{p.cta} →</Button>
           </div>
         ))}
       </div>
@@ -1175,19 +1175,19 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="flex flex-col gap-1">
             {cats.map(c => (
-              <button type="button" key={c} onClick={() => { setCat(c); setOpen(null); }}
+              <Button type="button" key={c} onClick={() => { setCat(c); setOpen(null); }}
                 className={\`text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors \${cat===c ? 'bg-white/8 text-white' : 'text-gray-500 hover:text-white'}\`}>
                 {c}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="md:col-span-3 flex flex-col gap-2">
             {items.map((f, i) => (
               <div key={i} className="border border-white/8 rounded-xl overflow-hidden">
-                <button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/3 transition-colors" onClick={() => setOpen(open===i?null:i)}>
+                <Button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/3 transition-colors" onClick={() => setOpen(open===i?null:i)}>
                   <span className="text-white font-medium text-sm pr-4">{f.q}</span>
                   <span className={\`text-gray-500 text-lg shrink-0 transition-transform duration-200 \${open===i?'rotate-45':''}\`}>+</span>
-                </button>
+                </Button>
                 {open===i && <div className="px-6 pb-5 border-t border-white/5"><p className="text-gray-400 text-sm leading-relaxed pt-4">{f.a}</p></div>}
               </div>
             ))}
@@ -1266,19 +1266,19 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex gap-1 p-1 bg-white/4 border border-white/8 rounded-xl mb-8">
           {tabs.map(t => (
-            <button type="button" key={t} onClick={() => { setTab(t); setOpen(null); }}
+            <Button type="button" key={t} onClick={() => { setTab(t); setOpen(null); }}
               className={\`flex-1 py-2.5 text-xs font-semibold rounded-lg transition-all \${tab===t ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}\`}>
               {t}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex flex-col gap-2">
           {(data[tab]||[]).map((f, i) => (
             <div key={i} className="bg-white/3 border border-white/8 rounded-xl overflow-hidden">
-              <button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/5 transition-colors" onClick={() => setOpen(open===i?null:i)}>
+              <Button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-white/5 transition-colors" onClick={() => setOpen(open===i?null:i)}>
                 <span className="text-white font-medium text-sm pr-4">{f.q}</span>
                 <span className={\`text-gray-500 text-xl shrink-0 transition-transform duration-200 \${open===i?'rotate-45':''}\`}>+</span>
-              </button>
+              </Button>
               {open===i && <div className="px-6 pb-5 border-t border-white/5"><p className="text-gray-400 text-sm leading-relaxed pt-4">{f.a}</p></div>}
             </div>
           ))}
@@ -1416,7 +1416,7 @@ export const DIVERSITY_TEMPLATES: any[] = [
         </div>
         <div className="flex items-center justify-center gap-2">
           {quotes.map((_, i) => (
-            <button type="button" key={i} onClick={() => setIdx(i)}
+            <Button type="button" key={i} onClick={() => setIdx(i)}
               className={\`h-1.5 rounded-full transition-all \${i===idx ? 'bg-white w-8' : 'bg-white/20 w-2'}\`}/>
           ))}
         </div>
@@ -1750,11 +1750,11 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+              <Button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
                 <Avatar className="w-8 h-8 cursor-pointer">
                   <AvatarFallback className="bg-white/10 text-white text-xs font-semibold">{userInitials}</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
               <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
@@ -1765,9 +1765,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -1834,17 +1834,17 @@ export const DIVERSITY_TEMPLATES: any[] = [
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Notifications" className="relative hidden md:flex w-8 h-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Notifications" className="relative hidden md:flex w-8 h-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base">🔔</span>
             <Badge className="absolute -top-0.5 -right-0.5 w-4 h-4 flex items-center justify-center p-0 text-[9px] bg-indigo-500 text-white border-0 rounded-full">NAV_NOTIF_COUNT</Badge>
-          </button>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full ml-1">
+              <Button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full ml-1">
                 <Avatar className="w-7 h-7 cursor-pointer ring-2 ring-white/10 hover:ring-white/30 transition-all">
                   <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[11px] font-bold">{userInitials}</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 bg-[#161b22] border border-white/10 shadow-2xl rounded-lg p-1">
               <div className="px-3 py-2 mb-1">
@@ -1860,9 +1860,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -1926,17 +1926,17 @@ export const DIVERSITY_TEMPLATES: any[] = [
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Open command palette" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-3 py-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+          <Button type="button" aria-label="Open command palette" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-3 py-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
             <span>NAV_SEARCH_PLACEHOLDER</span>
             <span className="font-mono bg-white/8 px-1 rounded text-[10px]">⌘K</span>
-          </button>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Open admin menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+              <Button type="button" aria-label="Open admin menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
                 <Avatar className="w-8 h-8 cursor-pointer ring-2 ring-amber-500/30 hover:ring-amber-500/60 transition-all">
                   <AvatarFallback className="bg-amber-500/20 text-amber-400 text-xs font-bold">{userInitials}</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-2xl rounded-lg p-1">
               <div className="px-3 py-2">
@@ -1951,9 +1951,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       {commandOpen && (
@@ -2007,11 +2007,11 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Switch workspace" className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+              <Button type="button" aria-label="Switch workspace" className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
                 <div className="w-5 h-5 rounded bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold" aria-hidden="true">NAV_WS_ICON</div>
                 <span className="text-white text-sm font-medium">NAV_WORKSPACE</span>
                 <span aria-hidden="true" className="text-gray-600 text-xs">▾</span>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
               <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_WORKSPACE_1</DropdownMenuItem>
@@ -2040,11 +2040,11 @@ export const DIVERSITY_TEMPLATES: any[] = [
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+              <Button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
                 <Avatar className="w-7 h-7 cursor-pointer">
                   <AvatarFallback className="bg-indigo-500/30 text-indigo-300 text-[11px] font-semibold">{userInitials}</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
               <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
@@ -2055,9 +2055,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-sm font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -2118,18 +2118,18 @@ export const DIVERSITY_TEMPLATES: any[] = [
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" aria-label="Open search and commands" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-3 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-4 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 w-56">
+          <Button type="button" aria-label="Open search and commands" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-3 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-4 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 w-56">
             <span aria-hidden="true" className="text-xs">🔍</span>
             <span className="flex-1 text-left text-xs">NAV_SEARCH_EVERYTHING</span>
             <kbd className="font-mono bg-white/8 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">⌘K</kbd>
-          </button>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+              <Button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
                 <Avatar className="w-8 h-8 cursor-pointer">
                   <AvatarFallback className="bg-white/10 text-white text-xs font-medium">{userInitials}</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-2xl rounded-xl p-1">
               <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
@@ -2140,9 +2140,9 @@ export const DIVERSITY_TEMPLATES: any[] = [
               <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+          <Button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
             <span aria-hidden="true" className="text-base font-bold">☰</span>
-          </button>
+          </Button>
         </div>
       </div>
       {commandOpen && (

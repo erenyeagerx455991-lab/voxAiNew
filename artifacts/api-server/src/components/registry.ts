@@ -110,9 +110,9 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             <a key={l} href="#" className="text-white/65 hover:text-white text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-sm px-1">{l}</a>
           ))}
         </div>
-        <button type="button" aria-label="Get started with SITE_NAME" className="bg-white text-black text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">
+        <Button type="button" aria-label="Get started with SITE_NAME" className="bg-white text-black text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">
           Get Started →
-        </button>
+        </Button>
       </div>
     </nav>
   );
@@ -162,8 +162,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         </h1>
         <p className="text-lg md:text-xl text-white/65 max-w-2xl mx-auto mb-10 leading-relaxed">SUBHEADLINE</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <button type="button" className="bg-white text-black font-semibold px-8 py-4 rounded-full hover:bg-white/90 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</button>
-          <button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+          <Button type="button" className="bg-white text-black font-semibold px-8 py-4 rounded-full hover:bg-white/90 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</Button>
+          <Button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
         </div>
         <div className="flex items-center justify-center gap-12 border-t border-white/8 pt-8">
           {stats.map(s => (
@@ -191,8 +191,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         <h1 className="text-6xl md:text-8xl font-black leading-none tracking-tight text-white mb-6">RESTAURANT_NAME</h1>
         <p className="text-stone-300 text-xl max-w-xl mx-auto mb-12 leading-relaxed italic">TAGLINE</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button type="button" className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-10 py-4 rounded-sm transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">Reserve a Table</button>
-          <button type="button" className="border border-stone-500 text-stone-300 font-medium px-10 py-4 rounded-sm hover:border-stone-300 transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">View Menu</button>
+          <Button type="button" className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-10 py-4 rounded-sm transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">Reserve a Table</Button>
+          <Button type="button" className="border border-stone-500 text-stone-300 font-medium px-10 py-4 rounded-sm hover:border-stone-300 transition-all text-sm tracking-wider uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300 focus-visible:ring-offset-2 focus-visible:ring-offset-stone-900">View Menu</Button>
         </div>
       </div>
     </section>
@@ -217,8 +217,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
           <p className="text-gray-400 text-lg max-w-md leading-relaxed">ROLE_DESCRIPTION</p>
           <div className="flex gap-6">
-            <button type="button" className="bg-white text-black font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">View Work</button>
-            <button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/5 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">Contact</button>
+            <Button type="button" className="bg-white text-black font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">View Work</Button>
+            <Button type="button" className="border border-white/20 text-white font-medium px-8 py-4 rounded-full hover:bg-white/5 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">Contact</Button>
           </div>
         </div>
       </div>
@@ -250,8 +250,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           {chips.map(c => <span key={c} className="bg-white/5 border border-white/10 text-gray-300 text-xs font-medium px-4 py-2 rounded-full">{c}</span>)}
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button type="button" className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</button>
-          <button type="button" className="border border-white/15 text-gray-300 font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+          <Button type="button" className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-bold px-8 py-4 rounded-2xl hover:opacity-90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY</Button>
+          <Button type="button" className="border border-white/15 text-gray-300 font-medium px-8 py-4 rounded-2xl hover:border-white/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
         </div>
       </div>
     </section>
@@ -285,8 +285,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         </h1>
         <p className="text-lg text-[#A8B4C0] max-w-2xl mx-auto mb-10 leading-relaxed">SUBHEADLINE</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-          <button type="button" className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540]">CTA_PRIMARY</button>
-          <button type="button" className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540]">CTA_SECONDARY</button>
+          <Button type="button" className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white font-semibold px-8 py-4 rounded-full hover:opacity-90 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540]">CTA_PRIMARY</Button>
+          <Button type="button" className="border border-white/20 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/8 transition-all text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A2540]">CTA_SECONDARY</Button>
         </div>
         <div className="flex items-center justify-center gap-12 border-t border-white/8 pt-8">
           {stats.map(s => (
@@ -330,8 +330,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           </h1>
           <p className="text-white/70 text-lg mb-10 max-w-md leading-relaxed">SUBHEADLINE</p>
           <div className="flex gap-3">
-            <button type="button" className="bg-white text-black font-bold px-7 py-3.5 rounded-lg hover:bg-white/90 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</button>
-            <button type="button" className="border border-white/15 text-white/70 font-medium px-7 py-3.5 rounded-lg hover:border-white/30 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+            <Button type="button" className="bg-white text-black font-bold px-7 py-3.5 rounded-lg hover:bg-white/90 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</Button>
+            <Button type="button" className="border border-white/15 text-white/70 font-medium px-7 py-3.5 rounded-lg hover:border-white/30 transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
           </div>
           <div className="flex items-center gap-8 mt-10 pt-8 border-t border-white/8">
             {metaStats.map(([v, l]) => (
@@ -388,8 +388,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           <p className="text-white/65 text-base leading-relaxed">SUBHEADLINE</p>
         </div>
         <div className="flex items-center gap-5">
-          <button type="button" className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F0F]">CTA_PRIMARY</button>
-          <button type="button" className="text-white/70 hover:text-white text-sm font-medium transition-colors tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_SECONDARY →</button>
+          <Button type="button" className="bg-[#5E6AD2] text-white font-semibold px-7 py-3.5 rounded-full hover:bg-[#7B83E0] transition-all text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F0F0F]">CTA_PRIMARY</Button>
+          <Button type="button" className="text-white/70 hover:text-white text-sm font-medium transition-colors tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 rounded-sm">CTA_SECONDARY →</Button>
         </div>
       </div>
     </section>
@@ -415,8 +415,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-4 leading-none">HEADLINE_LINE1</h1>
         <p className="text-white/65 text-lg max-w-xl mx-auto mb-8">SUBHEADLINE</p>
         <div className="flex gap-3 justify-center">
-          <button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</button>
-          <button type="button" className="border border-white/10 text-white/70 font-medium px-6 py-3 rounded-xl text-sm hover:border-white/25 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</button>
+          <Button type="button" className="bg-white text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_PRIMARY →</Button>
+          <Button type="button" className="border border-white/10 text-white/70 font-medium px-6 py-3 rounded-xl text-sm hover:border-white/25 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY</Button>
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-4">
@@ -483,7 +483,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               <div className="text-white/70 text-xs font-semibold uppercase tracking-widest mb-4">FEATURE_LABEL</div>
               <p className="text-white text-2xl font-bold leading-tight">HEADLINE_LINE2</p>
             </div>
-            <button type="button" className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600">CTA_PRIMARY →</button>
+            <Button type="button" className="bg-white text-violet-700 font-bold text-sm px-6 py-3 rounded-2xl w-fit hover:bg-white/90 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-violet-600">CTA_PRIMARY →</Button>
           </div>
           <div className="col-span-12 md:col-span-4 bg-[#18181b] border border-white/10 rounded-3xl p-6 flex items-center gap-4 hover:border-white/20 transition-colors">
             {stats.map(([v, l]) => (
@@ -506,7 +506,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               <div className="text-white font-semibold text-sm mb-1">Ready to ship faster?</div>
               <div className="text-white/60 text-xs">No setup required. Free plan forever.</div>
             </div>
-            <button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-2xl hover:bg-white/8 transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY →</button>
+            <Button type="button" className="border border-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-2xl hover:bg-white/8 transition-all shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black">CTA_SECONDARY →</Button>
           </div>
         </div>
       </div>
@@ -543,7 +543,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               ))}
             </div>
             <div className="md:ml-auto shrink-0">
-              <button type="button" className="bg-gray-900 text-white font-bold text-sm px-8 py-4 rounded-full hover:bg-gray-700 transition-all">CTA_PRIMARY →</button>
+              <Button type="button" className="bg-gray-900 text-white font-bold text-sm px-8 py-4 rounded-full hover:bg-gray-700 transition-all">CTA_PRIMARY →</Button>
             </div>
           </div>
         </div>
@@ -795,7 +795,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         </div>
         <div className="flex justify-center gap-2 mb-12">
           {categories.map((cat, i) => (
-            <button type="button" key={cat} onClick={() => setTab(i)} className={\`px-6 py-2.5 rounded-full text-sm font-semibold transition-all \${tab === i ? 'bg-amber-500 text-black' : 'border border-stone-600 text-stone-400 hover:border-stone-400'}\`}>{cat}</button>
+            <Button type="button" key={cat} onClick={() => setTab(i)} className={\`px-6 py-2.5 rounded-full text-sm font-semibold transition-all \${tab === i ? 'bg-amber-500 text-black' : 'border border-stone-600 text-stone-400 hover:border-stone-400'}\`}>{cat}</Button>
           ))}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -873,32 +873,32 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div>
               <label className="text-stone-300 text-sm font-medium block mb-2">Your Name</label>
-              <input className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" placeholder="Full name" />
+              <Input className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" placeholder="Full name" />
             </div>
             <div>
               <label className="text-stone-300 text-sm font-medium block mb-2">Email</label>
-              <input className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" placeholder="your@email.com" />
+              <Input className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" placeholder="your@email.com" />
             </div>
             <div>
               <label className="text-stone-300 text-sm font-medium block mb-2">Date</label>
-              <input type="date" className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" />
+              <Input type="date" className="w-full bg-stone-900 border border-stone-600 rounded-xl px-4 py-3 text-white text-sm focus:border-amber-500 outline-none transition-colors" />
             </div>
             <div>
               <label className="text-stone-300 text-sm font-medium block mb-2">Guests: {guests}</label>
               <div className="flex items-center gap-3">
-                <button type="button" onClick={() => setGuests(Math.max(1,guests-1))} className="w-10 h-10 rounded-xl bg-stone-700 text-white font-bold hover:bg-stone-600 transition-colors flex items-center justify-center">-</button>
+                <Button type="button" onClick={() => setGuests(Math.max(1,guests-1))} className="w-10 h-10 rounded-xl bg-stone-700 text-white font-bold hover:bg-stone-600 transition-colors flex items-center justify-center">-</Button>
                 <div className="flex-1 bg-stone-900 border border-stone-600 rounded-xl py-3 text-center text-white text-sm">{guests} {guests === 1 ? 'guest' : 'guests'}</div>
-                <button type="button" onClick={() => setGuests(Math.min(12,guests+1))} className="w-10 h-10 rounded-xl bg-stone-700 text-white font-bold hover:bg-stone-600 transition-colors flex items-center justify-center">+</button>
+                <Button type="button" onClick={() => setGuests(Math.min(12,guests+1))} className="w-10 h-10 rounded-xl bg-stone-700 text-white font-bold hover:bg-stone-600 transition-colors flex items-center justify-center">+</Button>
               </div>
             </div>
           </div>
           <div className="mb-8">
             <label className="text-stone-300 text-sm font-medium block mb-3">Preferred Time</label>
             <div className="flex flex-wrap gap-2">
-              {times.map(t => <button type="button" key={t} className="px-4 py-2 rounded-xl border border-stone-600 text-stone-300 text-sm hover:border-amber-500 hover:text-amber-400 transition-all">{t}</button>)}
+              {times.map(t => <Button type="button" key={t} className="px-4 py-2 rounded-xl border border-stone-600 text-stone-300 text-sm hover:border-amber-500 hover:text-amber-400 transition-all">{t}</Button>)}
             </div>
           </div>
-          <button type="button" className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 rounded-xl transition-colors text-sm tracking-wider uppercase">Confirm Reservation</button>
+          <Button type="button" className="w-full bg-amber-500 hover:bg-amber-400 text-black font-bold py-4 rounded-xl transition-colors text-sm tracking-wider uppercase">Confirm Reservation</Button>
         </div>
       </div>
     </section>
@@ -1020,17 +1020,17 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             <div className="flex flex-col gap-4">
               <div>
                 <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Name</label>
-                <input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600" placeholder="Your name" />
+                <Input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600" placeholder="Your name" />
               </div>
               <div>
                 <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Email</label>
-                <input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600" placeholder="your@email.com" />
+                <Input className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600" placeholder="your@email.com" />
               </div>
               <div>
                 <label className="text-gray-400 text-xs font-semibold uppercase tracking-wider block mb-2">Message</label>
-                <textarea className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600 resize-none h-32" placeholder="Tell me about your project..." />
+                <Textarea className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-violet-500 outline-none transition-colors placeholder-gray-600 resize-none h-32" placeholder="Tell me about your project..." />
               </div>
-              <button type="button" className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm">Send Message</button>
+              <Button type="button" className="w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-semibold py-4 rounded-xl hover:opacity-90 transition-opacity text-sm">Send Message</Button>
             </div>
           </div>
         </div>
@@ -1058,8 +1058,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Simple, transparent pricing</h2>
           <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full p-1 mt-6">
-            <button type="button" onClick={() => setYearly(false)} className={\`px-4 py-2 rounded-full text-sm font-medium transition-all \${!yearly ? 'bg-white text-black' : 'text-gray-400'}\`}>Monthly</button>
-            <button type="button" onClick={() => setYearly(true)} className={\`px-4 py-2 rounded-full text-sm font-medium transition-all \${yearly ? 'bg-white text-black' : 'text-gray-400'}\`}>Yearly <span className="text-emerald-400 text-xs">-35%</span></button>
+            <Button type="button" onClick={() => setYearly(false)} className={\`px-4 py-2 rounded-full text-sm font-medium transition-all \${!yearly ? 'bg-white text-black' : 'text-gray-400'}\`}>Monthly</Button>
+            <Button type="button" onClick={() => setYearly(true)} className={\`px-4 py-2 rounded-full text-sm font-medium transition-all \${yearly ? 'bg-white text-black' : 'text-gray-400'}\`}>Yearly <span className="text-emerald-400 text-xs">-35%</span></Button>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
@@ -1068,7 +1068,7 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
               {plan.popular && <div className="text-center mb-4"><span className="bg-gradient-to-r from-violet-600 to-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">Most Popular</span></div>}
               <h3 className="text-white font-bold text-xl mb-1">{plan.name}</h3>
               <div className="mb-6 mt-3"><span className="text-4xl font-black text-white">\${plan.price}</span><span className="text-gray-500 text-sm">/mo</span></div>
-              <button type="button" className={\`w-full py-3 rounded-xl font-semibold text-sm mb-6 \${plan.popular ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white' : 'border border-white/20 text-white hover:bg-white/10'}\`}>{plan.cta}</button>
+              <Button type="button" className={\`w-full py-3 rounded-xl font-semibold text-sm mb-6 \${plan.popular ? 'bg-gradient-to-r from-violet-600 to-blue-600 text-white' : 'border border-white/20 text-white hover:bg-white/10'}\`}>{plan.cta}</Button>
               <div className="flex flex-col gap-2.5">
                 {plan.features.map((f, j) => <div key={j} className="flex items-center gap-2"><div className="w-4 h-4 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center shrink-0"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400" /></div><span className="text-gray-300 text-sm">{f}</span></div>)}
               </div>
@@ -1134,8 +1134,8 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
             <h2 className="text-4xl md:text-6xl font-black text-white mb-4">CTA_HEADLINE</h2>
             <p className="text-white/70 text-lg mb-10 max-w-2xl mx-auto">CTA_SUBHEADLINE</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button type="button" className="bg-white text-violet-700 font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all">CTA_PRIMARY</button>
-              <button type="button" className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all">CTA_SECONDARY</button>
+              <Button type="button" className="bg-white text-violet-700 font-bold px-8 py-4 rounded-full hover:bg-gray-100 transition-all">CTA_PRIMARY</Button>
+              <Button type="button" className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-full hover:bg-white/10 transition-all">CTA_SECONDARY</Button>
             </div>
           </div>
         </div>
@@ -1167,10 +1167,10 @@ const COMPONENT_TEMPLATES: ComponentTemplate[] = [
         <div className="flex flex-col gap-3">
           {faqs.map((faq, i) => (
             <div key={i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-              <button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left" onClick={() => setOpen(open === i ? null : i)}>
+              <Button type="button" className="w-full flex items-center justify-between px-6 py-5 text-left" onClick={() => setOpen(open === i ? null : i)}>
                 <span className="text-white font-semibold text-sm md:text-base pr-4">{faq.q}</span>
                 <span className={\`text-gray-400 text-xl transition-transform duration-200 \${open === i ? 'rotate-45' : ''}\`}>+</span>
-              </button>
+              </Button>
               {open === i && <div className="px-6 pb-5"><p className="text-gray-400 text-sm leading-relaxed border-t border-white/5 pt-4">{faq.a}</p></div>}
             </div>
           ))}

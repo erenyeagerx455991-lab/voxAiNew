@@ -52,7 +52,7 @@ export const SECTION_TEMPLATES: any[] = [
               <div className="text-white font-semibold text-sm">FEATURES_CTA_TEXT</div>
               <div className="text-[#A8B4C0] text-xs mt-0.5">FEATURES_CTA_SUB</div>
             </div>
-            <button type="button" className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white text-xs font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-all shrink-0">CTA_PRIMARY →</button>
+            <Button type="button" className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white text-xs font-bold px-5 py-2.5 rounded-full hover:opacity-90 transition-all shrink-0">CTA_PRIMARY →</Button>
           </div>
         </div>
       </div>
@@ -305,7 +305,7 @@ export const SECTION_TEMPLATES: any[] = [
                 </div>
               ))}
             </div>
-            <button type="button" className="mt-10 bg-white text-black font-bold px-7 py-3.5 rounded-xl hover:bg-white/90 transition-all text-sm">CTA_PRIMARY →</button>
+            <Button type="button" className="mt-10 bg-white text-black font-bold px-7 py-3.5 rounded-xl hover:bg-white/90 transition-all text-sm">CTA_PRIMARY →</Button>
           </div>
           <div className="bg-[#111118] border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
             <div className="flex items-center gap-2 px-4 py-3 bg-[#0d0d14] border-b border-white/5">
@@ -461,7 +461,7 @@ export const SECTION_TEMPLATES: any[] = [
           <div className="flex items-center gap-4 px-5 py-3 border-b border-white/8 bg-[#0d0d0d]">
             <span className="text-white/60 text-sm font-semibold">TEAM_NAME</span>
             <div className="flex gap-1 ml-auto">
-              {['Board','List','Timeline'].map(v => <button type="button" key={v} className={\`text-xs px-3 py-1.5 rounded-md \${v==='Board'?'bg-white/10 text-white':'text-white/65 hover:text-white/60'} transition-colors\`}>{v}</button>)}
+              {['Board','List','Timeline'].map(v => <Button type="button" key={v} className={\`text-xs px-3 py-1.5 rounded-md \${v==='Board'?'bg-white/10 text-white':'text-white/65 hover:text-white/60'} transition-colors\`}>{v}</Button>)}
             </div>
           </div>
           <div className="grid grid-cols-3 divide-x divide-white/8 min-h-[320px]">
@@ -690,7 +690,7 @@ export const SECTION_TEMPLATES: any[] = [
                 <span className="text-white font-black text-4xl">{p.price}</span>
                 <span className="text-white/65 text-xs ml-2">{p.period}</span>
               </div>
-              <button type="button" className={\`w-full py-2.5 rounded-lg text-sm font-semibold transition-all \${p.active?'bg-[#5E6AD2] text-white hover:bg-[#7B83E0]':'border border-white/15 text-white/60 hover:border-white/30'}\`}>{p.cta}</button>
+              <Button type="button" className={\`w-full py-2.5 rounded-lg text-sm font-semibold transition-all \${p.active?'bg-[#5E6AD2] text-white hover:bg-[#7B83E0]':'border border-white/15 text-white/60 hover:border-white/30'}\`}>{p.cta}</Button>
             </div>
           ))}
           {features.map((f, i) => (
@@ -765,7 +765,7 @@ export const SECTION_TEMPLATES: any[] = [
                     {t.popular && <div className="bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white text-xs font-bold px-4 py-1 rounded-full mb-3 inline-block">Most Popular</div>}
                     <div className="text-white font-bold text-lg">{t.name}</div>
                     <div className="mt-2 mb-4"><span className="text-white font-black text-3xl">{t.price}</span>{t.price!=='Custom'&&<span className="text-[#A8B4C0] text-xs ml-1">/mo</span>}</div>
-                    <button type="button" className={\`w-full py-2.5 rounded-xl text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black \${t.popular?'bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white':'border border-white/20 text-white hover:bg-white/8'}\`}>{t.cta}</button>
+                    <Button type="button" className={\`w-full py-2.5 rounded-xl text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-black \${t.popular?'bg-gradient-to-r from-[#635BFF] to-[#00D4FF] text-white':'border border-white/20 text-white hover:bg-white/8'}\`}>{t.cta}</Button>
                   </th>
                 ))}
               </tr>
@@ -851,12 +851,12 @@ export const SECTION_TEMPLATES: any[] = [
               <h3 className="text-white font-bold text-2xl mb-3">Talk to our team</h3>
               <p className="text-gray-400 text-sm leading-relaxed mb-8">ENTERPRISE_CTA_DESC</p>
               <div className="flex flex-col gap-3">
-                <input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Work email"/>
-                <input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Company name"/>
-                <input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Team size"/>
+                <Input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Work email"/>
+                <Input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Company name"/>
+                <Input className="w-full bg-white/8 border border-white/15 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-violet-500 placeholder-gray-600 transition-colors" placeholder="Team size"/>
               </div>
             </div>
-            <button type="button" className="mt-8 w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:opacity-90 transition-opacity">Contact sales →</button>
+            <Button type="button" className="mt-8 w-full bg-gradient-to-r from-violet-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:opacity-90 transition-opacity">Contact sales →</Button>
           </div>
         </div>
       </div>
@@ -915,7 +915,7 @@ export const SECTION_TEMPLATES: any[] = [
                 ))}
               </div>
               {i === 2 && (
-                <button type="button" className="mt-6 w-full bg-gradient-to-r from-[#FF3D57] to-[#FF6B35] text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-all">{p.cta} →</button>
+                <Button type="button" className="mt-6 w-full bg-gradient-to-r from-[#FF3D57] to-[#FF6B35] text-white font-bold py-3.5 rounded-xl hover:opacity-90 transition-all">{p.cta} →</Button>
               )}
             </div>
           ))}
@@ -954,7 +954,7 @@ export const SECTION_TEMPLATES: any[] = [
                 </div>
                 <div className="text-white/65 text-xs">{t.period}</div>
               </div>
-              <button type="button" className={\`w-full py-3 rounded-lg text-sm font-bold transition-all \${t.primary?'bg-white text-black hover:bg-white/90':'border border-white/15 text-white/60 hover:border-white/30 hover:text-white/70'}\`}>{t.cta}</button>
+              <Button type="button" className={\`w-full py-3 rounded-lg text-sm font-bold transition-all \${t.primary?'bg-white text-black hover:bg-white/90':'border border-white/15 text-white/60 hover:border-white/30 hover:text-white/70'}\`}>{t.cta}</Button>
               <div className="flex flex-col gap-3">
                 <div className="text-white/60 text-xs uppercase tracking-wider font-semibold">Included</div>
                 {t.features.map((f, fi) => (
