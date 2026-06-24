@@ -6,6 +6,7 @@ export { premiumCtaComponents } from './cta';
 export { premiumNavbarComponents } from './navbars';
 export { premiumFooterComponents } from './footers';
 export { premiumDashboardComponents } from './dashboards';
+export { premiumFormComponents } from './forms';
 
 import { premiumHeroComponents } from './heroes';
 import { premiumFeaturesComponents } from './features';
@@ -15,6 +16,7 @@ import { premiumCtaComponents } from './cta';
 import { premiumNavbarComponents } from './navbars';
 import { premiumFooterComponents } from './footers';
 import { premiumDashboardComponents } from './dashboards';
+import { premiumFormComponents } from './forms';
 
 export const allPremiumComponents = [
   ...premiumHeroComponents,
@@ -25,4 +27,5 @@ export const allPremiumComponents = [
   ...premiumNavbarComponents,
   ...premiumFooterComponents,
   ...premiumDashboardComponents,
+  ...premiumFormComponents,
 ];

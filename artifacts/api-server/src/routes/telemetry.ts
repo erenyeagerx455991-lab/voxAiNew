@@ -20,6 +20,7 @@ import { getComponentCoverageMetrics, recommendBestComponents } from "../quality
 import { getNavigationQualityMetrics } from "../telemetry/navigationMetrics.js";
 import { getAuthRoutingMetrics } from "../auth/authRoutingMetrics.js";
 import { getDashboardQualityMetrics } from "../telemetry/dashboardMetrics.js";
+import { getFormQualityMetrics } from "../telemetry/formMetrics.js";
 
 const router: Router = Router();
 
@@ -89,6 +90,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     navigationQuality: getNavigationQualityMetrics(),
     authRouting: getAuthRoutingMetrics(),
     dashboardQuality: getDashboardQualityMetrics(),
+    formQuality: getFormQualityMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

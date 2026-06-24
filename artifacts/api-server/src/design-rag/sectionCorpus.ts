@@ -7,11 +7,11 @@ import { DESIGN_CORPUS, type DesignReference, type DesignStyle } from './designC
 // ── Section type — extends DesignCategory with footer ─────────────────────────
 export type SectionType =
   | 'hero' | 'features' | 'pricing' | 'testimonials'
-  | 'dashboard' | 'faq' | 'cta' | 'navbar' | 'footer';
+  | 'dashboard' | 'faq' | 'cta' | 'navbar' | 'footer' | 'form';
 
 export const ALL_SECTION_TYPES: SectionType[] = [
   'hero', 'features', 'pricing', 'testimonials',
-  'dashboard', 'faq', 'cta', 'navbar', 'footer',
+  'dashboard', 'faq', 'cta', 'navbar', 'footer', 'form',
 ];
 
 // SectionRef extends DesignReference — same shape, wider category type
@@ -243,6 +243,60 @@ const newFooterRefs: SectionRef[] = [
 // Cast existing DesignReference[] → SectionRef[] (all have valid SectionType categories)
 const existingAsSectionRefs = DESIGN_CORPUS as unknown as SectionRef[];
 
+// ── FORM — 35 new refs (V7.2.8) ───────────────────────────────────────────────
+const newFormRefs: SectionRef[] = [
+  // Login forms
+  r('form-login-stripe', 'form', ['fintech', 'saas', 'enterprise'], ['stripe', 'linear'], 'split-login', ['login', 'email', 'password', 'react-hook-form', 'zod', 'oauth', 'sso'], 'Stripe-style split login: left brand panel (dark, logo+quote), right white form with email+password, Google OAuth button, "Remember me" checkbox, forgot password link.', ['login-enterprise-v1'], 9.5),
+  r('form-login-linear', 'form', ['saas', 'productivity', 'developer'], ['linear', 'vercel'], 'centered-login', ['login', 'minimal', 'dark', 'magic-link', 'email-only', 'react-hook-form'], 'Linear-style centered login: dark card, email-only input (magic link), single CTA button, GitHub SSO chip. Ultra minimal.', ['login-enterprise-v1'], 9.3),
+  r('form-login-notion', 'form', ['productivity', 'saas', 'consumer'], ['notion', 'framer'], 'notion-login', ['login', 'workspace-picker', 'email', 'google', 'apple', 'oauth-first'], 'Notion-style login: OAuth-first (Google/Apple), then email input. Workspace picker below for team accounts.', ['login-enterprise-v1'], 9.0),
+  r('form-login-vercel', 'form', ['developer', 'saas', 'startup'], ['vercel', 'linear'], 'vercel-login', ['login', 'github', 'gitlab', 'bitbucket', 'sso', 'code-centric'], 'Vercel login: 3 OAuth providers (GitHub/GitLab/Bitbucket) as full-width buttons, SAML SSO link, centered layout on black background.', ['login-enterprise-v1'], 9.2),
+  r('form-login-enterprise-sso', 'form', ['enterprise', 'fintech', 'healthcare'], ['stripe', 'notion'], 'enterprise-sso-login', ['login', 'saml', 'sso', 'okta', 'corporate', 'domain-hint'], 'Enterprise SSO login: company email domain detection auto-redirects to IdP (Okta/Azure AD). Manual SSO URL fallback.', ['login-enterprise-v1'], 9.1),
+
+  // Signup forms
+  r('form-signup-stripe', 'form', ['fintech', 'saas', 'ecommerce'], ['stripe', 'linear'], 'stripe-signup', ['signup', 'email', 'password', 'full-name', 'react-hook-form', 'zod', 'terms'], 'Stripe-style signup: full-name + email + password fields, Zod validation, Terms checkbox with link, social proof below ("Join 10,000+ teams"), progressive disclosure for company details.', ['signup-enterprise-v1'], 9.4),
+  r('form-signup-linear', 'form', ['saas', 'productivity', 'startup'], ['linear', 'vercel'], 'linear-signup', ['signup', 'workspace-name', 'email', 'team-size', 'role', 'react-hook-form'], 'Linear-style signup: workspace name → email → role Select → team-size RadioGroup. 3-field focus, no noise.', ['signup-enterprise-v1'], 9.2),
+  r('form-signup-notion-team', 'form', ['productivity', 'saas', 'enterprise'], ['notion', 'stripe'], 'team-signup', ['signup', 'team-invite', 'role-assign', 'email-list', 'bulk-invite', 'csv-upload'], 'Notion team signup: workspace name, invite teammates by email (comma-separated), assign roles via Select. Bulk CSV import option.', ['signup-enterprise-v1'], 9.0),
+  r('form-signup-github-style', 'form', ['developer', 'saas', 'startup'], ['vercel', 'linear'], 'github-signup', ['signup', 'username', 'email', 'password-strength', 'captcha', 'real-time-validation'], 'GitHub-style signup: username availability check (async), password strength meter (Progress), email verification step. Real-time Zod validation on blur.', ['signup-enterprise-v1'], 9.3),
+  r('form-signup-invite-only', 'form', ['startup', 'saas', 'enterprise'], ['linear', 'framer'], 'invite-signup', ['signup', 'invite-code', 'waitlist', 'token-gated', 'referral'], 'Invite-only signup: referral token input auto-filled from URL param, email + name, gated submit until token valid.', ['signup-enterprise-v1'], 8.9),
+
+  // Checkout forms
+  r('form-checkout-stripe', 'form', ['ecommerce', 'fintech', 'saas'], ['stripe', 'apple'], 'stripe-checkout', ['checkout', 'card', 'billing', 'order-summary', 'react-hook-form', 'zod', 'stripe-elements'], 'Stripe Checkout-style: two-column layout (contact+shipping left, order summary right), card element, address autocomplete, pay button with total.', ['checkout-enterprise-v1'], 9.5),
+  r('form-checkout-saas-subscription', 'form', ['saas', 'fintech', 'startup'], ['stripe', 'linear'], 'saas-checkout', ['checkout', 'plan-selector', 'annual-monthly-toggle', 'card', 'coupon-code', 'trial'], 'SaaS subscription checkout: plan comparison at top, annual/monthly Switch toggle, card fields, coupon code Input with apply Button, 14-day trial note.', ['checkout-enterprise-v1'], 9.3),
+  r('form-checkout-one-page', 'form', ['ecommerce', 'consumer', 'startup'], ['apple', 'stripe'], 'one-page-checkout', ['checkout', 'single-page', 'minimal', 'express', 'apple-pay', 'google-pay'], 'One-page minimal checkout: Apple Pay + Google Pay express buttons first, then email + card + zip. 3-field total. Maximum conversion flow.', ['checkout-enterprise-v1'], 9.4),
+  r('form-checkout-enterprise-invoice', 'form', ['enterprise', 'fintech', 'saas'], ['stripe', 'notion'], 'enterprise-invoice', ['checkout', 'po-number', 'invoice', 'billing-address', 'tax-id', 'net-terms'], 'Enterprise invoice checkout: PO number, billing address, tax ID, net-30 terms selection, email invoice to field. No card required.', ['checkout-enterprise-v1'], 9.0),
+
+  // Settings forms
+  r('form-settings-vercel', 'form', ['developer', 'saas', 'startup'], ['vercel', 'linear'], 'vercel-settings', ['settings', 'account', 'security', 'billing', 'integrations', 'tabs', 'react-hook-form'], 'Vercel-style settings: Tabs (Account/Security/Billing/Domains/Integrations), per-tab Save button, destructive zone (Delete Account) with confirmation Dialog.', ['settings-workspace-v1'], 9.4),
+  r('form-settings-linear', 'form', ['saas', 'productivity', 'enterprise'], ['linear', 'notion'], 'linear-settings', ['settings', 'workspace', 'members', 'security', 'api-keys', 'notifications', 'sidebar-nav'], 'Linear-style settings: left sidebar nav (My Account / Workspace / Members / Security / Billing), form content on right. API key generate/revoke table below.', ['settings-workspace-v1'], 9.3),
+  r('form-settings-notion-workspace', 'form', ['productivity', 'saas', 'enterprise'], ['notion', 'stripe'], 'notion-workspace-settings', ['settings', 'workspace-name', 'icon-upload', 'domain', 'members-csv', 'public-sharing'], 'Notion workspace settings: icon upload (Avatar), workspace name, allowed email domains Input, members CSV export, public sharing Switch.', ['settings-workspace-v1'], 9.1),
+  r('form-settings-security', 'form', ['enterprise', 'fintech', 'saas'], ['stripe', 'linear'], 'security-settings', ['settings', 'security', '2fa', 'sessions', 'sso', 'audit-log-link', 'passkey'], 'Security settings panel: 2FA enable/disable Switch, active sessions Table with revoke Button per row, SSO configuration, passkey registration list.', ['settings-workspace-v1'], 9.2),
+
+  // Onboarding multi-step
+  r('form-onboarding-linear', 'form', ['saas', 'productivity', 'startup'], ['linear', 'notion'], 'linear-onboarding', ['onboarding', 'multi-step', 'progress', 'workspace-setup', 'invite-team', 'react-hook-form'], 'Linear onboarding: 4-step Progress stepper (Workspace → Role → Team → Templates), each step validates before advancing, final review sheet.', ['onboarding-multistep-v1'], 9.4),
+  r('form-onboarding-stripe-connect', 'form', ['fintech', 'ecommerce', 'saas'], ['stripe', 'vercel'], 'stripe-connect-onboarding', ['onboarding', 'kyc', 'business-info', 'bank-account', 'identity', 'multi-step', 'progress'], 'Stripe Connect onboarding: business type Select → personal info → business address → bank account (routing+account) → identity document upload. Progress bar at top.', ['onboarding-multistep-v1'], 9.5),
+  r('form-onboarding-saas-setup', 'form', ['saas', 'startup', 'productivity'], ['vercel', 'linear'], 'saas-setup-wizard', ['onboarding', 'wizard', 'plan-select', 'feature-flags', 'integrations-connect', 'team-invite'], 'SaaS setup wizard: 5-step (Plan → Integrations → Branding → Team → Launch). Each step has a skip option. Breadcrumb-style Progress with named steps.', ['onboarding-multistep-v1'], 9.2),
+  r('form-onboarding-ecommerce', 'form', ['ecommerce', 'consumer', 'startup'], ['stripe', 'apple'], 'ecommerce-onboarding', ['onboarding', 'store-setup', 'product-type', 'payment-connect', 'shipping-zones', 'multi-step'], 'Ecommerce merchant onboarding: store name → product type RadioGroup → Stripe connect → shipping zones → go live. 5 steps with Progress.', ['onboarding-multistep-v1'], 9.0),
+
+  // Booking forms
+  r('form-booking-calendar', 'form', ['health', 'saas', 'consumer'], ['notion', 'stripe'], 'calendly-style-booking', ['booking', 'calendar', 'time-slots', 'timezone', 'react-hook-form', 'zod', 'confirm-email'], 'Calendly-style booking: Calendar date picker left, time slot grid right, timezone Select, attendee email + name form below, confirm button with summary card.', ['booking-workflow-v1'], 9.3),
+  r('form-booking-service', 'form', ['health', 'consumer', 'saas'], ['apple', 'stripe'], 'service-booking', ['booking', 'service-select', 'staff-select', 'date-time', 'notes', 'payment-hold'], 'Service booking: service Select (with price badge), staff member RadioGroup with avatars, date+time selection, notes Textarea, card hold on submit.', ['booking-workflow-v1'], 9.1),
+  r('form-booking-event-registration', 'form', ['enterprise', 'saas', 'consumer'], ['stripe', 'notion'], 'event-registration', ['booking', 'event', 'ticket-type', 'quantity', 'attendees', 'dietary', 'multi-step'], 'Event registration: ticket type Select with price, quantity Stepper, attendee info form (repeat per ticket), dietary Select, payment step.', ['booking-workflow-v1'], 9.0),
+
+  // Profile forms
+  r('form-profile-github', 'form', ['developer', 'saas', 'consumer'], ['vercel', 'notion'], 'github-profile-settings', ['profile', 'avatar-upload', 'username', 'bio', 'social-links', 'pronouns', 'react-hook-form'], 'GitHub-style profile: avatar upload with crop preview, username (slug input with availability check), display name, bio Textarea, social links (website/Twitter/LinkedIn), pronouns Select.', ['profile-dashboard-v1'], 9.2),
+  r('form-profile-notion', 'form', ['productivity', 'saas', 'enterprise'], ['notion', 'linear'], 'notion-profile', ['profile', 'photo', 'preferred-name', 'role', 'timezone', 'language', 'keyboard-shortcuts'], 'Notion profile: photo upload, preferred name, role/department, timezone Select (auto-detected), UI language Select, keyboard shortcuts Toggle per category.', ['profile-dashboard-v1'], 9.0),
+
+  // Admin CRUD forms
+  r('form-crud-linear-dialog', 'form', ['saas', 'productivity', 'enterprise'], ['linear', 'vercel'], 'linear-crud-dialog', ['admin-crud', 'data-table', 'edit-dialog', 'create-sheet', 'delete-confirm', 'react-hook-form', 'zod'], 'Linear-style CRUD: DataTable with DropdownMenu per row (Edit/Duplicate/Archive/Delete), Edit opens Sheet with full form, Create opens Dialog, Delete opens AlertDialog with count confirmation.', ['admin-crud-v1'], 9.5),
+  r('form-crud-notion-database', 'form', ['productivity', 'saas', 'enterprise'], ['notion', 'linear'], 'notion-database-crud', ['admin-crud', 'inline-edit', 'field-types', 'filter', 'sort', 'property-config'], 'Notion database CRUD: inline cell editing, column type Select (text/number/date/select/relation), filter/sort Sheet, property configuration Dialog.', ['admin-crud-v1'], 9.2),
+  r('form-crud-admin-panel', 'form', ['enterprise', 'saas', 'fintech'], ['stripe', 'linear'], 'admin-panel-crud', ['admin-crud', 'bulk-actions', 'column-visibility', 'pagination', 'search', 'export'], 'Enterprise admin panel CRUD: DataTable with bulk-select CheckboxColumn, column visibility DropdownMenu, server-side pagination, global search Input, CSV export Button.', ['admin-crud-v1'], 9.3),
+  r('form-crud-retool-style', 'form', ['enterprise', 'developer', 'saas'], ['vercel', 'stripe'], 'retool-crud', ['admin-crud', 'query-builder', 'row-form', 'api-connect', 'transform', 'pagination'], 'Retool-style CRUD: table left with pagination, edit panel right (Sheet), field mapping, API endpoint Input for data source, transform code Textarea.', ['admin-crud-v1'], 9.1),
+
+  // Contact forms
+  r('form-contact-stripe', 'form', ['saas', 'enterprise', 'startup'], ['stripe', 'linear'], 'enterprise-contact', ['contact', 'company-size', 'use-case', 'budget', 'react-hook-form', 'zod', 'routing'], 'Enterprise contact: name + work email + company + company size Select + use-case Textarea + monthly budget RadioGroup. Routes to sales vs support based on size.', ['login-enterprise-v1'], 9.0),
+  r('form-contact-simple', 'form', ['startup', 'agency', 'consumer'], ['framer', 'notion'], 'simple-contact', ['contact', 'name', 'email', 'message', 'minimal', 'react-hook-form', 'success-state'], 'Minimal contact form: 3 fields (name, email, message Textarea), success toast on submit, error state display. Clean, no noise.', ['login-enterprise-v1'], 8.8),
+];
+
 const ALL_NEW_REFS: SectionRef[] = [
   ...newHeroRefs,
   ...newFeatureRefs,
@@ -253,6 +307,7 @@ const ALL_NEW_REFS: SectionRef[] = [
   ...newCtaRefs,
   ...newNavbarRefs,
   ...newFooterRefs,
+  ...newFormRefs,
 ];
 
 export const SECTION_CORPUS: SectionRef[] = [

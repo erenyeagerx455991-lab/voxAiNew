@@ -8,6 +8,7 @@ import { recordBuildOutcome } from "../../design-rag/referenceMetrics.js";
 import { recordSectionOutcome } from "../../design-rag/sectionReferenceMetrics.js";
 import { normalizeSectionType } from "../../design-rag/sectionRetriever.js";
 import { recordDashboardScore } from "../../telemetry/dashboardMetrics.js";
+import { recordFormScore } from "../../telemetry/formMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -28,6 +29,7 @@ export interface EvaluatorResult {
   accountMenuScore: number;
   authNavbarAlignmentScore: number;
   dashboardScore: number;
+  formScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -194,6 +196,21 @@ export async function runDesignEvaluatorStep(
     dropdownUsage:  /\bDropdownMenuContent\b/.test(currentCode),
   });
 
+  // V7.2.8: record form quality metrics
+  const hasFormIssues = evalResult.issues.some(i => i.category === 'form');
+  const hasFormContent = evalResult.formScore < 10 || hasFormIssues;
+  recordFormScore({
+    score:              evalResult.formScore,
+    hasForm:            hasFormContent,
+    reactHookFormUsage: /\buseForm\b|\bhandleSubmit\b.*\bregister\b/.test(currentCode) || /formState\.errors/.test(currentCode),
+    zodUsage:           /z\.object\s*\(|zodResolver|z\.string\(\)|z\.email\(\)/.test(currentCode),
+    labelUsage:         /\bLabel\b/.test(currentCode) && /htmlFor=/.test(currentCode),
+    errorStateUsage:    /formState\.errors|errors\.\w+/.test(currentCode),
+    loadingStateUsage:  /isSubmitting|isLoading|disabled.*submit/.test(currentCode),
+    multiStepUsage:     /\bProgress\b.*value=|step.*total|totalSteps/.test(currentCode),
+    crudUsage:          /Dialog|Sheet/.test(currentCode) && /DataTable|<table/.test(currentCode),
+  });
+
   // V7.1.9: feed real build outcomes back into reference performance store
   const referencesUsedIds = frontend.retrievalReferenceIds ?? [];
   if (referencesUsedIds.length > 0) {
@@ -274,6 +291,7 @@ export async function runDesignEvaluatorStep(
     scoreAfterRepair: evalResult.overallScore,
     retrievalImpactScore: evalResult.overallScore,
     dashboardScore: evalResult.dashboardScore,
+    formScore: evalResult.formScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

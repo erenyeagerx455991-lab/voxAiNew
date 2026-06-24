@@ -6,10 +6,12 @@ export interface EvaluationInput {
   sectionOrder: string[];
   designDNA: DesignDNA;
   authState?: string;
+  isDashboard?: boolean;
+  isForm?: boolean;
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing' | 'dashboard';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing' | 'dashboard' | 'form';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -27,6 +29,7 @@ export interface EvaluationResult {
   authNavbarAlignmentScore: number;
   consistencyScore: number;
   dashboardScore: number;
+  formScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
@@ -604,24 +607,88 @@ function scoreDashboard(code: string, isDashboard: boolean): { score: number; is
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.7: weights redistributed to sum to 1.00 (11 dimensions)
+// ── V7.2.8: Form Quality Scorer ───────────────────────────────────────────────
+// Scores form-type sections on react-hook-form, Zod, Labels, error states, loading.
+// Non-form builds receive a neutral 10 (no penalty).
+function scoreForm(code: string, isForm: boolean): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+
+  // Detect meaningful form content (2+ fields, not just a search bar)
+  const hasInputLabel  = /\bLabel\b/.test(code) && /\bInput\b/.test(code);
+  const hasFormTag     = /<form\b/.test(code);
+  const hasHandleSubmit = /handleSubmit|onSubmit|useForm/.test(code);
+  const hasMultiField  = (code.match(/\bInput\b/g) ?? []).length >= 2 ||
+                         (code.match(/<input\b/gi) ?? []).length >= 2;
+
+  const hasFormContent = isForm || hasFormTag || hasHandleSubmit || (hasInputLabel && hasMultiField);
+
+  // Non-form pages (landing page / marketing) get full credit
+  if (!hasFormContent) return { score: 10, issues: [] };
+
+  let score = 0;
+
+  // React Hook Form: useForm / handleSubmit / register / formState.errors (+2)
+  if (/\buseForm\b|\bregister\b.*handleSubmit|handleSubmit.*\bregister\b/.test(code) ||
+      /formState\.errors|zodResolver/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'form', severity: 'major', message: 'Form missing react-hook-form — use useForm(), register(), handleSubmit(), and formState.errors' });
+  }
+
+  // Zod validation: z.object / zodResolver (+2)
+  if (/z\.object\s*\(|zodResolver|z\.string\(\)|z\.email\(\)/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'form', severity: 'major', message: 'Form missing Zod validation — use z.object() + zodResolver() for type-safe validation' });
+  }
+
+  // Label for every input (+2)
+  if (/\bLabel\b/.test(code) && /htmlFor=/.test(code)) {
+    score += 2;
+  } else if (/\bLabel\b/.test(code)) {
+    score += 1;
+    issues.push({ category: 'form', severity: 'minor', message: 'Form labels missing htmlFor — link each Label to its Input with htmlFor/id attributes' });
+  } else {
+    issues.push({ category: 'form', severity: 'major', message: 'Form missing Label components — every Input must have a visible, accessible Label' });
+  }
+
+  // Error states visible (+2)
+  if (/formState\.errors|errors\.\w+|\.message\b.*error|error.*\.message/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'form', severity: 'major', message: 'Form missing visible error states — display formState.errors[field].message below each field' });
+  }
+
+  // Loading / submit states (+2)
+  if (/isSubmitting|isLoading|disabled.*submit|loading.*true/.test(code)) {
+    score += 2;
+  } else {
+    issues.push({ category: 'form', severity: 'minor', message: 'Form missing loading state — disable submit button and show spinner while isSubmitting' });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+// V7.2.8: weights redistributed to sum to 1.00 (12 dimensions)
 const WEIGHTS = {
-  hero:                  0.17,  // was 0.19
-  layout:                0.14,  // was 0.16
-  cta:                   0.10,  // was 0.12
+  hero:                  0.15,  // was 0.17
+  layout:                0.14,
+  cta:                   0.10,
   accessibility:         0.16,
   shadcn:                0.07,
-  coverage:              0.06,
+  coverage:              0.05,  // was 0.06
   navigation:            0.10,
-  accountMenu:           0.05,
+  accountMenu:           0.04,  // was 0.05
   authNavbarAlignment:   0.04,
-  consistency:           0.05,
-  dashboard:             0.06,  // new V7.2.7
+  consistency:           0.04,  // was 0.05
+  dashboard:             0.06,
+  form:                  0.05,  // new V7.2.8
 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const { code, sectionOrder, authState } = input;
   const isDashboard = input.isDashboard ?? false;
+  const isForm      = input.isForm ?? false;
 
   const hero               = scoreHero(code, sectionOrder);
   const layout             = scoreLayout(code, sectionOrder);
@@ -634,6 +701,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const authNavbarAlignment = scoreAuthNavbarAlignment(code, authState);
   const consistency        = scoreConsistency(code);
   const dashboard          = scoreDashboard(code, isDashboard);
+  const form               = scoreForm(code, isForm);
 
   const overallScore =
     Math.round(
@@ -647,7 +715,8 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
         accountMenu.score            * WEIGHTS.accountMenu +
         authNavbarAlignment.score    * WEIGHTS.authNavbarAlignment +
         consistency.score            * WEIGHTS.consistency +
-        dashboard.score              * WEIGHTS.dashboard) * 10
+        dashboard.score              * WEIGHTS.dashboard +
+        form.score                   * WEIGHTS.form) * 10
     ) / 10;
 
   const allIssues = [
@@ -662,6 +731,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...authNavbarAlignment.issues,
     ...consistency.issues,
     ...dashboard.issues,
+    ...form.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
     return sev[a.severity] - sev[b.severity];
@@ -680,6 +750,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     authNavbarAlignmentScore:  authNavbarAlignment.score,
     consistencyScore:          consistency.score,
     dashboardScore:            dashboard.score,
+    formScore:                 form.score,
     coveragePercent:           coverage.coveragePercent,
     componentUsage:            coverage.componentUsage,
     issues:                    allIssues,

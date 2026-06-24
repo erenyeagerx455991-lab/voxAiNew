@@ -292,7 +292,21 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - PRESERVE all industry-specific terminology, proper nouns, and specific copy already present in the code.
    - PRESERVE CTA hierarchy: the hero primary button must remain the most visually dominant CTA on the page.
 
-6. DASHBOARD & DATA TABLE STANDARDS — enforce when dashboard content is present:
+6. FORMS & WORKFLOW STANDARDS — enforce when form content is present:
+   - NEVER use raw <input> without a matching <Label htmlFor="..."> component.
+   - NEVER build custom dropdown menus for form selects — use Select/SelectTrigger/SelectContent/SelectItem.
+   - NEVER use local React.useState for complex forms (3+ fields) — use react-hook-form: const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({ resolver: zodResolver(schema) }).
+   - NEVER write validation logic in onChange handlers — use Zod: const schema = z.object({ email: z.string().email(), password: z.string().min(8) }).
+   - NEVER have silent form failures — every field error MUST display as a visible <p className="text-red-400 text-xs mt-1">{errors.field?.message}</p>.
+   - ALWAYS add type="submit" to the form submit button and disable it while isSubmitting.
+   - ALWAYS show a loading state: <Button disabled={isSubmitting}>{isSubmitting ? 'Saving...' : 'Submit'}</Button>.
+   - ALWAYS include aria-describedby on inputs linked to their error message element id.
+   - MULTI-STEP FORMS: use <Progress value={(step / totalSteps) * 100} /> at the top, with step indicators. Never jump between steps without Progress.
+   - CRUD DIALOGS: row action DropdownMenuItem → Dialog (or Sheet for larger forms) → form inside → handleSubmit → close dialog. NEVER navigate to a separate page for inline edits.
+   - CHECKOUT FORMS: always group fields into logical sections (Contact / Shipping / Payment) separated by a visible heading or Separator.
+   - SETTINGS FORMS: use Tabs (Account/Security/Billing/Notifications) with a save Button per tab section — never one massive form.
+
+7. DASHBOARD & DATA TABLE STANDARDS — enforce when dashboard content is present:
    - NEVER use raw <table>, <tbody>, <tr>, <td> for data grids — always use the DataTable shadcn pattern (Table, TableHeader, TableBody, TableRow, TableHead, TableCell).
    - NEVER write custom dropdown filters for dashboard sections — use DropdownMenu/DropdownMenuContent/DropdownMenuItem.
    - NEVER write custom date pickers — use the Calendar shadcn component with Popover.

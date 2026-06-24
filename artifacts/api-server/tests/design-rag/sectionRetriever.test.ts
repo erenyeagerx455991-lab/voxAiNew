@@ -308,7 +308,11 @@ describe("V7.2.2 — Phase 6: Section Normalization", () => {
   });
 
   it("returns null for completely unrecognized sections", () => {
-    expect(normalizeSectionType("ContactForm")).toBeNull();
+    expect(normalizeSectionType("RandomWidget")).toBeNull();
+  });
+
+  it("normalizes 'ContactForm' → 'form' (V7.2.8)", () => {
+    expect(normalizeSectionType("ContactForm")).toBe("form");
   });
 
   it("normalizes 'Footer' → 'footer'", () => {
