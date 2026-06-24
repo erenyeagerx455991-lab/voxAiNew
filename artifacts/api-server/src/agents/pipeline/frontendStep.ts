@@ -13,6 +13,7 @@ import { createLogger } from "../../lib/structuredLogger.js";
 import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
 import { extractRetrievalIntent } from "../../design-rag/retriever.js";
 import { retrieveAllSections, buildSectionRetrievalContext } from "../../design-rag/sectionRetriever.js";
+import { buildMotionContext } from "../../design-rag/motionRetriever.js";
 
 const log = createLogger("FrontendStep");
 
@@ -168,6 +169,13 @@ export async function runFrontendStep(
     }
   } catch (e) { log.error("REGISTRY_SELECTION_FAILED", { error: String(e) }); }
 
+  // ── V7.2.9: Motion RAG context ───────────────────────────────────────────────
+  let motionCtx = '';
+  try {
+    motionCtx = buildMotionContext(design.designLanguage ?? 'minimal-flat', blueprint.sectionOrder);
+    log.info("MOTION_RAG_BUILT", { designLanguage: design.designLanguage, sections: blueprint.sectionOrder.length });
+  } catch (e) { log.error("MOTION_RAG_FAILED", { error: String(e) }); }
+
   // ── V7.2.2 Phase 4+5: Section-Level Design RAG retrieval ─────────────────
   let retrievalCtx = '';
   let retrievalReferenceIds: string[] = [];
@@ -219,9 +227,12 @@ export async function runFrontendStep(
 
   let generatedCode = "";
   try {
+    const codegenSystemParts = [buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection)];
+    if (retrievalCtx) codegenSystemParts.push(retrievalCtx);
+    if (motionCtx) codegenSystemParts.push(motionCtx);
     generatedCode = await callAI(
       openrouterKey,
-      [{ role: "system", content: retrievalCtx ? `${buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection)}\n\n${retrievalCtx}` : buildCodeSystem(design, blueprint, componentContext, projectBlueprint, registrySelection) }, { role: "user", content: codegenUserPrompt }],
+      [{ role: "system", content: codegenSystemParts.join('\n\n') }, { role: "user", content: codegenUserPrompt }],
       { label: "codegen", maxTokens: 8000, stream: true, onToken: (t) => sse(res, { type: "codegen_token", token: t }) }
     );
   } catch (e) {

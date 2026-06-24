@@ -1,5 +1,6 @@
 import type { DesignDNA } from "../types.js";
 import { computeComponentCoverage } from "../../quality/componentRecommendations.js";
+import { recordMotionScore } from "../../telemetry/motionMetrics.js";
 
 export interface EvaluationInput {
   code: string;
@@ -11,7 +12,7 @@ export interface EvaluationInput {
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing' | 'dashboard' | 'form';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing' | 'dashboard' | 'form' | 'motion';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -30,6 +31,7 @@ export interface EvaluationResult {
   consistencyScore: number;
   dashboardScore: number;
   formScore: number;
+  motionScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
@@ -669,20 +671,107 @@ function scoreForm(code: string, isForm: boolean): { score: number; issues: Eval
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.8: weights redistributed to sum to 1.00 (12 dimensions)
+// ── V7.2.9: Motion Quality Scorer ─────────────────────────────────────────────
+// Checks Framer Motion usage, timing compliance, accessibility, stagger, DNA fit.
+// Low-motion DNA (notion/vercel/linear) without motion → neutral 10. No penalty.
+function scoreMotion(code: string, designDNA: DesignDNA): { score: number; issues: EvaluationIssue[]; animationCount: number; averageDuration: number; dnaCompliant: boolean; reducedMotionSupported: boolean } {
+  const issues: EvaluationIssue[] = [];
+
+  const animationPersonality = (designDNA as Record<string, unknown>).animationPersonality as string ?? 'subtle';
+  const designLanguage = designDNA.designLanguage ?? 'minimal-flat';
+  const isNoneAnimation = animationPersonality === 'none';
+  const isLowMotionDNA = ['monochrome', 'editorial', 'minimal-flat', 'dev-minimal', 'academic-clean'].includes(designLanguage);
+
+  const hasFramerMotion = /motion\.(div|section|h1|h2|h3|p|span|ul|li|button|a)\b|framer-motion|useAnimation\b|AnimatePresence/.test(code);
+  const hasVariants     = /variants=\{|whileInView|whileHover|whileTap|initial=\{.*hidden|animate=\{.*visible/.test(code);
+  const hasAnyMotion    = hasFramerMotion || hasVariants;
+
+  // Pages with none-personality and no motion → perfect score
+  if (isNoneAnimation && !hasAnyMotion) {
+    return { score: 10, issues: [], animationCount: 0, averageDuration: 0, dnaCompliant: true, reducedMotionSupported: true };
+  }
+
+  let score = 0;
+
+  // 1. Motion library present (+2)
+  if (hasAnyMotion) {
+    score += 2;
+  } else if (isLowMotionDNA) {
+    score += 2; // Low-motion DNA: motion not required, no penalty
+  } else {
+    issues.push({ category: 'motion', severity: 'major', message: 'No Framer Motion found — add motion.div/motion.section with fadeUp/scaleIn variants; import { motion, useReducedMotion } from "framer-motion"' });
+  }
+
+  // 2. Valid timing: durations between 0.15s and 0.4s (+2)
+  const durationMatches = code.match(/duration:\s*([\d.]+)/g) ?? [];
+  const animationCount  = durationMatches.length + (code.match(/whileInView|whileHover/g) ?? []).length;
+  let totalDuration = 0;
+  const invalidDurations: string[] = [];
+  for (const dm of durationMatches) {
+    const val = parseFloat(dm.replace(/duration:\s*/, ''));
+    if (!isNaN(val)) {
+      totalDuration += val * 1000;
+      if (val < 0.1 || val > 0.5) invalidDurations.push(`${val}s`);
+    }
+  }
+  const averageDuration = durationMatches.length > 0 ? totalDuration / durationMatches.length : 0;
+  if (invalidDurations.length === 0) {
+    score += 2;
+  } else {
+    score += 1;
+    issues.push({ category: 'motion', severity: 'minor', message: `${invalidDurations.length} animation duration(s) outside 150–400ms range (${invalidDurations.slice(0,3).join(', ')}) — keep all durations between 0.15s and 0.4s` });
+  }
+
+  // 3. prefers-reduced-motion support (+3) — critical for a11y
+  const reducedMotionSupported = /useReducedMotion|prefers-reduced-motion|reducedMotion/.test(code);
+  if (reducedMotionSupported) {
+    score += 3;
+  } else if (hasAnyMotion) {
+    issues.push({ category: 'motion', severity: 'major', message: 'Missing prefers-reduced-motion support — add: const reducedMotion = useReducedMotion(); and skip stagger/scale/translate when true (opacity only)' });
+  } else {
+    score += 3; // No animation = no a11y issue
+  }
+
+  // 4. Stagger quality (+2)
+  const hasStagger = /staggerChildren|delayChildren|stagger/.test(code);
+  if (hasStagger) {
+    score += 2;
+  } else if (!isLowMotionDNA && hasAnyMotion) {
+    issues.push({ category: 'motion', severity: 'minor', message: 'No stagger animation on list/grid children — add staggerChildren: 0.08-0.12 to container variants for feature cards and testimonials' });
+  } else {
+    score += 2; // Low-motion DNA: stagger not required
+  }
+
+  // 5. No disallowed animation patterns (+1)
+  const hasBounce       = /\bbounce\b/.test(code);
+  const hasInfinite     = /repeat:\s*Infinity|loop:\s*Infinity/.test(code);
+  const hasContinuousSpin = /rotate.*360|spin.*infinite/.test(code);
+  const dnaCompliant    = !hasBounce && !hasInfinite && !hasContinuousSpin;
+  if (dnaCompliant) {
+    score += 1;
+  } else {
+    const bad = [hasBounce && 'bounce', hasInfinite && 'infinite-repeat', hasContinuousSpin && 'continuous-spin'].filter(Boolean);
+    issues.push({ category: 'motion', severity: 'major', message: `Disallowed animation pattern(s) detected: ${bad.join(', ')} — use only fade/slide/scale/stagger with finite duration` });
+  }
+
+  return { score: Math.min(10, score), issues, animationCount, averageDuration, dnaCompliant, reducedMotionSupported };
+}
+
+// V7.2.9: weights redistributed to sum to 1.00 (13 dimensions)
 const WEIGHTS = {
-  hero:                  0.15,  // was 0.17
-  layout:                0.14,
-  cta:                   0.10,
-  accessibility:         0.16,
-  shadcn:                0.07,
-  coverage:              0.05,  // was 0.06
+  hero:                  0.14,  // was 0.15
+  layout:                0.13,  // was 0.14
+  cta:                   0.09,  // was 0.10
+  accessibility:         0.15,  // was 0.16
+  shadcn:                0.06,  // was 0.07
+  coverage:              0.05,
   navigation:            0.10,
-  accountMenu:           0.04,  // was 0.05
+  accountMenu:           0.04,
   authNavbarAlignment:   0.04,
-  consistency:           0.04,  // was 0.05
+  consistency:           0.04,
   dashboard:             0.06,
-  form:                  0.05,  // new V7.2.8
+  form:                  0.05,
+  motion:                0.05,  // new V7.2.9
 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
@@ -702,6 +791,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const consistency        = scoreConsistency(code);
   const dashboard          = scoreDashboard(code, isDashboard);
   const form               = scoreForm(code, isForm);
+  const motion             = scoreMotion(code, input.designDNA ?? {} as DesignDNA);
 
   const overallScore =
     Math.round(
@@ -716,8 +806,19 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
         authNavbarAlignment.score    * WEIGHTS.authNavbarAlignment +
         consistency.score            * WEIGHTS.consistency +
         dashboard.score              * WEIGHTS.dashboard +
-        form.score                   * WEIGHTS.form) * 10
+        form.score                   * WEIGHTS.form +
+        motion.score                 * WEIGHTS.motion) * 10
     ) / 10;
+
+  // Record motion telemetry
+  recordMotionScore({
+    buildId:               `eval-${Date.now()}`,
+    motionScore:           motion.score,
+    dnaCompliant:          motion.dnaCompliant,
+    reducedMotionSupported: motion.reducedMotionSupported,
+    animationCount:        motion.animationCount,
+    averageDuration:       motion.averageDuration,
+  });
 
   const allIssues = [
     ...hero.issues,
@@ -732,6 +833,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...consistency.issues,
     ...dashboard.issues,
     ...form.issues,
+    ...motion.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
     return sev[a.severity] - sev[b.severity];
@@ -751,6 +853,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     consistencyScore:          consistency.score,
     dashboardScore:            dashboard.score,
     formScore:                 form.score,
+    motionScore:               motion.score,
     coveragePercent:           coverage.coveragePercent,
     componentUsage:            coverage.componentUsage,
     issues:                    allIssues,

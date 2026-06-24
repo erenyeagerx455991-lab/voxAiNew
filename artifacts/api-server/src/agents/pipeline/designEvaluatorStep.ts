@@ -30,6 +30,7 @@ export interface EvaluatorResult {
   authNavbarAlignmentScore: number;
   dashboardScore: number;
   formScore: number;
+  motionScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -292,6 +293,7 @@ export async function runDesignEvaluatorStep(
     retrievalImpactScore: evalResult.overallScore,
     dashboardScore: evalResult.dashboardScore,
     formScore: evalResult.formScore,
+    motionScore: evalResult.motionScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

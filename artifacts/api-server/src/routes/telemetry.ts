@@ -21,6 +21,7 @@ import { getNavigationQualityMetrics } from "../telemetry/navigationMetrics.js";
 import { getAuthRoutingMetrics } from "../auth/authRoutingMetrics.js";
 import { getDashboardQualityMetrics } from "../telemetry/dashboardMetrics.js";
 import { getFormQualityMetrics } from "../telemetry/formMetrics.js";
+import { getMotionQualityMetrics } from "../telemetry/motionMetrics.js";
 
 const router: Router = Router();
 
@@ -91,6 +92,7 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     authRouting: getAuthRoutingMetrics(),
     dashboardQuality: getDashboardQualityMetrics(),
     formQuality: getFormQualityMetrics(),
+    motionQuality: getMotionQualityMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

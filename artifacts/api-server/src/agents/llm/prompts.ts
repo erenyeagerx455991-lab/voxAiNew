@@ -313,7 +313,17 @@ export const CODEFIX_SYSTEM = `You are a Code Fix Agent. You receive React/JSX c
    - ALWAYS use Badge for status columns: active/inactive/pending/failed/draft must be wrapped in <Badge variant="..."> not raw spans.
    - ALWAYS include at least one Tabs/TabsList/TabsTrigger block in any dashboard section (e.g., Overview / Analytics / Settings tabs).
    - ALWAYS include Skeleton placeholders in dashboard components to represent loading states.
-   - Table columns MUST include: a search/filter bar (Input + DropdownMenu), column headers with sort indicators (↑↓ chevrons), and a row-count indicator.`;
+   - Table columns MUST include: a search/filter bar (Input + DropdownMenu), column headers with sort indicators (↑↓ chevrons), and a row-count indicator.
+
+8. MOTION STANDARDS — enforce when Framer Motion elements are present:
+   - NEVER use bare CSS transition classes (transition-all, duration-300) as the primary animation strategy — use motion.* components for intentional animation.
+   - NEVER animate layout-affecting properties (width, height, padding) via Framer Motion — use opacity, transform (x, y, scale, rotate) only.
+   - ALWAYS respect reduced-motion: include a prefers-reduced-motion media query check or use a motionSafe conditional for non-essential animations.
+   - ALWAYS use whileInView + viewport={{ once: true }} for scroll-triggered animations — NEVER use useEffect+IntersectionObserver when Framer is available.
+   - ALWAYS chain staggerChildren via variants at the parent level — NEVER add individual delays as hardcoded delay: N numbers on siblings.
+   - NEVER mix motion.div wrappers with layout prop on the same element as AnimatePresence exit — it causes layout thrashing.
+   - KEEP animation durations between 0.2s (micro-interactions) and 0.6s (hero entrances) — durations above 0.8s feel sluggish.
+   - PRESERVE DNA animation personality: if animationPersonality is "none", remove all non-hover animations but keep hover: scale/opacity transitions.`;
 
 export const BACKEND_SYSTEM = `You are a Backend Agent generating Express.js TypeScript API route files.
 

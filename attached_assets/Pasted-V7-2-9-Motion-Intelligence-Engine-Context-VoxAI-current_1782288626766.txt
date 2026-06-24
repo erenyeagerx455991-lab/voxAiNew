@@ -1,0 +1,456 @@
+V7.2.9 — Motion Intelligence Engine
+
+Context
+
+VoxAI currently has:
+
+- V7.2.8 Forms & Workflow Engine complete
+- Design RAG active
+- Section-Level Design RAG active
+- Section Outcome Feedback Loop active
+- Multi-Candidate Generation active
+- Dashboard Intelligence active
+- Enterprise Forms active
+- Auth-Aware Routing active
+- Navigation Intelligence active
+- Component Intelligence active
+- Design Evaluator active
+- Auto Repair Loop active
+
+Current Quality:
+
+- Overall ≈ 9.5
+- Forms ≈ 9.2
+- Dashboard ≈ 9.5
+- Accessibility ≈ 9.5
+- Design Consistency ≈ 9.5
+
+Remaining gap versus Lovable / Bolt / Framer:
+
+- Motion quality
+- Animation consistency
+- Perceived polish
+- Design DNA motion identity
+- Interaction smoothness
+
+---
+
+Goal
+
+Transform VoxAI from:
+
+"Static generated websites"
+
+into
+
+"Motion-aware premium experiences"
+
+similar to:
+
+- Framer
+- Linear
+- Stripe
+- Apple
+- Vercel
+
+while preserving VoxAI Design DNA.
+
+---
+
+PHASE 1 — Motion DNA System
+
+Create Motion DNA profiles.
+
+Each Design DNA must have its own motion language.
+
+Linear:
+
+- subtle fade
+- subtle slide
+- low intensity
+
+Vercel:
+
+- minimal motion
+- mostly opacity
+
+Stripe:
+
+- stagger reveal
+- section transitions
+
+Framer:
+
+- rich motion
+- scale + stagger
+
+Apple:
+
+- smooth scale
+- elegant transitions
+
+Notion:
+
+- almost static
+- extremely subtle
+
+Rule:
+
+Motion must match DNA.
+
+Never apply Framer motion patterns to Vercel DNA.
+
+Never apply Stripe stagger systems to Apple DNA.
+
+---
+
+PHASE 2 — Motion RAG Corpus
+
+Create:
+
+motionReferences.ts
+
+Target:
+
+150+ motion references
+
+Categories:
+
+hero-motion
+features-motion
+pricing-motion
+testimonials-motion
+faq-motion
+dashboard-motion
+cta-motion
+navbar-motion
+
+Each reference stores:
+
+id
+sectionType
+dna
+animationType
+duration
+delay
+stagger
+intensity
+qualityHint
+
+---
+
+PHASE 3 — Motion Retrieval
+
+Extend Design RAG.
+
+For every section:
+
+retrieveMotionReferences()
+
+Input:
+
+sectionType
+dna
+industry
+
+Output:
+
+Top motion references
+
+Rules:
+
+Motion retrieval must be independent from layout retrieval.
+
+Layout RAG decides structure.
+
+Motion RAG decides animation.
+
+---
+
+PHASE 4 — Framer Motion Standard
+
+Always prefer:
+
+motion.div
+motion.section
+motion.h1
+motion.p
+motion.span
+
+Allowed:
+
+fade
+slide
+scale
+stagger
+
+Disallow:
+
+bounce
+infinite-spin
+continuous rotation
+extreme parallax
+scroll-jacking
+
+---
+
+PHASE 5 — Motion Presets
+
+Create reusable presets.
+
+fadeIn
+fadeUp
+fadeDown
+slideLeft
+slideRight
+scaleIn
+staggerChildren
+
+Store centrally.
+
+Never duplicate animation definitions.
+
+---
+
+PHASE 6 — Section Motion Rules
+
+Hero:
+
+fade + stagger
+
+Features:
+
+stagger cards
+
+Pricing:
+
+scale reveal
+
+Testimonials:
+
+fade sequence
+
+FAQ:
+
+accordion motion
+
+CTA:
+
+scale + fade
+
+Dashboard:
+
+table skeleton transitions
+tab transitions
+
+---
+
+PHASE 7 — Accessibility Motion Rules
+
+Respect:
+
+prefers-reduced-motion
+
+Mandatory:
+
+If reduced motion detected:
+
+disable:
+
+stagger
+parallax
+scale
+
+Use:
+
+opacity only
+
+Never create inaccessible animations.
+
+---
+
+PHASE 8 — Motion Evaluator Dimension
+
+Add:
+
+motionScore
+
+Weight:
+
+0.05
+
+Checks:
+
+motion present
+DNA alignment
+duration valid
+accessibility safe
+stagger quality
+transition quality
+
+Scoring:
+
+0–10
+
+Non-motion pages:
+
+neutral 10
+
+No penalty.
+
+---
+
+PHASE 9 — Motion Telemetry
+
+Create:
+
+motionMetrics.ts
+
+Track:
+
+motionUsage
+dnaMotionCompliance
+animationCount
+averageDuration
+averageMotionScore
+reducedMotionSupport
+
+Expose:
+
+GET /api/telemetry/quality
+
+motionQuality
+
+---
+
+PHASE 10 — Premium Motion Templates
+
+Create Priority 15 templates:
+
+hero-motion-linear-v1
+hero-motion-framer-v1
+features-stagger-v1
+pricing-reveal-v1
+cta-motion-v1
+dashboard-motion-v1
+
+Requirements:
+
+Framer Motion
+DNA-specific animation
+Accessibility compliance
+Production-ready timing
+
+---
+
+Motion Timing Standards
+
+Allowed:
+
+150ms
+200ms
+250ms
+300ms
+350ms
+400ms
+
+Disallow:
+
+<100ms
+
+«500ms»
+
+Default:
+
+250–300ms
+
+---
+
+Motion Intensity Scale
+
+Low:
+
+Linear
+Vercel
+Notion
+
+Medium:
+
+Stripe
+Apple
+
+High:
+
+Framer
+
+Rule:
+
+Intensity must match DNA.
+
+---
+
+Auto Repair Integration
+
+Repair Agent must detect:
+
+Missing motion
+Wrong motion DNA
+Excessive animation
+Accessibility violations
+
+Repair only motion issues.
+
+Never alter layout.
+
+Never alter content.
+
+---
+
+Success Criteria
+
+Motion Score:
+≥9.2
+
+DNA Motion Compliance:
+≥95%
+
+Reduced Motion Support:
+100%
+
+Animation Timing Compliance:
+100%
+
+Repair Rate:
+≤10%
+
+Overall Quality:
+≥9.7
+
+---
+
+Hard Constraints
+
+DO NOT:
+
+- modify queue system
+- modify providers
+- modify API architecture
+- modify SSE protocol
+- modify existing evaluator dimensions
+
+ONLY improve:
+
+- motion quality
+- animation consistency
+- DNA-specific polish
+- perceived quality
+
+Build motion systems comparable to:
+
+- Framer
+- Linear
+- Stripe
+- Apple
+- Vercel
+
+while preserving VoxAI Design DNA.
