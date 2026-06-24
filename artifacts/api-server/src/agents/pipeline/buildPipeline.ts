@@ -6,6 +6,7 @@ import { runFrontendStep } from "./frontendStep.js";
 import { runCandidateSelectionStep } from "./candidateSelectionStep.js";
 import { runRepairStep } from "./repairStep.js";
 import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
+import { runDesignCriticStep } from "./designCriticStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -59,8 +60,13 @@ export async function runBuildPipeline(
       runDesignEvaluatorStep(repairedFrontend, keys, res)
     );
 
+    // V7.3.0: Design Critic Agent — human-like review + targeted repair
+    const criticFrontend = await withAgentMetrics("DesignCritic", () =>
+      runDesignCriticStep(evaluatedFrontend, keys, res)
+    );
+
     const backend = await withAgentMetrics("Scaffold", () =>
-      runBackendStep(architecture, evaluatedFrontend, keys, res)
+      runBackendStep(architecture, criticFrontend, keys, res)
     );
 
     const runtimeResult = await withAgentMetrics("RuntimeValidation", () =>
@@ -77,7 +83,7 @@ export async function runBuildPipeline(
 
     sse(res, {
       type: "done",
-      code: evaluatedFrontend.fixedCode,
+      code: criticFrontend.fixedCode,
       plan: cleanPlan,
       blueprint,
       projectBlueprint: architecture.projectBlueprint,
