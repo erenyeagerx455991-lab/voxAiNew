@@ -23,6 +23,8 @@ export interface EvaluatorResult {
   accessibilityScore: number;
   shadcnScore: number;
   consistencyScore: number;
+  navigationScore: number;
+  accountMenuScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;

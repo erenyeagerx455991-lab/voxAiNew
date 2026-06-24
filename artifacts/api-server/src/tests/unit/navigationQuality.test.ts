@@ -542,22 +542,22 @@ describe('Phase 9 — navigationQuality telemetry', () => {
   });
 
   it('tracks a single recorded navigation score', () => {
-    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
     const m = getNavigationQualityMetrics();
     expect(m.totalBuildsTracked).toBe(1);
     expect(m.averageNavbarScore).toBe(8);
   });
 
   it('averageNavbarScore is correct for multiple values', () => {
-    recordNavigationScore({ score: 6, usesNavigationMenu: true, usesSheetMobile: false, hasAriaLabel: true, hasFocusVisible: false, hasMobileToggle: false });
-    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+    recordNavigationScore({ score: 6, usesNavigationMenu: true, usesSheetMobile: false, hasAriaLabel: true, hasFocusVisible: false, hasMobileToggle: false, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
+    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 8 });
     const m = getNavigationQualityMetrics();
     expect(m.averageNavbarScore).toBe(7);
   });
 
   it('navigationMenuUsage is 100% when all builds use NavigationMenu', () => {
     for (let i = 0; i < 5; i++) {
-      recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+      recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 9 });
     }
     const m = getNavigationQualityMetrics();
     expect(m.navigationMenuUsage).toBe(100);
@@ -565,22 +565,22 @@ describe('Phase 9 — navigationQuality telemetry', () => {
 
   it('navigationMenuUsage is 0% when no builds use NavigationMenu', () => {
     for (let i = 0; i < 5; i++) {
-      recordNavigationScore({ score: 2, usesNavigationMenu: false, usesSheetMobile: false, hasAriaLabel: false, hasFocusVisible: false, hasMobileToggle: false });
+      recordNavigationScore({ score: 2, usesNavigationMenu: false, usesSheetMobile: false, hasAriaLabel: false, hasFocusVisible: false, hasMobileToggle: false, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
     }
     const m = getNavigationQualityMetrics();
     expect(m.navigationMenuUsage).toBe(0);
   });
 
   it('sheetUsage is 50% when half of builds use Sheet', () => {
-    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
-    recordNavigationScore({ score: 3, usesNavigationMenu: false, usesSheetMobile: false, hasAriaLabel: false, hasFocusVisible: false, hasMobileToggle: false });
+    recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 8 });
+    recordNavigationScore({ score: 3, usesNavigationMenu: false, usesSheetMobile: false, hasAriaLabel: false, hasFocusVisible: false, hasMobileToggle: false, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
     const m = getNavigationQualityMetrics();
     expect(m.sheetUsage).toBe(50);
   });
 
   it('accessibilityCompliance is 100% when all builds have aria-label', () => {
     for (let i = 0; i < 4; i++) {
-      recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+      recordNavigationScore({ score: 8, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 8 });
     }
     const m = getNavigationQualityMetrics();
     expect(m.accessibilityCompliance).toBe(100);
@@ -588,7 +588,7 @@ describe('Phase 9 — navigationQuality telemetry', () => {
 
   it('recentScores shows last 5 scores', () => {
     for (let i = 1; i <= 7; i++) {
-      recordNavigationScore({ score: i, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+      recordNavigationScore({ score: i, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
     }
     const m = getNavigationQualityMetrics();
     expect(m.recentScores).toHaveLength(5);
@@ -597,14 +597,14 @@ describe('Phase 9 — navigationQuality telemetry', () => {
 
   it('caps history at 100 entries', () => {
     for (let i = 0; i < 120; i++) {
-      recordNavigationScore({ score: 5, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+      recordNavigationScore({ score: 5, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
     }
     const m = getNavigationQualityMetrics();
     expect(m.totalBuildsTracked).toBeLessThanOrEqual(100);
   });
 
   it('resetNavigationQualityMetrics clears all state', () => {
-    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true });
+    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: true, accountMenuScore: 9 });
     resetNavigationQualityMetrics();
     const m = getNavigationQualityMetrics();
     expect(m.totalBuildsTracked).toBe(0);
@@ -622,5 +622,263 @@ describe('Phase 9 — navigationQuality telemetry', () => {
     expect(m).toHaveProperty('mobileToggleCompliance');
     expect(m).toHaveProperty('totalBuildsTracked');
     expect(m).toHaveProperty('recentScores');
+    expect(m).toHaveProperty('navigationIntelligence');
+  });
+
+  it('V7.2.6: navigationIntelligence tracks avatarUsage %', () => {
+    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 9 });
+    recordNavigationScore({ score: 5, usesNavigationMenu: true, usesSheetMobile: false, hasAriaLabel: true, hasFocusVisible: false, hasMobileToggle: false, avatarUsage: false, dropdownUsage: false, commandUsage: false, accountMenuScore: 0 });
+    const m = getNavigationQualityMetrics();
+    expect(m.navigationIntelligence.avatarUsage).toBe(50);
+  });
+
+  it('V7.2.6: navigationIntelligence tracks dropdownUsage %', () => {
+    for (let i = 0; i < 4; i++) {
+      recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 9 });
+    }
+    const m = getNavigationQualityMetrics();
+    expect(m.navigationIntelligence.dropdownUsage).toBe(100);
+  });
+
+  it('V7.2.6: navigationIntelligence tracks commandUsage %', () => {
+    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: true, accountMenuScore: 9 });
+    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 9 });
+    const m = getNavigationQualityMetrics();
+    expect(m.navigationIntelligence.commandUsage).toBe(50);
+  });
+
+  it('V7.2.6: navigationIntelligence.accountMenuScore averages correctly', () => {
+    recordNavigationScore({ score: 9, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 8 });
+    recordNavigationScore({ score: 7, usesNavigationMenu: true, usesSheetMobile: true, hasAriaLabel: true, hasFocusVisible: true, hasMobileToggle: true, avatarUsage: true, dropdownUsage: true, commandUsage: false, accountMenuScore: 6 });
+    const m = getNavigationQualityMetrics();
+    expect(m.navigationIntelligence.accountMenuScore).toBe(7);
+  });
+});
+
+// ── V7.2.6 — accountMenuScore via evaluateDesign ──────────────────────────────
+
+const AUTH_NAV_CODE = `
+function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const userInitials = 'JD';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-16">
+        <span className="text-white font-bold">SITE_NAME</span>
+        <div className="hidden md:flex">
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuLink href="#" className="focus-visible:ring-2 focus-visible:ring-white/40">Dashboard</NavigationMenuLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuLink href="#" className="focus-visible:ring-2 focus-visible:ring-white/40">Projects</NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+        <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="bg-white/10 text-white text-xs font-semibold">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-[#111] border-white/10">
+              <DropdownMenuItem>Profile</DropdownMenuItem>
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Billing</DropdownMenuItem>
+              <DropdownMenuItem className="text-red-400">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+            <span aria-hidden="true">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#111] w-72">
+          <a href="#" className="focus-visible:ring-2 focus-visible:ring-white/40">Dashboard</a>
+          <a href="#" className="focus-visible:ring-2 focus-visible:ring-white/40">Projects</a>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}
+function Hero() {
+  return (
+    <section className="bg-[#0a0a0a] pt-24 pb-20">
+      <Badge>Now in beta</Badge>
+      <h1 className="text-5xl font-black text-white">Dashboard</h1>
+      <p className="text-gray-400 mt-4">Manage your projects with ease.</p>
+      <div className="flex gap-4 mt-8">
+        <Button type="button">Go to Dashboard</Button>
+        <Button type="button" variant="outline">View projects</Button>
+      </div>
+      <p className="text-gray-500 mt-6">Trusted by 50,000+ teams</p>
+    </section>
+  );
+}
+`;
+
+describe('V7.2.6 — accountMenuScore', () => {
+  it('evaluateDesign result includes accountMenuScore field', () => {
+    const r = evaluateDesign(makeInput(AUTH_NAV_CODE));
+    expect(r).toHaveProperty('accountMenuScore');
+  });
+
+  it('accountMenuScore is in range 0–10', () => {
+    const r = evaluateDesign(makeInput(AUTH_NAV_CODE));
+    expect(r.accountMenuScore).toBeGreaterThanOrEqual(0);
+    expect(r.accountMenuScore).toBeLessThanOrEqual(10);
+  });
+
+  it('auth navbar with DropdownMenu + Avatar + Logout gets high accountMenuScore (≥8)', () => {
+    const r = evaluateDesign(makeInput(AUTH_NAV_CODE));
+    expect(r.accountMenuScore).toBeGreaterThanOrEqual(8);
+  });
+
+  it('old-style navbar without DropdownMenu gets low accountMenuScore (≤3)', () => {
+    const r = evaluateDesign(makeInput(OLD_NAV_CODE));
+    expect(r.accountMenuScore).toBeLessThanOrEqual(3);
+  });
+
+  it('missing DropdownMenu emits navigation major issue about DropdownMenu', () => {
+    const r = evaluateDesign(makeInput(OLD_NAV_CODE));
+    const dropdownIssue = r.issues.find(i => i.category === 'navigation' && i.message.includes('DropdownMenu'));
+    expect(dropdownIssue).toBeDefined();
+  });
+
+  it('missing Avatar emits navigation major issue about Avatar', () => {
+    const r = evaluateDesign(makeInput(OLD_NAV_CODE));
+    const avatarIssue = r.issues.find(i => i.category === 'navigation' && i.message.includes('Avatar'));
+    expect(avatarIssue).toBeDefined();
+  });
+
+  it('auth navbar scores higher overall than old-style navbar', () => {
+    const auth = evaluateDesign(makeInput(AUTH_NAV_CODE));
+    const old  = evaluateDesign(makeInput(OLD_NAV_CODE));
+    expect(auth.overallScore).toBeGreaterThan(old.overallScore);
+  });
+
+  it('overall score is still 0–10 with 9-dimension weights', () => {
+    const r = evaluateDesign(makeInput(AUTH_NAV_CODE));
+    expect(r.overallScore).toBeGreaterThanOrEqual(0);
+    expect(r.overallScore).toBeLessThanOrEqual(10);
+  });
+});
+
+// ── V7.2.6 — Auth-aware navbar template registration ─────────────────────────
+
+describe('V7.2.6 — Auth-aware navbar templates (Phase 9)', () => {
+  it('navbar-auth-v1 template exists and contains Avatar + DropdownMenu', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const t = DIVERSITY_TEMPLATES.find(t => t.id === 'navbar-auth-v1');
+    expect(t).toBeDefined();
+    expect(t!.standaloneCode).toContain('Avatar');
+    expect(t!.standaloneCode).toContain('DropdownMenu');
+  });
+
+  it('navbar-auth-v2 template exists and contains Avatar + DropdownMenu', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const t = DIVERSITY_TEMPLATES.find(t => t.id === 'navbar-auth-v2');
+    expect(t).toBeDefined();
+    expect(t!.standaloneCode).toContain('Avatar');
+    expect(t!.standaloneCode).toContain('DropdownMenu');
+  });
+
+  it('navbar-admin-v1 template exists and contains Command', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const t = DIVERSITY_TEMPLATES.find(t => t.id === 'navbar-admin-v1');
+    expect(t).toBeDefined();
+    expect(t!.standaloneCode).toContain('Command');
+  });
+
+  it('navbar-dashboard-v1 template exists and has Avatar + Sheet', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const t = DIVERSITY_TEMPLATES.find(t => t.id === 'navbar-dashboard-v1');
+    expect(t).toBeDefined();
+    expect(t!.standaloneCode).toContain('Avatar');
+    expect(t!.standaloneCode).toContain('Sheet');
+  });
+
+  it('navbar-command-v1 template exists and contains Command', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const t = DIVERSITY_TEMPLATES.find(t => t.id === 'navbar-command-v1');
+    expect(t).toBeDefined();
+    expect(t!.standaloneCode).toContain('Command');
+  });
+
+  it('all V7.2.6 auth templates have priority 15', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const ids = ['navbar-auth-v1', 'navbar-auth-v2', 'navbar-admin-v1', 'navbar-dashboard-v1', 'navbar-command-v1'];
+    for (const id of ids) {
+      const t = DIVERSITY_TEMPLATES.find(t => t.id === id);
+      expect(t, `${id} missing`).toBeDefined();
+      expect(t!.priority).toBe(15);
+    }
+  });
+
+  it('all V7.2.6 auth templates use AvatarFallback', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const ids = ['navbar-auth-v1', 'navbar-auth-v2', 'navbar-admin-v1', 'navbar-dashboard-v1'];
+    for (const id of ids) {
+      const t = DIVERSITY_TEMPLATES.find(t => t.id === id)!;
+      expect(t.standaloneCode, `${id} missing AvatarFallback`).toContain('AvatarFallback');
+    }
+  });
+
+  it('all V7.2.6 auth templates include logout/sign-out action', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const ids = ['navbar-auth-v1', 'navbar-auth-v2', 'navbar-admin-v1', 'navbar-dashboard-v1'];
+    for (const id of ids) {
+      const t = DIVERSITY_TEMPLATES.find(t => t.id === id)!;
+      expect(t.standaloneCode, `${id} missing logout`).toMatch(/logout|sign.?out|log.?out/i);
+    }
+  });
+
+  it('all V7.2.6 auth templates use Sheet for mobile', async () => {
+    const { DIVERSITY_TEMPLATES } = await import('../../components/diversity-templates.js');
+    const ids = ['navbar-auth-v1', 'navbar-auth-v2', 'navbar-admin-v1', 'navbar-dashboard-v1', 'navbar-command-v1'];
+    for (const id of ids) {
+      const t = DIVERSITY_TEMPLATES.find(t => t.id === id)!;
+      expect(t.standaloneCode, `${id} missing Sheet`).toContain('Sheet');
+    }
+  });
+});
+
+// ── V7.2.6 — Recommendation engine auth-state variants ───────────────────────
+
+describe('V7.2.6 — recommendBestComponents auth-state sections', () => {
+  it('navbar-authenticated primary includes Avatar', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-authenticated', dna: {} });
+    expect(r.primary).toContain('Avatar');
+  });
+
+  it('navbar-authenticated primary includes DropdownMenu', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-authenticated', dna: {} });
+    expect(r.primary).toContain('DropdownMenu');
+  });
+
+  it('navbar-dashboard secondary includes Command', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-dashboard', dna: {} });
+    expect(r.secondary).toContain('Command');
+  });
+
+  it('navbar-admin primary includes Command', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-admin', dna: {} });
+    expect(r.primary).toContain('Command');
+  });
+
+  it('navbar-guest primary does not include Avatar', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-guest', dna: {} });
+    expect(r.primary).not.toContain('Avatar');
+  });
+
+  it('navbar-guest primary includes NavigationMenu', () => {
+    const r = recommendBestComponents({ industry: [], sectionType: 'navbar-guest', dna: {} });
+    expect(r.primary).toContain('NavigationMenu');
   });
 });

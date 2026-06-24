@@ -1,6 +1,6 @@
-// ── V7.2.5 Navigation Quality Metrics ─────────────────────────────────────────
-// Tracks NavigationMenu usage, Sheet mobile menus, and accessibility compliance
-// per build. Feeds into GET /api/telemetry/quality.
+// ── V7.2.6 Navigation Quality Metrics ─────────────────────────────────────────
+// Tracks NavigationMenu, Sheet, Avatar, DropdownMenu, Command usage per build.
+// Feeds into GET /api/telemetry/quality → navigationQuality.
 
 export interface NavigationBuildRecord {
   score:                number;
@@ -9,6 +9,11 @@ export interface NavigationBuildRecord {
   hasAriaLabel:         boolean;
   hasFocusVisible:      boolean;
   hasMobileToggle:      boolean;
+  // V7.2.6 auth-aware intelligence fields
+  avatarUsage:          boolean;
+  dropdownUsage:        boolean;
+  commandUsage:         boolean;
+  accountMenuScore:     number;
   recordedAt:           number;
 }
 
@@ -27,6 +32,10 @@ export function getNavigationQualityMetrics() {
     ? Math.round(recent.reduce((s, r) => s + r.score, 0) / total * 10) / 10
     : 0;
 
+  const avgAccountMenuScore = total > 0
+    ? Math.round(recent.reduce((s, r) => s + (r.accountMenuScore ?? 0), 0) / total * 10) / 10
+    : 0;
+
   const pct = (key: keyof NavigationBuildRecord) =>
     total > 0 ? Math.round(recent.filter(r => r[key]).length / total * 100) : 0;
 
@@ -37,6 +46,13 @@ export function getNavigationQualityMetrics() {
     accessibilityCompliance:  pct('hasAriaLabel'),
     focusVisibleCompliance:   pct('hasFocusVisible'),
     mobileToggleCompliance:   pct('hasMobileToggle'),
+    // V7.2.6 auth-aware intelligence
+    navigationIntelligence: {
+      avatarUsage:          pct('avatarUsage'),
+      dropdownUsage:        pct('dropdownUsage'),
+      commandUsage:         pct('commandUsage'),
+      accountMenuScore:     avgAccountMenuScore,
+    },
     totalBuildsTracked:       _navHistory.length,
     recentScores:             recent.slice(-5).map(r => r.score),
   };

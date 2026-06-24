@@ -22,6 +22,7 @@ export interface EvaluationResult {
   shadcnScore: number;
   coverageScore: number;
   navigationScore: number;
+  accountMenuScore: number;
   consistencyScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
@@ -449,15 +450,59 @@ function scoreConsistency(code: string): { score: number; issues: EvaluationIssu
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.5: navigation added; weights redistributed to sum to 1.00
+// V7.2.6: accountMenu score — DropdownMenu + Avatar + Logout pattern (0–10)
+function scoreAccountMenu(code: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+  let score = 0;
+
+  // 1. DropdownMenu present (+3) — no custom profile menus
+  if (/<DropdownMenu[\s>]/.test(code)) {
+    score += 3;
+  } else {
+    issues.push({ category: 'navigation', severity: 'major', message: 'No <DropdownMenu> for user profile menu — replace any custom account dropdown with <DropdownMenu><DropdownMenuTrigger><DropdownMenuContent> for accessible, keyboard-navigable menus' });
+  }
+
+  // 2. Avatar component present (+3)
+  if (/<Avatar[\s>]/.test(code)) {
+    score += 3;
+  } else {
+    issues.push({ category: 'navigation', severity: 'major', message: 'No <Avatar> component found in navigation — use <Avatar><AvatarFallback>JD</AvatarFallback></Avatar> for authenticated user identity; never use a raw img tag for avatars' });
+  }
+
+  // 3. AvatarFallback with initials (+1)
+  if (/<AvatarFallback[\s>]/.test(code)) {
+    score += 1;
+  } else if (/<Avatar[\s>]/.test(code)) {
+    issues.push({ category: 'navigation', severity: 'minor', message: 'Avatar is missing <AvatarFallback> — add initials (e.g. "JD") inside <AvatarFallback> so users without profile images see a name-based placeholder' });
+  }
+
+  // 4. DropdownMenuTrigger properly wraps Avatar (+1)
+  if (/<DropdownMenuTrigger[\s>]/.test(code)) {
+    score += 1;
+  } else if (/<DropdownMenu[\s>]/.test(code)) {
+    issues.push({ category: 'navigation', severity: 'minor', message: 'DropdownMenu is missing <DropdownMenuTrigger> — wrap the Avatar in <DropdownMenuTrigger asChild> to make it the accessible trigger button' });
+  }
+
+  // 5. Logout / Sign out action exists (+2)
+  if (/logout|sign.?out|log.?out/i.test(code)) {
+    score += 2;
+  } else if (/<DropdownMenu[\s>]/.test(code)) {
+    issues.push({ category: 'navigation', severity: 'major', message: 'No logout action in DropdownMenu — add <DropdownMenuItem className="text-red-400">Sign out</DropdownMenuItem> as the last item in the authenticated user menu' });
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+// V7.2.6: weights redistributed to sum to 1.00 (9 dimensions)
 const WEIGHTS = {
-  hero:         0.22,
-  layout:       0.18,
-  cta:          0.14,
-  accessibility: 0.18,
-  shadcn:       0.08,
-  coverage:     0.07,
-  navigation:   0.08,
+  hero:         0.20,
+  layout:       0.17,
+  cta:          0.13,
+  accessibility: 0.17,
+  shadcn:       0.07,
+  coverage:     0.06,
+  navigation:   0.10,
+  accountMenu:  0.05,
   consistency:  0.05,
 };
 
@@ -471,18 +516,20 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const shadcn       = scoreShadcn(code);
   const coverage     = scoreCoverage(code);
   const navigation   = scoreNavigation(code);
+  const accountMenu  = scoreAccountMenu(code);
   const consistency  = scoreConsistency(code);
 
   const overallScore =
     Math.round(
-      (hero.score         * WEIGHTS.hero +
-        layout.score      * WEIGHTS.layout +
-        cta.score         * WEIGHTS.cta +
+      (hero.score           * WEIGHTS.hero +
+        layout.score        * WEIGHTS.layout +
+        cta.score           * WEIGHTS.cta +
         accessibility.score * WEIGHTS.accessibility +
-        shadcn.score      * WEIGHTS.shadcn +
-        coverage.score    * WEIGHTS.coverage +
-        navigation.score  * WEIGHTS.navigation +
-        consistency.score * WEIGHTS.consistency) * 10
+        shadcn.score        * WEIGHTS.shadcn +
+        coverage.score      * WEIGHTS.coverage +
+        navigation.score    * WEIGHTS.navigation +
+        accountMenu.score   * WEIGHTS.accountMenu +
+        consistency.score   * WEIGHTS.consistency) * 10
     ) / 10;
 
   const allIssues = [
@@ -493,6 +540,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...shadcn.issues,
     ...coverage.issues,
     ...navigation.issues,
+    ...accountMenu.issues,
     ...consistency.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
@@ -501,16 +549,17 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
 
   return {
     overallScore,
-    heroScore:         hero.score,
-    layoutScore:       layout.score,
-    ctaScore:          cta.score,
+    heroScore:          hero.score,
+    layoutScore:        layout.score,
+    ctaScore:           cta.score,
     accessibilityScore: accessibility.score,
-    shadcnScore:       shadcn.score,
-    coverageScore:     coverage.score,
-    navigationScore:   navigation.score,
-    consistencyScore:  consistency.score,
-    coveragePercent:   coverage.coveragePercent,
-    componentUsage:    coverage.componentUsage,
-    issues:            allIssues,
+    shadcnScore:        shadcn.score,
+    coverageScore:      coverage.score,
+    navigationScore:    navigation.score,
+    accountMenuScore:   accountMenu.score,
+    consistencyScore:   consistency.score,
+    coveragePercent:    coverage.coveragePercent,
+    componentUsage:     coverage.componentUsage,
+    issues:             allIssues,
   };
 }

@@ -86,6 +86,26 @@ const SECTION_DEFAULTS: Record<string, RecommendationResult> = {
     secondary: ['NavigationMenuTrigger', 'NavigationMenuContent', 'Badge', 'Separator'],
     rationale: 'Navbar: ALWAYS use <NavigationMenu><NavigationMenuList><NavigationMenuItem> for desktop links — NEVER raw divs. ALWAYS use <Sheet><SheetContent side="left"> for mobile menu. Add aria-label="Main navigation" to <nav>.',
   },
+  'navbar-guest': {
+    primary:   ['NavigationMenu', 'NavigationMenuList', 'NavigationMenuItem', 'NavigationMenuLink', 'Button', 'Sheet'],
+    secondary: ['Badge', 'Separator'],
+    rationale: 'Guest navbar: <NavigationMenu> for desktop links, <Button> Login + Get Started CTAs, <Sheet> mobile menu.',
+  },
+  'navbar-authenticated': {
+    primary:   ['NavigationMenu', 'Avatar', 'AvatarFallback', 'DropdownMenu', 'DropdownMenuTrigger', 'DropdownMenuContent', 'DropdownMenuItem', 'Sheet'],
+    secondary: ['NavigationMenuTrigger', 'NavigationMenuContent', 'Badge', 'Separator'],
+    rationale: 'Authenticated navbar: wrap Avatar in DropdownMenuTrigger for profile menu with Profile/Settings/Billing/Logout items. NEVER use a custom dropdown — always use <DropdownMenu>.',
+  },
+  'navbar-dashboard': {
+    primary:   ['NavigationMenu', 'Avatar', 'AvatarFallback', 'DropdownMenu', 'DropdownMenuTrigger', 'DropdownMenuContent', 'DropdownMenuItem', 'Sheet'],
+    secondary: ['Badge', 'Separator', 'Command'],
+    rationale: 'Dashboard navbar: same auth pattern plus <Sheet> side panel for workspace switcher and optional <Command> for ⌘K search.',
+  },
+  'navbar-admin': {
+    primary:   ['NavigationMenu', 'Avatar', 'AvatarFallback', 'DropdownMenu', 'DropdownMenuTrigger', 'DropdownMenuContent', 'DropdownMenuItem', 'Command', 'Badge', 'Sheet'],
+    secondary: ['Separator', 'Tooltip'],
+    rationale: 'Admin navbar: all auth components plus <Command> for global search/actions and <Badge> for environment indicator (e.g. "Admin" or "Staging").',
+  },
   footer: {
     primary:   ['Separator'],
     secondary: ['Button', 'Input'],

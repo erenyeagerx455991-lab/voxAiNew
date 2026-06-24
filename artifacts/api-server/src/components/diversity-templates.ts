@@ -1711,6 +1711,478 @@ export const DIVERSITY_TEMPLATES: any[] = [
 }`,
   },
 
+  // ══════════════════════════════════════════════════════════════════
+  // NAVBAR AUTH V7.2.6 — 5 auth-aware navbar templates
+  // DNA Map: Vercel→auth-v1, GitHub→auth-v2, Stripe→admin-v1, Linear→dashboard-v1, Notion→command-v1
+  // All use: Avatar + AvatarFallback + DropdownMenu + Sheet (no custom menus)
+  // ══════════════════════════════════════════════════════════════════
+
+  {
+    id: 'navbar-auth-v1', name: 'Navbar Auth Authenticated (Vercel DNA)', category: 'navbar',
+    industries: ['saas', 'startup', 'ai', 'developer', 'generic'],
+    tags: ['auth', 'avatar', 'dropdown-menu', 'sheet-mobile', 'vercel-dna', 'authenticated', 'a11y'],
+    description: 'Vercel-DNA authenticated navbar: NavigationMenu links + Avatar/DropdownMenu profile menu (Profile/Settings/Billing/Logout) + Sheet mobile. No custom menus.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const userInitials = 'NAV_USER_INITIALS';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-8">
+          <span className="text-white font-bold text-sm tracking-tight">SITE_NAME</span>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DASHBOARD</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROJECTS</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_ANALYTICS</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+                <Avatar className="w-8 h-8 cursor-pointer">
+                  <AvatarFallback className="bg-white/10 text-white text-xs font-semibold">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SETTINGS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_BILLING</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_TEAM</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-sm tracking-tight mb-5 px-4 block">SITE_NAME</span>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DASHBOARD</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROJECTS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_ANALYTICS</a>
+            <Separator className="my-2 bg-white/8" />
+            <div className="px-4 flex items-center gap-3 py-2">
+              <Avatar className="w-7 h-7">
+                <AvatarFallback className="bg-white/10 text-white text-xs font-semibold">{userInitials}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-white text-xs font-medium">NAV_USER_NAME</p>
+                <p className="text-gray-500 text-[11px]">NAV_USER_ROLE</p>
+              </div>
+            </div>
+            <a href="#" className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">Sign out</a>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-auth-v2', name: 'Navbar Auth + Badge + Notifications (GitHub DNA)', category: 'navbar',
+    industries: ['developer', 'devtools', 'saas', 'ai', 'startup'],
+    tags: ['auth', 'avatar', 'dropdown-menu', 'notifications', 'badge', 'github-dna', 'sheet-mobile', 'a11y'],
+    description: 'GitHub-DNA authenticated navbar: NavigationMenu + notification Badge + Avatar/DropdownMenu (Profile/Repos/Settings/Support/Logout) + Sheet mobile.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const userInitials = 'NAV_USER_INITIALS';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#0d1117]/98 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-6">
+          <span className="text-white font-bold text-sm">SITE_NAME</span>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuTrigger className="text-gray-400 hover:text-white bg-transparent hover:bg-white/5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-lg">NAV_PRODUCT</NavigationMenuTrigger>
+                  <NavigationMenuContent className="w-[240px]">
+                    <div className="p-3">
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_FEATURE_1</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 mb-1 focus-visible:ring-2 focus-visible:ring-white/40">NAV_FEATURE_2</NavigationMenuLink>
+                      <NavigationMenuLink href="#" className="text-sm text-gray-300 focus-visible:ring-2 focus-visible:ring-white/40">NAV_FEATURE_3</NavigationMenuLink>
+                    </div>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_DOCS</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Notifications" className="relative hidden md:flex w-8 h-8 items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base">🔔</span>
+            <Badge className="absolute -top-0.5 -right-0.5 w-4 h-4 flex items-center justify-center p-0 text-[9px] bg-indigo-500 text-white border-0 rounded-full">NAV_NOTIF_COUNT</Badge>
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full ml-1">
+                <Avatar className="w-7 h-7 cursor-pointer ring-2 ring-white/10 hover:ring-white/30 transition-all">
+                  <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[11px] font-bold">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-[#161b22] border border-white/10 shadow-2xl rounded-lg p-1">
+              <div className="px-3 py-2 mb-1">
+                <p className="text-white text-xs font-semibold">NAV_USER_NAME</p>
+                <p className="text-gray-500 text-[11px]">NAV_USER_EMAIL</p>
+              </div>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_YOUR_PROFILE</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_YOUR_REPOS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SETTINGS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SUPPORT</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0d1117] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-sm mb-5 px-4 block">SITE_NAME</span>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRODUCT</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DOCS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PRICING</a>
+            <Separator className="my-2 bg-white/8" />
+            <div className="px-4 flex items-center gap-3 py-2">
+              <Avatar className="w-7 h-7">
+                <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-[11px] font-bold">{userInitials}</AvatarFallback>
+              </Avatar>
+              <p className="text-white text-xs font-medium">NAV_USER_NAME</p>
+            </div>
+            <a href="#" className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">Sign out</a>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-admin-v1', name: 'Navbar Admin (Stripe DNA)', category: 'navbar',
+    industries: ['fintech', 'saas', 'enterprise', 'developer'],
+    tags: ['admin', 'avatar', 'dropdown-menu', 'command', 'badge', 'stripe-dna', 'sheet-mobile', 'a11y'],
+    description: 'Stripe-DNA admin navbar: NavigationMenu + Command global search + Admin Badge + Avatar/DropdownMenu (Dashboard/Users/Analytics/Audit/Logout) + Sheet mobile.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [commandOpen, setCommandOpen] = React.useState(false);
+  const userInitials = 'NAV_ADMIN_INITIALS';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <span className="text-white font-bold text-sm tracking-tight">SITE_NAME</span>
+            <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/25 text-[10px] px-2 py-0.5 font-semibold">NAV_ADMIN_BADGE</Badge>
+          </div>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DASHBOARD</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_USERS</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_ANALYTICS</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_AUDIT_LOGS</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Open command palette" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-3 py-1.5 text-gray-500 hover:text-gray-300 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">
+            <span>NAV_SEARCH_PLACEHOLDER</span>
+            <span className="font-mono bg-white/8 px-1 rounded text-[10px]">⌘K</span>
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Open admin menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+                <Avatar className="w-8 h-8 cursor-pointer ring-2 ring-amber-500/30 hover:ring-amber-500/60 transition-all">
+                  <AvatarFallback className="bg-amber-500/20 text-amber-400 text-xs font-bold">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-2xl rounded-lg p-1">
+              <div className="px-3 py-2">
+                <p className="text-white text-xs font-semibold">NAV_ADMIN_NAME</p>
+                <Badge className="mt-1 bg-amber-500/15 text-amber-400 border-amber-500/25 text-[9px] px-1.5 py-0">NAV_ADMIN_BADGE</Badge>
+              </div>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_DASHBOARD</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SETTINGS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_AUDIT_LOGS</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      {commandOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-start justify-center pt-24" onClick={() => setCommandOpen(false)}>
+          <div className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <Command className="bg-[#111] border border-white/15 rounded-xl shadow-2xl">
+              <CommandInput placeholder="NAV_COMMAND_PLACEHOLDER" className="text-white" autoFocus />
+              <CommandList>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8">NAV_CMD_USERS</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8">NAV_CMD_ANALYTICS</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8">NAV_CMD_SETTINGS</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8">NAV_CMD_AUDIT</CommandItem>
+              </CommandList>
+            </Command>
+          </div>
+        </div>
+      )}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-5 px-4">
+              <span className="text-white font-bold text-sm">SITE_NAME</span>
+              <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/25 text-[9px] px-1.5">NAV_ADMIN_BADGE</Badge>
+            </div>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_DASHBOARD</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_USERS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_ANALYTICS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_AUDIT_LOGS</a>
+            <Separator className="my-2 bg-white/8" />
+            <a href="#" className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">Sign out</a>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-dashboard-v1', name: 'Navbar Dashboard Workspace (Linear DNA)', category: 'navbar',
+    industries: ['saas', 'ai', 'developer', 'startup', 'enterprise'],
+    tags: ['dashboard', 'avatar', 'dropdown-menu', 'workspace-switcher', 'sheet-mobile', 'linear-dna', 'a11y'],
+    description: 'Linear-DNA dashboard navbar: workspace switcher + NavigationMenu + Avatar/DropdownMenu (Profile/Settings/Billing/Team/Logout) + Sheet mobile side panel.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const userInitials = 'NAV_USER_INITIALS';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0a] border-b border-white/6">
+      <div className="max-w-[1400px] mx-auto px-4 flex items-center justify-between h-12">
+        <div className="flex items-center gap-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Switch workspace" className="flex items-center gap-2 px-2 py-1.5 hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+                <div className="w-5 h-5 rounded bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold" aria-hidden="true">NAV_WS_ICON</div>
+                <span className="text-white text-sm font-medium">NAV_WORKSPACE</span>
+                <span aria-hidden="true" className="text-gray-600 text-xs">▾</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_WORKSPACE_1</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_WORKSPACE_2</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_CREATE_WORKSPACE</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Separator orientation="vertical" className="h-5 bg-white/8" />
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_INBOX</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROJECTS</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-1.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_VIEWS</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+                <Avatar className="w-7 h-7 cursor-pointer">
+                  <AvatarFallback className="bg-indigo-500/30 text-indigo-300 text-[11px] font-semibold">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-xl rounded-lg p-1">
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SETTINGS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_BILLING</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_TEAM</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-8 h-8 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-sm font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-5 px-4">
+              <div className="w-5 h-5 rounded bg-indigo-500 flex items-center justify-center text-[10px] text-white font-bold" aria-hidden="true">NAV_WS_ICON</div>
+              <span className="text-white text-sm font-medium">NAV_WORKSPACE</span>
+            </div>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_INBOX</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROJECTS</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_VIEWS</a>
+            <Separator className="my-2 bg-white/8" />
+            <div className="px-4 flex items-center gap-3 py-2">
+              <Avatar className="w-6 h-6">
+                <AvatarFallback className="bg-indigo-500/30 text-indigo-300 text-[10px] font-semibold">{userInitials}</AvatarFallback>
+              </Avatar>
+              <p className="text-white text-xs font-medium">NAV_USER_NAME</p>
+            </div>
+            <a href="#" className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">Sign out</a>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
+  {
+    id: 'navbar-command-v1', name: 'Navbar Command Palette (Notion DNA)', category: 'navbar',
+    industries: ['saas', 'ai', 'developer', 'startup', 'generic'],
+    tags: ['command-palette', 'avatar', 'dropdown-menu', 'command', 'notion-dna', 'sheet-mobile', 'a11y'],
+    description: 'Notion-DNA navbar: prominent Command palette (⌘K) + NavigationMenu + Avatar/DropdownMenu (Profile/Settings/Support/Logout) + Sheet mobile. For SaaS, dashboards, dev tools.',
+    priority: 15,
+    standaloneCode: `function Navbar() {
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [commandOpen, setCommandOpen] = React.useState(false);
+  const userInitials = 'NAV_USER_INITIALS';
+  return (
+    <nav aria-label="Main navigation" className="fixed top-0 left-0 right-0 z-50 bg-white/3 backdrop-blur-xl border-b border-white/8">
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between h-14">
+        <div className="flex items-center gap-6">
+          <span className="text-white font-bold text-sm">SITE_NAME</span>
+          <div className="hidden md:flex">
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_HOME</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PAGES</NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink href="#" className="px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_SHARED</NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" aria-label="Open search and commands" onClick={() => setCommandOpen(true)} className="hidden md:flex items-center gap-3 bg-white/5 hover:bg-white/8 border border-white/10 rounded-lg px-4 py-2 text-gray-500 hover:text-gray-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 w-56">
+            <span aria-hidden="true" className="text-xs">🔍</span>
+            <span className="flex-1 text-left text-xs">NAV_SEARCH_EVERYTHING</span>
+            <kbd className="font-mono bg-white/8 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">⌘K</kbd>
+          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button type="button" aria-label="Open user menu" className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full">
+                <Avatar className="w-8 h-8 cursor-pointer">
+                  <AvatarFallback className="bg-white/10 text-white text-xs font-medium">{userInitials}</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-[#111] border border-white/10 shadow-2xl rounded-xl p-1">
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_PROFILE</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SETTINGS</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_SUPPORT</DropdownMenuItem>
+              <DropdownMenuItem className="text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">NAV_KEYBOARD_SHORTCUTS</DropdownMenuItem>
+              <Separator className="my-1 bg-white/8" />
+              <DropdownMenuItem className="text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg px-3 py-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/40">Sign out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button type="button" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(o => !o)} className="md:hidden w-9 h-9 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40 transition-colors">
+            <span aria-hidden="true" className="text-base font-bold">☰</span>
+          </button>
+        </div>
+      </div>
+      {commandOpen && (
+        <div className="fixed inset-0 z-[60] bg-black/50 flex items-start justify-center pt-24" onClick={() => setCommandOpen(false)}>
+          <div className="w-full max-w-xl" onClick={e => e.stopPropagation()}>
+            <Command className="bg-[#111] border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+              <CommandInput placeholder="NAV_COMMAND_SEARCH_PLACEHOLDER" className="text-white border-b border-white/8" autoFocus />
+              <CommandList className="max-h-72">
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8 px-4 py-2.5">NAV_CMD_JUMP_PAGES</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8 px-4 py-2.5">NAV_CMD_SEARCH_DOCS</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8 px-4 py-2.5">NAV_CMD_SETTINGS</CommandItem>
+                <CommandItem onSelect={() => setCommandOpen(false)} className="text-gray-300 focus:bg-white/8 px-4 py-2.5">NAV_CMD_NEW_PAGE</CommandItem>
+              </CommandList>
+            </Command>
+          </div>
+        </div>
+      )}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetContent side="left" className="bg-[#0a0a0a] border-r border-white/8 w-[280px] pt-12">
+          <div className="flex flex-col gap-1">
+            <span className="text-white font-bold text-sm mb-5 px-4 block">SITE_NAME</span>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_HOME</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_PAGES</a>
+            <a href="#" className="px-4 py-2.5 text-gray-300 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">NAV_SHARED</a>
+            <Separator className="my-2 bg-white/8" />
+            <div className="px-4 flex items-center gap-3 py-2">
+              <Avatar className="w-7 h-7">
+                <AvatarFallback className="bg-white/10 text-white text-xs">{userInitials}</AvatarFallback>
+              </Avatar>
+              <p className="text-white text-xs font-medium">NAV_USER_NAME</p>
+            </div>
+            <a href="#" className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40">Sign out</a>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </nav>
+  );
+}`,
+  },
+
   {
     id: 'testimonials-data-v1', name: 'Testimonials Metrics + Social Proof', category: 'testimonials',
     industries: ['saas', 'enterprise', 'fintech', 'ai', 'startup'], tags: ['metrics', 'data', 'social-proof'],
