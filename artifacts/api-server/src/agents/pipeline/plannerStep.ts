@@ -10,6 +10,8 @@ import {
 import { serverMatchTemplate, buildTemplateContextServer } from "../templates/templateAgent.js";
 import type { PageBlueprint } from "../types.js";
 import type { PlannerOutput, PipelineKeys } from "./pipelineTypes.js";
+import { classifyAuthState } from "../../auth/authStateClassifier.js";
+import { recordAuthRouting } from "../../auth/authRoutingMetrics.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("PlannerStep");
@@ -132,6 +134,21 @@ export async function runPlannerStep(
     ? buildDNAContextString(dnaComposition, dnaOwnership, dnaTheme)
     : '';
 
+  const authClassification = classifyAuthState(prompt, dnaComposition as unknown as Record<string, number>);
+  recordAuthRouting(authClassification);
+  log.info("AUTH_STATE_CLASSIFIED", {
+    authState: authClassification.authState,
+    navbarVariant: authClassification.navbarVariant,
+    confidence: authClassification.confidence,
+  });
+  sse(res, {
+    type: "auth_state_classified",
+    authState: authClassification.authState,
+    navbarVariant: authClassification.navbarVariant,
+    confidence: authClassification.confidence,
+    allScores: authClassification.allScores,
+  });
+
   return {
     cleanPlan,
     briefText,
@@ -153,5 +170,8 @@ export async function runPlannerStep(
       databaseTables: tplMatch.template.databaseTables,
       features: tplMatch.template.features,
     },
+    authState: authClassification.authState,
+    navbarVariant: authClassification.navbarVariant,
+    authConfidence: authClassification.confidence,
   };
 }

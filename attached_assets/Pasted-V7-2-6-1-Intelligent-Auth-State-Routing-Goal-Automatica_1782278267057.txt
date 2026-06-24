@@ -1,0 +1,295 @@
+V7.2.6.1 — Intelligent Auth State Routing
+
+Goal
+
+Automatically detect user intent from prompt and select the correct navbar architecture before code generation.
+
+Current:
+
+User Prompt
+↓
+Planner
+↓
+Generic Navbar
+
+Target:
+
+User Prompt
+↓
+Intent Detection
+↓
+Auth State Detection
+↓
+Correct Navbar Variant
+↓
+Generation
+
+---
+
+Phase 1 — Auth Intent Classifier
+
+Create auth state classifier.
+
+Possible states:
+
+guest
+authenticated
+dashboard
+admin
+
+Default:
+
+guest
+
+---
+
+Phase 2 — Prompt Signal Detection
+
+Guest Signals:
+
+landing page
+marketing site
+startup
+agency
+portfolio
+restaurant
+ecommerce
+
+Route:
+
+navbar-guest
+
+---
+
+Authenticated Signals:
+
+account
+profile
+workspace
+team
+member area
+client portal
+user dashboard
+
+Route:
+
+navbar-authenticated
+
+---
+
+Dashboard Signals:
+
+analytics
+saas dashboard
+crm
+erp
+project management
+productivity app
+workspace
+
+Route:
+
+navbar-dashboard
+
+---
+
+Admin Signals:
+
+admin panel
+admin dashboard
+manage users
+role management
+audit logs
+system settings
+moderation
+
+Route:
+
+navbar-admin
+
+---
+
+Phase 3 — Confidence System
+
+Assign confidence score.
+
+Example:
+
+admin dashboard for managing users
+
+admin:
+0.95
+
+dashboard:
+0.70
+
+authenticated:
+0.40
+
+winner:
+
+admin
+
+---
+
+Phase 4 — Planner Output Extension
+
+Planner Blueprint:
+
+{
+authState: "admin",
+navbarVariant: "navbar-admin-v1"
+}
+
+---
+
+Phase 5 — DNA Mapping
+
+Linear:
+navbar-dashboard-v1
+
+Stripe:
+navbar-admin-v1
+
+Vercel:
+navbar-auth-v1
+
+GitHub:
+navbar-auth-v2
+
+Notion:
+navbar-command-v1
+
+---
+
+Phase 6 — Component Recommendations
+
+recommendBestComponents()
+
+if authState === "guest"
+
+NavigationMenu
+Button
+
+if authState === "authenticated"
+
+NavigationMenu
+Avatar
+DropdownMenu
+
+if authState === "dashboard"
+
+NavigationMenu
+Avatar
+DropdownMenu
+Sheet
+
+if authState === "admin"
+
+NavigationMenu
+Avatar
+DropdownMenu
+Command
+Badge
+
+---
+
+Phase 7 — Design RAG Integration
+
+Auth state becomes retrieval signal.
+
+Example:
+
+admin
+
+Retrieve:
+
+admin navbar refs
+dashboard refs
+audit-log refs
+
+Avoid:
+
+marketing navbar refs
+
+---
+
+Phase 8 — Evaluator Upgrade
+
+New check:
+
+authNavbarAlignment
+
+Questions:
+
+Did prompt imply admin?
+
+Did output generate admin navbar?
+
+Did output include Command?
+
+Did output include Avatar menu?
+
+Score:
+
+0–10
+
+Weight:
+
+0.04
+
+---
+
+Phase 9 — Telemetry
+
+Track:
+
+guestSelections
+authenticatedSelections
+dashboardSelections
+adminSelections
+
+authRoutingAccuracy
+
+navbarVariantUsage
+
+topWinningNavbar
+
+Expose:
+
+GET /api/telemetry/quality
+
+authRouting
+
+---
+
+Phase 10 — Success Criteria
+
+Routing Accuracy:
+≥95%
+
+Wrong Navbar Selection:
+<5%
+
+Admin Prompt → Admin Navbar:
+100%
+
+Dashboard Prompt → Dashboard Navbar:
+100%
+
+Auth Prompts → Avatar + DropdownMenu:
+≥90%
+
+Expected Impact:
+
+Navigation Quality:
+9.2 → 9.5
+
+Planner Intelligence:
+9.0 → 9.6
+
+Evaluator Score:
++0.2 to +0.4
+
+Overall Quality:
+9.2 → 9.4+

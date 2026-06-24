@@ -23,6 +23,9 @@ export interface PlannerOutput {
     databaseTables: string[];
     features: string[];
   };
+  authState: string;
+  navbarVariant: string;
+  authConfidence: number;
 }
 
 export interface ArchitectureOutput {

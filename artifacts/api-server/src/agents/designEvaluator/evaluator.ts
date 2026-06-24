@@ -5,10 +5,11 @@ export interface EvaluationInput {
   code: string;
   sectionOrder: string[];
   designDNA: DesignDNA;
+  authState?: string;
 }
 
 export interface EvaluationIssue {
-  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation';
+  category: 'hero' | 'layout' | 'cta' | 'accessibility' | 'shadcn' | 'consistency' | 'coverage' | 'navigation' | 'auth-routing';
   severity: 'critical' | 'major' | 'minor';
   message: string;
 }
@@ -23,6 +24,7 @@ export interface EvaluationResult {
   coverageScore: number;
   navigationScore: number;
   accountMenuScore: number;
+  authNavbarAlignmentScore: number;
   consistencyScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
@@ -493,43 +495,95 @@ function scoreAccountMenu(code: string): { score: number; issues: EvaluationIssu
   return { score: Math.min(10, score), issues };
 }
 
-// V7.2.6: weights redistributed to sum to 1.00 (9 dimensions)
+// V7.2.6.1: scoreAuthNavbarAlignment — checks if output navbar matches detected auth intent (0–10)
+function scoreAuthNavbarAlignment(code: string, authState?: string): { score: number; issues: EvaluationIssue[] } {
+  const issues: EvaluationIssue[] = [];
+
+  if (!authState || authState === 'guest') {
+    // Guest: having auth components is acceptable (generous score)
+    return { score: 7, issues: [] };
+  }
+
+  let score = 0;
+
+  // All authenticated states: Avatar + DropdownMenu required
+  if (/<Avatar[\s>]/.test(code)) {
+    score += 3;
+  } else {
+    issues.push({ category: 'auth-routing', severity: 'major', message: `Auth state is "${authState}" but no <Avatar> found — authenticated navbars must display user identity via <Avatar><AvatarFallback>JD</AvatarFallback></Avatar>` });
+  }
+
+  if (/<DropdownMenu[\s>]/.test(code)) {
+    score += 3;
+  } else {
+    issues.push({ category: 'auth-routing', severity: 'major', message: `Auth state is "${authState}" but no <DropdownMenu> found — wrap Avatar in <DropdownMenuTrigger> for the authenticated profile dropdown` });
+  }
+
+  // Dashboard + admin: Sheet required for workspace/mobile panel
+  if (authState === 'dashboard' || authState === 'admin') {
+    if (/<Sheet[\s>]/.test(code)) {
+      score += 2;
+    } else {
+      issues.push({ category: 'auth-routing', severity: 'minor', message: `${authState.charAt(0).toUpperCase() + authState.slice(1)} navbar should include <Sheet> for the workspace panel or mobile drawer` });
+    }
+  } else {
+    score += 2; // authenticated state: Sheet optional
+  }
+
+  // Admin only: Command palette required
+  if (authState === 'admin') {
+    if (/<Command[\s>]/.test(code)) {
+      score += 2;
+    } else {
+      issues.push({ category: 'auth-routing', severity: 'major', message: 'Admin navbar is missing <Command> palette (⌘K) — admin users expect fast keyboard-driven global search and actions' });
+    }
+  } else {
+    score += 2; // non-admin: Command not required
+  }
+
+  return { score: Math.min(10, score), issues };
+}
+
+// V7.2.6.1: weights redistributed to sum to 1.00 (10 dimensions)
 const WEIGHTS = {
-  hero:         0.20,
-  layout:       0.17,
-  cta:          0.13,
-  accessibility: 0.17,
-  shadcn:       0.07,
-  coverage:     0.06,
-  navigation:   0.10,
-  accountMenu:  0.05,
-  consistency:  0.05,
+  hero:                  0.19,
+  layout:                0.16,
+  cta:                   0.12,
+  accessibility:         0.16,
+  shadcn:                0.07,
+  coverage:              0.06,
+  navigation:            0.10,
+  accountMenu:           0.05,
+  authNavbarAlignment:   0.04,
+  consistency:           0.05,
 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
-  const { code, sectionOrder } = input;
+  const { code, sectionOrder, authState } = input;
 
-  const hero         = scoreHero(code, sectionOrder);
-  const layout       = scoreLayout(code, sectionOrder);
-  const cta          = scoreCTA(code);
-  const accessibility = scoreAccessibility(code);
-  const shadcn       = scoreShadcn(code);
-  const coverage     = scoreCoverage(code);
-  const navigation   = scoreNavigation(code);
-  const accountMenu  = scoreAccountMenu(code);
-  const consistency  = scoreConsistency(code);
+  const hero               = scoreHero(code, sectionOrder);
+  const layout             = scoreLayout(code, sectionOrder);
+  const cta                = scoreCTA(code);
+  const accessibility      = scoreAccessibility(code);
+  const shadcn             = scoreShadcn(code);
+  const coverage           = scoreCoverage(code);
+  const navigation         = scoreNavigation(code);
+  const accountMenu        = scoreAccountMenu(code);
+  const authNavbarAlignment = scoreAuthNavbarAlignment(code, authState);
+  const consistency        = scoreConsistency(code);
 
   const overallScore =
     Math.round(
-      (hero.score           * WEIGHTS.hero +
-        layout.score        * WEIGHTS.layout +
-        cta.score           * WEIGHTS.cta +
-        accessibility.score * WEIGHTS.accessibility +
-        shadcn.score        * WEIGHTS.shadcn +
-        coverage.score      * WEIGHTS.coverage +
-        navigation.score    * WEIGHTS.navigation +
-        accountMenu.score   * WEIGHTS.accountMenu +
-        consistency.score   * WEIGHTS.consistency) * 10
+      (hero.score                    * WEIGHTS.hero +
+        layout.score                 * WEIGHTS.layout +
+        cta.score                    * WEIGHTS.cta +
+        accessibility.score          * WEIGHTS.accessibility +
+        shadcn.score                 * WEIGHTS.shadcn +
+        coverage.score               * WEIGHTS.coverage +
+        navigation.score             * WEIGHTS.navigation +
+        accountMenu.score            * WEIGHTS.accountMenu +
+        authNavbarAlignment.score    * WEIGHTS.authNavbarAlignment +
+        consistency.score            * WEIGHTS.consistency) * 10
     ) / 10;
 
   const allIssues = [
@@ -541,6 +595,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     ...coverage.issues,
     ...navigation.issues,
     ...accountMenu.issues,
+    ...authNavbarAlignment.issues,
     ...consistency.issues,
   ].sort((a, b) => {
     const sev: Record<string, number> = { critical: 0, major: 1, minor: 2 };
@@ -549,17 +604,18 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
 
   return {
     overallScore,
-    heroScore:          hero.score,
-    layoutScore:        layout.score,
-    ctaScore:           cta.score,
-    accessibilityScore: accessibility.score,
-    shadcnScore:        shadcn.score,
-    coverageScore:      coverage.score,
-    navigationScore:    navigation.score,
-    accountMenuScore:   accountMenu.score,
-    consistencyScore:   consistency.score,
-    coveragePercent:    coverage.coveragePercent,
-    componentUsage:     coverage.componentUsage,
-    issues:             allIssues,
+    heroScore:                 hero.score,
+    layoutScore:               layout.score,
+    ctaScore:                  cta.score,
+    accessibilityScore:        accessibility.score,
+    shadcnScore:               shadcn.score,
+    coverageScore:             coverage.score,
+    navigationScore:           navigation.score,
+    accountMenuScore:          accountMenu.score,
+    authNavbarAlignmentScore:  authNavbarAlignment.score,
+    consistencyScore:          consistency.score,
+    coveragePercent:           coverage.coveragePercent,
+    componentUsage:            coverage.componentUsage,
+    issues:                    allIssues,
   };
 }

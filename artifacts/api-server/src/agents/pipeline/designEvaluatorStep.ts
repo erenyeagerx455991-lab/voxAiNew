@@ -25,6 +25,7 @@ export interface EvaluatorResult {
   consistencyScore: number;
   navigationScore: number;
   accountMenuScore: number;
+  authNavbarAlignmentScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -56,10 +57,13 @@ export async function runDesignEvaluatorStep(
   let repairCount = 0;
   let repairApplied = false;
 
+  const authState = plan.authState ?? 'guest';
+
   let evalResult = evaluateDesign({
     code: currentCode,
     sectionOrder: blueprint.sectionOrder,
     designDNA: design,
+    authState,
   });
 
   log.info("DESIGN_EVAL_INITIAL", {
@@ -122,6 +126,7 @@ export async function runDesignEvaluatorStep(
         code: currentCode,
         sectionOrder: blueprint.sectionOrder,
         designDNA: design,
+        authState,
       });
 
       const improvement = Math.round((evalResult.overallScore - prevScore) * 10) / 10;
