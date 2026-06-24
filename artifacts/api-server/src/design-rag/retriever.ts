@@ -14,6 +14,7 @@ export interface RetrievalInput {
   keywords: string[];         // meaningful words from prompt
   categories: DesignCategory[]; // sections in blueprint.sectionOrder
   dnaComposition?: Record<string, number>; // raw DNA brand percentages
+  authState?: string;         // V7.2.6.1 — auth intent for RAG filtering
 }
 
 export interface ScoredReference extends DesignReference {
@@ -133,6 +134,39 @@ const DEPRECATION_PENALTY         = -10;
 // V7.1.9: learnt reference quality (0–10) → max +2.5 pts; DNA match dominates at 4–9 pts
 const REFERENCE_QUALITY_WEIGHT    = 0.25;
 
+// V7.2.6.1: auth-state signal tags for retrieval filtering
+const AUTH_BOOST_TAGS: Record<string, string[]> = {
+  admin:         ['admin', 'dashboard', 'management', 'settings', 'control', 'backoffice', 'moderation', 'audit'],
+  dashboard:     ['dashboard', 'analytics', 'workspace', 'metrics', 'reporting', 'app', 'saas'],
+  authenticated: ['auth', 'profile', 'account', 'user', 'workspace', 'portal'],
+  guest:         ['landing', 'marketing', 'hero', 'startup', 'agency', 'product'],
+};
+const AUTH_PENALIZE_TAGS: Record<string, string[]> = {
+  admin:         ['landing', 'marketing', 'guest', 'homepage', 'startup'],
+  dashboard:     ['landing', 'marketing', 'guest', 'homepage'],
+  authenticated: [],
+  guest:         ['admin', 'backoffice', 'management', 'audit'],
+};
+const AUTH_BOOST_SCORE    = 2.5;
+const AUTH_PENALTY_SCORE  = -2.0;
+
+function scoreAuthState(ref: DesignReference, authState?: string): number {
+  if (!authState || authState === 'guest') {
+    const penalizeTags = AUTH_PENALIZE_TAGS['guest'] ?? [];
+    const searchText = [...ref.tags, ref.id].join(' ').toLowerCase();
+    if (penalizeTags.some(t => searchText.includes(t))) return AUTH_PENALTY_SCORE;
+    return 0;
+  }
+  const boostTags   = AUTH_BOOST_TAGS[authState]    ?? [];
+  const penalizeTags = AUTH_PENALIZE_TAGS[authState] ?? [];
+  const searchText  = [...ref.tags, ref.id, ref.description].join(' ').toLowerCase();
+  const boosted   = boostTags.some(t => searchText.includes(t));
+  const penalized = penalizeTags.some(t => searchText.includes(t));
+  if (boosted && !penalized)  return AUTH_BOOST_SCORE;
+  if (penalized && !boosted)  return AUTH_PENALTY_SCORE;
+  return 0;
+}
+
 function scoreReference(
   ref: DesignReference,
   input: RetrievalInput,
@@ -203,6 +237,9 @@ function scoreReference(
   // DNA+Style match yields 4–9 pts; quality can never flip a bad DNA match to a win.
   breakdown.referenceQuality = getReferenceQualityScore(ref.id) * REFERENCE_QUALITY_WEIGHT;
 
+  // V7.2.6.1: auth-state signal — boost/penalize refs that match or clash with detected auth intent
+  const authBonus = scoreAuthState(ref, input.authState);
+
   const retrievalScore =
     breakdown.industryMatch +
     breakdown.styleMatch +
@@ -212,7 +249,8 @@ function scoreReference(
     breakdown.baseQuality +
     breakdown.qualityBoost +
     breakdown.deprecationPenalty +
-    breakdown.referenceQuality;
+    breakdown.referenceQuality +
+    authBonus;
 
   return { ...ref, retrievalScore, scoreBreakdown: breakdown };
 }
@@ -308,6 +346,7 @@ export function extractRetrievalIntent(
   sectionOrder: string[],
   designLanguage: string,
   dnaComposition?: Record<string, number>,
+  authState?: string,
 ): RetrievalInput {
   const industry = detectIndustries(prompt);
   const style = dnaLangToStyle(designLanguage);
@@ -321,5 +360,5 @@ export function extractRetrievalIntent(
     .map(s => s.toLowerCase() as DesignCategory)
     .filter(s => VALID_CATEGORIES.includes(s));
 
-  return { industry, style, keywords, categories, dnaComposition };
+  return { industry, style, keywords, categories, dnaComposition, authState };
 }

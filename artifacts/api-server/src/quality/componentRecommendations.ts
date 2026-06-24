@@ -6,6 +6,7 @@ export interface RecommendationInput {
   industry:    string[];
   sectionType: string;
   dna:         Record<string, number>;
+  authState?:  string;  // V7.2.6.1 — routes navbar recommendations to auth-specific defaults
 }
 
 export interface RecommendationResult {
@@ -235,8 +236,18 @@ export function computeComponentCoverage(code: string): {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export function recommendBestComponents(input: RecommendationInput): RecommendationResult {
-  const { industry, sectionType, dna } = input;
-  const section = sectionType.toLowerCase();
+  const { industry, sectionType, dna, authState } = input;
+  let section = sectionType.toLowerCase();
+
+  // V7.2.6.1: For navbar sections, route to auth-specific defaults based on detected auth state
+  if (section === 'navbar' && authState && authState !== 'guest') {
+    const authNavbarMap: Record<string, string> = {
+      authenticated: 'navbar-authenticated',
+      dashboard:     'navbar-dashboard',
+      admin:         'navbar-admin',
+    };
+    section = authNavbarMap[authState] ?? section;
+  }
 
   // Start with section default
   const base: RecommendationResult = SECTION_DEFAULTS[section] ?? {

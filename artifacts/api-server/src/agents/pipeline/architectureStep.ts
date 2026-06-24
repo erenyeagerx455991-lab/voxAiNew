@@ -20,15 +20,20 @@ export async function runArchitectureStep(
 
   sse(res, { type: "step", step: 1, agent: "Architecture Agent", status: "active" });
 
+  // V7.2.6.1: pre-seed authNeeded/dashboardNeeded from auth state classifier
+  const authStateFromPlan = plan.authState ?? 'guest';
+  const authNeededDefault  = authStateFromPlan !== 'guest';
+  const dashNeededDefault  = authStateFromPlan === 'dashboard' || authStateFromPlan === 'admin';
+
   let projectBlueprint: ProjectBlueprint = {
     projectType: blueprint.websiteType || "Landing Page",
     pages: ["Landing"],
     components: blueprint.sectionOrder || [],
     databaseTables: [],
     apis: [],
-    authNeeded: false,
-    authProvider: "",
-    dashboardNeeded: false,
+    authNeeded: authNeededDefault,
+    authProvider: authNeededDefault ? "Clerk" : "",
+    dashboardNeeded: dashNeededDefault,
     entities: [],
     relationships: [],
     navigation: [],

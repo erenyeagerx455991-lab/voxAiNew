@@ -177,6 +177,7 @@ export async function runFrontendStep(
       blueprint.sectionOrder,
       design.designLanguage ?? 'monochrome',
       dnaComposition as Record<string, number>,
+      arch.plan.authState ?? 'guest',
     );
     const sectionResult = retrieveAllSections(blueprint.sectionOrder, {
       dna:            (dnaComposition as Record<string, number>) ?? {},
@@ -199,9 +200,22 @@ export async function runFrontendStep(
   const sectionCount = blueprint.sectionOrder.length;
   const isMultiPageApp = projectBlueprint.pages.length > 1;
 
+  // V7.2.6.1: inject auth routing context so codegen uses the correct navbar variant
+  const authState = arch.plan.authState ?? 'guest';
+  const navbarVariant = arch.plan.navbarVariant ?? 'navbar-navigation-saas-v1';
+  const authNavbarInstruction = authState !== 'guest'
+    ? `\n\nNAVBAR REQUIREMENT (auth-routing): Auth state detected as "${authState}". Use navbar variant "${navbarVariant}". This means:${
+        authState === 'admin'
+          ? ' Include <Command> palette (⌘K), <Avatar>+<DropdownMenu> for profile, <Badge> for environment indicator, <Sheet> for mobile/workspace drawer.'
+          : authState === 'dashboard'
+          ? ' Include <Avatar>+<DropdownMenu> for profile, <Sheet> for workspace/mobile drawer, optional <Command> for search.'
+          : ' Include <Avatar>+<DropdownMenu> for user profile menu with Profile/Settings/Logout items.'
+      } Do NOT generate a plain marketing navbar (no auth components) for an authenticated product.`
+    : '';
+
   const codegenUserPrompt = isMultiPageApp
-    ? `Build a ${projectBlueprint.projectType} with these pages: ${projectBlueprint.pages.join(', ')}.\n\nPrompt: ${prompt}\nPlan: ${cleanPlan}\n\nApply the design DNA above to ALL pages. Do not truncate.`
-    : `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.`;
+    ? `Build a ${projectBlueprint.projectType} with these pages: ${projectBlueprint.pages.join(', ')}.\n\nPrompt: ${prompt}\nPlan: ${cleanPlan}${authNavbarInstruction}\n\nApply the design DNA above to ALL pages. Do not truncate.`
+    : `Build a complete landing page for: ${prompt}\n\nPlan context:\n${cleanPlan}${authNavbarInstruction}\n\nBUILD EXACTLY ${sectionCount} SECTIONS in this order: ${blueprint.sectionOrder.join(' → ')}. Apply the design DNA precisely. Do not truncate.`;
 
   let generatedCode = "";
   try {
