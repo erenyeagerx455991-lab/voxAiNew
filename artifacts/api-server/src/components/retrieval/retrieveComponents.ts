@@ -35,7 +35,7 @@ export async function retrieveComponents(
     }
   }
 
-  const tokenEstimate = selected.reduce((acc, c) => acc + Math.ceil(c.description.length / 4) + 10, 0);
+  const tokenEstimate = selected.reduce((acc, c) => acc + Math.ceil(c.description.length / 4) + 7, 0);
 
   const ms = Date.now() - start;
   const result: RetrievalResult = {

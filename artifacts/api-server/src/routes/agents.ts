@@ -444,15 +444,15 @@ function analyzeEditImpactServer(
 
 // ── EDIT AGENT ────────────────────────────────────────────────────────────────
 router.post("/agents/edit", async (req, res) => {
-  const openrouterKey = process.env["OPENROUTER_API_KEY"];
-  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
-
   const userId = extractUserId(req);
   const limitCheck = checkBuildLimit(userId);
   if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
   const budgetCheck = checkTokenBudget();
   if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
   recordBuildStarted(userId);
+
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const { prompt, projectFiles = [], projectMemory, componentRegistry, themeTokens, knowledgeGraph, lockedComponents = [], registryFileMap = {} } = req.body as {
     prompt: string;
@@ -726,15 +726,15 @@ function resolveAffectedFilesFromGraph(
 }
 
 router.post("/agents/runtime-repair", async (req, res) => {
-  const openrouterKey = process.env["OPENROUTER_API_KEY"];
-  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
-
   const userId = extractUserId(req);
   const limitCheck = checkBuildLimit(userId);
   if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
   const budgetCheck = checkTokenBudget();
   if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
   recordBuildStarted(userId);
+
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const {
     files,
@@ -1045,15 +1045,15 @@ router.post("/agents/templates/merge", (req, res) => {
 
 // ── V6.2: AUTONOMOUS RUNTIME BUILDER ─────────────────────────────────────────
 router.post("/agents/autonomous-build", async (req, res) => {
-  const openrouterKey = process.env["OPENROUTER_API_KEY"];
-  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
-
   const userId = extractUserId(req);
   const limitCheck = checkBuildLimit(userId);
   if (!limitCheck.allowed) return res.status(429).json({ error: limitCheck.reason });
   const budgetCheck = checkTokenBudget();
   if (!budgetCheck.allowed) return res.status(503).json({ error: budgetCheck.reason });
   recordBuildStarted(userId);
+
+  const openrouterKey = process.env["OPENROUTER_API_KEY"];
+  if (!openrouterKey) return res.status(500).json({ error: "OPENROUTER_API_KEY not set" });
 
   const {
     chatId,
