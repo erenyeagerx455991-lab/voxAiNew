@@ -1356,7 +1356,7 @@ export default function WorkspacePreviewPanel({
   }
 
   // ── No code yet: empty placeholder ───────────────────────────────
-  if (!code) {
+  if (!code && files.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8 bg-[#0d0d12]">
         <div className="w-16 h-16 rounded-2xl bg-[#1a1a24] flex items-center justify-center">
