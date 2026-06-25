@@ -23,6 +23,9 @@ function makeScore(
   overallScore: number,
   overrides: Partial<CandidateScore> = {},
 ): CandidateScore {
+  const visualScore = overrides.visualScore ?? overallScore;
+  const combinedScore = overrides.combinedScore ??
+    Math.round((overallScore * 0.70 + visualScore * 0.30) * 100) / 100;
   return {
     index: label === 'A' ? 0 : label === 'B' ? 1 : 2,
     label,
@@ -33,6 +36,8 @@ function makeScore(
     accessibilityScore: overrides.accessibilityScore ?? overallScore,
     shadcnScore:        overrides.shadcnScore        ?? overallScore,
     consistencyScore:   overrides.consistencyScore   ?? overallScore,
+    visualScore,
+    combinedScore,
   };
 }
 

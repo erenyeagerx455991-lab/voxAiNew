@@ -13,6 +13,7 @@ import type { PipelineKeys } from "./pipelineTypes.js";
 import type { EvaluatorStepOutput } from "./designEvaluatorStep.js";
 import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
 import { buildTokenCodegenContext } from "../../design-tokens/cssVariables.js";
+import { analyzeVisuals, buildVisualContextString } from "../../visual-diff/visualAnalyzer.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("DesignCriticStep");
@@ -53,6 +54,21 @@ export async function runDesignCriticStep(
       prefixParts.push(`/* DESIGN TOKEN SYSTEM (theme: ${evaluated.tokenSet.metadata.themeName}, DNA: ${evaluated.tokenSet.metadata.dna}):\nFLAG violations where code uses hardcoded colors, mismatched DNA tokens, or Tailwind color classes instead of CSS variables.\n\n${tokenCtx.slice(0, 800)}\n*/`);
       log.info("TOKEN_CONTEXT_INJECTED_FOR_CRITIC", { themeId: evaluated.tokenSet.metadata.themeId });
     }
+    // V7.3.4: Visual context — hero/CTA/layout/responsive scores + critical issues
+    try {
+      const { plan } = evaluated.architecture;
+      const sectionOrder = plan.blueprint?.sectionOrder ?? [];
+      const visualResult = analyzeVisuals(fixedCode, sectionOrder, buildId, buildId);
+      const visualCtx = buildVisualContextString(visualResult);
+      prefixParts.push(`/* VISUAL QUALITY INTELLIGENCE:\n${visualCtx}\n*/`);
+      log.info("VISUAL_CONTEXT_INJECTED_FOR_CRITIC", {
+        visualScore: visualResult.visualScore,
+        criticalIssues: visualResult.issues.filter(i => i.severity === 'critical').length,
+      });
+    } catch (e) {
+      log.warn("VISUAL_CRITIC_CONTEXT_FAILED", { error: String(e) });
+    }
+
     if (prefixParts.length > 0) {
       treeAwareCode = prefixParts.join('\n\n') + '\n\n' + fixedCode;
     }

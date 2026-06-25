@@ -8,12 +8,18 @@ import { sse } from "../streaming/sseManager.js";
 import { evaluateDesign } from "../designEvaluator/evaluator.js";
 import { generateCandidates } from "../frontend/candidateGenerator.js";
 import { recordMultiCandidateSelection } from "../../telemetry/multiCandidateMetrics.js";
+import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
+import { compareAllCandidates } from "../../visual-diff/pixelDiff.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("CandidateSelectionStep");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+// V7.3.4: Visual score weights for combined ranking
+const EVALUATOR_WEIGHT = 0.70;
+const VISUAL_WEIGHT    = 0.30;
 
 export interface CandidateScore {
   index: number;
@@ -25,6 +31,8 @@ export interface CandidateScore {
   accessibilityScore: number;
   shadcnScore: number;
   consistencyScore: number;
+  visualScore: number;     // V7.3.4: visual analysis score 0–10
+  combinedScore: number;   // V7.3.4: 70% evaluator + 30% visual
 }
 
 export interface CandidateSelectionResult {
@@ -41,11 +49,12 @@ export interface CandidateSelectionResult {
 }
 
 // ── Pure selection logic (testable) ──────────────────────────────────────────
-// Phase 5 rules:
-//   1. Highest overallScore wins.
-//   2. If score difference < 0.2 → prefer higher accessibilityScore.
-//   3. Still tied → prefer higher shadcnScore.
-//   4. Still tied → prefer higher consistencyScore.
+// Phase 5 rules (V7.3.4 updated):
+//   1. Highest combinedScore (70% evaluator + 30% visual) wins.
+//   2. If combined score difference < 0.2 → prefer higher visualScore (tie-break).
+//   3. Still tied → prefer higher accessibilityScore.
+//   4. Still tied → prefer higher shadcnScore.
+//   5. Still tied → prefer higher consistencyScore.
 
 export function selectBestCandidate(scored: CandidateScore[]): CandidateScore {
   if (scored.length === 0) throw new Error("selectBestCandidate: empty candidate list");
@@ -53,18 +62,22 @@ export function selectBestCandidate(scored: CandidateScore[]): CandidateScore {
   const NEAR_TIE_THRESHOLD = 0.2;
 
   const sorted = [...scored].sort((a, b) => {
-    const scoreDiff = b.overallScore - a.overallScore;
-    if (Math.abs(scoreDiff) >= NEAR_TIE_THRESHOLD) return scoreDiff;
+    const combinedDiff = b.combinedScore - a.combinedScore;
+    if (Math.abs(combinedDiff) >= NEAR_TIE_THRESHOLD) return combinedDiff;
 
-    // Tie-break 1: accessibility
+    // Tie-break 1: visual score wins (V7.3.4 spec)
+    const visualDiff = b.visualScore - a.visualScore;
+    if (Math.abs(visualDiff) >= NEAR_TIE_THRESHOLD) return visualDiff;
+
+    // Tie-break 2: accessibility
     const accessDiff = b.accessibilityScore - a.accessibilityScore;
     if (Math.abs(accessDiff) >= NEAR_TIE_THRESHOLD) return accessDiff;
 
-    // Tie-break 2: shadcn usage
+    // Tie-break 3: shadcn usage
     const shadcnDiff = b.shadcnScore - a.shadcnScore;
     if (Math.abs(shadcnDiff) >= NEAR_TIE_THRESHOLD) return shadcnDiff;
 
-    // Tie-break 3: consistency
+    // Tie-break 4: consistency
     return b.consistencyScore - a.consistencyScore;
   });
 
@@ -93,12 +106,18 @@ export async function runCandidateSelectionStep(
   log.info("CANDIDATES_GENERATED", { generationMs, count: candidates.length });
 
   // Phase 4: evaluate all 3 independently (synchronous — no LLM call needed)
+  // V7.3.4: also run visual analysis for each candidate
   const scored: CandidateScore[] = candidates.map((cand, i) => {
     const result = evaluateDesign({
       code: cand.fixedCode,
       sectionOrder: blueprint.sectionOrder,
       designDNA: cand.design,
     });
+    const visualResult = analyzeVisuals(cand.fixedCode, blueprint.sectionOrder, `cand-${LABELS[i]}`, buildId);
+    // Combined score: 70% evaluator + 30% visual
+    const combinedScore = Math.round(
+      (result.overallScore * EVALUATOR_WEIGHT + visualResult.visualScore * VISUAL_WEIGHT) * 100
+    ) / 100;
     return {
       index: i,
       label: LABELS[i],
@@ -109,6 +128,8 @@ export async function runCandidateSelectionStep(
       accessibilityScore: result.accessibilityScore,
       shadcnScore:       result.shadcnScore,
       consistencyScore:  result.consistencyScore,
+      visualScore:       visualResult.visualScore,
+      combinedScore,
     };
   });
 

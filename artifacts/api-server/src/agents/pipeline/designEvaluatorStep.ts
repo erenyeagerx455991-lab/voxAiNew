@@ -12,6 +12,9 @@ import { recordFormScore } from "../../telemetry/formMetrics.js";
 import { scoreTree } from "../../component-tree/treeValidator.js";
 import { validateTokenUsage } from "../../design-tokens/tokenValidator.js";
 import { recordTokenBuild } from "../../telemetry/designTokenMetrics.js";
+import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
+import { recordVisualOutcome } from "../../visual-diff/visualLearning.js";
+import { recordVisualBuildMetrics } from "../../telemetry/visualMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -36,6 +39,7 @@ export interface EvaluatorResult {
   motionScore: number;
   treeQualityScore: number;
   tokenQualityScore: number;
+  visualQualityScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -311,6 +315,28 @@ export async function runDesignEvaluatorStep(
     });
   }
 
+  // V7.3.4: Visual quality scoring — code-structure-based visual analysis
+  const visualAnalysis = analyzeVisuals(currentCode, blueprint.sectionOrder, buildId, buildId);
+  const visualQualityScore = visualAnalysis.visualScore;
+  log.info("VISUAL_QUALITY_SCORED", {
+    visualQualityScore,
+    heroScore: visualAnalysis.heroScore,
+    ctaScore:  visualAnalysis.ctaScore,
+    layoutScore: visualAnalysis.layoutScore,
+    responsiveScore: visualAnalysis.responsiveScore,
+    issueCount: visualAnalysis.issues.length,
+  });
+
+  // Record for learning loop and telemetry
+  recordVisualOutcome(currentCode, visualAnalysis);
+  recordVisualBuildMetrics({
+    visualScore:     visualAnalysis.visualScore,
+    heroScore:       visualAnalysis.heroScore,
+    ctaScore:        visualAnalysis.ctaScore,
+    layoutScore:     visualAnalysis.layoutScore,
+    responsiveScore: visualAnalysis.responsiveScore,
+  });
+
   const evaluationResult: EvaluatorResult = {
     ...evalResult,
     repairCount,
@@ -325,6 +351,7 @@ export async function runDesignEvaluatorStep(
     motionScore: evalResult.motionScore,
     treeQualityScore,
     tokenQualityScore,
+    visualQualityScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied
