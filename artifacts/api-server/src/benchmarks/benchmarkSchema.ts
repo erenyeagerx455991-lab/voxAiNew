@@ -21,6 +21,11 @@ export interface EvaluatorScores {
   shadcn:        number;
   consistency:   number;
   overall:       number;
+  visualScore:   number;
+  heroVisual:    number;
+  ctaVisual:     number;
+  layoutVisual:  number;
+  responsiveVisual: number;
 }
 
 export interface LighthouseScores {
@@ -58,6 +63,11 @@ export interface ProviderAverage {
     shadcn:        number;
     consistency:   number;
     overall:       number;
+    visualScore:   number;
+    heroVisual:    number;
+    ctaVisual:     number;
+    layoutVisual:  number;
+    responsiveVisual: number;
   };
   lighthouse: {
     performance:   number;
@@ -92,6 +102,11 @@ export interface QualityDelta {
     shadcn:        number;
     consistency:   number;
     overall:       number;
+    visualScore:   number;
+    heroVisual:    number;
+    ctaVisual:     number;
+    layoutVisual:  number;
+    responsiveVisual: number;
   };
   lighthouse: {
     performance:   number;

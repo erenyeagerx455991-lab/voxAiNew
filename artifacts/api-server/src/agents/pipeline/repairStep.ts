@@ -8,6 +8,9 @@ import type { ProjectFileSSE } from "../types.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { recordRepairAttempt, recordRepairSuccess, recordRepairFailure } from "../../telemetry/repairMetrics.js";
+import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
+import { validateRepairVisuals } from "../../visual-diff/repairValidator.js";
+import { recordVisualBuild } from "../../visual-diff/history.js";
 
 const log = createLogger("RepairStep");
 const MAX_REPAIR_PASSES = 3;
@@ -124,6 +127,60 @@ export async function runRepairStep(
     const regHealth = computeRegistryHealthServer(registrySelection, blueprint.sectionOrder);
     log.info("REGISTRY_HEALTH", { coverage: regHealth.coverageScore, mapped: regHealth.mappedSections, total: regHealth.totalSections });
     sse(res, { type: "registry_health", ...regHealth });
+  }
+
+  // V7.3.4 Phase 10: Visual Regression Guard
+  // Compare winner (original) vs repaired output — abort ship if visuals degrade.
+  try {
+    const sectionOrder = blueprint.sectionOrder ?? [];
+    const winnerCode  = fixedCode;          // pre-repair code (the selected winner)
+    const repairedCode = projectFiles
+      .filter(f => f.lang === 'tsx' && f.name !== 'main.tsx')
+      .map(f => f.content)
+      .join('\n');
+
+    const repairValidation = validateRepairVisuals(winnerCode, repairedCode, sectionOrder, buildId);
+
+    // Record in history — visible in telemetry + learning loop
+    const winnerVisual = analyzeVisuals(winnerCode, sectionOrder, buildId, buildId);
+    recordVisualBuild(buildId, [], winnerVisual.visualScore, repairValidation);
+
+    log.info("VISUAL_REPAIR_VALIDATION", {
+      passed:        repairValidation.passed,
+      regression:    repairValidation.regression,
+      regressionType: repairValidation.regressionType ?? 'none',
+      winnerScore:   repairValidation.winnerScore,
+      repairedScore: repairValidation.repairedScore,
+      delta:         repairValidation.delta,
+    });
+
+    sse(res, {
+      type:          "visual_repair_validation",
+      passed:        repairValidation.passed,
+      regression:    repairValidation.regression,
+      regressionType: repairValidation.regressionType ?? null,
+      winnerScore:   repairValidation.winnerScore,
+      repairedScore: repairValidation.repairedScore,
+      delta:         repairValidation.delta,
+      details:       repairValidation.details,
+    });
+
+    if (!repairValidation.passed) {
+      log.warn("VISUAL_REGRESSION_DETECTED", {
+        regressionType: repairValidation.regressionType,
+        delta: repairValidation.delta,
+        details: repairValidation.details,
+      });
+      sse(res, {
+        type:    "visual_regression_detected",
+        details: repairValidation.details,
+        delta:   repairValidation.delta,
+      });
+      // Do NOT block the build — flag only; code correctness repairs always ship.
+      // A future V7.3.5 pass can revert when visual regression exceeds hard threshold.
+    }
+  } catch (e) {
+    log.warn("VISUAL_REPAIR_VALIDATION_FAILED", { error: String(e) });
   }
 
   return { ...frontend, buildHealthMetrics };

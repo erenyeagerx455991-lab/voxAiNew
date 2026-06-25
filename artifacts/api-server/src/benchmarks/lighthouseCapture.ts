@@ -5,9 +5,9 @@
 
 import { createRequire } from 'module';
 import { type LighthouseScores } from './benchmarkSchema.js';
-import { structuredLogger } from '../lib/structuredLogger.js';
+import { createLogger } from '../lib/structuredLogger.js';
 
-const logger = structuredLogger.child({ module: 'lighthouseCapture' });
+const logger = createLogger('lighthouseCapture');
 
 export interface LighthouseCaptureResult {
   url:     string;
@@ -25,7 +25,7 @@ export async function captureLighthouse(url: string): Promise<LighthouseCaptureR
     lighthouse     = _require('lighthouse');
     chromeLauncher = _require('chrome-launcher');
   } catch {
-    logger.warn({ url }, 'lighthouse/chrome-launcher not installed — skipping LH capture');
+    logger.warn('lighthouse/chrome-launcher not installed — skipping LH capture', { url });
     return {
       url,
       scores: { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, captured: false },
@@ -56,11 +56,11 @@ export async function captureLighthouse(url: string): Promise<LighthouseCaptureR
       captured:      true,
     };
 
-    logger.info({ url, scores }, 'Lighthouse capture complete');
+    logger.info('Lighthouse capture complete', { url, scores });
     return { url, scores };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    logger.error({ url, err: msg }, 'Lighthouse capture failed');
+    logger.error('Lighthouse capture failed', { url, err: msg });
     return {
       url,
       scores: { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, captured: false },

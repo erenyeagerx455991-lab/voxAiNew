@@ -13,7 +13,7 @@ export function analyzeResponsive(code: string): ResponsiveAnalysis {
     issues.push({
       category: 'responsive', severity: 'critical',
       message: 'No responsive breakpoints found — add sm:/md:/lg: prefixes for mobile layouts',
-      viewport: 'mobile',
+      region: { section: 'global', viewport: 'mobile' },
     });
   }
 
@@ -24,7 +24,7 @@ export function analyzeResponsive(code: string): ResponsiveAnalysis {
     issues.push({
       category: 'responsive', severity: 'major',
       message: 'Columns may not stack on mobile — use flex-col or responsive grid-cols',
-      viewport: 'mobile',
+      region: { section: 'global', viewport: 'mobile' },
     });
   }
 
@@ -36,7 +36,7 @@ export function analyzeResponsive(code: string): ResponsiveAnalysis {
     issues.push({
       category: 'responsive', severity: 'minor',
       message: 'Text sizes may not adapt to mobile — use responsive typography (sm:text-*)',
-      viewport: 'mobile',
+      region: { section: 'global', viewport: 'mobile' },
     });
   }
 
@@ -51,7 +51,7 @@ export function analyzeResponsive(code: string): ResponsiveAnalysis {
     issues.push({
       category: 'responsive', severity: 'major',
       message: `${hardcodedWidths.length} hardcoded pixel width(s) found — use relative units or max-w-*`,
-      viewport: 'mobile',
+      region: { section: 'global', viewport: 'mobile' },
     });
   }
 
@@ -63,7 +63,7 @@ export function analyzeResponsive(code: string): ResponsiveAnalysis {
     issues.push({
       category: 'responsive', severity: 'major',
       message: 'Navigation may not adapt to mobile — add a hamburger menu or hide nav links on mobile',
-      viewport: 'mobile',
+      region: { section: 'Navbar', viewport: 'mobile' },
     });
   }
 

@@ -1,0 +1,760 @@
+V7.3.4 — Visual Diff Engine & Visual Quality Intelligence Layer
+
+Context
+
+Current VoxAI Architecture:
+
+Prompt
+↓
+Planner
+↓
+Architecture
+↓
+Component Tree
+↓
+Design DNA
+↓
+Design Tokens
+↓
+Design RAG
+↓
+Motion RAG
+↓
+Generator
+↓
+Multi-Candidate (A/B/C)
+↓
+Evaluator
+↓
+Design Critic
+↓
+Repair
+↓
+Final Output
+
+Current Weakness
+
+All scoring is currently:
+
+- code-based
+- component-based
+- token-based
+- architecture-based
+
+The system cannot see the actual rendered UI.
+
+This means:
+
+- broken layouts can pass
+- spacing bugs can pass
+- overflow issues can pass
+- alignment issues can pass
+- visual hierarchy problems can pass
+- repair agent can accidentally degrade visuals
+
+Goal:
+
+Add visual intelligence.
+
+New Flow:
+
+Prompt
+↓
+Planner
+↓
+Architecture
+↓
+Component Tree
+↓
+Generator
+↓
+Candidate A/B/C
+↓
+Render Screenshots
+↓
+Visual Diff Engine
+↓
+Evaluator
+↓
+Design Critic
+↓
+Repair
+↓
+Render Again
+↓
+Visual Validation
+↓
+Final Output
+
+---
+
+Phase 1 — Visual Diff Foundation
+
+Create:
+
+src/visual-diff/visualTypes.ts
+
+Define:
+
+VisualSnapshot
+
+VisualCandidate
+
+VisualComparison
+
+VisualIssue
+
+VisualMetrics
+
+VisualScore
+
+VisualValidationResult
+
+VisualRegion
+
+VisualDiffReport
+
+Store:
+
+screenshotPath
+
+candidateId
+
+viewport
+
+visualScore
+
+issues
+
+severity
+
+repairSuggestions
+
+---
+
+Phase 2 — Screenshot Capture Engine
+
+Create:
+
+src/visual-diff/screenshotCapture.ts
+
+Capture screenshots for:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Viewports:
+
+Desktop:
+1440×900
+
+Tablet:
+768×1024
+
+Mobile:
+390×844
+
+Capture:
+
+Candidate A
+
+Candidate B
+
+Candidate C
+
+Final Repaired Build
+
+Store:
+
+artifacts/screenshots/
+
+---
+
+Phase 3 — DOM Structure Analyzer
+
+Create:
+
+src/visual-diff/domAnalyzer.ts
+
+Detect:
+
+overflow
+
+misalignment
+
+empty sections
+
+missing CTA
+
+duplicate sections
+
+broken grids
+
+incorrect spacing
+
+visual imbalance
+
+No AI required.
+
+Pure structural analysis.
+
+---
+
+Phase 4 — Pixel Diff Engine
+
+Create:
+
+src/visual-diff/pixelDiff.ts
+
+Compare:
+
+Candidate A
+vs
+Candidate B
+
+Candidate B
+vs
+Candidate C
+
+Winner
+vs
+Repaired Output
+
+Calculate:
+
+layout shift %
+
+spacing delta %
+
+visual change %
+
+component displacement
+
+region mismatch
+
+Output:
+
+0–100 visual similarity score
+
+---
+
+Phase 5 — Hero Intelligence
+
+Create:
+
+src/visual-diff/heroAnalyzer.ts
+
+Detect:
+
+headline visibility
+
+CTA visibility
+
+trust signal visibility
+
+hero height
+
+hero balance
+
+hero focal point
+
+Score:
+
+0–10
+
+Flag:
+
+weak hero
+
+tiny CTA
+
+crowded hero
+
+missing trust
+
+---
+
+Phase 6 — CTA Intelligence
+
+Create:
+
+src/visual-diff/ctaAnalyzer.ts
+
+Detect:
+
+CTA prominence
+
+contrast
+
+placement
+
+spacing
+
+click hierarchy
+
+primary CTA visibility
+
+secondary CTA visibility
+
+Score:
+
+0–10
+
+---
+
+Phase 7 — Layout Intelligence
+
+Create:
+
+src/visual-diff/layoutAnalyzer.ts
+
+Measure:
+
+alignment
+
+grid consistency
+
+whitespace quality
+
+section rhythm
+
+visual hierarchy
+
+card balance
+
+column consistency
+
+Score:
+
+0–10
+
+---
+
+Phase 8 — Responsive Intelligence
+
+Create:
+
+src/visual-diff/responsiveAnalyzer.ts
+
+Compare:
+
+Desktop
+
+Tablet
+
+Mobile
+
+Detect:
+
+horizontal scroll
+
+overflow
+
+cutoff text
+
+broken nav
+
+broken cards
+
+collapsed layouts
+
+spacing collapse
+
+Score:
+
+0–10
+
+---
+
+Phase 9 — Visual Evaluator Dimension
+
+Modify:
+
+evaluator.ts
+
+Add:
+
+visualQualityScore
+
+Measures:
+
+Hero
+
+CTA
+
+Layout
+
+Responsive
+
+Pixel Consistency
+
+Diff Stability
+
+Range:
+
+0–10
+
+Add as new evaluator dimension.
+
+Do NOT modify:
+
+dashboardScore
+
+formScore
+
+motionScore
+
+treeQualityScore
+
+tokenQualityScore
+
+existing dimensions
+
+Only add.
+
+---
+
+Phase 10 — Repair Validation Layer
+
+Create:
+
+src/visual-diff/repairValidator.ts
+
+Compare:
+
+Winner Candidate
+vs
+Final Repaired Build
+
+Goal:
+
+Ensure repair improves visuals.
+
+If:
+
+visualScore decreases
+
+or
+
+layout stability decreases
+
+or
+
+CTA visibility decreases
+
+Flag:
+
+VISUAL REGRESSION
+
+Repair must not ship.
+
+---
+
+Phase 11 — Candidate Selection Upgrade
+
+Modify:
+
+candidateSelectionStep.ts
+
+Current:
+
+highest evaluator score wins
+
+Future:
+
+Evaluator Score
++
+Visual Score
+
+Combined Ranking:
+
+70% evaluator
+
+30% visual
+
+Tie breaker:
+
+visual score wins
+
+---
+
+Phase 12 — Design Critic Integration
+
+Modify:
+
+designCriticStep.ts
+
+Critic receives:
+
+Visual Report
+
+Hero Score
+
+CTA Score
+
+Layout Score
+
+Responsive Score
+
+Examples:
+
+"Hero is visually crowded."
+
+"CTA lacks prominence."
+
+"Section spacing inconsistent."
+
+"Mobile cards overflow viewport."
+
+---
+
+Phase 13 — Screenshot History
+
+Create:
+
+src/visual-diff/history.ts
+
+Store:
+
+last build
+
+last repair
+
+last candidate
+
+visual deltas
+
+repair outcomes
+
+Used for future learning.
+
+---
+
+Phase 14 — Learning Loop
+
+Create:
+
+src/visual-diff/visualLearning.ts
+
+Track:
+
+highest visual scores
+
+best hero patterns
+
+best CTA patterns
+
+best responsive patterns
+
+best layouts
+
+Promote:
+
+high-performing visual structures
+
+Demote:
+
+poor-performing structures
+
+---
+
+Phase 15 — Telemetry
+
+Create:
+
+visualMetrics.ts
+
+Expose:
+
+GET /api/telemetry/quality
+
+visualQuality
+
+Fields:
+
+averageVisualScore
+
+averageHeroScore
+
+averageCTAScore
+
+averageLayoutScore
+
+averageResponsiveScore
+
+visualRegressionRate
+
+repairImprovementRate
+
+topVisualPatterns
+
+worstVisualPatterns
+
+---
+
+Phase 16 — Benchmark Integration
+
+Modify:
+
+benchmarkRunner.ts
+
+Capture screenshots for:
+
+VoxAI
+
+Lovable
+
+Bolt
+
+v0
+
+Compare:
+
+visual score
+
+hero score
+
+CTA score
+
+layout score
+
+responsive score
+
+Store:
+
+benchmark screenshots
+
+visual leaderboard
+
+---
+
+Phase 17 — Tests
+
+Create:
+
+80+ tests minimum
+
+Cover:
+
+screenshot capture
+
+pixel diff
+
+layout analysis
+
+responsive analysis
+
+hero analysis
+
+CTA analysis
+
+repair validation
+
+candidate selection
+
+benchmark integration
+
+telemetry
+
+learning loop
+
+---
+
+Phase 18 — Audit
+
+Create:
+
+artifacts/api-server/v7.3.4Audit.md
+
+Document:
+
+capture pipeline
+
+visual score formulas
+
+viewport configs
+
+benchmark comparisons
+
+repair regression data
+
+telemetry output
+
+known limitations
+
+future roadmap
+
+---
+
+Hard Constraints
+
+Do NOT modify:
+
+Queue System
+
+API Contracts
+
+SSE Contracts
+
+Design DNA
+
+Design Tokens
+
+Component Tree
+
+Motion Engine
+
+Form Engine
+
+Dashboard Engine
+
+Design Critic Logic
+
+Only extend.
+
+No breaking changes.
+
+No provider changes.
+
+No database migrations.
+
+---
+
+Success Criteria
+
+Every build generates screenshots.
+
+Every candidate receives a visual score.
+
+Evaluator receives visualQualityScore.
+
+Repair validation prevents visual regressions.
+
+Design Critic receives visual reports.
+
+Benchmark system compares screenshots.
+
+Telemetry exposes visual metrics.
+
+Visual learning loop records winners.
+
+Result:
+
+VoxAI evolves from:
+
+Code-Aware Website Builder
+
+to
+
+Visual-Aware Website Builder
+
+Foundation becomes ready for:
+
+V7.3.5 Real Benchmark Leaderboard
+
+V7.3.6 Self-Evolving Design DNA
+
+V7.4.0 Autonomous Design Director
