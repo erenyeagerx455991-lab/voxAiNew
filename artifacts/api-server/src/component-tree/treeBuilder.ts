@@ -9,6 +9,7 @@ import type {
 } from "./componentTreeTypes.js";
 import type { PlannerOutput, ArchitectureOutput } from "../agents/pipeline/pipelineTypes.js";
 import { COMPONENT_CATALOG, type CatalogEntry } from "./componentCatalog.js";
+import { getDNAQualityScore } from "../design-dna/dnaLearning.js";
 
 // ── Section type normalization ─────────────────────────────────────────────────
 
@@ -315,6 +316,18 @@ export function buildComponentTree(input: BuildTreeInput): PageTree {
   const sections: SectionNode[] = blueprint.sectionOrder.map((name, idx) =>
     buildSectionNode(name, idx, primaryDNA, authState, industry, dnaWeights)
   );
+
+  // V7.3.5: Boost optional component priority when primary DNA has strong historical quality
+  const primaryDNAQuality = getDNAQualityScore({ primaryBrand: primaryDNA });
+  if (primaryDNAQuality > 7.0) {
+    for (const section of sections) {
+      for (const component of section.children) {
+        if (!component.required) {
+          component.priority = Math.min(10, component.priority + 1);
+        }
+      }
+    }
+  }
 
   const stats = computeStatistics(sections);
 

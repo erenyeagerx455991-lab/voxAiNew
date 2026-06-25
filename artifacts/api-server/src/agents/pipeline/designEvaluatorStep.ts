@@ -37,6 +37,7 @@ export interface EvaluatorResult {
   dashboardScore: number;
   formScore: number;
   motionScore: number;
+  dnaQualityScore: number;
   treeQualityScore: number;
   tokenQualityScore: number;
   visualQualityScore: number;
@@ -349,6 +350,7 @@ export async function runDesignEvaluatorStep(
     dashboardScore: evalResult.dashboardScore,
     formScore: evalResult.formScore,
     motionScore: evalResult.motionScore,
+    dnaQualityScore: evalResult.dnaQualityScore,
     treeQualityScore,
     tokenQualityScore,
     visualQualityScore,

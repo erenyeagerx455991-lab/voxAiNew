@@ -5,6 +5,7 @@ import { DESIGN_CORPUS, type DesignReference, type DesignCategory, type DesignSt
 import { getQualityScore, isComponentDeprecated } from "../quality/componentMetrics.js";
 import { recordDesignRetrieval } from "../telemetry/qualityMetrics.js";
 import { getReferenceQualityScore, recordReferenceUsages } from "./referenceMetrics.js";
+import { getDNAQualityScore } from "../design-dna/dnaLearning.js";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,7 @@ export interface ScoredReference extends DesignReference {
     deprecationPenalty: number;
     baseQuality: number;
     referenceQuality: number; // V7.1.9 learnt score contribution
+    dnaQualityBonus: number;  // V7.3.5 historical DNA quality signal
   };
 }
 
@@ -180,6 +182,7 @@ function scoreReference(
     deprecationPenalty: 0,
     baseQuality: 0,
     referenceQuality: 0, // V7.1.9 learnt score
+    dnaQualityBonus: 0,  // V7.3.5 historical DNA quality signal
   };
 
   // Industry match
@@ -240,6 +243,13 @@ function scoreReference(
   // V7.2.6.1: auth-state signal — boost/penalize refs that match or clash with detected auth intent
   const authBonus = scoreAuthState(ref, input.authState);
 
+  // V7.3.5: Historical DNA quality bonus — neutral (0) at cold start; clamped to ±7.5
+  const dominantBrandForDNA = input.dnaComposition ? getDominantBrand(input.dnaComposition) : null;
+  const dnaHistoricalScore = dominantBrandForDNA
+    ? getDNAQualityScore({ primaryBrand: dominantBrandForDNA })
+    : 5.0;
+  breakdown.dnaQualityBonus = Math.max(-7.5, Math.min(7.5, (dnaHistoricalScore - 5) * 1.5));
+
   const retrievalScore =
     breakdown.industryMatch +
     breakdown.styleMatch +
@@ -250,6 +260,7 @@ function scoreReference(
     breakdown.qualityBoost +
     breakdown.deprecationPenalty +
     breakdown.referenceQuality +
+    breakdown.dnaQualityBonus +
     authBonus;
 
   return { ...ref, retrievalScore, scoreBreakdown: breakdown };

@@ -13,6 +13,7 @@ import type { PlannerOutput, PipelineKeys } from "./pipelineTypes.js";
 import { classifyAuthState } from "../../auth/authStateClassifier.js";
 import { recordAuthRouting } from "../../auth/authRoutingMetrics.js";
 import { createLogger } from "../../lib/structuredLogger.js";
+import { buildDNAOptimizationHints } from "../../design-dna/dnaEvolution.js";
 
 const log = createLogger("PlannerStep");
 
@@ -25,10 +26,14 @@ export async function runPlannerStep(
 
   sse(res, { type: "step", step: 0, agent: "Planner Agent", status: "active" });
 
+  // V7.3.5: Inject historical DNA optimization hints before planning (no-op at cold start)
+  const dnaHints = buildDNAOptimizationHints();
+  const enrichedPrompt = dnaHints ? `${prompt}\n\n${dnaHints}` : prompt;
+
   let planText = "";
   await callAI(
     openrouterKey,
-    [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: prompt }],
+    [{ role: "system", content: PLANNER_SYSTEM }, { role: "user", content: enrichedPrompt }],
     {
       label: "planner",
       maxTokens: 1800,

@@ -18,6 +18,8 @@ import { withAgentMetrics } from "../../telemetry/agentMetrics.js";
 import { buildComponentTree } from "../../component-tree/treeBuilder.js";
 import { validateTree } from "../../component-tree/treeValidator.js";
 import { recordTreeBuild } from "../../telemetry/componentTreeMetrics.js";
+import { recordDNAOutcome } from "../../design-dna/dnaLearning.js";
+import type { EvaluatorResult } from "./designEvaluatorStep.js";
 
 export interface BuildPipelineInput {
   prompt: string;
@@ -78,6 +80,35 @@ export async function runBuildPipeline(
     const conversionFrontend = await withAgentMetrics("ConversionIntelligence", () =>
       runConversionStep(criticFrontend, keys, res)
     );
+
+    // V7.3.5: Record DNA outcomes for self-evolving learning loop
+    const evalRes = (conversionFrontend as unknown as Record<string, unknown>).evaluationResult as EvaluatorResult | undefined;
+    if (evalRes) {
+      const designDNA = conversionFrontend.design;
+      const dnaComp = plan.dnaComposition as unknown as Record<string, number>;
+      const primaryBrand = dnaComp
+        ? (Object.entries(dnaComp).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] ?? '')
+        : '';
+      recordDNAOutcome({
+        primaryBrand,
+        heroStyle:      designDNA?.heroStyle ?? '',
+        ctaStyle:       designDNA?.buttonStyle ?? '',
+        layoutStyle:    designDNA?.layoutStyle ?? '',
+        motionStyle:    designDNA?.animationPersonality ?? '',
+        navbarStyle:    plan.navbarVariant ?? '',
+        formStyle:      '',
+        dashboardStyle: '',
+        pricingStyle:   '',
+        overallScore:    evalRes.overallScore ?? 0,
+        visualScore:     evalRes.visualQualityScore ?? 5,
+        criticScore:     evalRes.treeQualityScore ?? 5,
+        conversionScore: evalRes.tokenQualityScore ?? 5,
+        motionScore:     evalRes.motionScore ?? 5,
+        tokenScore:      evalRes.tokenQualityScore ?? 5,
+        treeScore:       evalRes.treeQualityScore ?? 5,
+        repairTriggered: evalRes.repairApplied ?? false,
+      });
+    }
 
     const backend = await withAgentMetrics("Scaffold", () =>
       runBackendStep(architecture, conversionFrontend, keys, res)

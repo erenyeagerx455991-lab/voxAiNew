@@ -12,6 +12,7 @@ import { getReferenceQualityScore, recordReferenceUsages } from './referenceMetr
 import { recordSectionRetrieval } from './sectionRagMetrics.js';
 import { getSectionQualityScore } from './sectionReferenceMetrics.js';
 import { detectIndustries, extractKeywords, dnaLangToStyle } from './retriever.js';
+import { getDNAQualityScore } from '../design-dna/dnaLearning.js';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ export interface SectionScoredRef extends SectionRef {
     referenceQuality:  number;
     deprecationPenalty: number;
     sectionLearning:   number;   // V7.2.3: outcome-feedback contribution
+    dnaQualityBonus:   number;   // V7.3.5: historical DNA quality signal
   };
 }
 
@@ -87,7 +89,7 @@ function scoreSectionRef(
   const b = {
     industryMatch: 0, styleMatch: 0, dnaMatch: 0, keywordMatch: 0,
     baseQuality: 0, qualityBoost: 0, referenceQuality: 0, deprecationPenalty: 0,
-    sectionLearning: 0,
+    sectionLearning: 0, dnaQualityBonus: 0,
   };
 
   // Industry match
@@ -136,10 +138,17 @@ function scoreSectionRef(
   // V7.2.3 section outcome feedback — neutral refs get 0, improved/demoted shift ±8
   b.sectionLearning = (getSectionQualityScore(ref.id) - 5) * SECTION_LEARNING_W;
 
+  // V7.3.5: Historical DNA quality bonus — neutral (0) at cold start; clamped to ±7.5
+  const dominantBrand = getDominantStyle(input.dna);
+  const dnaHistoricalScore = dominantBrand
+    ? getDNAQualityScore({ primaryBrand: dominantBrand })
+    : 5.0;
+  b.dnaQualityBonus = Math.max(-7.5, Math.min(7.5, (dnaHistoricalScore - 5) * 1.5));
+
   const retrievalScore =
     b.industryMatch + b.styleMatch + b.dnaMatch +
     b.keywordMatch + b.baseQuality + b.qualityBoost +
-    b.referenceQuality + b.deprecationPenalty + b.sectionLearning;
+    b.referenceQuality + b.deprecationPenalty + b.sectionLearning + b.dnaQualityBonus;
 
   return { ...ref, retrievalScore, scoreBreakdown: b };
 }

@@ -33,6 +33,9 @@ const sectionUsage = new Map<string, number>();
 const intensityUsage = new Map<string, number>();
 const scoreRecords: MotionScoreRecord[] = [];
 
+// V7.3.5: Motion pattern outcome tracking
+const motionPatternScores = new Map<string, { sum: number; count: number; avg: number }>();
+
 const MAX_RECORDS = 100;
 
 function cappedPush<T>(arr: T[], val: T): void {
@@ -110,6 +113,27 @@ export function getMotionQualityMetrics() {
   };
 }
 
+// V7.3.5: Motion pattern outcome recording
+export function recordMotionPatternOutcome(refId: string, score: number): void {
+  let entry = motionPatternScores.get(refId);
+  if (!entry) {
+    entry = { sum: 0, count: 0, avg: 0 };
+    motionPatternScores.set(refId, entry);
+  }
+  entry.sum += score;
+  entry.count++;
+  entry.avg = entry.sum / entry.count;
+  globalMetrics.increment('motion.patternOutcomes');
+}
+
+export function getTopMotionPatterns(limit = 10): Array<{ refId: string; avgScore: number; count: number }> {
+  return [...motionPatternScores.entries()]
+    .filter(([, v]) => v.count > 0)
+    .sort((a, b) => b[1].avg - a[1].avg)
+    .slice(0, limit)
+    .map(([refId, v]) => ({ refId, avgScore: Math.round(v.avg * 100) / 100, count: v.count }));
+}
+
 export function resetMotionMetrics(): void {
   totalRetrievals = 0;
   totalScores = 0;
@@ -122,4 +146,5 @@ export function resetMotionMetrics(): void {
   sectionUsage.clear();
   intensityUsage.clear();
   scoreRecords.length = 0;
+  motionPatternScores.clear();
 }

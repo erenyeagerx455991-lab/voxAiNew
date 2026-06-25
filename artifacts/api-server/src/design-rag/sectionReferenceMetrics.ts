@@ -207,6 +207,26 @@ export function getTopPricingReferences(limit = 20):     SectionReferenceSummary
 export function getTopTestimonialReferences(limit = 20): SectionReferenceSummary[] { return topForPrefix('testimonials-', limit); }
 export function getTopCTAReferences(limit = 20):         SectionReferenceSummary[] { return topForPrefix('cta-',          limit); }
 
+// ── V7.3.5 — Section Leaderboards ────────────────────────────────────────────
+
+export function getSectionLeaderboard(sectionType: SectionType, limit = 10): SectionReferenceSummary[] {
+  return [..._store.values()]
+    .filter(m => m.sectionType === sectionType)
+    .sort((a, b) => b.qualityScore - a.qualityScore || b.usageCount - a.usageCount)
+    .slice(0, limit)
+    .map(toSummary);
+}
+
+export function getAllSectionLeaderboards(limit = 5): Record<string, SectionReferenceSummary[]> {
+  const ALL_TYPES: SectionType[] = ['hero', 'features', 'pricing', 'testimonials', 'cta', 'navbar', 'footer', 'dashboard', 'faq'];
+  const result: Record<string, SectionReferenceSummary[]> = {};
+  for (const type of ALL_TYPES) {
+    const board = getSectionLeaderboard(type, limit);
+    if (board.length > 0) result[type] = board;
+  }
+  return result;
+}
+
 // ── Phase 8 — Telemetry ───────────────────────────────────────────────────────
 
 export function getSectionLearningMetrics() {

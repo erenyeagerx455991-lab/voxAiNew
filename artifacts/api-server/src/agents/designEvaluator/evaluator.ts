@@ -1,6 +1,7 @@
 import type { DesignDNA } from "../types.js";
 import { computeComponentCoverage } from "../../quality/componentRecommendations.js";
 import { recordMotionScore } from "../../telemetry/motionMetrics.js";
+import { getDNAQualityScore } from "../../design-dna/dnaLearning.js";
 
 export interface EvaluationInput {
   code: string;
@@ -32,6 +33,7 @@ export interface EvaluationResult {
   dashboardScore: number;
   formScore: number;
   motionScore: number;
+  dnaQualityScore: number;
   coveragePercent: number;
   componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
@@ -759,11 +761,11 @@ function scoreMotion(code: string, designDNA: DesignDNA): { score: number; issue
 
 // V7.2.9: weights redistributed to sum to 1.00 (13 dimensions)
 const WEIGHTS = {
-  hero:                  0.14,  // was 0.15
-  layout:                0.13,  // was 0.14
-  cta:                   0.09,  // was 0.10
-  accessibility:         0.15,  // was 0.16
-  shadcn:                0.06,  // was 0.07
+  hero:                  0.13,  // was 0.14 (−0.01 for dnaQuality)
+  layout:                0.12,  // was 0.13 (−0.01 for dnaQuality)
+  cta:                   0.08,  // was 0.09 (−0.01 for dnaQuality)
+  accessibility:         0.15,
+  shadcn:                0.06,
   coverage:              0.05,
   navigation:            0.10,
   accountMenu:           0.04,
@@ -771,7 +773,8 @@ const WEIGHTS = {
   consistency:           0.04,
   dashboard:             0.06,
   form:                  0.05,
-  motion:                0.05,  // new V7.2.9
+  motion:                0.05,
+  dnaQuality:            0.03,  // new V7.3.5 — historical DNA quality signal
 };
 
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
@@ -793,6 +796,15 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const form               = scoreForm(code, isForm);
   const motion             = scoreMotion(code, input.designDNA ?? {} as DesignDNA);
 
+  // V7.3.5: Historical DNA quality signal — neutral (5.0) at cold start
+  const dnaQualityScore = getDNAQualityScore({
+    primaryBrand:   input.designDNA?.designLanguage ?? '',
+    heroStyle:      input.designDNA?.heroStyle ?? '',
+    ctaStyle:       input.designDNA?.buttonStyle ?? '',
+    layoutStyle:    input.designDNA?.layoutStyle ?? '',
+    motionStyle:    input.designDNA?.animationPersonality ?? '',
+  });
+
   const overallScore =
     Math.round(
       (hero.score                    * WEIGHTS.hero +
@@ -807,7 +819,8 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
         consistency.score            * WEIGHTS.consistency +
         dashboard.score              * WEIGHTS.dashboard +
         form.score                   * WEIGHTS.form +
-        motion.score                 * WEIGHTS.motion) * 10
+        motion.score                 * WEIGHTS.motion +
+        dnaQualityScore              * WEIGHTS.dnaQuality) * 10
     ) / 10;
 
   // Record motion telemetry
@@ -854,6 +867,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     dashboardScore:            dashboard.score,
     formScore:                 form.score,
     motionScore:               motion.score,
+    dnaQualityScore,
     coveragePercent:           coverage.coveragePercent,
     componentUsage:            coverage.componentUsage,
     issues:                    allIssues,

@@ -30,6 +30,9 @@ import { getPremiumRegistryQuality } from "../quality/registryLeaderboard.js";
 import { getComponentTreeMetrics } from "../telemetry/componentTreeMetrics.js";
 import { getDesignTokenMetrics } from "../telemetry/designTokenMetrics.js";
 import { getVisualMetrics } from "../telemetry/visualMetrics.js";
+import { getDNAEvolutionMetrics } from "../design-dna/dnaEvolution.js";
+import { getTokenLearningMetrics } from "../design-tokens/tokenLearning.js";
+import { getAllSectionLeaderboards } from "../design-rag/sectionReferenceMetrics.js";
 
 const router: Router = Router();
 
@@ -109,6 +112,11 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     componentTree: getComponentTreeMetrics(),
     designTokens: getDesignTokenMetrics(),
     visualQuality: getVisualMetrics(),
+    designDNA: {
+      evolution: getDNAEvolutionMetrics(),
+      tokenLearning: getTokenLearningMetrics(),
+      sectionLeaderboards: getAllSectionLeaderboards(),
+    },
     generatedAt: new Date().toISOString(),
   });
 });
