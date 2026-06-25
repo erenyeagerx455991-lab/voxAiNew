@@ -1,0 +1,717 @@
+V7.3.3 — Design Token System & Theme Intelligence Layer
+
+Context
+
+Current VoxAI Architecture:
+
+User Prompt
+↓
+Planner
+↓
+Architecture Agent
+↓
+Component Tree Planner
+↓
+Design DNA
+↓
+Design RAG
+↓
+Motion RAG
+↓
+Frontend Generator
+↓
+Multi Candidate (A/B/C)
+↓
+Evaluator
+↓
+Design Critic
+↓
+Repair
+↓
+Final Website
+
+Current Weakness
+
+Component Tree now exists.
+
+However generators still decide:
+
+- colors
+- radius
+- shadows
+- spacing
+- typography
+- animation values
+
+individually per build.
+
+This creates:
+
+- inconsistency
+- duplicated styling logic
+- weaker DNA enforcement
+- harder future theming
+
+Goal:
+
+Introduce a Design Token Layer.
+
+New Architecture:
+
+Prompt
+↓
+Planner
+↓
+Architecture
+↓
+Component Tree
+↓
+Design DNA
+↓
+Design Token Resolver
+↓
+Generator
+↓
+Multi Candidate
+↓
+Evaluator
+↓
+Design Critic
+↓
+Repair
+
+Tokens become the single source of truth.
+
+---
+
+Phase 1 — Token Schema
+
+Create:
+
+src/design-tokens/tokenTypes.ts
+
+Define:
+
+TokenSet
+
+ColorTokens
+
+TypographyTokens
+
+SpacingTokens
+
+RadiusTokens
+
+ShadowTokens
+
+MotionTokens
+
+LayoutTokens
+
+ThemeMetadata
+
+Every token set contains:
+
+themeId
+
+dna
+
+industry
+
+primary
+
+accent
+
+surface
+
+border
+
+text
+
+radius
+
+spacing
+
+motion
+
+shadow
+
+---
+
+Phase 2 — Core Token Registry
+
+Create:
+
+src/design-tokens/tokenRegistry.ts
+
+Register baseline themes:
+
+Linear
+
+Stripe
+
+Vercel
+
+Framer
+
+Apple
+
+Notion
+
+GitHub
+
+PayPal
+
+Each theme contains:
+
+colors
+
+typography
+
+spacing
+
+radius
+
+shadows
+
+motion
+
+Examples:
+
+Linear:
+
+primary = neutral
+
+radius = md
+
+shadow = subtle
+
+motion = restrained
+
+Stripe:
+
+primary = indigo
+
+accent = violet
+
+radius = md
+
+shadow = enterprise
+
+motion = professional
+
+Framer:
+
+primary = purple
+
+accent = pink
+
+radius = xl
+
+shadow = soft
+
+motion = expressive
+
+---
+
+Phase 3 — Token Resolver
+
+Create:
+
+src/design-tokens/tokenResolver.ts
+
+Input:
+
+Design DNA
+
+Industry
+
+Auth State
+
+Output:
+
+Resolved Token Set
+
+Example:
+
+DNA = Stripe
+
+↓
+
+stripe-enterprise-token-set
+
+This must be deterministic.
+
+No randomization.
+
+---
+
+Phase 4 — Component Tree Integration
+
+Modify:
+
+treeBuilder.ts
+
+Every node receives:
+
+tokens
+
+Example:
+
+HeroHeadline
+
+↓
+
+{
+tokenTypography: "hero-xl",
+tokenColor: "text-primary"
+}
+
+Component tree becomes token-aware.
+
+---
+
+Phase 5 — Generator Integration
+
+Modify:
+
+frontendStep.ts
+
+Current:
+
+Generator decides styles.
+
+Future:
+
+Generator consumes tokens.
+
+Examples:
+
+Instead of:
+
+text-purple-600
+
+Use:
+
+text-primary
+
+Instead of:
+
+rounded-2xl
+
+Use:
+
+rounded-card
+
+Instead of:
+
+shadow-lg
+
+Use:
+
+shadow-surface
+
+No hardcoded styling.
+
+---
+
+Phase 6 — CSS Variable System
+
+Create:
+
+src/design-tokens/cssVariables.ts
+
+Generate:
+
+:root {
+--primary
+--accent
+--surface
+--border
+--radius-card
+--radius-button
+--shadow-surface
+--shadow-floating
+}
+
+Every generated website must use CSS variables.
+
+No hardcoded hex colors.
+
+No direct Tailwind color references.
+
+---
+
+Phase 7 — Theme Switching Engine
+
+Create:
+
+src/design-tokens/themeSwitcher.ts
+
+Support:
+
+Light
+
+Dark
+
+Auto
+
+Enterprise
+
+Creator
+
+Dashboard
+
+Switch themes by replacing token sets.
+
+No component regeneration required.
+
+---
+
+Phase 8 — DNA Enforcement
+
+Modify:
+
+Design DNA pipeline
+
+DNA no longer only affects layout.
+
+DNA also controls:
+
+colors
+
+radius
+
+shadows
+
+motion
+
+spacing
+
+Examples:
+
+Linear:
+
+minimal spacing
+
+small shadows
+
+neutral palette
+
+Stripe:
+
+enterprise spacing
+
+indigo palette
+
+medium radius
+
+Framer:
+
+large radius
+
+expressive motion
+
+gradient accents
+
+---
+
+Phase 9 — Evaluator Integration
+
+Add:
+
+tokenQualityScore
+
+Measures:
+
+token consistency
+
+hardcoded color violations
+
+hardcoded radius violations
+
+shadow consistency
+
+theme consistency
+
+Range:
+
+0–10
+
+Do NOT modify:
+
+treeQualityScore
+
+motionScore
+
+dashboardScore
+
+formScore
+
+existing evaluator dimensions
+
+Add separately.
+
+---
+
+Phase 10 — Design Critic Integration
+
+Modify:
+
+designCriticStep.ts
+
+Critic must inspect:
+
+token usage
+
+theme consistency
+
+DNA consistency
+
+Examples:
+
+Framer page using Linear tokens
+
+must be flagged.
+
+Stripe page with random purple gradients
+
+must be flagged.
+
+---
+
+Phase 11 — Multi Candidate Integration
+
+Candidate A
+
+Candidate B
+
+Candidate C
+
+must all share:
+
+same token set
+
+same DNA theme
+
+same color system
+
+Only layout differs.
+
+Theme must remain consistent.
+
+---
+
+Phase 12 — Registry Integration
+
+Modify:
+
+premium registry
+
+Map all premium templates to token usage.
+
+Examples:
+
+Hero
+
+uses:
+
+text-primary
+
+surface-card
+
+shadow-surface
+
+Pricing
+
+uses:
+
+badge-accent
+
+surface-card
+
+Dashboard
+
+uses:
+
+surface-panel
+
+border-subtle
+
+No template may contain hardcoded:
+
+#HEX
+
+rgb()
+
+purple-600
+
+blue-500
+
+green-400
+
+unless inside token definitions.
+
+---
+
+Phase 13 — Telemetry
+
+Create:
+
+designTokenMetrics.ts
+
+Track:
+
+tokenViolations
+
+hardcodedColorUsage
+
+hardcodedRadiusUsage
+
+themeDistribution
+
+mostUsedTheme
+
+leastUsedTheme
+
+Expose:
+
+GET /api/telemetry/quality
+
+designTokens
+
+---
+
+Phase 14 — Token Validator
+
+Create:
+
+tokenValidator.ts
+
+Detect:
+
+hardcoded colors
+
+hardcoded shadows
+
+hardcoded radius
+
+missing variables
+
+theme conflicts
+
+invalid token references
+
+Fail validation when violations exceed threshold.
+
+---
+
+Phase 15 — Tests
+
+Create:
+
+70+ tests minimum
+
+Cover:
+
+token registry
+
+resolver
+
+theme switching
+
+DNA mapping
+
+tree integration
+
+generator integration
+
+validator
+
+telemetry
+
+critic integration
+
+multi candidate consistency
+
+---
+
+Phase 16 — Audit
+
+Create:
+
+artifacts/api-server/v7.3.3Audit.md
+
+Document:
+
+token count
+
+themes
+
+variables
+
+validator results
+
+theme distribution
+
+integration points
+
+telemetry output
+
+future roadmap
+
+remaining gaps
+
+---
+
+Success Criteria
+
+Every build resolves a token set.
+
+Generator consumes tokens.
+
+Component Tree consumes tokens.
+
+Premium Registry consumes tokens.
+
+Evaluator scores tokens.
+
+Critic evaluates tokens.
+
+Telemetry tracks tokens.
+
+Theme switching works.
+
+No hardcoded colors outside token definitions.
+
+No API changes.
+
+No queue changes.
+
+No provider changes.
+
+No Design DNA regressions.
+
+No Component Tree regressions.
+
+No Motion Engine regressions.
+
+No Design Critic regressions.
+
+Result:
+
+VoxAI evolves from:
+
+Component Architecture Generator
+
+to
+
+Theme-Aware Design System Generator.
+
+Foundation becomes ready for:
+
+V7.3.4 Visual Diff Engine
+
+V7.3.5 Layout Intelligence Engine
+
+V7.4.0 Autonomous Builder

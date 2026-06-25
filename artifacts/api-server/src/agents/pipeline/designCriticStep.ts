@@ -12,6 +12,7 @@ import { recordCriticOutcome } from "../designCritic/criticLearning.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import type { EvaluatorStepOutput } from "./designEvaluatorStep.js";
 import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
+import { buildTokenCodegenContext } from "../../design-tokens/cssVariables.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("DesignCriticStep");
@@ -35,15 +36,25 @@ export async function runDesignCriticStep(
   const scoreBeforeCritic = evaluationResult.overallScore;
 
   // V7.3.2: Build tree context prefix so critic can inspect component architecture
+  // V7.3.3: Also inject token context so critic can flag DNA/theme inconsistencies
   let treeAwareCode = fixedCode;
   try {
+    const prefixParts: string[] = [];
     if (evaluated.componentTree) {
       const treeCtx = buildTreeContextString(evaluated.componentTree);
-      treeAwareCode = `/* COMPONENT ARCHITECTURE TREE:\n${treeCtx}\n*/\n\n${fixedCode}`;
+      prefixParts.push(`/* COMPONENT ARCHITECTURE TREE:\n${treeCtx}\n*/`);
       log.info("TREE_CONTEXT_INJECTED_FOR_CRITIC", {
         sections: evaluated.componentTree.statistics.sectionCount,
         nodes: evaluated.componentTree.statistics.totalNodes,
       });
+    }
+    if (evaluated.tokenSet) {
+      const tokenCtx = buildTokenCodegenContext(evaluated.tokenSet);
+      prefixParts.push(`/* DESIGN TOKEN SYSTEM (theme: ${evaluated.tokenSet.metadata.themeName}, DNA: ${evaluated.tokenSet.metadata.dna}):\nFLAG violations where code uses hardcoded colors, mismatched DNA tokens, or Tailwind color classes instead of CSS variables.\n\n${tokenCtx.slice(0, 800)}\n*/`);
+      log.info("TOKEN_CONTEXT_INJECTED_FOR_CRITIC", { themeId: evaluated.tokenSet.metadata.themeId });
+    }
+    if (prefixParts.length > 0) {
+      treeAwareCode = prefixParts.join('\n\n') + '\n\n' + fixedCode;
     }
   } catch (e) {
     log.error("TREE_CRITIC_CONTEXT_FAILED", { error: String(e) });

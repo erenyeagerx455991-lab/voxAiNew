@@ -10,6 +10,9 @@ import { truncateForGroq } from "../../contextManager.js";
 import type { DesignDNA, ProjectFileSSE } from "../types.js";
 import type { ArchitectureOutput, FrontendOutput, PipelineKeys, PageTree } from "./pipelineTypes.js";
 import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
+import { resolveFromDNAComposition } from "../../design-tokens/tokenResolver.js";
+import { buildTokenCodegenContext } from "../../design-tokens/cssVariables.js";
+import type { TokenSet } from "../../design-tokens/tokenTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import { isComponentDeprecated, getBestAlternativeInCategory } from "../../quality/componentMetrics.js";
 import { extractRetrievalIntent } from "../../design-rag/retriever.js";
@@ -142,6 +145,35 @@ export async function runFrontendStep(
   log.info("DESIGN_DNA_RESOLVED", { status: designAgentStatus, language: design.designLanguage, heroStyle: design.heroStyle });
   sse(res, { type: "step", step: 2, agent: "Design Agent", status: "done", design, designAgentStatus, designAgentError });
 
+  // V7.3.3: Resolve design token set from DNA composition + industry + auth
+  let tokenSet: TokenSet | undefined;
+  let tokenCtx = '';
+  try {
+    tokenSet = resolveFromDNAComposition(
+      (dnaComposition as Record<string, number>) ?? {},
+      (() => {
+        const wt = blueprint.websiteType?.toLowerCase() ?? '';
+        if (wt.includes('health') || wt.includes('medical')) return 'healthcare';
+        if (wt.includes('shop') || wt.includes('store') || wt.includes('ecommerce')) return 'ecommerce';
+        if (wt.includes('finance') || wt.includes('fintech') || wt.includes('bank')) return 'fintech';
+        if (wt.includes('education') || wt.includes('learn')) return 'education';
+        if (wt.includes('restaurant') || wt.includes('food')) return 'restaurant';
+        if (wt.includes('enterprise') || wt.includes('b2b')) return 'enterprise';
+        return 'saas';
+      })(),
+      (() => {
+        const a = (plan.authState ?? 'guest');
+        if (a === 'admin') return 'admin';
+        if (a === 'dashboard') return 'dashboard';
+        if (a === 'authenticated') return 'authenticated';
+        return 'guest';
+      })(),
+    );
+    tokenCtx = buildTokenCodegenContext(tokenSet);
+    sse(res, { type: "token_resolved", themeId: tokenSet.metadata.themeId, themeName: tokenSet.metadata.themeName, mode: tokenSet.metadata.mode });
+    log.info("TOKEN_SET_RESOLVED", { themeId: tokenSet.metadata.themeId, personality: tokenSet.metadata.personality });
+  } catch (e) { log.error("TOKEN_RESOLUTION_FAILED", { error: String(e) }); }
+
   const selectedTemplates = selectTemplatesForPrompt(prompt, blueprint.sectionOrder, design, referenceSites, primaryReference);
   const componentContext = buildContextFromTemplates(selectedTemplates);
   log.info("COMPONENT_TEMPLATES_SELECTED", { count: selectedTemplates.length });
@@ -242,6 +274,7 @@ export async function runFrontendStep(
     if (retrievalCtx) codegenSystemParts.push(retrievalCtx);
     if (motionCtx) codegenSystemParts.push(motionCtx);
     if (treeCtx) codegenSystemParts.push(treeCtx);
+    if (tokenCtx) codegenSystemParts.push(tokenCtx);
     generatedCode = await callAI(
       openrouterKey,
       [{ role: "system", content: codegenSystemParts.join('\n\n') }, { role: "user", content: codegenUserPrompt }],
@@ -285,5 +318,6 @@ export async function runFrontendStep(
     retrievalContext: retrievalCtx,
     retrievalReferenceIds,
     componentTree: tree,
+    tokenSet,
   };
 }

@@ -1,8 +1,10 @@
 import type { PageBlueprint, ProjectBlueprint, DesignDNA, ProjectFileSSE, ServerKnowledgeGraph, DNAComposition } from "../types.js";
 import type { PageTree } from "../../component-tree/componentTreeTypes.js";
+import type { TokenSet } from "../../design-tokens/tokenTypes.js";
 
 export type { PageBlueprint, ProjectBlueprint, DesignDNA, ProjectFileSSE, ServerKnowledgeGraph, DNAComposition };
 export type { PageTree };
+export type { TokenSet };
 
 export interface PlannerOutput {
   cleanPlan: string;
@@ -47,6 +49,7 @@ export interface FrontendOutput {
   retrievalContext: string;
   retrievalReferenceIds: string[];
   componentTree?: PageTree;
+  tokenSet?: TokenSet;
 }
 
 export interface BackendOutput {

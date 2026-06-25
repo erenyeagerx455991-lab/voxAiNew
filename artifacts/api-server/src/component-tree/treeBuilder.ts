@@ -159,6 +159,48 @@ function selectComponentsForSection(
 
 // ── Node builders ─────────────────────────────────────────────────────────────
 
+// ── V7.3.3 Token metadata per component ──────────────────────────────────────
+
+const COMPONENT_TOKEN_MAP: Record<string, { tokenTypography?: string; tokenColor?: string; tokenShadow?: string; tokenRadius?: string }> = {
+  HeroHeadline:      { tokenTypography: 'hero-xl',    tokenColor: 'text' },
+  HeroSupportingCopy:{ tokenTypography: 'body-lg',    tokenColor: 'text-muted' },
+  CTAGroup:          { tokenColor: 'primary',         tokenRadius: 'radius-button',  tokenShadow: 'shadow-surface' },
+  PrimaryCTA:        { tokenColor: 'primary',         tokenRadius: 'radius-button',  tokenShadow: 'shadow-surface' },
+  CTAButton:         { tokenColor: 'primary',         tokenRadius: 'radius-button',  tokenShadow: 'shadow-surface' },
+  NavbarCTAButton:   { tokenColor: 'primary',         tokenRadius: 'radius-button' },
+  CTAHeadline:       { tokenTypography: 'heading1',   tokenColor: 'text' },
+  HeroBadge:         { tokenColor: 'badge',           tokenRadius: 'radius-badge' },
+  MinimalBadge:      { tokenColor: 'badge',           tokenRadius: 'radius-badge' },
+  MotionBadge:       { tokenColor: 'badge',           tokenRadius: 'radius-badge' },
+  Eyebrow:           { tokenTypography: 'caption',    tokenColor: 'text-muted' },
+  AnnouncementBar:   { tokenColor: 'surface-panel',   tokenRadius: 'radius-md' },
+  TrustRow:          { tokenColor: 'text-muted',      tokenTypography: 'body-sm' },
+  EnterpriseProof:   { tokenColor: 'surface-card',    tokenShadow: 'shadow-subtle' },
+  AnimatedVisual:    { tokenShadow: 'shadow-floating' },
+  FeatureCard:       { tokenColor: 'surface-card',    tokenShadow: 'shadow-surface', tokenRadius: 'radius-card' },
+  FeatureGrid:       { tokenColor: 'surface',         tokenShadow: 'shadow-subtle' },
+  PricingCard:       { tokenColor: 'surface-card',    tokenShadow: 'shadow-surface', tokenRadius: 'radius-card' },
+  PricingGrid:       { tokenColor: 'surface' },
+  PricingHeader:     { tokenTypography: 'heading1',   tokenColor: 'text' },
+  PricingToggle:     { tokenColor: 'surface-panel',   tokenRadius: 'radius-full' },
+  PricingFAQ:        { tokenColor: 'surface-card',    tokenRadius: 'radius-card' },
+  TestimonialCard:   { tokenColor: 'surface-card',    tokenShadow: 'shadow-surface', tokenRadius: 'radius-card' },
+  FAQAccordion:      { tokenColor: 'surface',         tokenRadius: 'radius-md' },
+  Logo:              { tokenColor: 'text' },
+  NavigationMenu:    { tokenColor: 'text',            tokenTypography: 'body-md' },
+  AvatarMenu:        { tokenColor: 'surface-card',    tokenRadius: 'radius-full' },
+  CommandPalette:    { tokenColor: 'surface-panel',   tokenShadow: 'shadow-floating', tokenRadius: 'radius-lg' },
+  FooterLinks:       { tokenColor: 'text-muted',      tokenTypography: 'body-sm' },
+  DashboardTabs:     { tokenColor: 'surface-panel',   tokenRadius: 'radius-md' },
+  DashboardFilters:  { tokenColor: 'surface',         tokenRadius: 'radius-input' },
+  DataTable:         { tokenColor: 'surface-card',    tokenShadow: 'shadow-subtle' },
+  CRUDTable:         { tokenColor: 'surface-card',    tokenShadow: 'shadow-subtle' },
+  MetricCard:        { tokenColor: 'surface-card',    tokenShadow: 'shadow-surface', tokenRadius: 'radius-card' },
+  SettingsTabs:      { tokenColor: 'surface-panel',   tokenRadius: 'radius-md' },
+  AvatarUploader:    { tokenColor: 'surface-card',    tokenRadius: 'radius-full' },
+  SocialProof:       { tokenColor: 'text-muted',      tokenTypography: 'body-sm' },
+};
+
 function buildComponentNode(
   componentId: string,
   sectionId: string,
@@ -166,6 +208,7 @@ function buildComponentNode(
   catalog: CatalogEntry | undefined,
   order: number,
 ): ComponentNode {
+  const tokenMeta = COMPONENT_TOKEN_MAP[componentId] ?? {};
   return {
     id: `${sectionId}-${componentId}`,
     name: componentId,
@@ -178,7 +221,8 @@ function buildComponentNode(
       shadcnComponents: catalog?.recommendedShadcn ?? [],
       requiresTrustSignal: catalog?.requiresTrustSignal ?? false,
       requiresCTA: catalog?.requiresCTA ?? false,
-      dnaSpecific: catalog ? undefined : undefined,
+      dnaSpecific: undefined,
+      ...tokenMeta,
     },
   };
 }

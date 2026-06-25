@@ -10,6 +10,8 @@ import { normalizeSectionType } from "../../design-rag/sectionRetriever.js";
 import { recordDashboardScore } from "../../telemetry/dashboardMetrics.js";
 import { recordFormScore } from "../../telemetry/formMetrics.js";
 import { scoreTree } from "../../component-tree/treeValidator.js";
+import { validateTokenUsage } from "../../design-tokens/tokenValidator.js";
+import { recordTokenBuild } from "../../telemetry/designTokenMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -33,6 +35,7 @@ export interface EvaluatorResult {
   formScore: number;
   motionScore: number;
   treeQualityScore: number;
+  tokenQualityScore: number;
   issues: Array<{ category: string; severity: string; message: string }>;
   repairCount: number;
   repairApplied: boolean;
@@ -288,6 +291,26 @@ export async function runDesignEvaluatorStep(
   const treeQualityScore = scoreTree(frontend.componentTree);
   log.info("TREE_QUALITY_SCORED", { treeQualityScore, hasTree: !!frontend.componentTree });
 
+  // V7.3.3: Score token usage in generated code
+  const tokenValidation = validateTokenUsage(currentCode);
+  const tokenQualityScore = tokenValidation.tokenQualityScore;
+  log.info("TOKEN_QUALITY_SCORED", { tokenQualityScore, violations: tokenValidation.violationCount, hardcodedColors: tokenValidation.hardcodedColorCount });
+
+  const tokenSet = frontend.tokenSet;
+  if (tokenSet) {
+    recordTokenBuild({
+      themeId:              tokenSet.metadata.themeId,
+      mode:                 tokenSet.metadata.mode,
+      dna:                  tokenSet.metadata.dna,
+      tokenQualityScore,
+      hardcodedColorCount:  tokenValidation.hardcodedColorCount,
+      hardcodedRadiusCount: tokenValidation.hardcodedRadiusCount,
+      hardcodedShadowCount: tokenValidation.hardcodedShadowCount,
+      violationCount:       tokenValidation.violationCount,
+      usedCSSVariables:     /var\(--/.test(currentCode),
+    });
+  }
+
   const evaluationResult: EvaluatorResult = {
     ...evalResult,
     repairCount,
@@ -301,6 +324,7 @@ export async function runDesignEvaluatorStep(
     formScore: evalResult.formScore,
     motionScore: evalResult.motionScore,
     treeQualityScore,
+    tokenQualityScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

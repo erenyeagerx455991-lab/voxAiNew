@@ -32,6 +32,10 @@ export interface ComponentNode {
     requiresTrustSignal: boolean;
     requiresCTA: boolean;
     dnaSpecific?: string;
+    tokenTypography?: string;
+    tokenColor?: string;
+    tokenShadow?: string;
+    tokenRadius?: string;
   };
 }
 
