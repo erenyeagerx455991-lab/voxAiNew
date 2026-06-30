@@ -1,3 +1,25 @@
+/**
+ * V8.0 — Build Pipeline
+ *
+ * Orchestrates all pipeline steps in sequence.  Every step is a pure function
+ * that takes its predecessor's output + shared keys + SSE response.
+ *
+ * Step order:
+ *  1  Planner               — intent analysis, blueprint, DNA composition
+ *  2  Architecture           — project blueprint, tech stack
+ *  3  ComponentTree          — full page tree (deterministic, inline)
+ *  4  Frontend               — React/Tailwind code generation
+ *  5  CandidateSelection     — A/B/C candidates, evaluator selects best
+ *  6  Repair                 — code-fix / quality gate
+ *  7  DesignEvaluator        — 15-dimension quality scoring
+ *  8  DesignCritic           — senior designer review + targeted repair
+ *  9  ConversionIntelligence — CRO analysis + repair
+ * 10  Accessibility           — WCAG 2.1 AA evaluation + repair (V8.0)
+ * 11  Optimization            — bundle + render efficiency (V8.0)
+ * 12  Backend (Scaffold)      — API routes, DB schema, auth files
+ * 13  RuntimeValidation       — real npm install + Vite build + self-healing
+ */
+
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
 import { runPlannerStep } from "./plannerStep.js";
@@ -8,6 +30,8 @@ import { runRepairStep } from "./repairStep.js";
 import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runDesignCriticStep } from "./designCriticStep.js";
 import { runConversionStep } from "./conversionStep.js";
+import { runAccessibilityStep } from "./accessibilityStep.js";
+import { runOptimizationStep } from "./optimizationStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -29,7 +53,7 @@ export interface BuildPipelineInput {
 
 export async function runBuildPipeline(
   input: BuildPipelineInput,
-  res: Response
+  res: Response,
 ): Promise<void> {
   const { prompt, chatId, keys } = input;
   const buildId = chatId;
@@ -40,65 +64,87 @@ export async function runBuildPipeline(
   recordBuildStart(buildId, trace, prompt);
 
   try {
+    // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
-      runPlannerStep(prompt, keys, res)
+      runPlannerStep(prompt, keys, res),
     );
 
+    // ── Step 2: Architecture ───────────────────────────────────────────────────
     const architecture = await withAgentMetrics("Architecture", () =>
-      runArchitectureStep(plan, prompt, keys, res)
+      runArchitectureStep(plan, prompt, keys, res),
     );
 
-    // V7.3.2: Build component tree between architecture and frontend
+    // ── Step 3: Component Tree (deterministic, no LLM call) ────────────────────
     const componentTree = buildComponentTree({ plan, architecture, buildId: chatId });
     const treeValidation = validateTree(componentTree);
-    recordTreeBuild(componentTree, treeValidation.score, treeValidation.errors.length, treeValidation.warnings.length);
+    recordTreeBuild(
+      componentTree,
+      treeValidation.score,
+      treeValidation.errors.length,
+      treeValidation.warnings.length,
+    );
 
+    // ── Step 4: Frontend Code Generation ──────────────────────────────────────
     const frontend = await withAgentMetrics("Frontend", () =>
-      runFrontendStep(architecture, prompt, keys, res, componentTree)
+      runFrontendStep(architecture, prompt, keys, res, componentTree),
     );
 
-    // V7.2.0: generate B+C candidates, evaluate all 3, select best
+    // ── Step 5: Multi-Candidate Selection (V7.2.0) ─────────────────────────────
     const { winner } = await withAgentMetrics("CandidateSelection", () =>
-      runCandidateSelectionStep(frontend, prompt, keys, res, buildId)
+      runCandidateSelectionStep(frontend, prompt, keys, res, buildId),
     );
 
-    // Phase 6: only the winning candidate enters the repair loop
+    // ── Step 6: Repair Loop ────────────────────────────────────────────────────
     const repairedFrontend = await withAgentMetrics("Repair", () =>
-      runRepairStep(winner, keys, res)
+      runRepairStep(winner, keys, res),
     );
 
+    // ── Step 7: Design Evaluator (15-dimension scoring) ────────────────────────
     const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
-      runDesignEvaluatorStep(repairedFrontend, keys, res)
+      runDesignEvaluatorStep(repairedFrontend, keys, res),
     );
 
-    // V7.3.0: Design Critic Agent — human-like review + targeted repair
+    // ── Step 8: Design Critic (senior designer review) ─────────────────────────
     const criticFrontend = await withAgentMetrics("DesignCritic", () =>
-      runDesignCriticStep(evaluatedFrontend, keys, res)
+      runDesignCriticStep(evaluatedFrontend, keys, res),
     );
 
-    // V7.3.1: Conversion Intelligence Engine — CRO analysis + targeted repair
+    // ── Step 9: Conversion Intelligence (CRO) ─────────────────────────────────
     const conversionFrontend = await withAgentMetrics("ConversionIntelligence", () =>
-      runConversionStep(criticFrontend, keys, res)
+      runConversionStep(criticFrontend, keys, res),
     );
 
-    // V7.3.5: Record DNA outcomes for self-evolving learning loop
-    const evalRes = (conversionFrontend as unknown as Record<string, unknown>).evaluationResult as EvaluatorResult | undefined;
+    // ── Step 10: Accessibility (V8.0 — WCAG 2.1 AA) ───────────────────────────
+    const accessibilityFrontend = await runAccessibilityStep(conversionFrontend, keys, res);
+
+    // ── Step 11: Optimization (V8.0 — bundle + render) ────────────────────────
+    const optimizedFrontend = await runOptimizationStep(accessibilityFrontend, keys, res);
+
+    // ── V7.3.5: DNA Outcome Recording (self-learning) ──────────────────────────
+    const evalRes = (
+      conversionFrontend as unknown as Record<string, unknown>
+    ).evaluationResult as EvaluatorResult | undefined;
+
     if (evalRes) {
-      const designDNA = conversionFrontend.design;
+      const designDNA = optimizedFrontend.design;
       const dnaComp = plan.dnaComposition as unknown as Record<string, number>;
       const primaryBrand = dnaComp
-        ? (Object.entries(dnaComp).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] ?? '')
-        : '';
+        ? (
+            Object.entries(dnaComp).sort(
+              ([, a], [, b]) => (b as number) - (a as number),
+            )[0]?.[0] ?? ""
+          )
+        : "";
       recordDNAOutcome({
         primaryBrand,
-        heroStyle:      designDNA?.heroStyle ?? '',
-        ctaStyle:       designDNA?.buttonStyle ?? '',
-        layoutStyle:    designDNA?.layoutStyle ?? '',
-        motionStyle:    designDNA?.animationPersonality ?? '',
-        navbarStyle:    plan.navbarVariant ?? '',
-        formStyle:      '',
-        dashboardStyle: '',
-        pricingStyle:   '',
+        heroStyle:      designDNA?.heroStyle ?? "",
+        ctaStyle:       designDNA?.buttonStyle ?? "",
+        layoutStyle:    designDNA?.layoutStyle ?? "",
+        motionStyle:    designDNA?.animationPersonality ?? "",
+        navbarStyle:    plan.navbarVariant ?? "",
+        formStyle:      "",
+        dashboardStyle: "",
+        pricingStyle:   "",
         overallScore:    evalRes.overallScore ?? 0,
         visualScore:     evalRes.visualQualityScore ?? 5,
         criticScore:     evalRes.treeQualityScore ?? 5,
@@ -110,16 +156,23 @@ export async function runBuildPipeline(
       });
     }
 
+    // ── Step 12: Backend Scaffold ──────────────────────────────────────────────
     const backend = await withAgentMetrics("Scaffold", () =>
-      runBackendStep(architecture, conversionFrontend, keys, res)
+      runBackendStep(architecture, optimizedFrontend, keys, res),
     );
 
+    // ── Step 13: Runtime Validation (real Vite build + self-healing) ───────────
     const runtimeResult = await withAgentMetrics("RuntimeValidation", () =>
       runRuntimeValidationStep(
-        { allFiles: backend.allFiles, projectBlueprint: architecture.projectBlueprint, knowledgeGraph: backend.knowledgeGraph, chatId },
+        {
+          allFiles: backend.allFiles,
+          projectBlueprint: architecture.projectBlueprint,
+          knowledgeGraph: backend.knowledgeGraph,
+          chatId,
+        },
         keys,
-        res
-      )
+        res,
+      ),
     );
 
     recordBuildSuccess(buildId);
@@ -128,7 +181,7 @@ export async function runBuildPipeline(
 
     sse(res, {
       type: "done",
-      code: conversionFrontend.fixedCode,
+      code: optimizedFrontend.fixedCode,
       plan: cleanPlan,
       blueprint,
       projectBlueprint: architecture.projectBlueprint,
@@ -139,6 +192,9 @@ export async function runBuildPipeline(
       themeTokens: dnaTheme,
       motionProfile: dnaMotion,
       knowledgeGraph: backend.knowledgeGraph,
+      // V8.0: surface new quality signals
+      accessibilityScore: (accessibilityFrontend as { accessibilityResult?: { overallScore: number } }).accessibilityResult?.overallScore,
+      optimizationScore:  (optimizedFrontend as { optimizationResult?: { overallScore: number } }).optimizationResult?.overallScore,
     });
   } catch (err) {
     const e = err as Error;

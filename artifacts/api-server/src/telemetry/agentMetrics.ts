@@ -12,7 +12,15 @@ export type AgentName =
   | "Database"
   | "Auth"
   | "Scaffold"
-  | "RuntimeValidation";
+  | "RuntimeValidation"
+  // V7.x additions
+  | "CandidateSelection"
+  | "DesignEvaluator"
+  | "DesignCritic"
+  | "ConversionIntelligence"
+  // V8.0 additions
+  | "Accessibility"
+  | "Optimization";
 
 interface AgentRecord {
   calls: number;
