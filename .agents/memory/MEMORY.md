@@ -1,3 +1,4 @@
+- [VoxAI V7.3.5 Self-Evolving DNA Engine](voxai-v735-dna-engine.md) — 18-phase learning loop; Phases 1-16 pre-built; gaps fixed: Phase 13 (navbar/dashboard/form refs), Phase 15 (flat+nested dual telemetry); 1417 tests pass.
 - [VoxAI V7.3.4 Visual Diff Engine](voxai-v734-visual-diff.md) — static code-based visual analysis; VisualIssue.viewport must be nested in region.viewport not top-level; createLogger not structuredLogger.child; 712 tests pass.
 - [VoxAI Unified AI Service](voxai-unified-ai-service.md) — all LLM calls use callAI() from aiService.ts; 3-model OpenRouter fallback chain; callGroq() kept only for tests.
 - [VoxAI Supabase secrets swap](voxai-supabase-secrets.md) — both VITE_SUPABASE_* secrets were entered as JWTs; URL is hardcoded in vite define block as workaround.

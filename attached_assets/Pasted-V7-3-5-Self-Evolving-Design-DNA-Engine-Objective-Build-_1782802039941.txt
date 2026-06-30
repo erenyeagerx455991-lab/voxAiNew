@@ -1,0 +1,551 @@
+V7.3.5 — Self-Evolving Design DNA Engine
+
+Objective
+
+Build a fully autonomous Design DNA learning system that continuously improves design decisions using evaluator scores, critic scores, visual quality scores, conversion signals, section outcomes, and component performance.
+
+The goal is:
+
+Current System:
+Prompt → DNA → Build → Score
+
+New System:
+Prompt → DNA → Build → Score → Learn → Improved DNA → Better Future Builds
+
+This system must never change existing APIs, SSE events, queues, providers, or generation flow.
+
+---
+
+Phase 1 — DNA Metrics Store
+
+Create:
+
+src/design-dna/dnaMetrics.ts
+
+Track performance for:
+
+- DNA Brand
+- Hero Style
+- CTA Style
+- Layout Style
+- Motion Style
+- Navbar Style
+- Form Style
+- Dashboard Style
+- Pricing Style
+
+Schema:
+
+interface DesignDNAMetrics {
+  id: string;
+
+  usageCount: number;
+
+  averageScore: number;
+
+  averageVisualScore: number;
+
+  averageCriticScore: number;
+
+  averageConversionScore: number;
+
+  averageMotionScore: number;
+
+  averageTokenScore: number;
+
+  averageTreeScore: number;
+
+  successRate: number;
+
+  repairRate: number;
+
+  lastUsedAt: string;
+}
+
+---
+
+Phase 2 — DNA Outcome Recorder
+
+Create:
+
+src/design-dna/dnaLearning.ts
+
+Function:
+
+recordDNAOutcome()
+
+Must run only after final evaluation.
+
+Never use pre-repair scores.
+
+Only final post-repair scores count.
+
+---
+
+Phase 3 — DNA Quality Formula
+
+Create:
+
+calculateDNAQuality()
+
+Formula:
+
+qualityScore =
+overallScore × 0.35
+
++ visualScore × 0.15
++ criticScore × 0.15
++ conversionScore × 0.15
++ tokenScore × 0.05
++ treeScore × 0.05
++ motionScore × 0.05
++ (1 - repairRate) × 10 × 0.05
+
+Normalize to:
+
+0–10
+
+New DNA entries start at:
+
+5.0
+
+No cold-start penalty.
+
+---
+
+Phase 4 — Promotion Engine
+
+Automatically promote successful DNA patterns.
+
+Requirements:
+
+usageCount >= 10
+
+AND
+
+averageScore >= 9
+
+AND
+
+repairRate < 15%
+
+Promotion:
+
+priorityBonus += 1.5
+
+Record promotion history.
+
+Fully reversible.
+
+---
+
+Phase 5 — Demotion Engine
+
+Automatically demote weak DNA patterns.
+
+Conditions:
+
+usageCount >= 10
+
+AND
+
+averageScore < 7
+
+OR
+
+repairRate > 50%
+
+Penalty:
+
+priorityPenalty -= 2.0
+
+Fully reversible.
+
+Never permanently ban a DNA.
+
+---
+
+Phase 6 — DNA Evolution Layer
+
+Create:
+
+src/design-dna/dnaEvolution.ts
+
+System learns:
+
+Best hero variants
+
+Best CTA variants
+
+Best trust patterns
+
+Best layout patterns
+
+Best motion patterns
+
+Best dashboard patterns
+
+Example:
+
+Current:
+
+Linear Hero → Split Layout
+
+After learning:
+
+Linear Hero →
+Split Layout
++
+Trust Avatar Row
++
+Badge
++
+Secondary CTA
+
+Evolution must be additive.
+
+Never remove original DNA personality.
+
+---
+
+Phase 7 — Planner Integration
+
+Modify planner stage.
+
+Before code generation:
+
+Load:
+
+Top-performing DNA adjustments.
+
+Inject into prompt:
+
+DNA Optimization Layer:
+
+Historical Winner Patterns:
+
+- Avatar trust rows improve score +0.8
+- Badges improve score +0.5
+- Secondary CTA improves conversion +0.4
+
+Apply when compatible.
+
+Must be deterministic.
+
+No additional LLM call.
+
+---
+
+Phase 8 — Design RAG Integration
+
+Modify:
+
+retriever.ts
+
+sectionRetriever.ts
+
+DNA performance must influence retrieval.
+
+Scoring bonus:
+
+(qualityScore - 5) × 1.5
+
+Range:
+
+-7.5 → +7.5
+
+DNA match must still dominate.
+
+Poor DNA match can never outrank a correct DNA match.
+
+---
+
+Phase 9 — Component Tree Integration
+
+Modify:
+
+treeBuilder.ts
+
+ComponentTree should prefer historically successful components.
+
+Examples:
+
+DataTable
+
+NavigationMenu
+
+Badge
+
+Avatar
+
+Tabs
+
+Command
+
+DropdownMenu
+
+Priority increases automatically when historical performance is strong.
+
+---
+
+Phase 10 — Design Critic Learning
+
+Modify:
+
+criticLearning.ts
+
+Critic categories must learn effectiveness.
+
+Track:
+
+- issue category
+- fix applied
+- score improvement
+
+Promote:
+
+high-impact categories
+
+Demote:
+
+low-impact categories
+
+---
+
+Phase 11 — Token Learning
+
+Modify:
+
+design-tokens
+
+Track:
+
+theme performance
+
+Examples:
+
+Linear Theme
+
+Stripe Theme
+
+Framer Theme
+
+GitHub Theme
+
+Store:
+
+average score
+
+average visual score
+
+repair rate
+
+Use for future theme recommendations.
+
+---
+
+Phase 12 — Motion Learning
+
+Modify:
+
+motionMetrics.ts
+
+Track:
+
+motion references
+
+stagger patterns
+
+entrance patterns
+
+hero patterns
+
+Promote motion systems producing higher scores.
+
+---
+
+Phase 13 — Section Learning Expansion
+
+Upgrade:
+
+sectionReferenceMetrics.ts
+
+Track:
+
+Hero references
+
+Pricing references
+
+CTA references
+
+Dashboard references
+
+Form references
+
+Navbar references
+
+Per-section leaderboards.
+
+---
+
+Phase 14 — DNA Leaderboards
+
+Create:
+
+getTopDNAs()
+
+getWorstDNAs()
+
+getTopHeroPatterns()
+
+getTopCTAPatterns()
+
+getTopLayoutPatterns()
+
+Return top 20.
+
+Sorted by quality score.
+
+---
+
+Phase 15 — Telemetry
+
+GET /api/telemetry/quality
+
+Add:
+
+{
+  "designDNA": {
+    "trackedDNAs": 0,
+    "averageDNAQuality": 0,
+    "topDNAs": [],
+    "worstDNAs": [],
+    "promotedCount": 0,
+    "demotedCount": 0,
+    "topHeroPatterns": [],
+    "topCTAPatterns": [],
+    "topLayoutPatterns": []
+  }
+}
+
+---
+
+Phase 16 — Evaluation Dimension
+
+Add:
+
+dnaQualityScore
+
+New evaluator dimension.
+
+Weight:
+
+0.03
+
+Weights must remain normalized.
+
+Document exact redistribution.
+
+Must not break:
+
+Design Critic
+
+Conversion Prediction
+
+Visual Diff
+
+Motion
+
+Token
+
+Tree
+
+Dashboard
+
+Form
+
+Navigation
+
+---
+
+Phase 17 — Tests
+
+Create:
+
+80+ tests
+
+Cover:
+
+quality formula
+
+promotion
+
+demotion
+
+evolution
+
+retrieval weighting
+
+planner injection
+
+leaderboards
+
+telemetry
+
+DNA learning
+
+tree integration
+
+motion integration
+
+token integration
+
+No mocks hiding logic.
+
+---
+
+Phase 18 — Audit
+
+Create:
+
+artifacts/api-server/v7.3.5Audit.md
+
+Must include:
+
+- DNA quality formula
+- promotion rules
+- demotion rules
+- telemetry schema
+- learning flow
+- retrieval weighting
+- evaluator changes
+- performance impact
+- rollback strategy
+
+---
+
+Hard Constraints
+
+DO NOT modify:
+
+- API contracts
+- Queue architecture
+- SSE events
+- Build pipeline order
+- Provider routing
+- OpenRouter integration
+- Groq integration
+- Design Critic behavior
+- Visual Diff logic
+
+DO NOT add new LLM calls.
+
+Learning must be deterministic.
+
+All existing tests must continue passing.
+
+Target:
+
+100% backward compatibility.
+Zero regressions.
+Autonomous improvement of future builds.

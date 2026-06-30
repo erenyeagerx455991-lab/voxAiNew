@@ -206,6 +206,10 @@ export function getTopFeatureReferences(limit = 20):     SectionReferenceSummary
 export function getTopPricingReferences(limit = 20):     SectionReferenceSummary[] { return topForPrefix('pricing-',      limit); }
 export function getTopTestimonialReferences(limit = 20): SectionReferenceSummary[] { return topForPrefix('testimonials-', limit); }
 export function getTopCTAReferences(limit = 20):         SectionReferenceSummary[] { return topForPrefix('cta-',          limit); }
+// V7.3.5 — Phase 13: expanded section leaderboards
+export function getTopNavbarReferences(limit = 20):      SectionReferenceSummary[] { return topForPrefix('navbar-',       limit); }
+export function getTopDashboardReferences(limit = 20):   SectionReferenceSummary[] { return topForPrefix('dashboard-',    limit); }
+export function getTopFormReferences(limit = 20):        SectionReferenceSummary[] { return topForPrefix('form-',         limit); }
 
 // ── V7.3.5 — Section Leaderboards ────────────────────────────────────────────
 
@@ -218,7 +222,7 @@ export function getSectionLeaderboard(sectionType: SectionType, limit = 10): Sec
 }
 
 export function getAllSectionLeaderboards(limit = 5): Record<string, SectionReferenceSummary[]> {
-  const ALL_TYPES: SectionType[] = ['hero', 'features', 'pricing', 'testimonials', 'cta', 'navbar', 'footer', 'dashboard', 'faq'];
+  const ALL_TYPES: SectionType[] = ['hero', 'features', 'pricing', 'testimonials', 'cta', 'navbar', 'footer', 'dashboard', 'faq', 'form'];
   const result: Record<string, SectionReferenceSummary[]> = {};
   for (const type of ALL_TYPES) {
     const board = getSectionLeaderboard(type, limit);
@@ -248,13 +252,17 @@ export function getSectionLearningMetrics() {
       : 0;
 
   return {
-    referencesTracked:    all.length,
-    topHeroReferences:    getTopHeroReferences(5),
-    topPricingReferences: getTopPricingReferences(5),
-    topFeatureReferences: getTopFeatureReferences(5),
-    topCTAReferences:     getTopCTAReferences(5),
-    promotedCount:        _promotedCount,
-    demotedCount:         _demotedCount,
+    referencesTracked:       all.length,
+    topHeroReferences:       getTopHeroReferences(5),
+    topPricingReferences:    getTopPricingReferences(5),
+    topFeatureReferences:    getTopFeatureReferences(5),
+    topCTAReferences:        getTopCTAReferences(5),
+    // V7.3.5 — Phase 13 expanded
+    topNavbarReferences:     getTopNavbarReferences(5),
+    topDashboardReferences:  getTopDashboardReferences(5),
+    topFormReferences:       getTopFormReferences(5),
+    promotedCount:           _promotedCount,
+    demotedCount:            _demotedCount,
     averageQualityScore,
     averageRepairRate,
   };

@@ -112,11 +112,25 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     componentTree: getComponentTreeMetrics(),
     designTokens: getDesignTokenMetrics(),
     visualQuality: getVisualMetrics(),
-    designDNA: {
-      evolution: getDNAEvolutionMetrics(),
-      tokenLearning: getTokenLearningMetrics(),
-      sectionLeaderboards: getAllSectionLeaderboards(),
-    },
+    designDNA: (() => {
+      const evolution = getDNAEvolutionMetrics();
+      return {
+        // V7.3.5 Phase 15 — flat spec-required fields at top level
+        trackedDNAs:      evolution.trackedDNAs,
+        averageDNAQuality: evolution.averageDNAQuality,
+        topDNAs:          evolution.topDNAs,
+        worstDNAs:        evolution.worstDNAs,
+        promotedCount:    evolution.promotedCount,
+        demotedCount:     evolution.demotedCount,
+        topHeroPatterns:  evolution.topHeroPatterns,
+        topCTAPatterns:   evolution.topCTAPatterns,
+        topLayoutPatterns: evolution.topLayoutPatterns,
+        // Backward-compatible nested shapes for existing consumers
+        evolution,
+        tokenLearning:     getTokenLearningMetrics(),
+        sectionLeaderboards: getAllSectionLeaderboards(),
+      };
+    })(),
     generatedAt: new Date().toISOString(),
   });
 });

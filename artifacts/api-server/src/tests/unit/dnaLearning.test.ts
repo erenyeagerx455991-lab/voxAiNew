@@ -61,6 +61,10 @@ import {
   getSectionQualityScore,
   getSectionLeaderboard,
   getAllSectionLeaderboards,
+  getTopNavbarReferences,
+  getTopDashboardReferences,
+  getTopFormReferences,
+  getSectionLearningMetrics,
   resetSectionReferenceMetrics,
 } from '../../design-rag/sectionReferenceMetrics.js';
 
@@ -333,7 +337,13 @@ describe('dnaEvolution — computeEvolutionInsights', () => {
   });
 
   it('filters out low-scoring patterns (qualityScore <= 5.5)', () => {
-    recordDNAOutcome(makeBuildOutcome({ heroStyle: 'low-quality', overallScore: 4.0, repairTriggered: true }));
+    // All scores at 1.0 + repairTriggered=true → qualityScore = 1.0*0.95 + 0 ≈ 0.95 ≤ 5.5
+    recordDNAOutcome(makeBuildOutcome({
+      heroStyle: 'low-quality',
+      overallScore: 1.0, visualScore: 1.0, criticScore: 1.0, conversionScore: 1.0,
+      motionScore: 1.0, tokenScore: 1.0, treeScore: 1.0,
+      repairTriggered: true,
+    }));
     const insights = computeEvolutionInsights();
     const bad = insights.find(i => i.winner === 'low-quality');
     expect(bad).toBeUndefined();
@@ -613,5 +623,130 @@ describe('sectionReferenceMetrics — getAllSectionLeaderboards', () => {
     recordSectionOutcome({ referenceId: 'pricing-v1', sectionType: 'pricing', overallScore: 7.5, heroScore: 7.5, layoutScore: 7.5, ctaScore: 7.5, accessibilityScore: 7.5, consistencyScore: 7.5, repairTriggered: false });
     const boards = getAllSectionLeaderboards();
     expect(Object.keys(boards).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('includes form section in leaderboards when populated', () => {
+    recordSectionOutcome({ referenceId: 'form-v1', sectionType: 'form', overallScore: 8.5, heroScore: 8.0, layoutScore: 8.0, ctaScore: 8.0, accessibilityScore: 8.5, consistencyScore: 8.5, repairTriggered: false });
+    const boards = getAllSectionLeaderboards();
+    expect(boards).toHaveProperty('form');
+  });
+});
+
+// ── sectionReferenceMetrics — Phase 13 expanded getters ──────────────────────
+
+describe('sectionReferenceMetrics — getTopNavbarReferences', () => {
+  beforeEach(() => { resetSectionReferenceMetrics(); });
+
+  it('returns empty array when no navbar references recorded', () => {
+    expect(getTopNavbarReferences()).toHaveLength(0);
+  });
+
+  it('returns only navbar-prefixed references', () => {
+    recordSectionOutcome({ referenceId: 'navbar-v1', sectionType: 'navbar', overallScore: 9.0, heroScore: 8.5, layoutScore: 9.0, ctaScore: 8.5, accessibilityScore: 9.0, consistencyScore: 9.0, repairTriggered: false });
+    recordSectionOutcome({ referenceId: 'hero-v1',   sectionType: 'hero',   overallScore: 9.0, heroScore: 9.0, layoutScore: 9.0, ctaScore: 9.0, accessibilityScore: 9.0, consistencyScore: 9.0, repairTriggered: false });
+    const refs = getTopNavbarReferences();
+    expect(refs).toHaveLength(1);
+    expect(refs[0].referenceId).toBe('navbar-v1');
+  });
+
+  it('respects limit parameter', () => {
+    for (let i = 0; i < 5; i++) {
+      recordSectionOutcome({ referenceId: `navbar-${i}`, sectionType: 'navbar', overallScore: 8.0, heroScore: 8.0, layoutScore: 8.0, ctaScore: 8.0, accessibilityScore: 8.0, consistencyScore: 8.0, repairTriggered: false });
+    }
+    expect(getTopNavbarReferences(3)).toHaveLength(3);
+  });
+});
+
+describe('sectionReferenceMetrics — getTopDashboardReferences', () => {
+  beforeEach(() => { resetSectionReferenceMetrics(); });
+
+  it('returns empty array when no dashboard references recorded', () => {
+    expect(getTopDashboardReferences()).toHaveLength(0);
+  });
+
+  it('returns only dashboard-prefixed references', () => {
+    recordSectionOutcome({ referenceId: 'dashboard-kpi', sectionType: 'dashboard', overallScore: 9.2, heroScore: 9.0, layoutScore: 9.0, ctaScore: 8.5, accessibilityScore: 9.5, consistencyScore: 9.0, repairTriggered: false });
+    recordSectionOutcome({ referenceId: 'pricing-v1',    sectionType: 'pricing',   overallScore: 9.0, heroScore: 9.0, layoutScore: 9.0, ctaScore: 9.0, accessibilityScore: 9.0, consistencyScore: 9.0, repairTriggered: false });
+    const refs = getTopDashboardReferences();
+    expect(refs).toHaveLength(1);
+    expect(refs[0].referenceId).toBe('dashboard-kpi');
+  });
+
+  it('sorts by qualityScore descending', () => {
+    recordSectionOutcome({ referenceId: 'dashboard-a', sectionType: 'dashboard', overallScore: 9.5, heroScore: 9.5, layoutScore: 9.5, ctaScore: 9.5, accessibilityScore: 9.5, consistencyScore: 9.5, repairTriggered: false });
+    recordSectionOutcome({ referenceId: 'dashboard-b', sectionType: 'dashboard', overallScore: 7.0, heroScore: 7.0, layoutScore: 7.0, ctaScore: 7.0, accessibilityScore: 7.0, consistencyScore: 7.0, repairTriggered: true });
+    const refs = getTopDashboardReferences();
+    expect(refs[0].qualityScore).toBeGreaterThan(refs[1]?.qualityScore ?? 0);
+  });
+});
+
+describe('sectionReferenceMetrics — getTopFormReferences', () => {
+  beforeEach(() => { resetSectionReferenceMetrics(); });
+
+  it('returns empty array when no form references recorded', () => {
+    expect(getTopFormReferences()).toHaveLength(0);
+  });
+
+  it('returns only form-prefixed references', () => {
+    recordSectionOutcome({ referenceId: 'form-contact', sectionType: 'form', overallScore: 8.8, heroScore: 8.0, layoutScore: 8.5, ctaScore: 9.0, accessibilityScore: 8.5, consistencyScore: 8.5, repairTriggered: false });
+    recordSectionOutcome({ referenceId: 'cta-v1',       sectionType: 'cta',  overallScore: 9.0, heroScore: 9.0, layoutScore: 9.0, ctaScore: 9.0, accessibilityScore: 9.0, consistencyScore: 9.0, repairTriggered: false });
+    const refs = getTopFormReferences();
+    expect(refs).toHaveLength(1);
+    expect(refs[0].referenceId).toBe('form-contact');
+  });
+});
+
+describe('sectionReferenceMetrics — getSectionLearningMetrics', () => {
+  beforeEach(() => { resetSectionReferenceMetrics(); });
+
+  it('returns zero referencesTracked on fresh store', () => {
+    const m = getSectionLearningMetrics();
+    expect(m.referencesTracked).toBe(0);
+  });
+
+  it('topNavbarReferences is empty when no navbar data', () => {
+    const m = getSectionLearningMetrics();
+    expect(m.topNavbarReferences).toHaveLength(0);
+  });
+
+  it('topDashboardReferences reflects recorded dashboard data', () => {
+    recordSectionOutcome({ referenceId: 'dashboard-v1', sectionType: 'dashboard', overallScore: 9.0, heroScore: 9.0, layoutScore: 9.0, ctaScore: 9.0, accessibilityScore: 9.0, consistencyScore: 9.0, repairTriggered: false });
+    const m = getSectionLearningMetrics();
+    expect(m.topDashboardReferences).toHaveLength(1);
+  });
+
+  it('topFormReferences reflects recorded form data', () => {
+    recordSectionOutcome({ referenceId: 'form-v1', sectionType: 'form', overallScore: 8.5, heroScore: 8.0, layoutScore: 8.5, ctaScore: 8.5, accessibilityScore: 9.0, consistencyScore: 8.5, repairTriggered: false });
+    const m = getSectionLearningMetrics();
+    expect(m.topFormReferences).toHaveLength(1);
+  });
+});
+
+// ── dnaMetrics — edge cases ───────────────────────────────────────────────────
+
+describe('dnaMetrics — edge cases', () => {
+  beforeEach(() => { resetDNAMetrics(); });
+
+  it('clamps qualityScore to [0, 10] for extreme inputs', () => {
+    const score = calculateDNAQuality({ overallScore: 15, visualScore: 15, criticScore: 15, conversionScore: 15, tokenScore: 15, treeScore: 15, motionScore: 15, repairRate: -1 });
+    expect(score).toBeLessThanOrEqual(10);
+  });
+
+  it('returns 5.0 for unknown DNA id', () => {
+    expect(getDNAQualityScoreById('brand:unknown-brand')).toBe(5.0);
+  });
+
+  it('getDNAStoreCounts tracks promotedCount and demotedCount', () => {
+    const before = getDNAStoreCounts();
+    expect(before.promotedCount).toBe(0);
+    expect(before.demotedCount).toBe(0);
+  });
+
+  it('getAverageDNAQuality returns 0 with no data', () => {
+    expect(getAverageDNAQuality()).toBe(0);
+  });
+
+  it('getDNAEntry returns undefined for unknown id', () => {
+    expect(getDNAEntry('brand:nonexistent')).toBeUndefined();
   });
 });
