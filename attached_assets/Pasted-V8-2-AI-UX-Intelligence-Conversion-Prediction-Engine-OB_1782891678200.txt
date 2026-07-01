@@ -1,0 +1,599 @@
+V8.2 — AI UX Intelligence & Conversion Prediction Engine
+
+OBJECTIVE
+
+Build the complete V8.2 UX Intelligence & Conversion Prediction Engine.
+
+This is a new architecture layer that sits after V8.1 Self-Evolving Design DNA and before the Design Evaluator.
+
+The purpose of V8.2 is to predict how well a generated UI will perform from a UX and conversion perspective before it is shown to the user.
+
+This engine must never replace existing systems.
+
+It must only enhance them.
+
+Everything must be additive.
+
+---
+
+IMPORTANT
+
+Before writing any code:
+
+Perform a full project audit.
+
+Understand every folder.
+
+Understand every pipeline.
+
+Understand every agent.
+
+Understand every telemetry module.
+
+Understand every evaluator.
+
+Understand every RAG system.
+
+Understand every learning system.
+
+Understand every existing Design DNA module.
+
+Understand every existing BuildContext.
+
+Do NOT assume anything.
+
+Only use the real project structure.
+
+---
+
+DO NOT
+
+Do NOT break APIs.
+
+Do NOT rename files.
+
+Do NOT remove logic.
+
+Do NOT change SSE contracts.
+
+Do NOT modify queue architecture.
+
+Do NOT modify runtime protocol.
+
+Do NOT rewrite existing agents.
+
+Do NOT duplicate functionality.
+
+Do NOT introduce breaking changes.
+
+Everything must be backward compatible.
+
+---
+
+Architecture Placement
+
+Insert the new layer exactly here:
+
+USER
+
+↓
+
+Intent Analyzer
+
+↓
+
+Conversation Memory
+
+↓
+
+Reference Detection
+
+↓
+
+Self Evolving Design DNA
+
+↓
+
+Architecture Planner
+
+↓
+
+Component Tree
+
+↓
+
+Design Tokens
+
+↓
+
+Design RAG
+
+↓
+
+Blueprint
+
+↓
+
+Multi Candidate Generator
+
+↓
+
+Code Generator
+
+↓
+
+Initial Build
+
+↓
+
+Auto Repair
+
+↓
+
+AI UX Intelligence & Conversion Prediction
+
+↓
+
+Design Evaluator
+
+↓
+
+Design Critic
+
+↓
+
+Visual Diff
+
+↓
+
+Accessibility
+
+↓
+
+Optimization
+
+↓
+
+Candidate Selection
+
+↓
+
+Preview
+
+↓
+
+Telemetry
+
+↓
+
+Self Evolving Design DNA
+
+---
+
+Phase 1
+
+Create
+
+src/ux-intelligence/
+
+Inside it build:
+
+uxTypes.ts
+
+uxPrediction.ts
+
+uxHeuristics.ts
+
+uxLearning.ts
+
+uxRanking.ts
+
+uxMetrics.ts
+
+uxPersistence.ts
+
+uxFacade.ts
+
+---
+
+Phase 2
+
+Implement complete UX prediction model.
+
+Predict:
+
+Visual clarity
+
+Cognitive load
+
+CTA discoverability
+
+Reading flow
+
+Trust
+
+Scanning efficiency
+
+Navigation simplicity
+
+Form friction
+
+Pricing clarity
+
+Dashboard usability
+
+Information density
+
+Whitespace balance
+
+Hierarchy
+
+Accessibility confidence
+
+Motion comfort
+
+Perceived performance
+
+Overall conversion probability
+
+Every metric:
+
+0–10
+
+---
+
+Phase 3
+
+Overall UX score
+
+Weighted formula
+
+Example
+
+VisualHierarchy
+
+18%
+
+Trust
+
+14%
+
+CTA
+
+14%
+
+Navigation
+
+10%
+
+Forms
+
+10%
+
+Accessibility
+
+10%
+
+Whitespace
+
+8%
+
+Density
+
+8%
+
+Motion
+
+4%
+
+Performance
+
+4%
+
+Consistency
+
+10%
+
+Return:
+
+overallUXScore
+
+conversionPrediction
+
+confidence
+
+---
+
+Phase 4
+
+Predict conversion probability
+
+Return
+
+Very Low
+
+Low
+
+Medium
+
+High
+
+Very High
+
+Also return
+
+Expected bounce risk
+
+Expected engagement
+
+Expected scroll depth
+
+Expected CTA interaction
+
+Expected form completion
+
+Expected trust level
+
+---
+
+Phase 5
+
+Integrate with Design DNA
+
+learnFromUX()
+
+Every build updates DNA.
+
+Good UX increases DNA quality.
+
+Bad UX demotes patterns.
+
+---
+
+Phase 6
+
+Integrate with Evaluator
+
+Add new evaluator dimension
+
+uxPredictionScore
+
+Never remove existing scores.
+
+Weights must normalize to 1.0.
+
+Document redistribution.
+
+---
+
+Phase 7
+
+Integrate with Design Critic
+
+Critic must receive UX report.
+
+Example
+
+Weak CTA visibility
+
+Too much cognitive load
+
+Navigation too complex
+
+Pricing confusing
+
+Dashboard overloaded
+
+Forms intimidating
+
+Poor trust signals
+
+Weak hierarchy
+
+---
+
+Phase 8
+
+Integrate with Candidate Selection
+
+If
+
+Candidate A
+
+Design Score 9.0
+
+UX Score 9.8
+
+Candidate B
+
+Design Score 9.2
+
+UX Score 7.4
+
+System should prefer A.
+
+Candidate selection must consider UX.
+
+---
+
+Phase 9
+
+Telemetry
+
+Extend
+
+/api/telemetry/quality
+
+Add
+
+uxQuality
+
+Include
+
+averageUXScore
+
+averageConversionPrediction
+
+averageTrustScore
+
+averageCTA
+
+averageForms
+
+averageNavigation
+
+averageDensity
+
+averageHierarchy
+
+topPerformingPatterns
+
+lowestPatterns
+
+learningTrend
+
+predictionConfidence
+
+Everything additive.
+
+---
+
+Phase 10
+
+Persistence
+
+Store UX history
+
+Keep last 500 builds.
+
+Support restart recovery.
+
+---
+
+Phase 11
+
+Learning
+
+Every successful build improves UX prediction.
+
+Every repair updates learning.
+
+Every user feedback updates learning.
+
+Every benchmark updates learning.
+
+Every visual diff updates learning.
+
+---
+
+Phase 12
+
+Tests
+
+Minimum
+
+180+
+
+new tests.
+
+Include
+
+Prediction
+
+Learning
+
+Telemetry
+
+Persistence
+
+Candidate selection
+
+Evaluator
+
+Critic integration
+
+Weight normalization
+
+Edge cases
+
+Regression
+
+All tests must pass.
+
+---
+
+Phase 13
+
+Audit
+
+Generate
+
+artifacts/api-server/v8.2Audit.md
+
+Include
+
+Architecture
+
+Data Flow
+
+Prediction Formula
+
+Learning Flow
+
+Telemetry
+
+Performance
+
+Future Expansion
+
+---
+
+Phase 14
+
+Acceptance Criteria
+
+Build passes
+
+Zero new TypeScript errors
+
+Zero regressions
+
+All existing tests pass
+
+All new tests pass
+
+Telemetry extended
+
+Learning active
+
+Prediction active
+
+Evaluator integrated
+
+Critic integrated
+
+Candidate Selection integrated
+
+DNA learning active
+
+Persistence active
+
+Audit generated
+
+Everything production ready.
+
+---
+
+FINAL RULE
+
+Before writing code,
+
+analyze the complete codebase.
+
+Reuse existing architecture.
+
+Never duplicate logic.
+
+Implement only where it naturally fits.
+
+Deliver enterprise-grade production code consistent with the existing VoxAI architecture.
