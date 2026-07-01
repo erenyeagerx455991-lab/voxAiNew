@@ -39,6 +39,7 @@ import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
 import { recordBuildStart, recordBuildSuccess, recordBuildFailure } from "../../telemetry/buildMetrics.js";
 import { withAgentMetrics } from "../../telemetry/agentMetrics.js";
+import { learnFromBuild } from "../../design-dna/designDNA.js";
 import { buildComponentTree } from "../../component-tree/treeBuilder.js";
 import { validateTree } from "../../component-tree/treeValidator.js";
 import { recordTreeBuild } from "../../telemetry/componentTreeMetrics.js";
@@ -177,6 +178,14 @@ export async function runBuildPipeline(
 
     recordBuildSuccess(buildId);
 
+    // ── V8.1: Async DNA Evolution (non-blocking — fires after SSE done) ────────
+    const evalResForV81 = (conversionFrontend as unknown as Record<string, unknown>)
+      .evaluationResult as EvaluatorResult | undefined;
+    const accessibilityScore81 = (accessibilityFrontend as { accessibilityResult?: { overallScore: number } })
+      .accessibilityResult?.overallScore ?? 5;
+    const optimizationScore81 = (optimizedFrontend as { optimizationResult?: { overallScore: number } })
+      .optimizationResult?.overallScore ?? 5;
+
     const { blueprint, cleanPlan, dnaComposition, dnaOwnership, dnaTheme, dnaMotion } = plan;
 
     sse(res, {
@@ -193,8 +202,32 @@ export async function runBuildPipeline(
       motionProfile: dnaMotion,
       knowledgeGraph: backend.knowledgeGraph,
       // V8.0: surface new quality signals
-      accessibilityScore: (accessibilityFrontend as { accessibilityResult?: { overallScore: number } }).accessibilityResult?.overallScore,
-      optimizationScore:  (optimizedFrontend as { optimizationResult?: { overallScore: number } }).optimizationResult?.overallScore,
+      accessibilityScore: accessibilityScore81,
+      optimizationScore:  optimizationScore81,
+    });
+
+    // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
+    setImmediate(() => {
+      try {
+        const dnaComp81 = plan.dnaComposition as unknown as Record<string, number>;
+        const primaryBrand81 = dnaComp81
+          ? (Object.entries(dnaComp81).sort(([, a], [, b]) => (b as number) - (a as number))[0]?.[0] ?? "generic")
+          : "generic";
+        learnFromBuild({
+          dnaId:               primaryBrand81,
+          evaluatorScore:      evalResForV81?.overallScore        ?? 5,
+          // criticScore is neutral here — the Design Critic agent delivers
+          // its score separately via learnFromCritic() when wired
+          criticScore:         5,
+          accessibilityScore:  accessibilityScore81,
+          optimizationScore:   optimizationScore81,
+          visualScore:         evalResForV81?.visualQualityScore  ?? 5,
+          repairTriggered:     evalResForV81?.repairApplied       ?? false,
+          repairLoops:         evalResForV81?.repairCount         ?? 0,
+          conversionScore:     evalResForV81?.tokenQualityScore   ?? 5,
+          success:             true,
+        });
+      } catch { /* DNA learning must never throw into the pipeline */ }
     });
   } catch (err) {
     const e = err as Error;

@@ -31,6 +31,7 @@ import { getComponentTreeMetrics } from "../telemetry/componentTreeMetrics.js";
 import { getDesignTokenMetrics } from "../telemetry/designTokenMetrics.js";
 import { getVisualMetrics } from "../telemetry/visualMetrics.js";
 import { getDNAEvolutionMetrics } from "../design-dna/dnaEvolution.js";
+import { getDNAManagerMetrics } from "../design-dna/designDNA.js";
 import { getTokenLearningMetrics } from "../design-tokens/tokenLearning.js";
 import { getAllSectionLeaderboards } from "../design-rag/sectionReferenceMetrics.js";
 
@@ -114,21 +115,44 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     visualQuality: getVisualMetrics(),
     designDNA: (() => {
       const evolution = getDNAEvolutionMetrics();
+      // V8.1 — additional manager metrics (additive only)
+      const v81 = (() => {
+        try { return getDNAManagerMetrics(); } catch { return null; }
+      })();
       return {
         // V7.3.5 Phase 15 — flat spec-required fields at top level
         trackedDNAs:      evolution.trackedDNAs,
         averageDNAQuality: evolution.averageDNAQuality,
         topDNAs:          evolution.topDNAs,
         worstDNAs:        evolution.worstDNAs,
-        promotedCount:    evolution.promotedCount,
-        demotedCount:     evolution.demotedCount,
+        promotedCount:    v81?.promotionCount ?? evolution.promotedCount,
+        demotedCount:     v81?.demotionCount  ?? evolution.demotedCount,
         topHeroPatterns:  evolution.topHeroPatterns,
         topCTAPatterns:   evolution.topCTAPatterns,
         topLayoutPatterns: evolution.topLayoutPatterns,
+        // V8.1 Phase 12 — new required fields (additively appended)
+        currentVersion:   v81?.currentVersion   ?? "v8.1",
+        evolutionCount:   v81?.evolutionCount   ?? 0,
+        averageQuality:   v81?.averageQuality   ?? evolution.averageDNAQuality,
+        topLayouts:       v81?.topLayouts       ?? [],
+        topComponents:    v81?.topComponents    ?? [],
+        topSections:      v81?.topSections      ?? [],
+        topThemes:        v81?.topThemes        ?? [],
+        topMotions:       v81?.topMotions       ?? [],
+        topTokens:        v81?.topTokens        ?? [],
+        learningRate:     v81?.learningRate     ?? 0,
+        confidence:       v81?.confidence       ?? 0,
+        lastEvolution:    v81?.lastEvolution    ?? null,
         // Backward-compatible nested shapes for existing consumers
         evolution,
         tokenLearning:     getTokenLearningMetrics(),
         sectionLeaderboards: getAllSectionLeaderboards(),
+        // V8.1 extended detail (opt-in)
+        v81Registry:      v81?.registry       ?? null,
+        v81Versioning:    v81?.versioning      ?? null,
+        v81Ranking:       v81?.ranking         ?? null,
+        v81Persistence:   v81?.persistence     ?? null,
+        v81TopDnaRecords: v81?.topDnaRecords   ?? [],
       };
     })(),
     generatedAt: new Date().toISOString(),
