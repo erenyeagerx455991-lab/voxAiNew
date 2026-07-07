@@ -39,6 +39,10 @@ import("./product-manager/productLearning.js").then(({ hydrateProductLearning })
     initProductPersistence().then(records => hydrateProductLearning(records))
   )
 ).catch(() => { /* errors are logged inside initProductPersistence */ });
+// V8.5: Load Frontend Architect history from disk on startup (non-blocking, best-effort)
+import("./frontend-architect/architecturePersistence.js").then(({ initArchitecturePersistence, hydrateFromDisk }) =>
+  initArchitecturePersistence().then(() => hydrateFromDisk())
+).catch(() => { /* errors are logged inside initArchitecturePersistence */ });
 
 app.listen(port, (err) => {
   if (err) {

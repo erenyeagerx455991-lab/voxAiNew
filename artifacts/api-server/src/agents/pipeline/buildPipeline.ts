@@ -35,6 +35,7 @@ import { runAccessibilityStep } from "./accessibilityStep.js";
 import { runOptimizationStep } from "./optimizationStep.js";
 import { runDesignDirectorStep } from "./designDirectorStep.js";
 import { runProductManagerStep } from "./productManagerStep.js";
+import { runFrontendArchitectStep } from "./frontendArchitectStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -75,9 +76,20 @@ export async function runBuildPipeline(
     // Enrich prompt with product strategy context for all downstream engines
     const enrichedPromptWithProductContext = prompt + productManagerOutput.contextString;
 
+    // ── Step 0.5: Frontend Architect (V8.5 — static architecture blueprint, no LLM) ──
+    const frontendArchitectOutput = await runFrontendArchitectStep(
+      prompt,
+      buildId,
+      res,
+      productManagerOutput,
+    );
+    // Combine product strategy + architecture blueprint for the Planner
+    const enrichedPromptWithArchitecture =
+      enrichedPromptWithProductContext + '\n' + frontendArchitectOutput.contextString;
+
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
-      runPlannerStep(enrichedPromptWithProductContext, keys, res),
+      runPlannerStep(enrichedPromptWithArchitecture, keys, res),
     );
 
     // ── Step 2: Architecture ───────────────────────────────────────────────────
@@ -232,6 +244,9 @@ export async function runBuildPipeline(
       // V8.4: product manager plan (additive)
       productPlan: productManagerOutput.productPlan,
       productScore: productManagerOutput.productScore,
+      // V8.5: frontend architecture blueprint (additive)
+      architectureBlueprint: frontendArchitectOutput.blueprint,
+      architectureScore: frontendArchitectOutput.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

@@ -37,6 +37,7 @@ import { getAllSectionLeaderboards } from "../design-rag/sectionReferenceMetrics
 import { getUXQualityMetrics } from "../ux-intelligence/uxMetrics.js";
 import { getDirectorMetrics } from "../design-director/directorMetrics.js";
 import { getProductMetrics } from "../product-manager/productMetrics.js";
+import { getArchitectureMetrics } from "../frontend-architect/architectureMetrics.js";
 
 const router: Router = Router();
 
@@ -164,6 +165,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     designDirector: getDirectorMetrics(),
     // V8.4: Autonomous AI Product Manager telemetry (additive)
     productManager: getProductMetrics(),
+    // V8.5: Autonomous Frontend Architect telemetry (additive)
+    frontendArchitecture: getArchitectureMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });
