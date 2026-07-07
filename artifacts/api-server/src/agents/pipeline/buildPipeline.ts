@@ -33,6 +33,7 @@ import { runDesignCriticStep } from "./designCriticStep.js";
 import { runConversionStep } from "./conversionStep.js";
 import { runAccessibilityStep } from "./accessibilityStep.js";
 import { runOptimizationStep } from "./optimizationStep.js";
+import { runDesignDirectorStep } from "./designDirectorStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -127,6 +128,11 @@ export async function runBuildPipeline(
     // ── Step 11: Optimization (V8.0 — bundle + render) ────────────────────────
     const optimizedFrontend = await runOptimizationStep(accessibilityFrontend, keys, res);
 
+    // ── Step 11.5: Autonomous AI Design Director (V8.3 — strategic review) ────
+    const directedFrontend = await withAgentMetrics("DesignDirector", () =>
+      runDesignDirectorStep(optimizedFrontend, buildId, res),
+    );
+
     // ── V7.3.5: DNA Outcome Recording (self-learning) ──────────────────────────
     const evalRes = (
       conversionFrontend as unknown as Record<string, unknown>
@@ -165,7 +171,7 @@ export async function runBuildPipeline(
 
     // ── Step 12: Backend Scaffold ──────────────────────────────────────────────
     const backend = await withAgentMetrics("Scaffold", () =>
-      runBackendStep(architecture, optimizedFrontend, keys, res),
+      runBackendStep(architecture, directedFrontend, keys, res),
     );
 
     // ── Step 13: Runtime Validation (real Vite build + self-healing) ───────────
@@ -194,9 +200,12 @@ export async function runBuildPipeline(
 
     const { blueprint, cleanPlan, dnaComposition, dnaOwnership, dnaTheme, dnaMotion } = plan;
 
+    // V8.3: extract director score for the done event
+    const directorScore83 = (directedFrontend as unknown as { directorScore?: number }).directorScore ?? 0;
+
     sse(res, {
       type: "done",
-      code: optimizedFrontend.fixedCode,
+      code: directedFrontend.fixedCode,
       plan: cleanPlan,
       blueprint,
       projectBlueprint: architecture.projectBlueprint,
@@ -210,6 +219,8 @@ export async function runBuildPipeline(
       // V8.0: surface new quality signals
       accessibilityScore: accessibilityScore81,
       optimizationScore:  optimizationScore81,
+      // V8.3: director strategic review score
+      directorScore: directorScore83,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

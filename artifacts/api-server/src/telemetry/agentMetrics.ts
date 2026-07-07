@@ -22,7 +22,9 @@ export type AgentName =
   | "Accessibility"
   | "Optimization"
   // V8.2 additions
-  | "UXIntelligence";
+  | "UXIntelligence"
+  // V8.3 additions
+  | "DesignDirector";
 
 interface AgentRecord {
   calls: number;

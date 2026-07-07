@@ -35,6 +35,7 @@ import { getDNAManagerMetrics } from "../design-dna/designDNA.js";
 import { getTokenLearningMetrics } from "../design-tokens/tokenLearning.js";
 import { getAllSectionLeaderboards } from "../design-rag/sectionReferenceMetrics.js";
 import { getUXQualityMetrics } from "../ux-intelligence/uxMetrics.js";
+import { getDirectorMetrics } from "../design-director/directorMetrics.js";
 
 const router: Router = Router();
 
@@ -158,6 +159,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     })(),
     // V8.2: UX Intelligence & Conversion Prediction telemetry (additive)
     uxQuality: getUXQualityMetrics(),
+    // V8.3: Autonomous AI Design Director telemetry (additive)
+    designDirector: getDirectorMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

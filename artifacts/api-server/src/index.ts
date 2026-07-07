@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { initPersistence } from "./design-dna/dnaPersistence.js";
 import { initUXPersistence } from "./ux-intelligence/uxPersistence.js";
+import { initDirectorPersistence } from "./design-director/directorPersistence.js";
 
 if (process.env.NODE_ENV === "production" && !process.env["API_KEY"]) {
   throw new Error("API_KEY required in production — set API_KEY environment variable before starting.");
@@ -28,6 +29,10 @@ initPersistence().catch(() => { /* errors are logged inside initPersistence */ }
 import("./ux-intelligence/uxLearning.js").then(({ hydrateUXLearning }) =>
   initUXPersistence().then(records => hydrateUXLearning(records))
 ).catch(() => { /* errors are logged inside initUXPersistence */ });
+// V8.3: Load Design Director history from disk on startup (non-blocking, best-effort)
+import("./design-director/directorLearning.js").then(({ hydrateDirectorLearning }) =>
+  initDirectorPersistence().then(records => hydrateDirectorLearning(records))
+).catch(() => { /* errors are logged inside initDirectorPersistence */ });
 
 app.listen(port, (err) => {
   if (err) {

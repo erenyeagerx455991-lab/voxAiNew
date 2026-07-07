@@ -1,0 +1,715 @@
+V8.3 — Autonomous AI Design Director
+
+OBJECTIVE
+
+Build the complete V8.3 Autonomous AI Design Director.
+
+This is a new intelligence layer that sits after UX Intelligence (V8.2) and before Candidate Selection.
+
+The Design Director acts like a 20+ years Senior Product Designer + Creative Director + UX Director.
+
+It does NOT generate React code.
+
+It does NOT replace the Design Critic.
+
+It does NOT replace the Evaluator.
+
+Instead, it performs high-level strategic design review before the final build is selected.
+
+Its responsibility is to answer one question:
+
+«"If this website were reviewed by a world-class design team, what would they improve before shipping it?"»
+
+---
+
+IMPORTANT
+
+Before writing any code:
+
+Perform a full audit of the project.
+
+Understand every architecture layer.
+
+Understand every pipeline step.
+
+Understand every agent.
+
+Understand Design DNA.
+
+Understand UX Intelligence.
+
+Understand Design Evaluator.
+
+Understand Design Critic.
+
+Understand Visual Diff.
+
+Understand Candidate Selection.
+
+Understand Learning.
+
+Understand Telemetry.
+
+Understand BuildContext.
+
+Understand all RAG systems.
+
+Understand every score already produced.
+
+DO NOT assume anything.
+
+Reuse existing architecture.
+
+---
+
+HARD CONSTRAINTS
+
+DO NOT break APIs.
+
+DO NOT rename files.
+
+DO NOT remove pipeline steps.
+
+DO NOT modify SSE contracts.
+
+DO NOT modify queue architecture.
+
+DO NOT modify runtime.
+
+DO NOT duplicate logic.
+
+DO NOT rewrite Evaluator.
+
+DO NOT rewrite Critic.
+
+DO NOT replace UX Intelligence.
+
+Everything must be additive.
+
+Everything must remain backward compatible.
+
+---
+
+PIPELINE POSITION
+
+Insert exactly here
+
+USER
+
+↓
+
+Intent
+
+↓
+
+Memory
+
+↓
+
+Reference Detection
+
+↓
+
+Design DNA
+
+↓
+
+Planner
+
+↓
+
+Tree
+
+↓
+
+Tokens
+
+↓
+
+RAG
+
+↓
+
+Blueprint
+
+↓
+
+Multi Candidate
+
+↓
+
+Code Generator
+
+↓
+
+Build
+
+↓
+
+Repair
+
+↓
+
+UX Intelligence
+
+↓
+
+Design Evaluator
+
+↓
+
+Design Critic
+
+↓
+
+Visual Diff
+
+↓
+
+Accessibility
+
+↓
+
+Optimization
+
+↓
+
+Autonomous AI Design Director
+
+↓
+
+Candidate Selection
+
+↓
+
+Preview
+
+↓
+
+Telemetry
+
+↓
+
+Design DNA Learning
+
+---
+
+Phase 1
+
+Create
+
+src/design-director/
+
+Create
+
+directorTypes.ts
+
+designDirector.ts
+
+directorReview.ts
+
+directorRecommendations.ts
+
+directorMetrics.ts
+
+directorLearning.ts
+
+directorPersistence.ts
+
+directorFacade.ts
+
+---
+
+Phase 2
+
+Create a Strategic Review Engine.
+
+Review categories:
+
+Visual Hierarchy
+
+Typography
+
+Spacing
+
+Composition
+
+Layout Rhythm
+
+Brand Consistency
+
+Premium Feel
+
+Modernity
+
+Trust
+
+Emotional Impact
+
+Storytelling
+
+CTA Placement
+
+Pricing Presentation
+
+Dashboard Experience
+
+Navigation
+
+Forms
+
+Motion
+
+Accessibility
+
+Performance
+
+Responsiveness
+
+Component Consistency
+
+Token Consistency
+
+Design DNA Alignment
+
+UX Alignment
+
+Conversion Alignment
+
+---
+
+Phase 3
+
+Every category returns
+
+0–10
+
+Severity
+
+Low
+
+Medium
+
+High
+
+Critical
+
+Confidence
+
+Reason
+
+Recommendation
+
+Expected Improvement
+
+---
+
+Phase 4
+
+Premium Design Review
+
+Detect
+
+Weak hero
+
+Weak headline
+
+Weak CTA
+
+Weak spacing
+
+Weak typography
+
+Weak trust
+
+Weak visual balance
+
+Weak hierarchy
+
+Weak card usage
+
+Weak pricing
+
+Weak dashboard
+
+Weak onboarding
+
+Weak forms
+
+Weak navigation
+
+Weak footer
+
+Weak branding
+
+Weak emotional design
+
+Weak storytelling
+
+Weak whitespace
+
+Weak readability
+
+---
+
+Phase 5
+
+Creative Direction
+
+Generate strategic advice
+
+Examples
+
+Increase whitespace
+
+Reduce visual noise
+
+Improve hierarchy
+
+Strengthen trust
+
+Increase contrast
+
+Improve premium feeling
+
+Reduce distractions
+
+Improve CTA prominence
+
+Improve storytelling
+
+Improve emotional appeal
+
+Improve dashboard clarity
+
+Improve navigation flow
+
+Improve onboarding
+
+Improve pricing clarity
+
+Never generate React code.
+
+Only strategy.
+
+---
+
+Phase 6
+
+Design DNA Integration
+
+Read
+
+Current DNA
+
+Current Theme
+
+Current Tokens
+
+Current Motion
+
+Current Components
+
+Current Patterns
+
+Review whether the design follows its intended DNA.
+
+Example
+
+Stripe page should not look like Apple.
+
+Linear page should not look like Framer.
+
+Vercel should remain minimal.
+
+---
+
+Phase 7
+
+UX Intelligence Integration
+
+Read
+
+UX report
+
+Conversion prediction
+
+Heatmap prediction
+
+Trust score
+
+Cognitive load
+
+Readability
+
+Journey
+
+Use these as review inputs.
+
+Never duplicate UX logic.
+
+---
+
+Phase 8
+
+Design Critic Integration
+
+Read
+
+Critic report
+
+Avoid repeating existing recommendations.
+
+Only add higher-level strategic observations.
+
+---
+
+Phase 9
+
+Visual Diff Integration
+
+Compare
+
+Original
+
+Repair
+
+Candidate
+
+Detect
+
+Whether repair actually improved design quality.
+
+If repair reduced premium quality
+
+flag regression.
+
+---
+
+Phase 10
+
+Candidate Selection Integration
+
+Candidate score becomes
+
+Design
+
++ 
+
+UX
+
++ 
+
+Critic
+
++ 
+
+Director
+
++ 
+
+Visual
+
++ 
+
+Accessibility
+
++ 
+
+Performance
+
+Director score must influence final selection.
+
+---
+
+Phase 11
+
+Learning
+
+Create
+
+learnFromDirector()
+
+Patterns receiving consistently high Director scores
+
+should improve Design DNA.
+
+Patterns consistently rejected
+
+must be demoted.
+
+---
+
+Phase 12
+
+Telemetry
+
+Extend
+
+/api/telemetry/quality
+
+Add
+
+designDirector
+
+Include
+
+Average Director Score
+
+Top Recommendations
+
+Critical Issues
+
+Most Improved Categories
+
+Most Common Problems
+
+Learning Trend
+
+Confidence
+
+Review Distribution
+
+Everything additive.
+
+---
+
+Phase 13
+
+Persistence
+
+Persist
+
+Director history
+
+Last 500 reviews
+
+Support restart recovery
+
+---
+
+Phase 14
+
+SSE
+
+Emit
+
+director_start
+
+director_review
+
+director_complete
+
+director_learning
+
+Never break existing SSE events.
+
+---
+
+Phase 15
+
+Testing
+
+Create
+
+200+
+
+new tests
+
+Cover
+
+Review engine
+
+DNA review
+
+UX integration
+
+Critic integration
+
+Visual integration
+
+Candidate integration
+
+Telemetry
+
+Persistence
+
+Learning
+
+Pipeline
+
+Regression
+
+Edge cases
+
+All tests must pass.
+
+---
+
+Phase 16
+
+Audit
+
+Generate
+
+artifacts/api-server/v8.3Audit.md
+
+Include
+
+Architecture
+
+Pipeline
+
+Review categories
+
+Learning
+
+Telemetry
+
+Performance
+
+Future roadmap
+
+---
+
+SUCCESS CRITERIA
+
+✓ Zero new TypeScript errors
+
+✓ Build passes
+
+✓ All existing tests pass
+
+✓ All new tests pass
+
+✓ Director integrated into pipeline
+
+✓ Candidate selection uses Director score
+
+✓ Learning active
+
+✓ Telemetry active
+
+✓ Persistence active
+
+✓ SSE active
+
+✓ Production ready
+
+---
+
+FINAL RULE
+
+Before writing any code
+
+analyze the complete repository.
+
+Reuse existing modules wherever possible.
+
+Never duplicate logic.
+
+Never create parallel systems.
+
+Extend the existing VoxAI architecture cleanly.
+
+Deliver enterprise-grade production-quality implementation consistent with V8.0, V8.1 and V8.2.
