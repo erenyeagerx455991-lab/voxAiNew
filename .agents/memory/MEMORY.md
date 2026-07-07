@@ -1,3 +1,4 @@
+- [VoxAI V8.4 Autonomous AI Product Manager](voxai-v84-product-manager.md) — 9-phase static planning engine, step 0 before Planner; QUALITY_WEIGHTS sum to 1.00; hasPricing regex must not include bare "subscription"; "Support" objective regex must not include "documentation"; 2085 tests pass.
 - [VoxAI V8.3 Autonomous AI Design Director](voxai-v83-design-director.md) — 25-category static review, step 11.5, no LLM; DIRECTOR_WEIGHTS must sum to 1.00; htmlFor regex must not require = sign; 1892 tests pass.
 - [VoxAI V8.2 UX Intelligence Engine](voxai-v82-ux-intelligence.md) — 17-metric UX scoring; conversion prediction; step 6.5 in pipeline; AgentName+CandidateScore require update for every new agent/field; 1726 tests pass.
 - [VoxAI V8.1 Self-Evolving DNA Engine](voxai-v81-dna-engine.md) — 6 new design-dna modules; 8 learnFrom* fns; Phase 10 promotion/demotion; 167 new tests; all additive; `initPersistence()` wired in index.ts.

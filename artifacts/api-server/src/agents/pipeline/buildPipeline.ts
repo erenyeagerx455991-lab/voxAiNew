@@ -34,6 +34,7 @@ import { runConversionStep } from "./conversionStep.js";
 import { runAccessibilityStep } from "./accessibilityStep.js";
 import { runOptimizationStep } from "./optimizationStep.js";
 import { runDesignDirectorStep } from "./designDirectorStep.js";
+import { runProductManagerStep } from "./productManagerStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -67,9 +68,16 @@ export async function runBuildPipeline(
   recordBuildStart(buildId, trace, prompt);
 
   try {
+    // ── Step 0: Product Manager (V8.4 — static product strategy, no LLM) ──────
+    const productManagerOutput = await withAgentMetrics("ProductManager", () =>
+      runProductManagerStep(prompt, buildId, res),
+    );
+    // Enrich prompt with product strategy context for all downstream engines
+    const enrichedPromptWithProductContext = prompt + productManagerOutput.contextString;
+
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
-      runPlannerStep(prompt, keys, res),
+      runPlannerStep(enrichedPromptWithProductContext, keys, res),
     );
 
     // ── Step 2: Architecture ───────────────────────────────────────────────────
@@ -221,6 +229,9 @@ export async function runBuildPipeline(
       optimizationScore:  optimizationScore81,
       // V8.3: director strategic review score
       directorScore: directorScore83,
+      // V8.4: product manager plan (additive)
+      productPlan: productManagerOutput.productPlan,
+      productScore: productManagerOutput.productScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

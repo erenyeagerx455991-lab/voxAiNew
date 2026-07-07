@@ -33,6 +33,12 @@ import("./ux-intelligence/uxLearning.js").then(({ hydrateUXLearning }) =>
 import("./design-director/directorLearning.js").then(({ hydrateDirectorLearning }) =>
   initDirectorPersistence().then(records => hydrateDirectorLearning(records))
 ).catch(() => { /* errors are logged inside initDirectorPersistence */ });
+// V8.4: Load Product Manager history from disk on startup (non-blocking, best-effort)
+import("./product-manager/productLearning.js").then(({ hydrateProductLearning }) =>
+  import("./product-manager/productPersistence.js").then(({ initProductPersistence }) =>
+    initProductPersistence().then(records => hydrateProductLearning(records))
+  )
+).catch(() => { /* errors are logged inside initProductPersistence */ });
 
 app.listen(port, (err) => {
   if (err) {
