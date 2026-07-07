@@ -1,3 +1,4 @@
+- [VoxAI V8.2 UX Intelligence Engine](voxai-v82-ux-intelligence.md) — 17-metric UX scoring; conversion prediction; step 6.5 in pipeline; AgentName+CandidateScore require update for every new agent/field; 1726 tests pass.
 - [VoxAI V8.1 Self-Evolving DNA Engine](voxai-v81-dna-engine.md) — 6 new design-dna modules; 8 learnFrom* fns; Phase 10 promotion/demotion; 167 new tests; all additive; `initPersistence()` wired in index.ts.
 - [VoxAI V8.0 Architecture Cleanup](voxai-v80-architecture.md) — modular orchestrator, unified context, 11 new/extracted files, 2 new pipeline steps (Accessibility/Optimization); AgentName union must be extended for every new withAgentMetrics() call.
 - [VoxAI V7.3.5 Self-Evolving DNA Engine](voxai-v735-dna-engine.md) — 18-phase learning loop; Phases 1-16 pre-built; gaps fixed: Phase 13 (navbar/dashboard/form refs), Phase 15 (flat+nested dual telemetry); 1417 tests pass.

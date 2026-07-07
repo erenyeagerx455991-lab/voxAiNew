@@ -27,6 +27,7 @@ import { runArchitectureStep } from "./architectureStep.js";
 import { runFrontendStep } from "./frontendStep.js";
 import { runCandidateSelectionStep } from "./candidateSelectionStep.js";
 import { runRepairStep } from "./repairStep.js";
+import { runUXIntelligenceStep } from "./uxIntelligenceStep.js";
 import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runDesignCriticStep } from "./designCriticStep.js";
 import { runConversionStep } from "./conversionStep.js";
@@ -100,9 +101,14 @@ export async function runBuildPipeline(
       runRepairStep(winner, keys, res),
     );
 
-    // ── Step 7: Design Evaluator (15-dimension scoring) ────────────────────────
+    // ── Step 6.5: UX Intelligence (V8.2 — static UX & conversion prediction) ──
+    const uxFrontend = await withAgentMetrics("UXIntelligence", () =>
+      runUXIntelligenceStep(repairedFrontend, buildId, res),
+    );
+
+    // ── Step 7: Design Evaluator (15-dimension scoring + V8.2 uxPredictionScore)
     const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
-      runDesignEvaluatorStep(repairedFrontend, keys, res),
+      runDesignEvaluatorStep(uxFrontend, keys, res),
     );
 
     // ── Step 8: Design Critic (senior designer review) ─────────────────────────

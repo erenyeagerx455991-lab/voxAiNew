@@ -1,358 +1,387 @@
-/**
- * V8.2 — UX Heuristics Engine
- *
- * Static code analysis — no LLM calls, no side effects.
- * Scans JSX/HTML source strings to score each UX dimension 0–10.
- * All functions are pure and synchronous.
- */
+// ── V8.2 UX Intelligence — Heuristic Scorers ──────────────────────────────────
+// Static code-analysis heuristics for each of the 17 UX dimensions.
+// All functions are pure — no LLM calls, no side effects.
 
-import type { UXDimensions } from "./uxTypes.js";
+import type { UXScoringInput } from './uxTypes.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function clamp(v: number, min = 0, max = 10): number {
+  return Math.min(max, Math.max(min, v));
+}
+
+function extractBlock(code: string, fnName: string): string {
+  const pat = new RegExp(`function\\s+${fnName}\\s*\\(`);
+  const m = pat.exec(code);
+  if (!m) return '';
+  let depth = 0, i = m.index, entered = false;
+  while (i < code.length) {
+    if (code[i] === '{') { depth++; entered = true; }
+    else if (code[i] === '}') { depth--; if (entered && depth === 0) return code.slice(m.index, i + 1); }
+    i++;
+  }
+  return code.slice(m.index);
+}
 
 function countMatches(code: string, pattern: RegExp): number {
   return (code.match(pattern) ?? []).length;
 }
 
-function clamp(value: number, min = 0, max = 10): number {
-  return Math.max(min, Math.min(max, value));
-}
+// ── 1. Visual Clarity ─────────────────────────────────────────────────────────
+// Measures: color contrast signals, gradient use, dark/light mode consistency
 
-function normalize(count: number, baseline: number, max = 10): number {
-  return clamp(Math.round((count / baseline) * max));
-}
-
-// ── Individual dimension scorers ──────────────────────────────────────────────
-
-/** Visual clarity: text hierarchy, contrast hints, clean layout */
-function scoreVisualClarity(code: string): number {
+export function scoreVisualClarity(code: string): number {
   let score = 5;
-  // Positive signals
-  if (/<h1[\s>]/i.test(code))   score += 2;
-  if (/<h2[\s>]/i.test(code))   score += 1;
-  if (/text-5xl|text-6xl|text-7xl|text-8xl/i.test(code)) score += 1;
-  if (/font-bold|font-extrabold|font-black/i.test(code)) score += 1;
-  // Negative signals — too many competing sizes
-  const headingCount = countMatches(code, /<h[1-6][\s>]/gi);
-  if (headingCount > 8) score -= 1;
-  // Prominent leading section
-  if (/hero|<main|<section/i.test(code)) score += 1;
-  if (/max-w-\w+/i.test(code))  score += 1;
-  return clamp(score);
+  // Primary color contrast indicators
+  if (/text-white|text-black|text-gray-[89]00/.test(code)) score += 1;
+  if (/bg-white|bg-black|bg-gray-[89]00/.test(code)) score += 0.5;
+  // Dark text on light bg or vice versa
+  if (/(bg-white.*text-gray|bg-gray.*text-white|dark:.*light:)/s.test(code)) score += 1;
+  // Focus indicators
+  if (/focus-visible:|focus:ring/.test(code)) score += 1;
+  // Gradient overuse penalty
+  const gradients = countMatches(code, /bg-gradient|from-.*to-/g);
+  if (gradients > 5) score -= 1;
+  // Low contrast warning
+  if (/text-gray-[23]00|text-slate-[23]00/.test(code)) score -= 0.5;
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Cognitive load: inversely related to element/text density */
-function scoreCognitiveLoad(code: string): number {
-  // High score = LOW cognitive load = GOOD
-  const lineCount   = code.split('\n').length;
-  const elementCount = countMatches(code, /<[A-Z][a-zA-Z]+|<div|<section|<article/g);
-  const textNodes   = countMatches(code, />[^<]{20,}/g);
+// ── 2. Cognitive Load ─────────────────────────────────────────────────────────
+// Lower cognitive load = higher score. Measured by complexity indicators.
 
-  let score = 7;
-  if (elementCount > 80)  score -= 2;
-  if (elementCount > 120) score -= 2;
-  if (textNodes > 30)     score -= 1;
-  if (lineCount > 600)    score -= 1;
-  // Good: focused, fewer competing items
-  if (elementCount < 40)  score += 1;
-  if (/focus|single|clean/i.test(code)) score += 1;
-  return clamp(score);
+export function scoreCognitiveLoad(code: string, sectionOrder: string[]): number {
+  let score = 7; // start positive
+  // Too many sections → complexity
+  if (sectionOrder.length > 10) score -= 1.5;
+  else if (sectionOrder.length < 4) score -= 1;
+  // Excessive text blocks
+  const textBlocks = countMatches(code, /<p[\s>]/g);
+  if (textBlocks > 12) score -= 1;
+  // Complex nesting penalty
+  const deepNest = countMatches(code, /className="[^"]{200,}"/g);
+  if (deepNest > 3) score -= 0.5;
+  // Short, clear labels
+  if (/aria-label=|aria-describedby=/.test(code)) score += 0.5;
+  // Progressive disclosure (tabs, accordions)
+  if (/Accordion|Tabs|Collapsible/.test(code)) score += 1;
+  // Modal overuse
+  const modals = countMatches(code, /Dialog|Modal|Sheet/g);
+  if (modals > 3) score -= 0.5;
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** CTA discoverability: presence and prominence of call-to-action elements */
-function scoreCtaDiscoverability(code: string): number {
-  let score = 2;
-  // Primary CTA signals
-  const buttonCount = countMatches(code, /<[Bb]utton|<Button/g);
-  const ctaKeywords = countMatches(code, /\b(Get Started|Sign Up|Try|Buy|Start|Join|Download|Free|Demo|Request)\b/i);
-  score += Math.min(buttonCount, 4);
-  score += Math.min(ctaKeywords, 2);
-  // Visual prominence signals
-  if (/bg-primary|bg-indigo|bg-violet|bg-blue|bg-gradient/i.test(code)) score += 1;
-  if (/text-white.*px-|px-.*text-white/i.test(code)) score += 1;
-  if (/rounded-full|rounded-lg.*font-/i.test(code)) score += 1;
-  // href links acting as CTAs
-  if (/href=.*sign|href=.*get-started|href=.*start/i.test(code)) score += 1;
-  return clamp(score);
+// ── 3. CTA Discoverability ────────────────────────────────────────────────────
+
+export function scoreCtaDiscoverability(code: string): number {
+  let score = 0;
+  const heroBlock = extractBlock(code, 'Hero');
+
+  // Primary CTA exists
+  if (/<Button[^>]*>/.test(heroBlock)) score += 3;
+  // CTA is prominent (size classes)
+  if (/px-8|px-10|py-3|py-4/.test(heroBlock)) score += 1.5;
+  // CTA above the fold (in hero)
+  if (/<Button[^>]*>/.test(heroBlock) && /<h1[\s>]/.test(heroBlock)) score += 1.5;
+  // Secondary CTA
+  if (/variant=["'](outline|ghost)/.test(heroBlock)) score += 1.5;
+  // CTA color contrast
+  if (/bg-white.*text-black|bg-black.*text-white|bg-primary/.test(heroBlock)) score += 1;
+  // CTA in multiple sections (sticky nav, footer)
+  const globalCtaCount = countMatches(code, /<Button[^>]*>/g);
+  if (globalCtaCount >= 3) score += 0.5;
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Reading flow: heading hierarchy and paragraph structure */
-function scoreReadingFlow(code: string): number {
-  let score = 4;
-  const hasH1 = /<h1[\s>]/i.test(code);
-  const hasH2 = /<h2[\s>]/i.test(code);
-  const hasH3 = /<h3[\s>]/i.test(code);
-  const hasP  = /<p[\s>]/i.test(code);
+// ── 4. Reading Flow ───────────────────────────────────────────────────────────
 
-  if (hasH1)               score += 2;
-  if (hasH2)               score += 1;
-  if (hasH3 && hasH2)     score += 1;
-  if (hasP)                score += 1;
-  // Well-structured prose
-  if (/leading-relaxed|leading-loose/i.test(code)) score += 1;
-  // Negative: h1 without any h2 (poor hierarchy)
-  if (hasH1 && !hasH2)    score -= 1;
-  return clamp(score);
+export function scoreReadingFlow(code: string, sectionOrder: string[]): number {
+  let score = 5;
+  // Heading hierarchy
+  const hasH1 = /<h1[\s>]/.test(code);
+  const hasH2 = /<h2[\s>]/.test(code);
+  const hasH3 = /<h3[\s>]/.test(code);
+  if (hasH1) score += 1.5;
+  if (hasH2) score += 1;
+  if (hasH3) score += 0.5;
+  // Logical section order (Hero first)
+  if (sectionOrder[0]?.toLowerCase().includes('hero') || sectionOrder[0]?.toLowerCase().includes('nav')) score += 1;
+  // Short paragraphs (scannable)
+  if (/max-w-(xl|2xl|3xl|prose)/.test(code)) score += 0.5;
+  // Missing h1 penalty
+  if (!hasH1) score -= 2;
+  // Correct depth (h1 → h2 → h3)
+  const h1Count = countMatches(code, /<h1[\s>]/g);
+  if (h1Count > 1) score -= 0.5; // Multiple h1s hurt flow
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Trust signals: testimonials, logos, social proof, guarantees */
-function scoreTrust(code: string): number {
-  let score = 3;
-  // Testimonials / reviews
-  if (/testimonial|review|quote|said|says/i.test(code))      score += 2;
-  // Ratings / stars
-  if (/star|rating|\d+\s*\/\s*5|\d+\.\d\s*stars?/i.test(code)) score += 1;
-  // Numbers as social proof
-  if (/\d{1,3},?\d{3}\+?\s*(users?|customers?|teams?|companies)/i.test(code)) score += 1;
-  // Security / trust badges
-  if (/secure|ssl|encrypt|gdpr|soc2|iso|verified|badge|shield/i.test(code)) score += 1;
-  // Company logos
-  if (/logo|partner|powered by|trusted by|as seen/i.test(code)) score += 1;
-  // Guarantee / refund
-  if (/guarantee|refund|no credit card|risk.free|cancel anytime/i.test(code)) score += 1;
-  // Award / press mentions
-  if (/award|featured in|press|news|techcrunch|forbes/i.test(code)) score += 1;
-  return clamp(score);
+// ── 5. Trust ─────────────────────────────────────────────────────────────────
+
+export function scoreTrust(code: string): number {
+  let score = 0;
+  // Social proof
+  if (/★|⭐|rating|stars|review|testimonial/i.test(code)) score += 2;
+  // Logo clouds / partner logos
+  if (/logo.*cloud|partner|trusted by|powered by/i.test(code)) score += 1.5;
+  // User counts / metrics
+  if (/\d[\d,]+\s*(user|team|customer|developer|company)/i.test(code)) score += 1.5;
+  // Avatars (social proof)
+  if (/Avatar|AvatarImage|AvatarFallback/.test(code)) score += 1;
+  // Badges (certifications)
+  if (/<Badge[\s>]/.test(code)) score += 0.5;
+  // Security signals
+  if (/secure|ssl|encrypt|gdpr|soc2|iso\s*27001/i.test(code)) score += 1;
+  // Money-back / guarantee
+  if (/guarantee|refund|free.*trial|no.*credit/i.test(code)) score += 0.5;
+  // Missing trust signals
+  if (score === 0) score = 2;
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Scanning efficiency: bullets, cards, badges for quick reading */
-function scoreScanningEfficiency(code: string): number {
-  let score = 3;
-  // Lists
-  const liCount = countMatches(code, /<li[\s>]/gi);
-  score += Math.min(Math.floor(liCount / 3), 3);
-  // Cards / grid patterns
-  if (/grid|card|flex.*wrap/i.test(code)) score += 1;
-  // Badges / chips
-  if (/badge|chip|pill|tag/i.test(code)) score += 1;
-  // Icons as scannable elements
-  if (/CheckIcon|CheckCircle|Icon|svg/i.test(code)) score += 1;
-  // Feature bullets with icons
-  if (/Check.*text|text.*Check/i.test(code)) score += 1;
-  return clamp(score);
+// ── 6. Scanning Efficiency ────────────────────────────────────────────────────
+
+export function scoreScanningEfficiency(code: string): number {
+  let score = 5;
+  // Bullet lists / feature lists
+  const listItems = countMatches(code, /<li[\s>]|<ul[\s>]/g);
+  if (listItems >= 3) score += 1.5;
+  // Icon + text combinations
+  if (/lucide|HeroIcon|<svg/.test(code) && /<span|<p/.test(code)) score += 1;
+  // Section headings
+  const h2Count = countMatches(code, /<h2[\s>]/g);
+  if (h2Count >= 2) score += 1;
+  // Card grid patterns
+  if (/grid-cols|grid grid/.test(code)) score += 1;
+  // Excessive prose penalty
+  const longParagraphs = countMatches(code, /<p[^>]*>[^<]{200,}<\/p>/g);
+  if (longParagraphs > 3) score -= 1;
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Navigation simplicity: nav structure, item count */
-function scoreNavigationSimplicity(code: string): number {
-  let score = 4;
-  const hasNav  = /<nav[\s>]/i.test(code);
-  const hasMenu = /navbar|nav-|navigation|menu/i.test(code);
-  if (hasNav || hasMenu) score += 2;
-  // Link count — fewer is simpler
-  const linkCount = countMatches(code, /<a[\s>]|href=/gi);
-  if (linkCount < 10)  score += 2;
-  else if (linkCount < 20) score += 1;
-  else if (linkCount > 40) score -= 1;
-  // Mobile-friendly
-  if (/hamburger|mobile-menu|HamburgerMenu|MenuIcon/i.test(code)) score += 1;
-  // Dropdown navigation (adds complexity)
-  if (/dropdown|submenu|flyout/i.test(code)) score -= 1;
-  return clamp(score);
+// ── 7. Navigation Simplicity ──────────────────────────────────────────────────
+
+export function scoreNavigationSimplicity(code: string): number {
+  let score = 5;
+  const navBlock = extractBlock(code, 'Navbar') || extractBlock(code, 'Navigation') || extractBlock(code, 'Header');
+  if (!navBlock) return 4;
+
+  // Clear nav links
+  const navLinks = countMatches(navBlock, /<a[\s>]|href=/g);
+  if (navLinks >= 2 && navLinks <= 7) score += 2;
+  else if (navLinks > 7) score -= 1; // too complex
+
+  // Logo present
+  if (/logo|brand|company|<a.*href=["']\/["']/i.test(navBlock)) score += 1;
+
+  // CTA in nav
+  if (/<Button/.test(navBlock)) score += 1;
+
+  // Mobile menu (responsive)
+  if (/Menu|Hamburger|md:flex|lg:flex|hidden.*md:/.test(navBlock)) score += 0.5;
+
+  // Dropdown complexity
+  const dropdowns = countMatches(navBlock, /DropdownMenu|NavigationMenu/g);
+  if (dropdowns > 2) score -= 0.5;
+
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Form friction: inversely scored (high = low friction = good) */
-function scoreFormFriction(code: string): number {
-  const hasForm = /<form[\s>]|<Form[\s>]|<input|<Input/i.test(code);
-  if (!hasForm) return 7; // no form = no friction
+// ── 8. Form Friction ─────────────────────────────────────────────────────────
+
+export function scoreFormFriction(code: string, isForm: boolean): number {
+  if (!isForm && !/<form[\s>]|<Form[\s>]|useForm/.test(code)) return 6; // not a form page, neutral+
 
   let score = 5;
-  // Labels always present = lower friction
-  const labelCount = countMatches(code, /<label|<Label/gi);
-  const inputCount = countMatches(code, /<input|<Input/gi);
+  // Short forms (fewer fields = less friction)
+  const inputCount = countMatches(code, /<Input[\s>]|<Textarea[\s>]|<input[\s>]/g);
+  if (inputCount <= 3) score += 2;
+  else if (inputCount <= 6) score += 1;
+  else score -= 1;
+
+  // Labels for every field
+  const labelCount = countMatches(code, /<Label[\s>]|<label[\s>]/g);
   if (labelCount >= inputCount) score += 1;
-  // Error messages / validation
-  if (/error|invalid|required|helperText|FormMessage/i.test(code)) score += 1;
-  // Progressive disclosure
-  if (/step|wizard|multi-step|progress/i.test(code)) score += 1;
-  // Autofill / autocomplete hints
-  if (/autoComplete|autocomplete|autoFocus/i.test(code)) score += 1;
-  // Too many fields = high friction
-  if (inputCount > 8)  score -= 2;
-  else if (inputCount > 5) score -= 1;
-  // Social login = lower friction
-  if (/google|github|sso|oauth/i.test(code)) score += 1;
-  return clamp(score);
+
+  // Error messages
+  if (/error|invalid|required|FormMessage/.test(code)) score += 0.5;
+
+  // Submit button visible
+  if (/type=["']submit["']|<Button[^>]*>.*Submit/i.test(code)) score += 1;
+
+  // Loading state
+  if (/isLoading|isPending|disabled/.test(code)) score += 0.5;
+
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Pricing clarity: clear pricing layout */
-function scorePricingClarity(code: string): number {
-  const hasPricing = /pricing|price|plan|tier|\$\d|\d+\/mo/i.test(code);
-  if (!hasPricing) return 6; // no pricing section
+// ── 9. Pricing Clarity ────────────────────────────────────────────────────────
 
-  let score = 5;
-  if (/\$\d+|€\d+|£\d+/i.test(code))       score += 1;
-  if (/\/month|\/year|\/mo|\/yr/i.test(code)) score += 1;
-  if (/most popular|recommended|best value/i.test(code)) score += 1;
-  if (/compare|feature.*check|check.*feature/i.test(code)) score += 1;
-  if (/free.*plan|free tier|freemium/i.test(code)) score += 1;
-  if (/faq|question|answer/i.test(code))    score += 1;
-  return clamp(score);
-}
+export function scorePricingClarity(code: string, hasPricing: boolean): number {
+  const pricingBlock = extractBlock(code, 'Pricing') || extractBlock(code, 'Plans');
+  if (!hasPricing && !pricingBlock && !/pricing|plan|tier|\$\d|\d+\/mo/i.test(code)) return 6;
 
-/** Dashboard usability: data table, charts, filters */
-function scoreDashboardUsability(code: string): number {
-  const hasDashboard = /dashboard|DataTable|chart|analytics|metrics|statistics/i.test(code);
-  if (!hasDashboard) return 6;
-
+  const block = pricingBlock || code;
   let score = 4;
-  if (/DataTable|table|<Table/i.test(code)) score += 2;
-  if (/Chart|BarChart|LineChart|PieChart/i.test(code)) score += 2;
-  if (/filter|sort|search.*input/i.test(code)) score += 1;
-  if (/Skeleton|loading|spinner/i.test(code)) score += 1;
-  if (/Tabs?|<Tab[\s>]/i.test(code))        score += 1;
-  if (/Badge|status|indicator/i.test(code)) score += 1;
-  return clamp(score);
+
+  // Price clearly shown
+  if (/\$\d|\d+\/mo|\d+\/month|per month|per year/i.test(block)) score += 2;
+  // Feature comparison
+  if (/Check|✓|included|feature/i.test(block)) score += 1;
+  // Highlighted plan
+  if (/popular|recommended|most.*chosen|badge/i.test(block)) score += 1;
+  // CTA per plan
+  const planCtaCount = countMatches(block, /<Button/g);
+  if (planCtaCount >= 2) score += 1;
+  // Annual/monthly toggle
+  if (/annual|monthly|toggle|Switch/i.test(block)) score += 0.5;
+
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Information density: balance between content and space */
-function scoreInformationDensity(code: string): number {
-  // High = good density balance (not too sparse, not too dense)
-  const elementCount = countMatches(code, /<[A-Z][a-zA-Z]+|<div|<section/g);
-  const codeLen      = code.length;
+// ── 10. Dashboard Usability ───────────────────────────────────────────────────
 
-  if (elementCount < 10) return 4; // too sparse
-  if (elementCount > 150) return 4; // too dense
-  if (codeLen < 500)     return 3;
+export function scoreDashboardUsability(code: string, isDashboard: boolean): number {
+  const dashBlock = extractBlock(code, 'Dashboard') || extractBlock(code, 'Overview');
+  if (!isDashboard && !dashBlock) return 6;
 
-  let score = 7;
-  // Good: balanced grid
-  if (/grid-cols-[2-4]|md:grid-cols/i.test(code)) score += 1;
-  if (/gap-\d+|space-[xy]-\d+/i.test(code))       score += 1;
-  // Too much text density
-  if (codeLen > 15000) score -= 1;
-  if (codeLen > 25000) score -= 1;
-  return clamp(score);
-}
-
-/** Whitespace balance: padding, margin, gap usage */
-function scoreWhitespaceBalance(code: string): number {
-  let score = 3;
-  const pyCount   = countMatches(code, /\bpy-\d+\b/g);
-  const pxCount   = countMatches(code, /\bpx-\d+\b/g);
-  const gapCount  = countMatches(code, /\bgap-\d+\b/g);
-  const spaceCount = countMatches(code, /\bspace-[xy]-\d+\b/g);
-  const mbCount   = countMatches(code, /\bmb-\d+\b/g);
-
-  score += Math.min(pyCount,   2);
-  score += Math.min(pxCount,   1);
-  score += Math.min(gapCount,  2);
-  score += Math.min(spaceCount, 1);
-  score += Math.min(mbCount,   1);
-  // Section-level padding
-  if (/py-16|py-20|py-24|py-32/i.test(code)) score += 1;
-  return clamp(score);
-}
-
-/** Visual hierarchy: heading depth and structure */
-function scoreHierarchy(code: string): number {
-  let score = 3;
-  const h1 = countMatches(code, /<h1[\s>]/gi);
-  const h2 = countMatches(code, /<h2[\s>]/gi);
-  const h3 = countMatches(code, /<h3[\s>]/gi);
-
-  // Ideal: one h1, several h2s, some h3s
-  if (h1 === 1) score += 3;
-  else if (h1 > 1) score += 1;
-  if (h2 >= 2 && h2 <= 8) score += 2;
-  else if (h2 > 0) score += 1;
-  if (h3 >= 1 && h2 > 0)  score += 1;
-  // Clear visual size variation
-  if (/text-5xl|text-6xl/i.test(code)) score += 1;
-  return clamp(score);
-}
-
-/** Accessibility confidence: aria labels, focus, alt text */
-function scoreAccessibilityConfidence(code: string): number {
-  let score = 3;
-  if (/aria-label|aria-labelledby|aria-describedby/i.test(code)) score += 2;
-  if (/focus-visible|focus-within|focus:ring/i.test(code)) score += 2;
-  if (/alt=["'][^"']+["']/i.test(code))      score += 1;
-  if (/role=/i.test(code))                   score += 1;
-  if (/tabIndex|tabindex/i.test(code))       score += 1;
-  if (/sr-only|visually-hidden/i.test(code)) score += 1;
-  // Missing alt on images is bad
-  if (/<img(?![^>]*alt=)/i.test(code))       score -= 1;
-  return clamp(score);
-}
-
-/** Motion comfort: animation presence vs reduce-motion support */
-function scoreMotionComfort(code: string): number {
-  let score = 5;
-  const hasMotion = /motion\.|framer|animation|transition|animate-/i.test(code);
-  const hasReducedMotion = /prefers-reduced-motion|reduce.*motion|motion-safe|motion-reduce/i.test(code);
-
-  if (hasMotion && hasReducedMotion) score += 3;
-  else if (hasMotion && !hasReducedMotion) score -= 1; // motion without safety
-  else if (!hasMotion) score += 1; // static = universally safe
-
-  // Smooth but not overwhelming
-  if (/transition-all|ease-in-out/i.test(code)) score += 1;
-  if (/animate-spin|animate-bounce/i.test(code)) score -= 1; // distracting
-  return clamp(score);
-}
-
-/** Perceived performance: skeleton states, lazy loading, feedback */
-function scorePerceivedPerformance(code: string): number {
+  const block = dashBlock || code;
   let score = 4;
-  if (/Skeleton|skeleton/i.test(code))          score += 2;
-  if (/Suspense|lazy\(|loading=/i.test(code))   score += 2;
-  if (/spinner|loading.*state|isLoading/i.test(code)) score += 1;
-  if (/optimistic|instant|debounce/i.test(code)) score += 1;
-  if (/blur-up|placeholder.*blur/i.test(code))  score += 1;
-  return clamp(score);
+
+  // Data tables
+  if (/DataTable|Table|<table/.test(block)) score += 1.5;
+  // Charts / metrics
+  if (/Chart|recharts|Graph|metric|stat/i.test(block)) score += 1.5;
+  // Skeleton loading
+  if (/Skeleton|loading|isLoading/.test(block)) score += 1;
+  // Tabs for navigation
+  if (/Tabs|Tab/.test(block)) score += 0.5;
+  // Summary cards
+  const cardCount = countMatches(block, /<Card/g);
+  if (cardCount >= 2) score += 0.5;
+  // Badge status indicators
+  if (/Badge|status|indicator/i.test(block)) score += 0.5;
+
+  return clamp(Math.round(score * 10) / 10);
 }
 
-/** Overall conversion probability: meta-score combining key signals */
-function scoreOverallConversion(code: string, dims: Partial<UXDimensions>): number {
-  const cta   = dims.ctaDiscoverability   ?? 5;
-  const trust = dims.trust                ?? 5;
-  const hier  = dims.hierarchy            ?? 5;
-  const form  = dims.formFriction         ?? 5;
-  const nav   = dims.navigationSimplicity ?? 5;
-  return clamp(Math.round((cta * 0.35 + trust * 0.30 + hier * 0.15 + form * 0.10 + nav * 0.10) * 10) / 10);
+// ── 11. Information Density ───────────────────────────────────────────────────
+
+export function scoreInformationDensity(code: string, sectionOrder: string[]): number {
+  // Target: not too sparse, not too dense (ideal range 5–8)
+  const sectionCount = sectionOrder.length;
+  const totalLength = code.length;
+
+  let score = 6;
+  // Too sparse
+  if (sectionCount < 3) score -= 1.5;
+  if (totalLength < 2000) score -= 1;
+  // Too dense
+  if (sectionCount > 12) score -= 1;
+  if (totalLength > 15000) score -= 0.5;
+  // Good density
+  if (sectionCount >= 5 && sectionCount <= 9) score += 1;
+  if (totalLength >= 3000 && totalLength <= 10000) score += 1;
+  // Cards help density
+  const cardCount = countMatches(code, /<Card[\s>]/g);
+  if (cardCount >= 2 && cardCount <= 6) score += 0.5;
+
+  return clamp(Math.round(score * 10) / 10);
 }
 
-// ── Public API ────────────────────────────────────────────────────────────────
+// ── 12. Whitespace Balance ────────────────────────────────────────────────────
 
-export function analyzeUXHeuristics(code: string): UXDimensions {
-  const visualClarity        = scoreVisualClarity(code);
-  const cognitiveLoad        = scoreCognitiveLoad(code);
-  const ctaDiscoverability   = scoreCtaDiscoverability(code);
-  const readingFlow          = scoreReadingFlow(code);
-  const trust                = scoreTrust(code);
-  const scanningEfficiency   = scoreScanningEfficiency(code);
-  const navigationSimplicity = scoreNavigationSimplicity(code);
-  const formFriction         = scoreFormFriction(code);
-  const pricingClarity       = scorePricingClarity(code);
-  const dashboardUsability   = scoreDashboardUsability(code);
-  const informationDensity   = scoreInformationDensity(code);
-  const whitespaceBalance    = scoreWhitespaceBalance(code);
-  const hierarchy            = scoreHierarchy(code);
-  const accessibilityConfidence = scoreAccessibilityConfidence(code);
-  const motionComfort        = scoreMotionComfort(code);
-  const perceivedPerformance = scorePerceivedPerformance(code);
-  const partial: Partial<UXDimensions> = {
-    ctaDiscoverability, trust, hierarchy, formFriction, navigationSimplicity,
-  };
-  const overallConversionProbability = scoreOverallConversion(code, partial);
+export function scoreWhitespaceBalance(code: string): number {
+  let score = 5;
+  // Section padding
+  if (/py-16|py-20|py-24|py-32/.test(code)) score += 1.5;
+  // Component spacing
+  if (/gap-4|gap-6|gap-8|space-y-/.test(code)) score += 1;
+  // Max width constraints
+  if (/max-w-[4-9]xl|max-w-screen|container/.test(code)) score += 1;
+  // Missing padding penalty
+  if (!/py-/.test(code)) score -= 1.5;
+  // Excessive padding
+  const largePad = countMatches(code, /py-48|py-64|pt-96/g);
+  if (largePad > 2) score -= 0.5;
+  return clamp(Math.round(score * 10) / 10);
+}
 
-  return {
-    visualClarity,
-    cognitiveLoad,
-    ctaDiscoverability,
-    readingFlow,
-    trust,
-    scanningEfficiency,
-    navigationSimplicity,
-    formFriction,
-    pricingClarity,
-    dashboardUsability,
-    informationDensity,
-    whitespaceBalance,
-    hierarchy,
-    accessibilityConfidence,
-    motionComfort,
-    perceivedPerformance,
-    overallConversionProbability,
-  };
+// ── 13. Hierarchy ─────────────────────────────────────────────────────────────
+
+export function scoreHierarchy(code: string): number {
+  let score = 4;
+  // Font size variation
+  if (/text-[456789]xl|text-8xl/.test(code)) score += 2; // large headline
+  if (/text-[23]xl/.test(code)) score += 1; // mid headings
+  if (/text-sm|text-base/.test(code)) score += 0.5; // body
+  // Font weight variation
+  if (/font-black|font-bold|font-semibold/.test(code)) score += 1;
+  // Color hierarchy (muted secondary text)
+  if (/text-muted|text-gray|text-white\/[567]/.test(code)) score += 1;
+  // Missing large heading penalty
+  const h1Count = countMatches(code, /<h1[\s>]/g);
+  if (h1Count === 0) score -= 2;
+  return clamp(Math.round(score * 10) / 10);
+}
+
+// ── 14. Accessibility Confidence ─────────────────────────────────────────────
+
+export function scoreAccessibilityConfidence(code: string): number {
+  let score = 4;
+  // ARIA labels
+  if (/aria-label=/.test(code)) score += 1.5;
+  if (/aria-describedby=|aria-expanded=|aria-controls=/.test(code)) score += 0.5;
+  // Focus management
+  if (/focus-visible:|focus:ring/.test(code)) score += 1.5;
+  // Alt text
+  if (/alt=["'][^"']+["']/.test(code)) score += 1;
+  // Role attributes
+  if (/role=["'](main|navigation|banner|contentinfo|button)["']/.test(code)) score += 0.5;
+  // Type=button on buttons
+  const buttons = countMatches(code, /<Button[\s>]/g);
+  const typedButtons = countMatches(code, /type=["']button["']/g);
+  if (buttons > 0 && typedButtons / buttons >= 0.5) score += 0.5;
+  // Missing focus indicators
+  if (!/focus/.test(code)) score -= 1;
+  return clamp(Math.round(score * 10) / 10);
+}
+
+// ── 15. Motion Comfort ────────────────────────────────────────────────────────
+
+export function scoreMotionComfort(code: string): number {
+  let score = 7; // default good (no motion = comfortable)
+  // Has motion but purposeful (framer-motion with sensible defaults)
+  if (/motion\.|framer-motion|animate=/.test(code)) {
+    score = 6;
+    // Short durations = comfortable
+    if (/duration.*0\.[12]|duration.*200|duration.*300/.test(code)) score += 1.5;
+    if (/duration.*0\.[456789]|duration.*[5-9]00/.test(code)) score -= 1; // long animations
+    // Ease curves
+    if (/easeOut|easeInOut|spring/.test(code)) score += 0.5;
+    // Respect prefers-reduced-motion
+    if (/prefers-reduced-motion|useReducedMotion/.test(code)) score += 1;
+  }
+  // Excessive transitions
+  const transitionCount = countMatches(code, /transition-|animate-/g);
+  if (transitionCount > 10) score -= 1;
+  return clamp(Math.round(score * 10) / 10);
+}
+
+// ── 16. Perceived Performance ─────────────────────────────────────────────────
+
+export function scorePerceivedPerformance(code: string): number {
+  let score = 6;
+  // Skeleton loading states (makes perceived perf better)
+  if (/Skeleton|loading|isLoading|isPending/.test(code)) score += 1.5;
+  // Image optimization hints
+  if (/loading=["']lazy["']|placeholder/.test(code)) score += 0.5;
+  // Optimistic UI
+  if (/optimistic|toast|Toaster/.test(code)) score += 0.5;
+  // Heavy animations penalty
+  if (/backdrop-blur-xl|backdrop-filter/.test(code)) score -= 0.5;
+  // Excessive re-renders (many useState)
+  const stateCount = countMatches(code, /useState\(/g);
+  if (stateCount > 8) score -= 0.5;
+  return clamp(Math.round(score * 10) / 10);
 }

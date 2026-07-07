@@ -10,6 +10,7 @@ import { generateCandidates } from "../frontend/candidateGenerator.js";
 import { recordMultiCandidateSelection } from "../../telemetry/multiCandidateMetrics.js";
 import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
 import { compareAllCandidates } from "../../visual-diff/pixelDiff.js";
+import { predictUX } from "../../ux-intelligence/uxPrediction.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
@@ -17,9 +18,12 @@ const log = createLogger("CandidateSelectionStep");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-// V7.3.4: Visual score weights for combined ranking
-const EVALUATOR_WEIGHT = 0.70;
-const VISUAL_WEIGHT    = 0.30;
+// V8.2: Updated weights to incorporate UX prediction score.
+// Redistribution: evaluator −0.05, visual −0.05, ux +0.10.
+// Spec example: Design 9.0 + UX 9.8 beats Design 9.2 + UX 7.4 with these weights.
+const EVALUATOR_WEIGHT = 0.65; // was 0.70 (−0.05 for UX)
+const VISUAL_WEIGHT    = 0.25; // was 0.30 (−0.05 for UX)
+const UX_WEIGHT        = 0.10; // new V8.2
 
 export interface CandidateScore {
   index: number;
@@ -32,7 +36,8 @@ export interface CandidateScore {
   shadcnScore: number;
   consistencyScore: number;
   visualScore: number;     // V7.3.4: visual analysis score 0–10
-  combinedScore: number;   // V7.3.4: 70% evaluator + 30% visual
+  uxScore: number;         // V8.2: UX prediction score 0–10
+  combinedScore: number;   // V8.2: 65% evaluator + 25% visual + 10% ux
 }
 
 export interface CandidateSelectionResult {
@@ -49,12 +54,13 @@ export interface CandidateSelectionResult {
 }
 
 // ── Pure selection logic (testable) ──────────────────────────────────────────
-// Phase 5 rules (V7.3.4 updated):
-//   1. Highest combinedScore (70% evaluator + 30% visual) wins.
-//   2. If combined score difference < 0.2 → prefer higher visualScore (tie-break).
-//   3. Still tied → prefer higher accessibilityScore.
-//   4. Still tied → prefer higher shadcnScore.
-//   5. Still tied → prefer higher consistencyScore.
+// Phase 5 rules (V8.2 updated — adds UX):
+//   1. Highest combinedScore (65% evaluator + 25% visual + 10% ux) wins.
+//   2. If combined score difference < 0.2 → prefer higher uxScore (V8.2 tie-break).
+//   3. Still tied → prefer higher visualScore.
+//   4. Still tied → prefer higher accessibilityScore.
+//   5. Still tied → prefer higher shadcnScore.
+//   6. Still tied → prefer higher consistencyScore.
 
 export function selectBestCandidate(scored: CandidateScore[]): CandidateScore {
   if (scored.length === 0) throw new Error("selectBestCandidate: empty candidate list");
@@ -65,19 +71,23 @@ export function selectBestCandidate(scored: CandidateScore[]): CandidateScore {
     const combinedDiff = b.combinedScore - a.combinedScore;
     if (Math.abs(combinedDiff) >= NEAR_TIE_THRESHOLD) return combinedDiff;
 
-    // Tie-break 1: visual score wins (V7.3.4 spec)
+    // Tie-break 1: UX score (V8.2 — high UX beats marginally higher design score)
+    const uxDiff = b.uxScore - a.uxScore;
+    if (Math.abs(uxDiff) >= NEAR_TIE_THRESHOLD) return uxDiff;
+
+    // Tie-break 2: visual score (V7.3.4)
     const visualDiff = b.visualScore - a.visualScore;
     if (Math.abs(visualDiff) >= NEAR_TIE_THRESHOLD) return visualDiff;
 
-    // Tie-break 2: accessibility
+    // Tie-break 3: accessibility
     const accessDiff = b.accessibilityScore - a.accessibilityScore;
     if (Math.abs(accessDiff) >= NEAR_TIE_THRESHOLD) return accessDiff;
 
-    // Tie-break 3: shadcn usage
+    // Tie-break 4: shadcn usage
     const shadcnDiff = b.shadcnScore - a.shadcnScore;
     if (Math.abs(shadcnDiff) >= NEAR_TIE_THRESHOLD) return shadcnDiff;
 
-    // Tie-break 4: consistency
+    // Tie-break 5: consistency
     return b.consistencyScore - a.consistencyScore;
   });
 
@@ -114,9 +124,16 @@ export async function runCandidateSelectionStep(
       designDNA: cand.design,
     });
     const visualResult = analyzeVisuals(cand.fixedCode, blueprint.sectionOrder, `cand-${LABELS[i]}`, buildId);
-    // Combined score: 70% evaluator + 30% visual
+    // V8.2: UX prediction — fast static analysis on each candidate
+    const uxResult = predictUX({
+      code: cand.fixedCode,
+      sectionOrder: blueprint.sectionOrder,
+    });
+    // V8.2: Combined score = 65% evaluator + 25% visual + 10% UX
     const combinedScore = Math.round(
-      (result.overallScore * EVALUATOR_WEIGHT + visualResult.visualScore * VISUAL_WEIGHT) * 100
+      (result.overallScore * EVALUATOR_WEIGHT +
+       visualResult.visualScore * VISUAL_WEIGHT +
+       uxResult.overallUXScore * UX_WEIGHT) * 100
     ) / 100;
     return {
       index: i,
@@ -129,6 +146,7 @@ export async function runCandidateSelectionStep(
       shadcnScore:       result.shadcnScore,
       consistencyScore:  result.consistencyScore,
       visualScore:       visualResult.visualScore,
+      uxScore:           uxResult.overallUXScore,
       combinedScore,
     };
   });

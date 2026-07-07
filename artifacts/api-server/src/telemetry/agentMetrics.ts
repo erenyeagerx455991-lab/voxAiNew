@@ -20,7 +20,9 @@ export type AgentName =
   | "ConversionIntelligence"
   // V8.0 additions
   | "Accessibility"
-  | "Optimization";
+  | "Optimization"
+  // V8.2 additions
+  | "UXIntelligence";
 
 interface AgentRecord {
   calls: number;

@@ -14,6 +14,7 @@ import type { EvaluatorStepOutput } from "./designEvaluatorStep.js";
 import { buildTreeContextString } from "../../component-tree/treeBuilder.js";
 import { buildTokenCodegenContext } from "../../design-tokens/cssVariables.js";
 import { analyzeVisuals, buildVisualContextString } from "../../visual-diff/visualAnalyzer.js";
+import type { UXReport } from "../../ux-intelligence/uxTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("DesignCriticStep");
@@ -67,6 +68,30 @@ export async function runDesignCriticStep(
       });
     } catch (e) {
       log.warn("VISUAL_CRITIC_CONTEXT_FAILED", { error: String(e) });
+    }
+
+    // V8.2: UX Intelligence context — conversion prediction, behavior signals, top issues
+    try {
+      const uxReport = (evaluated as unknown as { uxReport?: UXReport }).uxReport;
+      if (uxReport) {
+        const topIssues = uxReport.topIssues.slice(0, 5).map(i => `  - ${i}`).join('\n');
+        const uxCtx = [
+          `UX Score: ${uxReport.overallUXScore}/10`,
+          `Conversion Prediction: ${uxReport.conversionPrediction} (confidence: ${Math.round(uxReport.confidence * 100)}%)`,
+          `Bounce Risk: ${uxReport.behaviorPredictions.bounceRisk}/10`,
+          `CTA Interaction: ${uxReport.behaviorPredictions.ctaInteraction}/10`,
+          `Trust Level: ${uxReport.behaviorPredictions.trustLevel}/10`,
+          `Top UX Issues:\n${topIssues || '  (none detected)'}`,
+        ].join('\n');
+        prefixParts.push(`/* UX INTELLIGENCE REPORT (V8.2):\n${uxCtx}\nFLAG any UX issue that conflicts with a good conversion rate.\n*/`);
+        log.info("UX_CONTEXT_INJECTED_FOR_CRITIC", {
+          uxScore: uxReport.overallUXScore,
+          conversionPrediction: uxReport.conversionPrediction,
+          topIssueCount: uxReport.topIssues.length,
+        });
+      }
+    } catch (e) {
+      log.warn("UX_CRITIC_CONTEXT_FAILED", { error: String(e) });
     }
 
     if (prefixParts.length > 0) {

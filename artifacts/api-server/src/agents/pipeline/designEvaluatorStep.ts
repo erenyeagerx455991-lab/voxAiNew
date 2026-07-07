@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { sse } from "../streaming/sseManager.js";
 import { evaluateDesign } from "../designEvaluator/evaluator.js";
+import type { EvaluationIssue } from "../designEvaluator/evaluator.js";
 import { runDesignRepair } from "../designEvaluator/repairAgent.js";
 import { recordEvaluatorScore } from "../../telemetry/evaluatorMetrics.js";
 import { recordComponentBuildResult } from "../../quality/componentMetrics.js";
@@ -16,6 +17,7 @@ import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
 import { recordVisualOutcome } from "../../visual-diff/visualLearning.js";
 import { recordVisualBuildMetrics } from "../../telemetry/visualMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
+import type { UXReport } from "../../ux-intelligence/uxTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 
 const log = createLogger("DesignEvaluatorStep");
@@ -41,7 +43,14 @@ export interface EvaluatorResult {
   treeQualityScore: number;
   tokenQualityScore: number;
   visualQualityScore: number;
-  issues: Array<{ category: string; severity: string; message: string }>;
+  /** V8.2: UX Intelligence prediction score (0–10). 5.0 when UX step did not run. */
+  uxPredictionScore: number;
+  /** Carried through from EvaluationResult for downstream consumers (critic, conversion). */
+  coverageScore: number;
+  coveragePercent: number;
+  componentUsage: Record<string, number>;
+  /** Typed to match EvaluationResult.issues so EvaluatorResult is assignable to EvaluationResult. */
+  issues: EvaluationIssue[];
   repairCount: number;
   repairApplied: boolean;
   componentsUsed: Array<{ componentId: string; category: string }>;
@@ -338,15 +347,30 @@ export async function runDesignEvaluatorStep(
     responsiveScore: visualAnalysis.responsiveScore,
   });
 
+  // V8.2: Blend UX prediction score into overall (additive — only when UX step ran).
+  // Weight redistribution: uxPrediction 4% sourced from hero(−0.01), layout(−0.01),
+  // accessibility(−0.01), navigation(−0.01). Applied at step level because evaluateDesign()
+  // is a pure static function that does not receive UX Intelligence data.
+  // When uxReport is absent (e.g. unit tests not wiring UX step), overallScore is unchanged.
+  const uxReport = (frontend as unknown as { uxReport?: UXReport }).uxReport;
+  const uxPredictionScore = uxReport?.overallUXScore ?? 5.0;
+  const UX_BLEND_WEIGHT = 0.04;
+  const blendedOverallScore = uxReport
+    ? Math.round(
+        (evalResult.overallScore * (1 - UX_BLEND_WEIGHT) + uxPredictionScore * UX_BLEND_WEIGHT) * 10
+      ) / 10
+    : evalResult.overallScore;
+
   const evaluationResult: EvaluatorResult = {
     ...evalResult,
+    overallScore: blendedOverallScore,
     repairCount,
     repairApplied,
     componentsUsed,
     referencesUsed: frontend.retrievalReferenceIds ?? [],
     scoreBeforeRepair: initialScore,
-    scoreAfterRepair: evalResult.overallScore,
-    retrievalImpactScore: evalResult.overallScore,
+    scoreAfterRepair: blendedOverallScore,
+    retrievalImpactScore: blendedOverallScore,
     dashboardScore: evalResult.dashboardScore,
     formScore: evalResult.formScore,
     motionScore: evalResult.motionScore,
@@ -354,6 +378,7 @@ export async function runDesignEvaluatorStep(
     treeQualityScore,
     tokenQualityScore,
     visualQualityScore,
+    uxPredictionScore,
   };
 
   const updatedFrontend: FrontendOutput = repairApplied

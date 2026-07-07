@@ -1,127 +1,137 @@
-/**
- * V8.2 — UX Telemetry Metrics Store (Phase 9)
- *
- * Tracks rolling averages, distribution, and trend for all UX dimensions.
- * Feeds the /api/telemetry/quality → uxQuality endpoint.
- */
+// ── V8.2 UX Intelligence — Telemetry Metrics ──────────────────────────────────
+// Tracks UX prediction quality per build for GET /api/telemetry/quality → uxQuality.
+// Follows the standard VoxAI metrics module pattern:
+//   recordUXRun() / getUXQualityMetrics() / resetUXMetrics()
 
-import type { UXDimensions, UXPredictionResult, UXQualitySnapshot, ConversionLevel } from "./uxTypes.js";
+import type { UXReport } from './uxTypes.js';
+import { getUXLearningHistory, getUXLearningTrend } from './uxLearning.js';
 
-// ── Running accumulator ───────────────────────────────────────────────────────
+// ── Record Type ───────────────────────────────────────────────────────────────
 
-interface RunningAvg { sum: number; n: number }
+export interface UXRunRecord {
+  buildId:              string;
+  overallUXScore:       number;
+  conversionPrediction: string;
+  confidence:           number;
+  trustScore:           number;
+  ctaScore:             number;
+  formScore:            number;
+  navigationScore:      number;
+  densityScore:         number;
+  hierarchyScore:       number;
+  repairTriggered:      boolean;
+  recordedAt:           number;
+}
 
-const _dims: Partial<Record<keyof UXDimensions, RunningAvg>> = {};
-const _overallScores:   number[] = [];
-const _conversionLevels: Record<ConversionLevel, number> = {
-  very_low: 0, low: 0, medium: 0, high: 0, very_high: 0,
-};
+// ── State ─────────────────────────────────────────────────────────────────────
 
-let _totalPredictions = 0;
-let _lastPredictionAt: string | null = null;
+const _history: UXRunRecord[] = [];
+const MAX_HISTORY = 100;
 
-const MAX_RECENT = 100; // capped for memory safety
+// ── Record API ────────────────────────────────────────────────────────────────
 
-// ── Record a prediction result ────────────────────────────────────────────────
+export interface RecordUXRunInput {
+  buildId:         string;
+  uxReport:        UXReport;
+  repairTriggered: boolean;
+}
 
-export function recordUXPrediction(result: UXPredictionResult): void {
-  _totalPredictions++;
-  _lastPredictionAt = result.analyzedAt;
+export function recordUXRun(input: RecordUXRunInput): void {
+  const { buildId, uxReport, repairTriggered } = input;
+  _history.push({
+    buildId,
+    overallUXScore:       uxReport.overallUXScore,
+    conversionPrediction: uxReport.conversionPrediction,
+    confidence:           uxReport.confidence,
+    trustScore:           uxReport.metrics.trust,
+    ctaScore:             uxReport.metrics.ctaDiscoverability,
+    formScore:            uxReport.metrics.formFriction,
+    navigationScore:      uxReport.metrics.navigationSimplicity,
+    densityScore:         uxReport.metrics.informationDensity,
+    hierarchyScore:       uxReport.metrics.hierarchy,
+    repairTriggered,
+    recordedAt:           Date.now(),
+  });
+  if (_history.length > MAX_HISTORY) _history.shift();
+}
 
-  // Overall score — capped ring buffer
-  if (_overallScores.length >= MAX_RECENT) _overallScores.shift();
-  _overallScores.push(result.overallUXScore);
+// ── Get API ───────────────────────────────────────────────────────────────────
 
-  // Dimension averages
-  for (const [key, val] of Object.entries(result.dimensions) as [keyof UXDimensions, number][]) {
-    if (!_dims[key]) _dims[key] = { sum: 0, n: 0 };
-    _dims[key]!.sum += val;
-    _dims[key]!.n   += 1;
+export function getUXQualityMetrics() {
+  const recent = _history.slice(-20);
+  const total  = recent.length;
+
+  if (total === 0) {
+    return {
+      runsTracked:                0,
+      averageUXScore:             0,
+      averageConversionPrediction: 'N/A',
+      averageTrustScore:          0,
+      averageCTA:                 0,
+      averageForms:               0,
+      averageNavigation:          0,
+      averageDensity:             0,
+      averageHierarchy:           0,
+      topPerformingPatterns:      [] as string[],
+      lowestPatterns:             [] as string[],
+      learningTrend:              'stable',
+      predictionConfidence:       0,
+      recentScores:               [] as object[],
+    };
   }
 
-  // Conversion level distribution
-  _conversionLevels[result.conversionPrediction.level]++;
-}
+  const avg = (key: keyof UXRunRecord) =>
+    Math.round(recent.reduce((s, r) => s + (r[key] as number), 0) / total * 10) / 10;
 
-// ── Read metrics ──────────────────────────────────────────────────────────────
+  // Conversion prediction distribution
+  const predCounts: Record<string, number> = {};
+  for (const r of recent) {
+    predCounts[r.conversionPrediction] = (predCounts[r.conversionPrediction] ?? 0) + 1;
+  }
+  const topPrediction = Object.entries(predCounts)
+    .sort(([, a], [, b]) => b - a)[0]?.[0] ?? 'Medium';
 
-function dimAvg(key: keyof UXDimensions): number {
-  const r = _dims[key];
-  if (!r || r.n === 0) return 0;
-  return Math.round(r.sum / r.n * 100) / 100;
-}
+  // Top/worst patterns from learning history
+  const learningHistory = getUXLearningHistory();
+  const patternScores: Record<string, number[]> = {};
+  for (const r of learningHistory) {
+    const key = r.conversionPrediction;
+    if (!patternScores[key]) patternScores[key] = [];
+    patternScores[key].push(r.overallUXScore);
+  }
+  const patternAvgs = Object.entries(patternScores).map(([k, vs]) => ({
+    pattern: k,
+    avg: vs.reduce((s, v) => s + v, 0) / vs.length,
+  })).sort((a, b) => b.avg - a.avg);
 
-function overallAvg(): number {
-  if (_overallScores.length === 0) return 0;
-  return Math.round(
-    _overallScores.reduce((s, v) => s + v, 0) / _overallScores.length * 100,
-  ) / 100;
-}
+  const avgConfidence = Math.round(recent.reduce((s, r) => s + r.confidence, 0) / total * 100) / 100;
+  const repairCount   = recent.filter(r => r.repairTriggered).length;
 
-function conversionAvg(): number {
-  const levelValues: Record<ConversionLevel, number> = {
-    very_low: 1, low: 3, medium: 5, high: 7, very_high: 9,
-  };
-  const total = Object.values(_conversionLevels).reduce((s, v) => s + v, 0);
-  if (total === 0) return 0;
-  const weighted = (Object.entries(_conversionLevels) as [ConversionLevel, number][])
-    .reduce((s, [level, count]) => s + levelValues[level] * count, 0);
-  return Math.round(weighted / total * 100) / 100;
-}
-
-function learningTrend(): "improving" | "stable" | "degrading" {
-  if (_overallScores.length < 10) return "stable";
-  const half     = Math.floor(_overallScores.length / 2);
-  const firstAvg = _overallScores.slice(0, half).reduce((s, v) => s + v, 0) / half;
-  const lastAvg  = _overallScores.slice(half).reduce((s, v) => s + v, 0) / (_overallScores.length - half);
-  if (lastAvg > firstAvg + 0.3)  return "improving";
-  if (lastAvg < firstAvg - 0.3)  return "degrading";
-  return "stable";
-}
-
-function predictionConfidence(): number {
-  return Math.round(Math.min(0.95, 1 - Math.exp(-_totalPredictions / 50)) * 1000) / 1000;
-}
-
-export function getUXQualitySnapshot(): UXQualitySnapshot {
   return {
-    averageUXScore:           overallAvg(),
-    averageConversionPrediction: conversionAvg(),
-    averageTrustScore:        dimAvg("trust"),
-    averageCTA:               dimAvg("ctaDiscoverability"),
-    averageForms:             dimAvg("formFriction"),
-    averageNavigation:        dimAvg("navigationSimplicity"),
-    averageDensity:           dimAvg("informationDensity"),
-    averageHierarchy:         dimAvg("hierarchy"),
-    topPerformingPatterns:    [],  // populated by uxFacade via uxRanking
-    lowestPatterns:           [],
-    learningTrend:            learningTrend(),
-    predictionConfidence:     predictionConfidence(),
-    totalPredictions:         _totalPredictions,
-    lastPredictionAt:         _lastPredictionAt,
+    runsTracked:                total,
+    averageUXScore:             avg('overallUXScore'),
+    averageConversionPrediction: topPrediction,
+    averageTrustScore:          avg('trustScore'),
+    averageCTA:                 avg('ctaScore'),
+    averageForms:               avg('formScore'),
+    averageNavigation:          avg('navigationScore'),
+    averageDensity:             avg('densityScore'),
+    averageHierarchy:           avg('hierarchyScore'),
+    topPerformingPatterns:      patternAvgs.slice(0, 3).map(p => p.pattern),
+    lowestPatterns:             patternAvgs.slice(-3).map(p => p.pattern),
+    learningTrend:              getUXLearningTrend(),
+    predictionConfidence:       avgConfidence,
+    repairRate:                 `${Math.round(repairCount / total * 100)}%`,
+    recentScores: recent.slice(-5).map(r => ({
+      overallUXScore:       r.overallUXScore,
+      conversionPrediction: r.conversionPrediction,
+      trustScore:           r.trustScore,
+      ctaScore:             r.ctaScore,
+      repairTriggered:      r.repairTriggered,
+    })),
   };
 }
-
-export function getUXDimAverages(): Partial<Record<keyof UXDimensions, number>> {
-  const result: Partial<Record<keyof UXDimensions, number>> = {};
-  for (const key of Object.keys(_dims) as (keyof UXDimensions)[]) {
-    result[key] = dimAvg(key);
-  }
-  return result;
-}
-
-export function getTotalPredictions(): number {
-  return _totalPredictions;
-}
-
-// ── Test helpers ──────────────────────────────────────────────────────────────
 
 export function resetUXMetrics(): void {
-  for (const k of Object.keys(_dims)) delete (_dims as Record<string, unknown>)[k];
-  _overallScores.length = 0;
-  for (const k of Object.keys(_conversionLevels)) {
-    (_conversionLevels as Record<string, number>)[k] = 0;
-  }
-  _totalPredictions = 0;
-  _lastPredictionAt = null;
+  _history.length = 0;
 }

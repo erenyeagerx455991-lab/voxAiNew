@@ -603,6 +603,8 @@ describe("Visual Telemetry Metrics", () => {
 // ── Phase 11: Candidate Selection Upgrade ────────────────────────────────────
 
 describe("Candidate Selection — Visual Integration", () => {
+  // V8.2: uxScore added to CandidateScore; neutral 5.0 used in legacy fixtures
+  //        so ux weight (10%) doesn't change prior test intent.
   const makeCandidate = (overallScore: number, visualScore: number, label: 'A'|'B'|'C', index: number) => ({
     index,
     label,
@@ -614,7 +616,8 @@ describe("Candidate Selection — Visual Integration", () => {
     shadcnScore: overallScore,
     consistencyScore: overallScore,
     visualScore,
-    combinedScore: Math.round((overallScore * 0.70 + visualScore * 0.30) * 100) / 100,
+    uxScore: 5, // neutral — V8.2 addition, not testing UX here
+    combinedScore: Math.round((overallScore * 0.65 + visualScore * 0.25 + 5 * 0.10) * 100) / 100,
   });
 
   it("candidate with higher combinedScore wins", () => {
@@ -653,8 +656,9 @@ describe("Candidate Selection — Visual Integration", () => {
     expect(() => selectBestCandidate([])).toThrow();
   });
 
-  it("combinedScore is 70% evaluator + 30% visual", () => {
+  it("combinedScore is 65% evaluator + 25% visual + 10% ux", () => {
     const cand = makeCandidate(8.0, 6.0, 'A', 0);
-    expect(cand.combinedScore).toBe(7.4); // 8.0*0.7 + 6.0*0.3 = 5.6 + 1.8 = 7.4
+    // 8.0*0.65 + 6.0*0.25 + 5.0*0.10 = 5.2 + 1.5 + 0.5 = 7.2
+    expect(cand.combinedScore).toBe(7.2);
   });
 });
