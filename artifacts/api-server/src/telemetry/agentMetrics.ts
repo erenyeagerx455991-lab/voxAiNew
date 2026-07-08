@@ -28,7 +28,9 @@ export type AgentName =
   // V8.4 additions
   | "ProductManager"
   // V8.5 additions
-  | "FrontendArchitect";
+  | "FrontendArchitect"
+  // V8.6 additions
+  | "BackendArchitect";
 
 interface AgentRecord {
   calls: number;

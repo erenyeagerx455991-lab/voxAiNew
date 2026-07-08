@@ -38,6 +38,7 @@ import { getUXQualityMetrics } from "../ux-intelligence/uxMetrics.js";
 import { getDirectorMetrics } from "../design-director/directorMetrics.js";
 import { getProductMetrics } from "../product-manager/productMetrics.js";
 import { getArchitectureMetrics } from "../frontend-architect/architectureMetrics.js";
+import { getBackendMetrics }      from "../backend-architect/backendMetrics.js";
 
 const router: Router = Router();
 
@@ -167,6 +168,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     productManager: getProductMetrics(),
     // V8.5: Autonomous Frontend Architect telemetry (additive)
     frontendArchitecture: getArchitectureMetrics(),
+    // V8.6: Autonomous Backend Architect telemetry (additive)
+    backendArchitecture: getBackendMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

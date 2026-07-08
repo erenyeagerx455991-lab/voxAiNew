@@ -43,6 +43,10 @@ import("./product-manager/productLearning.js").then(({ hydrateProductLearning })
 import("./frontend-architect/architecturePersistence.js").then(({ initArchitecturePersistence, hydrateFromDisk }) =>
   initArchitecturePersistence().then(() => hydrateFromDisk())
 ).catch(() => { /* errors are logged inside initArchitecturePersistence */ });
+// V8.6: Init Backend Architect persistence on startup (non-blocking, best-effort)
+import("./backend-architect/backendPersistence.js").then(({ initBackendArchitectPersistence }) =>
+  initBackendArchitectPersistence()
+).catch(() => { /* errors are logged inside initBackendArchitectPersistence */ });
 
 app.listen(port, (err) => {
   if (err) {

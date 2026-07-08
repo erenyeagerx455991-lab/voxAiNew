@@ -35,7 +35,8 @@ import { runAccessibilityStep } from "./accessibilityStep.js";
 import { runOptimizationStep } from "./optimizationStep.js";
 import { runDesignDirectorStep } from "./designDirectorStep.js";
 import { runProductManagerStep } from "./productManagerStep.js";
-import { runFrontendArchitectStep } from "./frontendArchitectStep.js";
+import { runFrontendArchitectStep }  from "./frontendArchitectStep.js";
+import { runBackendArchitectStep }   from "./backendArchitectStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -83,9 +84,21 @@ export async function runBuildPipeline(
       res,
       productManagerOutput,
     );
-    // Combine product strategy + architecture blueprint for the Planner
-    const enrichedPromptWithArchitecture =
+    // Combine product strategy + frontend architecture blueprint for the Backend Architect
+    const enrichedPromptWithFrontend =
       enrichedPromptWithProductContext + '\n' + frontendArchitectOutput.contextString;
+
+    // ── Step 0.6: Backend Architect (V8.6 — static backend blueprint, no LLM) ──
+    const backendArchitectOutput = await runBackendArchitectStep(
+      prompt,
+      buildId,
+      res,
+      productManagerOutput,
+      frontendArchitectOutput,
+    );
+    // Combine all blueprints for downstream Planner
+    const enrichedPromptWithArchitecture =
+      enrichedPromptWithFrontend + '\n' + backendArchitectOutput.enrichedPromptWithArchitecture;
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -247,6 +260,9 @@ export async function runBuildPipeline(
       // V8.5: frontend architecture blueprint (additive)
       architectureBlueprint: frontendArchitectOutput.blueprint,
       architectureScore: frontendArchitectOutput.overallScore,
+      // V8.6: backend architecture blueprint (additive)
+      backendBlueprint: backendArchitectOutput.blueprint,
+      backendArchitectureScore: backendArchitectOutput.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
