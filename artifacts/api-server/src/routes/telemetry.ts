@@ -41,6 +41,9 @@ import { getArchitectureMetrics } from "../frontend-architect/architectureMetric
 import { getBackendMetrics }           from "../backend-architect/backendMetrics.js";
 import { getBackendLearningStats }     from "../backend-architect/backendLearning.js";
 import { getPersistenceStats }         from "../backend-architect/backendPersistence.js";
+import { getDevOpsMetrics }            from "../devops-architect/devopsMetrics.js";
+import { getDevOpsLearningStats }      from "../devops-architect/devopsLearning.js";
+import { getDevOpsPersistenceStats }   from "../devops-architect/devopsPersistence.js";
 
 const router: Router = Router();
 
@@ -198,6 +201,37 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
           capacityUsed:   p.capacityUsed,
           oldestVersion:  p.oldestVersion,
           newestVersion:  p.newestVersion,
+        },
+      };
+    })(),
+    // V8.7: Autonomous DevOps Architect telemetry (additive)
+    devopsArchitecture: (() => {
+      const dm = getDevOpsMetrics();
+      const dl = getDevOpsLearningStats();
+      const dp = getDevOpsPersistenceStats();
+      return {
+        ...dm,
+        deploymentScore:     dm.scoreByDimension.deployment   ?? 0,
+        infrastructureScore: dm.averageInfraScore,
+        monitoringScore:     dm.averageMonitoringScore,
+        scalingScore:        dm.averageScalingScore,
+        recoveryScore:       dm.averageRecoveryScore,
+        costScore:           dm.averageCostScore,
+        learningStatistics: {
+          totalRecords:  dl.totalRecords,
+          improvedCount: dl.improvedCount,
+          averageScore:  dl.averageScore,
+          byInfra:       dl.byInfra,
+          byProvider:    dl.byProvider,
+        },
+        plannerDistribution: dm.topInfraTypes,
+        cloudDistribution:   dm.topCloudProviders,
+        persistenceHealth: {
+          totalSnapshots: dp.totalSnapshots,
+          currentVersion: dp.currentVersion,
+          capacityUsed:   dp.capacityUsed,
+          oldestVersion:  dp.oldestVersion,
+          newestVersion:  dp.newestVersion,
         },
       };
     })(),

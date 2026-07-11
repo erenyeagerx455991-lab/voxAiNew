@@ -37,6 +37,7 @@ import { runDesignDirectorStep } from "./designDirectorStep.js";
 import { runProductManagerStep } from "./productManagerStep.js";
 import { runFrontendArchitectStep }  from "./frontendArchitectStep.js";
 import { runBackendArchitectStep }   from "./backendArchitectStep.js";
+import { runDevOpsArchitectStep }    from "./devopsArchitectStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -96,9 +97,21 @@ export async function runBuildPipeline(
       productManagerOutput,
       frontendArchitectOutput,
     );
+
+    // ── Step 0.7: DevOps Architect (V8.7 — static devops blueprint, no LLM) ───
+    const devopsArchitectOutput = await runDevOpsArchitectStep(
+      prompt,
+      buildId,
+      res,
+      productManagerOutput,
+      backendArchitectOutput,
+    );
+
     // Combine all blueprints for downstream Planner
     const enrichedPromptWithArchitecture =
-      enrichedPromptWithFrontend + '\n' + backendArchitectOutput.enrichedPromptWithArchitecture;
+      enrichedPromptWithFrontend +
+      '\n' + backendArchitectOutput.enrichedPromptWithArchitecture +
+      '\n' + devopsArchitectOutput.enrichedPromptWithDevOps;
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -263,6 +276,9 @@ export async function runBuildPipeline(
       // V8.6: backend architecture blueprint (additive)
       backendBlueprint: backendArchitectOutput.blueprint,
       backendArchitectureScore: backendArchitectOutput.overallScore,
+      // V8.7: devops architecture blueprint (additive)
+      devopsBlueprint: devopsArchitectOutput.blueprint,
+      devopsArchitectureScore: devopsArchitectOutput.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
