@@ -75,8 +75,8 @@ describe('Constants', () => {
     expect(ALL_BACKEND_TYPES).toContain('AIPlatform');
   });
 
-  it('ALL_BACKEND_DIMENSIONS has 10 entries', () => {
-    expect(ALL_BACKEND_DIMENSIONS.length).toBe(10);
+  it('ALL_BACKEND_DIMENSIONS has 12 entries', () => {
+    expect(ALL_BACKEND_DIMENSIONS.length).toBe(12);
   });
 
   it('ALL_BACKEND_DIMENSIONS includes all quality areas', () => {
@@ -1168,10 +1168,10 @@ describe('Backend Performance Architecture', () => {
 // ── 21. Backend Validator ─────────────────────────────────────────────────────
 
 describe('Phase 19: Backend Validator', () => {
-  it('returns 10 quality scores', () => {
+  it('returns 12 quality scores', () => {
     const bp = makeSaasBlueprint();
     const { qualityScores } = validateBackendBlueprint(bp);
-    expect(qualityScores.length).toBe(10);
+    expect(qualityScores.length).toBe(12);
   });
 
   it('all scores are between 0 and 10', () => {
@@ -1544,9 +1544,9 @@ describe('Regression: Blueprint Shape', () => {
     expect(t.testingFramework).toBeDefined();
   });
 
-  it('qualityScores has 10 entries all between 0 and 10', () => {
+  it('qualityScores has 12 entries all between 0 and 10', () => {
     const bp = makeSaasBlueprint();
-    expect(bp.qualityScores.length).toBe(10);
+    expect(bp.qualityScores.length).toBe(12);
     for (const qs of bp.qualityScores) {
       expect(qs.score).toBeGreaterThanOrEqual(0);
       expect(qs.score).toBeLessThanOrEqual(10);

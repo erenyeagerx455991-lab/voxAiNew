@@ -38,7 +38,9 @@ import { getUXQualityMetrics } from "../ux-intelligence/uxMetrics.js";
 import { getDirectorMetrics } from "../design-director/directorMetrics.js";
 import { getProductMetrics } from "../product-manager/productMetrics.js";
 import { getArchitectureMetrics } from "../frontend-architect/architectureMetrics.js";
-import { getBackendMetrics }      from "../backend-architect/backendMetrics.js";
+import { getBackendMetrics }           from "../backend-architect/backendMetrics.js";
+import { getBackendLearningStats }     from "../backend-architect/backendLearning.js";
+import { getPersistenceStats }         from "../backend-architect/backendPersistence.js";
 
 const router: Router = Router();
 
@@ -169,7 +171,36 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     // V8.5: Autonomous Frontend Architect telemetry (additive)
     frontendArchitecture: getArchitectureMetrics(),
     // V8.6: Autonomous Backend Architect telemetry (additive)
-    backendArchitecture: getBackendMetrics(),
+    backendArchitecture: (() => {
+      const m   = getBackendMetrics();
+      const l   = getBackendLearningStats();
+      const p   = getPersistenceStats();
+      return {
+        ...m,
+        // Spec-required named fields
+        architectureScore:  m.averageArchitectureScore,
+        databaseScore:      m.averageDatabaseScore,
+        apiScore:           m.averageAPIScore,
+        securityScore:      m.averageSecurityScore,
+        deploymentScore:    m.averageDeploymentScore,
+        testingScore:       m.averageTestingScore,
+        scalabilityScore:   m.averageScalabilityScore,
+        learningStatistics: {
+          totalRecords:  l.totalRecords,
+          improvedCount: l.improvedCount,
+          averageScore:  l.averageScore,
+          byType:        l.byType,
+        },
+        plannerDistribution: m.topBackendTypes,
+        persistenceHealth:   {
+          totalSnapshots: p.totalSnapshots,
+          currentVersion: p.currentVersion,
+          capacityUsed:   p.capacityUsed,
+          oldestVersion:  p.oldestVersion,
+          newestVersion:  p.newestVersion,
+        },
+      };
+    })(),
     generatedAt: new Date().toISOString(),
   });
 });

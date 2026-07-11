@@ -484,7 +484,7 @@ describe('backendFacade — public API contract', () => {
 
   it('re-exports ALL_BACKEND_DIMENSIONS constant', () => {
     expect(Array.isArray(facadeAllDims)).toBe(true);
-    expect(facadeAllDims).toHaveLength(10);
+    expect(facadeAllDims).toHaveLength(12);
   });
 
   it('facade runBackendArchitect works end-to-end', () => {

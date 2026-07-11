@@ -291,8 +291,9 @@ export interface BackendFolderStructure {
 // ── Quality Scoring ────────────────────────────────────────────────────────────
 
 export const ALL_BACKEND_DIMENSIONS = [
-  'architecture', 'database', 'api', 'security', 'performance',
-  'scalability', 'reliability', 'maintainability', 'developerExperience', 'testability',
+  'architecture', 'database', 'api', 'authentication', 'authorization',
+  'security', 'performance', 'scalability', 'reliability',
+  'maintainability', 'developerExperience', 'testability',
 ] as const;
 
 export type BackendArchitectureDimension = typeof ALL_BACKEND_DIMENSIONS[number];

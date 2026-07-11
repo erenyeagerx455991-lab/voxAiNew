@@ -2,15 +2,19 @@
 import type { BackendType, BackendQualityScore, BackendArchitectureDimension } from './backendTypes.js';
 
 interface BackendMetricsSnapshot {
-  totalBuilds:           number;
-  averageScore:          number;
-  averageSecurityScore:  number;
-  averageDatabaseScore:  number;
-  averageAPIScore:       number;
-  scoreByDimension:      Record<BackendArchitectureDimension, number>;
-  topBackendTypes:       Array<{ type: BackendType; count: number }>;
-  learningRecordCount:   number;
-  lastUpdated:           number;
+  totalBuilds:              number;
+  averageScore:             number;
+  averageArchitectureScore: number;
+  averageSecurityScore:     number;
+  averageDatabaseScore:     number;
+  averageAPIScore:          number;
+  averageDeploymentScore:   number;
+  averageTestingScore:      number;
+  averageScalabilityScore:  number;
+  scoreByDimension:         Record<BackendArchitectureDimension, number>;
+  topBackendTypes:           Array<{ type: BackendType; count: number }>;
+  learningRecordCount:      number;
+  lastUpdated:              number;
 }
 
 interface BuildRecord {
@@ -47,15 +51,19 @@ export function getBackendMetrics(): BackendMetricsSnapshot {
 
   if (n === 0) {
     return {
-      totalBuilds:          0,
-      averageScore:         0,
-      averageSecurityScore: 0,
-      averageDatabaseScore: 0,
-      averageAPIScore:      0,
-      scoreByDimension:     {} as Record<BackendArchitectureDimension, number>,
-      topBackendTypes:      [],
-      learningRecordCount:  state.learnCount,
-      lastUpdated:          Date.now(),
+      totalBuilds:              0,
+      averageScore:             0,
+      averageArchitectureScore: 0,
+      averageSecurityScore:     0,
+      averageDatabaseScore:     0,
+      averageAPIScore:          0,
+      averageDeploymentScore:   0,
+      averageTestingScore:      0,
+      averageScalabilityScore:  0,
+      scoreByDimension:         {} as Record<BackendArchitectureDimension, number>,
+      topBackendTypes:          [],
+      learningRecordCount:      state.learnCount,
+      lastUpdated:              Date.now(),
     };
   }
 
@@ -82,15 +90,19 @@ export function getBackendMetrics(): BackendMetricsSnapshot {
     .map(([type, count]) => ({ type, count }));
 
   return {
-    totalBuilds:           n,
-    averageScore:          parseFloat(avg(records.map(r => r.overallScore)).toFixed(2)),
-    averageSecurityScore:  parseFloat(avg(records.map(r => r.scores.security ?? 0)).toFixed(2)),
-    averageDatabaseScore:  parseFloat(avg(records.map(r => r.scores.database ?? 0)).toFixed(2)),
-    averageAPIScore:       parseFloat(avg(records.map(r => r.scores.api ?? 0)).toFixed(2)),
+    totalBuilds:              n,
+    averageScore:             parseFloat(avg(records.map(r => r.overallScore)).toFixed(2)),
+    averageArchitectureScore: parseFloat(avg(records.map(r => r.scores.architecture ?? 0)).toFixed(2)),
+    averageSecurityScore:     parseFloat(avg(records.map(r => r.scores.security ?? 0)).toFixed(2)),
+    averageDatabaseScore:     parseFloat(avg(records.map(r => r.scores.database ?? 0)).toFixed(2)),
+    averageAPIScore:          parseFloat(avg(records.map(r => r.scores.api ?? 0)).toFixed(2)),
+    averageDeploymentScore:   parseFloat(avg(records.map(r => r.scores.scalability ?? 0)).toFixed(2)),
+    averageTestingScore:      parseFloat(avg(records.map(r => r.scores.testability ?? 0)).toFixed(2)),
+    averageScalabilityScore:  parseFloat(avg(records.map(r => r.scores.scalability ?? 0)).toFixed(2)),
     scoreByDimension,
     topBackendTypes,
-    learningRecordCount:   state.learnCount,
-    lastUpdated:           Date.now(),
+    learningRecordCount:      state.learnCount,
+    lastUpdated:              Date.now(),
   };
 }
 

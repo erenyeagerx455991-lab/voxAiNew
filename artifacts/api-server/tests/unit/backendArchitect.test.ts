@@ -1034,7 +1034,7 @@ describe('validateBackendBlueprint', () => {
   it('returns exactly 10 dimension scores', () => {
     const bp = makeBlueprint();
     const { qualityScores } = validateBackendBlueprint(bp);
-    expect(qualityScores).toHaveLength(10);
+    expect(qualityScores).toHaveLength(12);
   });
 });
 
@@ -1091,7 +1091,7 @@ describe('runBackendArchitect', () => {
 
   it('blueprint.qualityScores is populated', () => {
     const { blueprint } = runBackendArchitect('build a saas platform', productPlan);
-    expect(blueprint.qualityScores.length).toBe(10);
+    expect(blueprint.qualityScores.length).toBe(12);
   });
 
   it('runs deterministically — same input yields same backendType', () => {
@@ -1451,8 +1451,8 @@ describe('backward compatibility regressions', () => {
     }
   });
 
-  it('ALL_BACKEND_DIMENSIONS has exactly 10 entries', () => {
-    expect(ALL_BACKEND_DIMENSIONS).toHaveLength(10);
+  it('ALL_BACKEND_DIMENSIONS has exactly 12 entries', () => {
+    expect(ALL_BACKEND_DIMENSIONS).toHaveLength(12);
   });
 
   it('all planners return defined values — no undefined fields', () => {

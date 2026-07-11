@@ -1,0 +1,349 @@
+V8.6 — Autonomous Backend Architect
+
+Final Verification, Hardening & Completion Prompt
+
+OBJECTIVE
+
+V8.6 has already been implemented.
+
+Do NOT rebuild it.
+
+Instead, perform a complete engineering audit and verify that every requirement of the V8.6 specification has been implemented correctly.
+
+Only implement missing functionality.
+
+Never duplicate existing code.
+
+Never rewrite working modules.
+
+Never break APIs.
+
+Never change existing SSE events.
+
+Never regress test coverage.
+
+---
+
+Phase 1 — Complete Backend Architecture Audit
+
+Audit the entire folder:
+
+src/backend-architect/
+
+Verify every expected module exists.
+
+Required modules:
+
+backendTypes.ts
+backendFacade.ts
+backendArchitect.ts
+backendPlanner.ts
+databasePlanner.ts
+apiPlanner.ts
+servicePlanner.ts
+repositoryPlanner.ts
+controllerPlanner.ts
+middlewarePlanner.ts
+validationPlanner.ts
+authenticationPlanner.ts
+authorizationPlanner.ts
+cachePlanner.ts
+queuePlanner.ts
+eventPlanner.ts
+storagePlanner.ts
+loggingPlanner.ts
+monitoringPlanner.ts
+securityPlanner.ts
+deploymentPlanner.ts
+testingPlanner.ts
+performancePlanner.ts
+backendValidator.ts
+backendLearning.ts
+backendMetrics.ts
+backendPersistence.ts
+
+If any module is missing:
+
+- create it
+
+If it already exists:
+
+- validate it
+- never duplicate it
+
+---
+
+Phase 2 — Pipeline Verification
+
+Verify Backend Architect executes exactly here:
+
+Product Manager
+
+↓
+
+Frontend Architect
+
+↓
+
+Backend Architect
+
+↓
+
+Architecture Planner
+
+Ensure:
+
+- no duplicate execution
+- no skipped execution
+- immutable Backend Blueprint passed downstream
+
+---
+
+Phase 3 — Planner Verification
+
+Verify every planner produces deterministic output.
+
+No planner may:
+
+- call an LLM
+- generate code
+- mutate BuildContext
+- depend on runtime randomness
+
+Every planner must be pure.
+
+---
+
+Phase 4 — Backend Blueprint Validation
+
+Verify Backend Blueprint contains:
+
+- backend type
+- API strategy
+- database strategy
+- authentication
+- authorization
+- middleware
+- services
+- repositories
+- controllers
+- queues
+- cache
+- storage
+- monitoring
+- deployment
+- testing
+- security
+- performance strategy
+
+Return validation score.
+
+---
+
+Phase 5 — Persistence Audit
+
+Verify backendPersistence.ts supports:
+
+- maximum 500 snapshots
+- version history
+- rollback
+- recovery after restart
+- debounced writes
+- non-blocking persistence
+
+No persistence operation may interrupt builds.
+
+---
+
+Phase 6 — Telemetry Audit
+
+Verify:
+
+GET
+
+/api/telemetry/quality
+
+contains:
+
+backendArchitecture
+
+Expose:
+
+- architectureScore
+- databaseScore
+- apiScore
+- securityScore
+- deploymentScore
+- testingScore
+- scalabilityScore
+- learningStatistics
+- plannerDistribution
+- persistenceHealth
+
+---
+
+Phase 7 — Learning Audit
+
+Verify backendLearning.ts learns from:
+
+- runtime failures
+- deployment failures
+- successful builds
+- repair history
+- performance
+- telemetry
+- security findings
+
+Learning must be asynchronous.
+
+Never block builds.
+
+---
+
+Phase 8 — Validator Audit
+
+Verify backendValidator scores:
+
+- Architecture
+- Database
+- API
+- Authentication
+- Authorization
+- Middleware
+- Security
+- Performance
+- Scalability
+- Maintainability
+- Reliability
+- Testability
+
+Return 0–10 scores.
+
+---
+
+Phase 9 — Cross-Planner Consistency
+
+Verify all planners produce compatible outputs.
+
+Examples:
+
+Authentication Planner
+
+↓
+
+Authorization Planner
+
+↓
+
+Security Planner
+
+↓
+
+Deployment Planner
+
+must never contradict one another.
+
+Detect inconsistencies.
+
+Report them.
+
+---
+
+Phase 10 — Pipeline Integration Tests
+
+Verify:
+
+- Product Manager
+- Frontend Architect
+- Backend Architect
+- Architecture Planner
+
+exchange data correctly.
+
+Ensure immutable blueprint flow.
+
+---
+
+Phase 11 — Performance Audit
+
+Measure:
+
+- planner execution time
+- persistence latency
+- telemetry overhead
+- memory usage
+
+Backend Architect should complete in milliseconds.
+
+---
+
+Phase 12 — Test Coverage Audit
+
+Verify:
+
+- unit tests
+- integration tests
+- persistence tests
+- pipeline tests
+- telemetry tests
+- rollback tests
+- learning tests
+- validator tests
+
+If coverage is missing:
+
+add tests.
+
+Never reduce coverage.
+
+---
+
+Phase 13 — Documentation
+
+Generate
+
+artifacts/api-server/v8.6Audit.md
+
+Include:
+
+- architecture overview
+- pipeline position
+- planner responsibilities
+- telemetry fields
+- persistence design
+- validation results
+- performance metrics
+- remaining gaps (if any)
+
+---
+
+SUCCESS CRITERIA
+
+V8.6 is considered complete only if:
+
+- all backend modules verified
+- pipeline verified
+- persistence verified
+- telemetry verified
+- learning verified
+- validator verified
+- documentation generated
+- zero duplicated logic
+- zero API regressions
+- zero SSE regressions
+- deterministic planners
+- build passes
+- all tests pass
+
+---
+
+HARD CONSTRAINTS
+
+- Never rebuild existing modules.
+- Never duplicate working logic.
+- Never break backward compatibility.
+- Never remove existing functionality.
+- Only implement verified gaps.
+- Preserve the existing V8.x architecture.
+- Production-ready code only.
+- If an implementation already satisfies the requirement, leave it unchanged.

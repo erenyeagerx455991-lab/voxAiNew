@@ -142,10 +142,43 @@ function scoreTestability(bp: BackendArchitectureBlueprint): number {
   return clamp(s);
 }
 
+// ── New V8.6 dimensions: authentication & authorization ────────────────────────
+
+function scoreAuthentication(bp: BackendArchitectureBlueprint): number {
+  const auth = bp.authArchitecture;
+  if (auth.primaryStrategy === 'None') return 3; // baseline for public APIs
+  let s = 3;
+  s += score(auth.hasRefreshToken, 1.5);
+  s += score(auth.hasOAuth, 1);
+  s += score(auth.strategies.length > 1, 1);
+  s += score(auth.hasAPIKeys, 0.5);
+  s += score(auth.hasMultiTenant, 1);
+  s += score(auth.roles.length >= 2, 1);
+  s += score(auth.sessionDuration.length > 0, 0.5);
+  return clamp(s);
+}
+
+function scoreAuthorization(bp: BackendArchitectureBlueprint): number {
+  const perm = bp.permissionArchitecture;
+  const auth = bp.authArchitecture;
+  if (auth.primaryStrategy === 'None') return 3; // baseline for public APIs
+  let s = 2;
+  s += score(perm.hasRBAC, 2);
+  s += score(perm.permissionCategories.length >= 3, 1.5);
+  s += score(perm.roleHierarchy.length >= 2, 1);
+  s += score(perm.hasFeatureFlags, 1);
+  s += score(perm.hasTenantIsolation, 1);
+  s += score(perm.hasABAC, 1);
+  s += score(perm.hasWorkspaceIsolation, 0.5);
+  return clamp(s);
+}
+
 const SCORERS: Record<BackendArchitectureDimension, (bp: BackendArchitectureBlueprint) => number> = {
   architecture:       scoreArchitecture,
   database:           scoreDatabase,
   api:                scoreAPI,
+  authentication:     scoreAuthentication,
+  authorization:      scoreAuthorization,
   security:           scoreSecurity,
   performance:        scorePerformance,
   scalability:        scoreScalability,
@@ -159,6 +192,8 @@ const RATIONALES: Record<BackendArchitectureDimension, string> = {
   architecture:       'Service/controller/repository layering and folder structure completeness',
   database:           'Database choice, indexing, migrations, connection pooling, caching',
   api:                'REST coverage, pagination, filtering, versioning, health endpoints',
+  authentication:     'Auth strategy, refresh tokens, OAuth, multi-tenant, session management',
+  authorization:      'RBAC/ABAC, permission categories, role hierarchy, tenant isolation',
   security:           'OWASP compliance, helmet, CORS, hashing, encryption, rate limiting',
   performance:        'Connection pooling, query optimization, compression, caching layers',
   scalability:        'Docker, CI/CD, horizontal scaling, blue-green, K8s support',
