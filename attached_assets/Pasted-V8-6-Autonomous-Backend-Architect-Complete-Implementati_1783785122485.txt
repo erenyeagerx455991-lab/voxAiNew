@@ -1,0 +1,914 @@
+V8.6 — Autonomous Backend Architect
+
+Complete Implementation Specification for VoxAI
+
+---
+
+Objective
+
+Build V8.6 – Autonomous Backend Architect, an enterprise-grade AI Backend Architecture Engine.
+
+The Backend Architect runs immediately after Frontend Architect (V8.5) and before the existing Architecture Planner.
+
+Its responsibility is NOT to generate backend code.
+
+Its responsibility is to design the complete backend architecture that every downstream backend generation agent must follow.
+
+The Backend Architect becomes the Chief Backend Engineer of VoxAI.
+
+Everything must be deterministic.
+
+No LLM reasoning inside planners.
+
+Pure static analysis.
+
+Production ready.
+
+---
+
+Pipeline Position
+
+USER
+
+↓
+
+Intent Analyzer
+
+↓
+
+Conversation Memory
+
+↓
+
+Reference Detection
+
+↓
+
+Self Evolving Design DNA
+
+↓
+
+Product Manager
+
+↓
+
+Frontend Architect
+
+↓
+
+####################################
+
+Backend Architect (V8.6)
+
+####################################
+
+↓
+
+Architecture Planner
+
+↓
+
+Component Tree Planner
+
+↓
+
+Design Tokens
+
+↓
+
+RAG
+
+↓
+
+Code Generator
+
+---
+
+Responsibilities
+
+The Backend Architect must determine
+
+- backend architecture
+- database architecture
+- API architecture
+- authentication
+- authorization
+- services
+- repositories
+- controllers
+- middleware
+- validation
+- queues
+- events
+- caching
+- storage
+- logging
+- monitoring
+- deployment
+- scalability
+- testing
+- security
+
+before a single backend file is generated.
+
+---
+
+Deliverables
+
+Create
+
+src/backend-architect/
+
+Containing
+
+backendArchitect.ts
+
+backendPlanner.ts
+
+databasePlanner.ts
+
+apiPlanner.ts
+
+servicePlanner.ts
+
+repositoryPlanner.ts
+
+controllerPlanner.ts
+
+middlewarePlanner.ts
+
+validationPlanner.ts
+
+authPlanner.ts
+
+permissionPlanner.ts
+
+cachePlanner.ts
+
+queuePlanner.ts
+
+eventPlanner.ts
+
+storagePlanner.ts
+
+loggingPlanner.ts
+
+monitoringPlanner.ts
+
+securityPlanner.ts
+
+deploymentPlanner.ts
+
+testingPlanner.ts
+
+performancePlanner.ts
+
+backendValidator.ts
+
+backendLearning.ts
+
+backendMetrics.ts
+
+backendPersistence.ts
+
+backendFacade.ts
+
+backendTypes.ts
+
+---
+
+Phase 1
+
+Project Classification
+
+Automatically determine backend type
+
+Landing API
+
+SaaS Backend
+
+CRM Backend
+
+ERP Backend
+
+Marketplace
+
+E-commerce
+
+Dashboard
+
+Internal Tool
+
+Booking Platform
+
+Healthcare
+
+Finance
+
+Education
+
+Developer Platform
+
+Analytics
+
+AI Platform
+
+Social Platform
+
+CMS
+
+Documentation
+
+Enterprise
+
+Multi Tenant
+
+Microservice Candidate
+
+Monolith Candidate
+
+Serverless Candidate
+
+---
+
+Phase 2
+
+Database Architecture
+
+Automatically choose
+
+PostgreSQL
+
+MySQL
+
+MongoDB
+
+Redis
+
+SQLite
+
+Vector Database
+
+Time Series
+
+Object Storage
+
+Hybrid Storage
+
+Plan
+
+tables
+
+collections
+
+indexes
+
+relations
+
+foreign keys
+
+partitioning
+
+normalization
+
+---
+
+Phase 3
+
+API Architecture
+
+Generate
+
+REST
+
+GraphQL
+
+tRPC
+
+WebSocket
+
+SSE
+
+Streaming
+
+Pagination
+
+Filtering
+
+Sorting
+
+Search
+
+Bulk APIs
+
+Health APIs
+
+Versioning
+
+Rate Limiting
+
+Retry
+
+---
+
+Phase 4
+
+Authentication
+
+Determine
+
+Guest
+
+User
+
+Admin
+
+Super Admin
+
+Workspace
+
+Organization
+
+Team
+
+JWT
+
+Refresh Token
+
+Session
+
+OAuth
+
+Magic Link
+
+API Key
+
+Service Token
+
+---
+
+Phase 5
+
+Authorization
+
+Generate
+
+RBAC
+
+ABAC
+
+Permission Matrix
+
+Role Hierarchy
+
+Feature Flags
+
+Workspace Isolation
+
+Tenant Isolation
+
+---
+
+Phase 6
+
+Folder Structure
+
+Generate
+
+src/
+
+controllers/
+
+services/
+
+repositories/
+
+middlewares/
+
+validators/
+
+models/
+
+entities/
+
+routes/
+
+events/
+
+queues/
+
+jobs/
+
+cache/
+
+storage/
+
+config/
+
+utils/
+
+types/
+
+providers/
+
+
+---
+
+Phase 7
+
+Service Layer
+
+Plan
+
+Business Services
+
+Domain Services
+
+Utility Services
+
+Integration Services
+
+Notification Services
+
+Payment Services
+
+AI Services
+
+Analytics Services
+
+---
+
+Phase 8
+
+Repository Layer
+
+Generate
+
+Repository Pattern
+
+Unit of Work
+
+Transactions
+
+Database Abstraction
+
+Connection Pooling
+
+---
+
+Phase 9
+
+Middleware Architecture
+
+Plan
+
+Authentication
+
+Authorization
+
+Logging
+
+Rate Limit
+
+Compression
+
+CORS
+
+Helmet
+
+Validation
+
+Request ID
+
+Tracing
+
+Metrics
+
+---
+
+Phase 10
+
+Validation Architecture
+
+Choose
+
+Zod
+
+Valibot
+
+Yup
+
+Schema Validation
+
+DTO Validation
+
+Runtime Validation
+
+Input Sanitization
+
+---
+
+Phase 11
+
+Caching Strategy
+
+Plan
+
+Redis
+
+Memory Cache
+
+Edge Cache
+
+Query Cache
+
+Response Cache
+
+CDN Cache
+
+Cache Invalidation
+
+TTL Strategy
+
+---
+
+Phase 12
+
+Queue Architecture
+
+Plan
+
+Background Jobs
+
+Email Queue
+
+Image Processing
+
+AI Queue
+
+Webhook Queue
+
+Retry Queue
+
+Dead Letter Queue
+
+Priority Queue
+
+---
+
+Phase 13
+
+Storage
+
+Plan
+
+S3
+
+Cloudinary
+
+Supabase Storage
+
+Local Storage
+
+Blob Storage
+
+Backups
+
+---
+
+Phase 14
+
+Logging
+
+Plan
+
+Application Logs
+
+Audit Logs
+
+Security Logs
+
+Request Logs
+
+Performance Logs
+
+Structured JSON Logs
+
+---
+
+Phase 15
+
+Monitoring
+
+Plan
+
+Health Checks
+
+Metrics
+
+Tracing
+
+OpenTelemetry
+
+Alerts
+
+Crash Reports
+
+Slow Query Detection
+
+---
+
+Phase 16
+
+Security
+
+Plan
+
+Encryption
+
+Hashing
+
+Secrets
+
+Environment Variables
+
+SQL Injection Protection
+
+XSS Protection
+
+CSRF Protection
+
+CORS
+
+Helmet
+
+Rate Limits
+
+Input Sanitization
+
+OWASP Compliance
+
+---
+
+Phase 17
+
+Deployment
+
+Generate
+
+Docker
+
+Docker Compose
+
+Kubernetes
+
+CI/CD
+
+Environment Strategy
+
+Scaling Strategy
+
+Blue Green Deployment
+
+Rollback Strategy
+
+---
+
+Phase 18
+
+Testing
+
+Plan
+
+Unit Tests
+
+Integration Tests
+
+API Tests
+
+Repository Tests
+
+Security Tests
+
+Performance Tests
+
+Load Tests
+
+Smoke Tests
+
+Regression Tests
+
+---
+
+Phase 19
+
+Backend Validator
+
+Evaluate
+
+Architecture
+
+Database
+
+API
+
+Security
+
+Performance
+
+Scalability
+
+Reliability
+
+Maintainability
+
+Developer Experience
+
+Testability
+
+Return
+
+0–10 score for every category.
+
+---
+
+Phase 20
+
+Learning Engine
+
+Learn from
+
+Successful Deployments
+
+Failed Deployments
+
+Runtime Errors
+
+Repair Rate
+
+Performance
+
+Latency
+
+Security Issues
+
+Feed learning into Design DNA.
+
+---
+
+Phase 21
+
+Telemetry
+
+Expose
+
+GET /api/telemetry/quality
+
+New section
+
+backendArchitecture
+
+Include
+
+Architecture Score
+
+Database Score
+
+API Score
+
+Security Score
+
+Performance Score
+
+Scalability Score
+
+Testing Score
+
+Deployment Score
+
+Learning Statistics
+
+Top Architecture Patterns
+
+---
+
+Phase 22
+
+Pipeline Integration
+
+Insert Backend Architect
+
+between
+
+Frontend Architect
+
+and
+
+Architecture Planner
+
+Pipeline becomes
+
+Product Manager
+
+↓
+
+Frontend Architect
+
+↓
+
+Backend Architect
+
+↓
+
+Architecture Planner
+
+↓
+
+Component Tree Planner
+
+↓
+
+Design Tokens
+
+↓
+
+RAG
+
+↓
+
+Code Generator
+
+The Backend Architecture Blueprint must be injected into every downstream backend generation step as immutable context.
+
+---
+
+Phase 23
+
+Testing
+
+Create 250+ automated tests.
+
+Validate
+
+Database Planner
+
+API Planner
+
+Repository Planner
+
+Service Planner
+
+Authentication
+
+Authorization
+
+Caching
+
+Queues
+
+Logging
+
+Monitoring
+
+Deployment
+
+Validator
+
+Pipeline
+
+Telemetry
+
+Persistence
+
+Learning
+
+Regression
+
+Target
+
+100% passing
+
+Zero regressions
+
+Zero API breaking changes
+
+Backward compatible
+
+---
+
+Hard Constraints
+
+- Never break existing APIs.
+- Never break SSE events.
+- Never remove existing pipeline stages.
+- Never generate backend code directly.
+- Backend Architect only plans architecture.
+- All planners must be deterministic.
+- Learning must be asynchronous.
+- Failures must never stop builds.
+- Preserve complete backward compatibility.
+- Follow existing VoxAI V8.x architecture patterns.
+- Production-ready code only.
+- No placeholder implementations.
+- No duplicate architecture decisions.
+- Every decision must be explainable and testable.
