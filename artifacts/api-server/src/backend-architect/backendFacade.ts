@@ -67,5 +67,16 @@ export { planPerformanceArchitecture } from './performancePlanner.js';
 export { validateBackendBlueprint }    from './backendValidator.js';
 export { getBackendMetrics, recordBackendBuild, recordBackendLearning, resetBackendMetrics } from './backendMetrics.js';
 export { learnFromBackendBuild, getBackendLearningStats, getBackendLearningRecords, resetBackendLearning } from './backendLearning.js';
-export { initBackendArchitectPersistence } from './backendPersistence.js';
+export {
+  initBackendArchitectPersistence,
+  resetBackendArchitectPersistence,
+  persistArchitectureSnapshot,
+  getArchitectureHistory,
+  getRecentSnapshots,
+  getSnapshotAtVersion,
+  getCurrentSnapshot,
+  rollbackToVersion,
+  getPersistenceStats,
+} from './backendPersistence.js';
+export type { ArchitectureSnapshot } from './backendPersistence.js';
 export { runBackendArchitect }         from './backendArchitect.js';
