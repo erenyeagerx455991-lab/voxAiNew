@@ -38,7 +38,9 @@ export type AgentName =
   // V8.9 additions
   | "SecurityArchitect"
   // V9.0 additions
-  | "RuntimeIntelligence";
+  | "RuntimeIntelligence"
+  // V9.2 additions
+  | "Orchestrator";
 
 interface AgentRecord {
   calls: number;

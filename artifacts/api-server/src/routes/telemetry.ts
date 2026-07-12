@@ -54,6 +54,7 @@ import { getSecurityArchitectPersistenceStats } from "../security-architect/secu
 import { getRuntimeMetrics, getEvaluatorWeightStats } from "../runtime-intelligence/runtimeMetrics.js";
 import { getRuntimeLearningStats }    from "../runtime-intelligence/runtimeLearning.js";
 import { getRuntimePersistenceStats, getActiveEvaluatorProfile } from "../runtime-intelligence/runtimePersistence.js";
+import { getOrchestratorQualitySnapshot } from "../agent-orchestrator/orchestratorMetrics.js";
 
 const router: Router = Router();
 
@@ -340,6 +341,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
         },
       };
     })(),
+    // V9.2: Adaptive Multi-Agent Orchestrator telemetry (additive)
+    orchestrator: getOrchestratorQualitySnapshot(),
     generatedAt: new Date().toISOString(),
   });
 });

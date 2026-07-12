@@ -48,6 +48,7 @@ import { runQAArchitectStep }        from "./qaArchitectStep.js";
 import { runRuntimeIntelligenceStep } from "./runtimeIntelligenceStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
+import { runOrchestratorStep, finalizeOrchestratorExecution } from "./orchestratorStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -137,6 +138,11 @@ export async function runBuildPipeline(
       qaArchitectOutput,
     );
 
+    // ── Step 0.95: Orchestrator (V9.2 — adaptive execution planning, no LLM) ──
+    const executionBlueprint = await runOrchestratorStep(buildId, res, runtimeIntelligenceOutput);
+    const skipped = new Set(executionBlueprint.skippedAgents);
+    const pipelineStart = Date.now();
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
@@ -182,9 +188,13 @@ export async function runBuildPipeline(
     );
 
     // ── Step 6.5: UX Intelligence (V8.2 — static UX & conversion prediction) ──
-    const uxFrontend = await withAgentMetrics("UXIntelligence", () =>
-      runUXIntelligenceStep(repairedFrontend, buildId, res),
-    );
+    // V9.2: Orchestrator may skip this pass-through-safe enrichment step for
+    // simple builds — repairedFrontend flows through unchanged.
+    const uxFrontend = skipped.has("UXIntelligence")
+      ? repairedFrontend
+      : await withAgentMetrics("UXIntelligence", () =>
+          runUXIntelligenceStep(repairedFrontend, buildId, res),
+        );
 
     // ── Step 7: Design Evaluator (15-dimension scoring + V8.2 uxPredictionScore)
     const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
@@ -192,25 +202,35 @@ export async function runBuildPipeline(
     );
 
     // ── Step 8: Design Critic (senior designer review) ─────────────────────────
-    const criticFrontend = await withAgentMetrics("DesignCritic", () =>
-      runDesignCriticStep(evaluatedFrontend, keys, res),
-    );
+    const criticFrontend = skipped.has("DesignCritic")
+      ? ({ ...evaluatedFrontend, critiqueReport: null, criticRepaired: false } as unknown as Awaited<ReturnType<typeof runDesignCriticStep>>)
+      : await withAgentMetrics("DesignCritic", () =>
+          runDesignCriticStep(evaluatedFrontend, keys, res),
+        );
 
     // ── Step 9: Conversion Intelligence (CRO) ─────────────────────────────────
-    const conversionFrontend = await withAgentMetrics("ConversionIntelligence", () =>
-      runConversionStep(criticFrontend, keys, res),
-    );
+    const conversionFrontend = skipped.has("ConversionIntelligence")
+      ? criticFrontend
+      : await withAgentMetrics("ConversionIntelligence", () =>
+          runConversionStep(criticFrontend, keys, res),
+        );
 
     // ── Step 10: Accessibility (V8.0 — WCAG 2.1 AA) ───────────────────────────
-    const accessibilityFrontend = await runAccessibilityStep(conversionFrontend, keys, res);
+    const accessibilityFrontend = skipped.has("Accessibility")
+      ? conversionFrontend
+      : await runAccessibilityStep(conversionFrontend, keys, res);
 
     // ── Step 11: Optimization (V8.0 — bundle + render) ────────────────────────
-    const optimizedFrontend = await runOptimizationStep(accessibilityFrontend, keys, res);
+    const optimizedFrontend = skipped.has("Optimization")
+      ? accessibilityFrontend
+      : await runOptimizationStep(accessibilityFrontend, keys, res);
 
     // ── Step 11.5: Autonomous AI Design Director (V8.3 — strategic review) ────
-    const directedFrontend = await withAgentMetrics("DesignDirector", () =>
-      runDesignDirectorStep(optimizedFrontend, buildId, res),
-    );
+    const directedFrontend = skipped.has("DesignDirector")
+      ? optimizedFrontend
+      : await withAgentMetrics("DesignDirector", () =>
+          runDesignDirectorStep(optimizedFrontend, buildId, res),
+        );
 
     // ── V7.3.5: DNA Outcome Recording (self-learning) ──────────────────────────
     const evalRes = (
@@ -321,7 +341,19 @@ export async function runBuildPipeline(
       // V9.0: Runtime Intelligence blueprint — generation strategy brain
       runtimeBlueprint: runtimeIntelligenceOutput.blueprint,
       runtimeScore: runtimeIntelligenceOutput.overallScore,
+      // V9.2: Adaptive Multi-Agent Orchestrator — execution blueprint (additive)
+      executionBlueprint,
+      orchestratorComplexity: executionBlueprint.complexity,
+      orchestratorSkippedAgents: executionBlueprint.skippedAgents,
     });
+
+    // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
+    finalizeOrchestratorExecution(
+      res,
+      executionBlueprint,
+      evalRes?.overallScore ?? directorScore83,
+      Date.now() - pipelineStart,
+    );
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
     setImmediate(() => {
