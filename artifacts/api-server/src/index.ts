@@ -47,6 +47,10 @@ import("./frontend-architect/architecturePersistence.js").then(({ initArchitectu
 import("./backend-architect/backendPersistence.js").then(({ initBackendArchitectPersistence }) =>
   initBackendArchitectPersistence()
 ).catch(() => { /* errors are logged inside initBackendArchitectPersistence */ });
+// V8.9: Init Security Architect persistence on startup (non-blocking, best-effort)
+import("./security-architect/securityPersistence.js").then(({ initSecurityArchitectPersistence }) =>
+  initSecurityArchitectPersistence()
+).catch(() => { /* errors are logged inside initSecurityArchitectPersistence */ });
 
 app.listen(port, (err) => {
   if (err) {

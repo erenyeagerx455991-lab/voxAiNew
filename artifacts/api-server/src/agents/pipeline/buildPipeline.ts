@@ -294,6 +294,9 @@ export async function runBuildPipeline(
       // V8.8: QA architecture blueprint (additive)
       qaBlueprint: qaArchitectOutput.blueprint,
       qaArchitectureScore: qaArchitectOutput.overallScore,
+      // V8.9: Security architecture blueprint — from securityIntelligence embedded in backend blueprint
+      securityBlueprint: backendArchitectOutput.blueprint.securityIntelligence,
+      securityArchitectureScore: backendArchitectOutput.blueprint.securityIntelligence.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

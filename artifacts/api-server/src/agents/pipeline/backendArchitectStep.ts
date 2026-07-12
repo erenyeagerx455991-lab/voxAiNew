@@ -6,6 +6,9 @@ import type { BackendArchitectOutput }  from '../../backend-architect/backendTyp
 import { runBackendArchitect }          from '../../backend-architect/backendArchitect.js';
 import { learnFromBackendBuild }        from '../../backend-architect/backendLearning.js';
 import { withAgentMetrics }             from '../../telemetry/agentMetrics.js';
+// V8.9: Security Architecture Integration — activate persistence + learning
+import { persistSecuritySnapshot }      from '../../security-architect/securityPersistence.js';
+import { learnFromSecurityBuild }       from '../../security-architect/securityLearning.js';
 
 export async function runBackendArchitectStep(
   prompt:                string,
@@ -49,10 +52,36 @@ export async function runBackendArchitectStep(
       processingTimeMs:output.processingTimeMs,
     });
 
-    // Phase 20 — Fire-and-forget learning
+    // V8.9: Security Architect SSE — surfaces the security intelligence scores
+    // that runBackendArchitect already computed (no duplicate invocation).
+    const si = blueprint.securityIntelligence;
+    sendEvent({
+      type:             'security_architect_complete',
+      buildId,
+      backendType:      blueprint.backendType,
+      overallScore:     si.overallScore,
+      privacyScore:     si.qualityScores.find(q => q.dimension === 'privacy')?.score     ?? 0,
+      complianceScore:  si.qualityScores.find(q => q.dimension === 'compliance')?.score  ?? 0,
+      threatScore:      si.qualityScores.find(q => q.dimension === 'threatModel')?.score ?? 0,
+      encryptionScore:  si.qualityScores.find(q => q.dimension === 'encryption')?.score  ?? 0,
+      secretsScore:     si.qualityScores.find(q => q.dimension === 'secrets')?.score     ?? 0,
+      owaspScore:       si.qualityScores.find(q => q.dimension === 'owasp')?.score       ?? 0,
+      topRecommendations: si.recommendations.slice(0, 3),
+    });
+
+    // V8.9: Persist security snapshot (non-blocking, best-effort)
+    try {
+      persistSecuritySnapshot(buildId, blueprint.backendType, si);
+    } catch { /* persistence must never stop builds */ }
+
+    // Phase 20 — Fire-and-forget learning (backend + V8.9 security)
     learnFromBackendBuild({ buildId, blueprint }).then(() => {
       sendEvent({ type: 'backend_architect_learning', buildId });
     }).catch(() => {});
+
+    // V8.9: Fire-and-forget security learning (reuses existing engine, never throws)
+    learnFromSecurityBuild({ buildId, backendType: blueprint.backendType, blueprint: si })
+      .catch(() => {});
 
     return output;
   });
