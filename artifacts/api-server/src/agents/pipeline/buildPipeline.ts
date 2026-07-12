@@ -171,13 +171,14 @@ export async function runBuildPipeline(
     );
 
     // ── Step 5: Multi-Candidate Selection (V7.2.0) ─────────────────────────────
+    // V9.0: runtimeIntelligenceOutput.blueprint tunes candidate count/repair/evaluation.
     const { winner } = await withAgentMetrics("CandidateSelection", () =>
-      runCandidateSelectionStep(frontend, prompt, keys, res, buildId),
+      runCandidateSelectionStep(frontend, prompt, keys, res, buildId, runtimeIntelligenceOutput.blueprint),
     );
 
     // ── Step 6: Repair Loop ────────────────────────────────────────────────────
     const repairedFrontend = await withAgentMetrics("Repair", () =>
-      runRepairStep(winner, keys, res),
+      runRepairStep(winner, keys, res, runtimeIntelligenceOutput.blueprint),
     );
 
     // ── Step 6.5: UX Intelligence (V8.2 — static UX & conversion prediction) ──
@@ -187,7 +188,7 @@ export async function runBuildPipeline(
 
     // ── Step 7: Design Evaluator (15-dimension scoring + V8.2 uxPredictionScore)
     const evaluatedFrontend = await withAgentMetrics("DesignEvaluator", () =>
-      runDesignEvaluatorStep(uxFrontend, keys, res),
+      runDesignEvaluatorStep(uxFrontend, keys, res, runtimeIntelligenceOutput.blueprint),
     );
 
     // ── Step 8: Design Critic (senior designer review) ─────────────────────────

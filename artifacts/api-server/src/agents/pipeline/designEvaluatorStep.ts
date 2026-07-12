@@ -19,6 +19,7 @@ import { recordVisualBuildMetrics } from "../../telemetry/visualMetrics.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import type { UXReport } from "../../ux-intelligence/uxTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
+import type { RuntimeBlueprint } from "../../runtime-intelligence/runtimeTypes.js";
 
 const log = createLogger("DesignEvaluatorStep");
 
@@ -67,7 +68,8 @@ export interface EvaluatorStepOutput extends FrontendOutput {
 export async function runDesignEvaluatorStep(
   frontend: FrontendOutput,
   keys: PipelineKeys,
-  res: Response
+  res: Response,
+  runtimeBlueprint?: RuntimeBlueprint,
 ): Promise<EvaluatorStepOutput> {
   const { openrouterKey } = keys;
   const { fixedCode, design, architecture } = frontend;
@@ -82,6 +84,14 @@ export async function runDesignEvaluatorStep(
   let repairApplied = false;
 
   const authState = plan.authState ?? 'guest';
+
+  // V9.0: RuntimeIntelligence's EvaluationStrategy dynamically tunes how
+  // strict the repair gate is and how many passes it gets (Enterprise/
+  // Strict modes raise the bar and try harder; Fast/Safe relax it).
+  const evalThreshold  = runtimeBlueprint?.evaluationStrategy.threshold ?? REPAIR_THRESHOLD;
+  const maxRepairPasses = runtimeBlueprint?.repairStrategy.policy === 'skip'
+    ? 0
+    : (runtimeBlueprint?.evaluationStrategy.isStrict ? MAX_DESIGN_REPAIR_PASSES + 1 : MAX_DESIGN_REPAIR_PASSES);
 
   let evalResult = evaluateDesign({
     code: currentCode,
@@ -99,7 +109,7 @@ export async function runDesignEvaluatorStep(
     shadcnScore: evalResult.shadcnScore,
     consistencyScore: evalResult.consistencyScore,
     issueCount: evalResult.issues.length,
-    repairRequired: evalResult.overallScore < REPAIR_THRESHOLD,
+    repairRequired: evalResult.overallScore < evalThreshold,
   });
 
   sse(res, {
@@ -112,22 +122,22 @@ export async function runDesignEvaluatorStep(
     shadcnScore: evalResult.shadcnScore,
     consistencyScore: evalResult.consistencyScore,
     issues: evalResult.issues,
-    repairRequired: evalResult.overallScore < REPAIR_THRESHOLD,
-    threshold: REPAIR_THRESHOLD,
+    repairRequired: evalResult.overallScore < evalThreshold,
+    threshold: evalThreshold,
   });
 
   const initialScore = evalResult.overallScore; // Phase 8: track score before any repair
 
-  while (evalResult.overallScore < REPAIR_THRESHOLD && repairCount < MAX_DESIGN_REPAIR_PASSES) {
+  while (evalResult.overallScore < evalThreshold && repairCount < maxRepairPasses) {
     repairCount++;
 
     sse(res, {
       type: "design_repair_start",
       pass: repairCount,
-      maxPasses: MAX_DESIGN_REPAIR_PASSES,
+      maxPasses: maxRepairPasses,
       currentScore: evalResult.overallScore,
       issueCount: evalResult.issues.length,
-      targetScore: REPAIR_THRESHOLD,
+      targetScore: evalThreshold,
     });
 
     log.info("DESIGN_REPAIR_PASS_START", { pass: repairCount, score: evalResult.overallScore });
@@ -159,7 +169,7 @@ export async function runDesignEvaluatorStep(
         prevScore,
         newScore: evalResult.overallScore,
         improvement,
-        repairSucceeded: evalResult.overallScore >= REPAIR_THRESHOLD,
+        repairSucceeded: evalResult.overallScore >= evalThreshold,
       });
 
       sse(res, {
@@ -170,7 +180,7 @@ export async function runDesignEvaluatorStep(
         improvement,
         remainingIssues: evalResult.issues.length,
         scoreImproved: evalResult.overallScore > prevScore,
-        thresholdMet: evalResult.overallScore >= REPAIR_THRESHOLD,
+        thresholdMet: evalResult.overallScore >= evalThreshold,
       });
     } else {
       log.warn("DESIGN_REPAIR_PASS_SKIPPED", { pass: repairCount, error: repairResult.error });
@@ -298,7 +308,7 @@ export async function runDesignEvaluatorStep(
     finalScore: evalResult.overallScore,
     repairCount,
     repairApplied,
-    thresholdMet: evalResult.overallScore >= REPAIR_THRESHOLD,
+    thresholdMet: evalResult.overallScore >= evalThreshold,
   });
 
   // V7.3.2: Score the component tree as an additional quality dimension

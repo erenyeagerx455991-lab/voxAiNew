@@ -13,6 +13,7 @@ import { compareAllCandidates } from "../../visual-diff/pixelDiff.js";
 import { predictUX } from "../../ux-intelligence/uxPrediction.js";
 import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
+import type { RuntimeBlueprint } from "../../runtime-intelligence/runtimeTypes.js";
 
 const log = createLogger("CandidateSelectionStep");
 
@@ -102,15 +103,18 @@ export async function runCandidateSelectionStep(
   keys: PipelineKeys,
   res: Response,
   buildId = 'unknown',
+  runtimeBlueprint?: RuntimeBlueprint,
 ): Promise<CandidateSelectionResult> {
   const { plan } = candidateA.architecture;
   const { blueprint } = plan;
 
   sse(res, { type: "step", step: 3, agent: "Candidate Generator", status: "active" });
 
-  // Phase 3: generate B and C in parallel (A already exists)
-  const { candidates, generationMs } = await generateCandidates(candidateA, prompt, keys);
-  const [candA, candB, candC] = candidates;
+  // V9.0: RuntimeIntelligence's CandidateStrategy decides how many
+  // candidates to generate (Fast/Safe → 1, Balanced → 2, Quality/
+  // Enterprise/etc → 3). Defaults to 3 when no blueprint is supplied.
+  const requestedCount = runtimeBlueprint?.candidateStrategy.count ?? 3;
+  const { candidates, generationMs } = await generateCandidates(candidateA, prompt, keys, requestedCount);
   const LABELS: Array<'A' | 'B' | 'C'> = ['A', 'B', 'C'];
 
   log.info("CANDIDATES_GENERATED", { generationMs, count: candidates.length });
@@ -182,7 +186,7 @@ export async function runCandidateSelectionStep(
   // Emit selection summary (new SSE type — additive, does not change existing events)
   sse(res, {
     type: "candidates_evaluated",
-    candidateCount: 3,
+    candidateCount: candidates.length,
     scores: scored.map(s => ({ label: s.label, score: s.overallScore })),
     winner: winner.label,
     winnerScore: winner.overallScore,
@@ -193,7 +197,7 @@ export async function runCandidateSelectionStep(
   // Phase 7: record telemetry
   recordMultiCandidateSelection({
     buildId,
-    candidateCount: 3,
+    candidateCount: candidates.length,
     candidateScores,
     winnerIndex: winner.index,
     winnerScore: winner.overallScore,
@@ -207,7 +211,7 @@ export async function runCandidateSelectionStep(
   return {
     winner: winnerFrontend,
     selectionMetrics: {
-      candidateCount: 3,
+      candidateCount: candidates.length,
       candidateScores,
       winnerIndex: winner.index,
       winnerLabel: winner.label,

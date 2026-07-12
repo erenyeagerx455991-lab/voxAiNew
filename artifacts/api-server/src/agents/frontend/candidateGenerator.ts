@@ -129,16 +129,39 @@ async function generateVariantCandidate(
 // ── Public API ────────────────────────────────────────────────────────────────
 
 export interface GeneratedCandidates {
-  candidates: [FrontendOutput, FrontendOutput, FrontendOutput]; // A, B, C
+  candidates: FrontendOutput[]; // 1–3 candidates depending on requested count
   generationMs: number;
 }
 
+/**
+ * V9.0: `count` comes from RuntimeIntelligence's CandidateStrategy —
+ * Fast/Safe modes request 1 (skip B/C generation entirely, saving 2 LLM
+ * calls), Balanced requests 2 (B only), Quality/Enterprise/Strict/
+ * Experimental/Creative request 3 (B+C, the max variant set currently
+ * authored — CandidateCount 5 is capped to 3 until D/E directives exist).
+ */
 export async function generateCandidates(
   candidateA: FrontendOutput,
   prompt: string,
   keys: PipelineKeys,
+  count: 1 | 2 | 3 | 5 = 3,
 ): Promise<GeneratedCandidates> {
   const t0 = Date.now();
+
+  if (count <= 1) {
+    log.info('CANDIDATE_GENERATION_SKIPPED', { reason: 'runtime strategy requested single candidate' });
+    return { candidates: [candidateA], generationMs: Date.now() - t0 };
+  }
+
+  if (count === 2) {
+    log.info('CANDIDATE_GENERATION_START', { variant: 'B only' });
+    const candidateB = await generateVariantCandidate('B', candidateA, prompt, keys);
+    const generationMs = Date.now() - t0;
+    log.info('CANDIDATE_GENERATION_DONE', { generationMs });
+    return { candidates: [candidateA, candidateB], generationMs };
+  }
+
+  // count === 3 or 5 (capped to 3)
   log.info('CANDIDATE_GENERATION_START', { variant: 'B+C parallel' });
 
   const [candidateB, candidateC] = await Promise.all([

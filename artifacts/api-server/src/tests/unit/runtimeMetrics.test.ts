@@ -39,12 +39,16 @@ describe('runtimeMetrics — recordRuntimeBuild', () => {
 
   it('increments totalBuilds', () => {
     const { blueprint } = runRuntimeIntelligence(makeInput());
+    // Reset AFTER blueprint creation — runRuntimeIntelligence records internally
+    resetRuntimeMetrics();
     recordRuntimeBuild(blueprint.mode, blueprint.qualityScores, blueprint.overallScore, 80_000);
     expect(getRuntimeMetrics().totalBuilds).toBe(1);
   });
 
   it('averageScore reflects recorded builds', () => {
     const { blueprint } = runRuntimeIntelligence(makeInput());
+    // Reset AFTER blueprint creation — runRuntimeIntelligence records internally
+    resetRuntimeMetrics();
     recordRuntimeBuild(blueprint.mode, blueprint.qualityScores, 6.0, 80_000);
     recordRuntimeBuild(blueprint.mode, blueprint.qualityScores, 8.0, 80_000);
     expect(getRuntimeMetrics().averageScore).toBeCloseTo(7.0, 1);

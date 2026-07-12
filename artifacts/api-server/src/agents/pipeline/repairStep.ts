@@ -11,15 +11,17 @@ import { recordRepairAttempt, recordRepairSuccess, recordRepairFailure } from ".
 import { analyzeVisuals } from "../../visual-diff/visualAnalyzer.js";
 import { validateRepairVisuals } from "../../visual-diff/repairValidator.js";
 import { recordVisualBuild } from "../../visual-diff/history.js";
+import type { RuntimeBlueprint } from "../../runtime-intelligence/runtimeTypes.js";
 
 const log = createLogger("RepairStep");
-const MAX_REPAIR_PASSES = 3;
+const DEFAULT_MAX_REPAIR_PASSES = 3;
 const REPAIR_SYSTEM = 'You are a React JSX repair agent. Fix ONLY the reported issues. Return the COMPLETE corrected file — no markdown fences, no explanation, no truncation.';
 
 export async function runRepairStep(
   frontend: FrontendOutput,
   keys: PipelineKeys,
-  res: Response
+  res: Response,
+  runtimeBlueprint?: RuntimeBlueprint,
 ): Promise<FrontendOutput> {
   const { openrouterKey } = keys;
   const { projectFiles, fixedCode, architecture, registrySelection } = frontend;
@@ -27,11 +29,21 @@ export async function runRepairStep(
   const { blueprint } = plan;
   const buildId = (frontend as unknown as Record<string, unknown>).buildId as string ?? "unknown";
 
+  // V9.0: RuntimeIntelligence's RepairStrategy tunes how hard the repair
+  // loop tries. 'skip' short-circuits entirely (Fast mode); otherwise
+  // maxPasses comes from the blueprint (Safe → few, Enterprise → aggressive).
+  const repairPolicy   = runtimeBlueprint?.repairStrategy.policy;
+  const MAX_REPAIR_PASSES = runtimeBlueprint?.repairStrategy.maxPasses ?? DEFAULT_MAX_REPAIR_PASSES;
+
   let totalRepairAttempts = 0;
   let totalFilesRepaired = 0;
   const tsxTargets = projectFiles.filter(f => f.lang === 'tsx' && f.name !== 'main.tsx');
 
-  for (let pass = 0; pass < MAX_REPAIR_PASSES; pass++) {
+  if (repairPolicy === 'skip') {
+    log.info("REPAIR_SKIPPED", { reason: "runtime strategy requested skip policy" });
+  }
+
+  for (let pass = 0; repairPolicy !== 'skip' && pass < MAX_REPAIR_PASSES; pass++) {
     const failures = tsxTargets.filter(f => !validateTsxFile(f.name, f.content).valid);
     if (failures.length === 0) {
       log.info("REPAIR_COMPLETE", { pass, status: "all_valid" });
