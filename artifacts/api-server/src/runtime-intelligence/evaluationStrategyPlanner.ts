@@ -101,5 +101,6 @@ export function planEvaluationStrategy(mode: GenerationMode, input: RuntimeIntel
     threshold:         THRESHOLD_MAP[mode],
     priorityDimension: topDim,
     rationale:         `${profile} evaluation profile: ${topDim} weighted ${(weights[topDim]! * 100).toFixed(0)}% (threshold ${THRESHOLD_MAP[mode]})`,
+    profile,
   };
 }

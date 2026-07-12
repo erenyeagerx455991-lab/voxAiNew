@@ -1,0 +1,450 @@
+VoxAI V9.1 — Runtime Intelligence Activation (Phase 2)
+
+Objective
+
+The Runtime Intelligence Engine already exists and is operational.
+
+It currently generates a RuntimeBlueprint and exposes:
+
+- Runtime SSE events
+- Runtime telemetry
+- Runtime persistence
+- Runtime learning
+- Runtime blueprint generation
+
+However, one major capability is still missing:
+
+The RuntimeBlueprint evaluator weights are calculated but are NOT actually used by the Design Evaluator scoring engine.
+
+The goal of V9.1 is to fully activate Runtime Intelligence so it changes how builds are evaluated depending on project type and runtime strategy.
+
+---
+
+IMPORTANT
+
+This is NOT a rewrite.
+
+This is NOT a new Runtime Engine.
+
+This is NOT a new pipeline stage.
+
+Do NOT duplicate anything.
+
+Do NOT create Runtime V2.
+
+Do NOT rename existing files.
+
+Do NOT break SSE.
+
+Do NOT break telemetry.
+
+Do NOT change API contracts.
+
+Work only by extending the existing architecture.
+
+---
+
+Current Runtime Status
+
+Already Working:
+
+✓ RuntimeBlueprint generation
+
+✓ Runtime step (0.9)
+
+✓ Runtime telemetry
+
+✓ Runtime persistence
+
+✓ Runtime learning
+
+✓ Runtime SSE
+
+✓ Candidate generation activation
+
+✓ Repair policy activation
+
+✓ Repair pass activation
+
+✓ Quality threshold activation
+
+Already Activated:
+
+Runtime → Candidate Generator
+
+Runtime → Repair Loop
+
+Runtime → Repair Count
+
+Runtime → Repair Threshold
+
+Still Missing:
+
+Runtime → Evaluator Weights
+
+This is the ONLY architectural gap.
+
+---
+
+Objective
+
+Make Runtime Intelligence dynamically control Design Evaluator scoring.
+
+Instead of every project using the same evaluator weights:
+
+Typography
+Spacing
+Performance
+Accessibility
+Motion
+Visual Hierarchy
+Responsiveness
+Consistency
+Conversion
+Maintainability
+etc.
+
+Every project type must receive different evaluation priorities.
+
+---
+
+Example
+
+Landing Page
+
+Performance:
+15%
+
+Conversion:
+20%
+
+Visual Hierarchy:
+20%
+
+Motion:
+10%
+
+Dashboard
+
+Performance:
+25%
+
+Usability:
+25%
+
+Accessibility:
+20%
+
+Typography:
+10%
+
+SaaS
+
+Maintainability:
+20%
+
+Consistency:
+20%
+
+Accessibility:
+15%
+
+Performance:
+15%
+
+E-commerce
+
+Conversion:
+30%
+
+Performance:
+20%
+
+Trust:
+20%
+
+Accessibility:
+10%
+
+Portfolio
+
+Motion:
+25%
+
+Visual:
+30%
+
+Typography:
+20%
+
+These values already exist in RuntimeBlueprint.
+
+The evaluator simply isn't using them.
+
+---
+
+Required Work
+
+Phase 1
+
+Locate:
+
+RuntimeBlueprint
+
+Find:
+
+evaluationWeights
+
+Verify:
+
+they are produced correctly.
+
+Do NOT modify them.
+
+---
+
+Phase 2
+
+Locate:
+
+Design Evaluator
+
+Find where every category contributes equally.
+
+Replace static weighting with:
+
+RuntimeBlueprint.evaluationWeights
+
+---
+
+Phase 3
+
+Every evaluator category must now use:
+
+finalScore =
+rawScore × runtimeWeight
+
+instead of
+
+rawScore × staticWeight
+
+---
+
+Phase 4
+
+Ensure every evaluator dimension supports dynamic weights.
+
+Including:
+
+Typography
+
+Spacing
+
+Motion
+
+Accessibility
+
+Performance
+
+Consistency
+
+Hierarchy
+
+Conversion
+
+Maintainability
+
+Responsiveness
+
+Security
+
+Reliability
+
+Visual Quality
+
+UX
+
+Director
+
+Product
+
+Backend
+
+Frontend
+
+DevOps
+
+QA
+
+Runtime
+
+---
+
+Phase 5
+
+Runtime should influence:
+
+overallScore
+
+repairDecision
+
+candidateSelection
+
+qualityRanking
+
+winnerSelection
+
+---
+
+Phase 6
+
+Telemetry
+
+Extend Runtime telemetry with:
+
+averageWeightsUsed
+
+projectTypeDistribution
+
+weightOverrides
+
+dynamicWeightUsage
+
+weightActivationRate
+
+No breaking changes.
+
+---
+
+Phase 7
+
+Learning
+
+Record:
+
+which weight profiles produce better builds
+
+Feed results into Runtime Learning.
+
+Learning must remain asynchronous.
+
+---
+
+Phase 8
+
+Persistence
+
+Persist active evaluator profile.
+
+Support rollback.
+
+Support version history.
+
+---
+
+Phase 9
+
+Tests
+
+Create comprehensive tests.
+
+Cover:
+
+Landing
+
+Dashboard
+
+Portfolio
+
+SaaS
+
+Enterprise
+
+AI
+
+Marketplace
+
+CRM
+
+CMS
+
+Admin
+
+Commerce
+
+Forms
+
+Documentation
+
+Developer Tool
+
+Ensure evaluator scores differ correctly.
+
+---
+
+Phase 10
+
+Regression
+
+Run entire suite.
+
+Expected:
+
+Zero regressions.
+
+Zero TypeScript errors.
+
+All tests passing.
+
+---
+
+Constraints
+
+Do NOT modify:
+
+Pipeline order
+
+SSE contracts
+
+API routes
+
+Frontend
+
+Database schema
+
+Existing Runtime Engine
+
+---
+
+Performance
+
+No additional LLM calls.
+
+No new agent.
+
+No extra pipeline stage.
+
+No duplicate evaluation.
+
+---
+
+Deliverables
+
+Provide:
+
+- List of modified files
+- Architectural explanation
+- Test summary
+- Performance impact
+- Runtime activation summary
+- Final validation report
+
+---
+
+Success Criteria
+
+Runtime Intelligence must become the single source of truth for evaluator weighting.
+
+Different project types must automatically produce different evaluation priorities without changing any pipeline stage.
+
+This is an activation release, not a rewrite.

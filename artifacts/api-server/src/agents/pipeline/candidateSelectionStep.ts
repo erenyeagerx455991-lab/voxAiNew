@@ -119,6 +119,11 @@ export async function runCandidateSelectionStep(
 
   log.info("CANDIDATES_GENERATED", { generationMs, count: candidates.length });
 
+  // V9.1: Runtime Intelligence's per-project-type evaluator weights apply to
+  // every candidate identically, so ranking still reflects the same priorities
+  // the winner will ultimately be scored/repaired against.
+  const runtimeWeights = runtimeBlueprint?.evaluationStrategy.weights;
+
   // Phase 4: evaluate all 3 independently (synchronous — no LLM call needed)
   // V7.3.4: also run visual analysis for each candidate
   const scored: CandidateScore[] = candidates.map((cand, i) => {
@@ -126,6 +131,7 @@ export async function runCandidateSelectionStep(
       code: cand.fixedCode,
       sectionOrder: blueprint.sectionOrder,
       designDNA: cand.design,
+      runtimeWeights,
     });
     const visualResult = analyzeVisuals(cand.fixedCode, blueprint.sectionOrder, `cand-${LABELS[i]}`, buildId);
     // V8.2: UX prediction — fast static analysis on each candidate

@@ -10,6 +10,10 @@ export interface EvaluationInput {
   authState?: string;
   isDashboard?: boolean;
   isForm?: boolean;
+  /** V9.1: Runtime Intelligence's per-project-type evaluator weights
+   *  (RuntimeBlueprint.evaluationStrategy.weights). When omitted, the
+   *  evaluator falls back to the static WEIGHTS below (pre-V9.1 behavior). */
+  runtimeWeights?: Record<string, number>;
 }
 
 export interface EvaluationIssue {
@@ -37,6 +41,10 @@ export interface EvaluationResult {
   coveragePercent: number;
   componentUsage: Record<string, number>;
   issues: EvaluationIssue[];
+  /** V9.1: the actual per-dimension weights used to compute overallScore. */
+  weightsApplied: Record<string, number>;
+  /** V9.1: true when RuntimeBlueprint.evaluationStrategy.weights drove scoring. */
+  dynamicWeightsUsed: boolean;
 }
 
 function extractFunctionBlock(code: string, name: string): string {
@@ -777,6 +785,89 @@ const WEIGHTS = {
   dnaQuality:            0.03,  // new V7.3.5 — historical DNA quality signal
 };
 
+// ── V9.1 Runtime Intelligence Activation ──────────────────────────────────────
+// Maps each of the evaluator's 14 granular scoring dimensions to the coarser
+// macro-category vocabulary RuntimeBlueprint.evaluationStrategy.weights speaks
+// (visual, conversion, accessibility, usability, animation, plus categories
+// with no evaluator counterpart like performance/seo/security/reliability —
+// those exist for the Planner/backend but the static-analysis Design
+// Evaluator has no way to measure them, so their weight mass is redistributed
+// proportionally across the categories it *can* measure).
+export const RUNTIME_WEIGHT_CATEGORIES = ['visual', 'conversion', 'accessibility', 'usability', 'animation'] as const;
+export type RuntimeWeightCategory = typeof RUNTIME_WEIGHT_CATEGORIES[number];
+
+export const DIMENSION_TO_RUNTIME_CATEGORY: Record<keyof typeof WEIGHTS, RuntimeWeightCategory> = {
+  hero:                'visual',
+  layout:              'visual',
+  cta:                 'conversion',
+  accessibility:       'accessibility',
+  shadcn:              'visual',
+  coverage:            'visual',
+  navigation:          'usability',
+  accountMenu:         'usability',
+  authNavbarAlignment: 'usability',
+  consistency:         'visual',
+  dashboard:           'usability',
+  form:                'usability',
+  motion:              'animation',
+  dnaQuality:          'visual',
+};
+
+/** Static weight mass held by each macro category, derived from WEIGHTS. Sums to 1.00. */
+function staticCategoryTotals(): Record<RuntimeWeightCategory, number> {
+  const totals: Record<RuntimeWeightCategory, number> = { visual: 0, conversion: 0, accessibility: 0, usability: 0, animation: 0 };
+  for (const dim of Object.keys(WEIGHTS) as (keyof typeof WEIGHTS)[]) {
+    totals[DIMENSION_TO_RUNTIME_CATEGORY[dim]] += WEIGHTS[dim];
+  }
+  return totals;
+}
+
+/**
+ * Computes the effective per-dimension weight set to score a build with.
+ * When `runtimeWeights` is provided (RuntimeBlueprint.evaluationStrategy.weights),
+ * every dimension's weight is re-derived from its macro category's runtime
+ * weight — replacing the static constant — while preserving each dimension's
+ * relative share *within* its macro group. Categories present in
+ * `runtimeWeights` but not measurable by this evaluator (performance, seo,
+ * security, reliability, ...) have their weight mass redistributed
+ * proportionally across the measurable categories so the result still sums to 1.00.
+ * Falls back to the static WEIGHTS unchanged when no runtime weights are given.
+ */
+export function computeEffectiveWeights(runtimeWeights?: Record<string, number>): Record<keyof typeof WEIGHTS, number> {
+  if (!runtimeWeights || Object.keys(runtimeWeights).length === 0) {
+    return { ...WEIGHTS };
+  }
+
+  const staticTotals = staticCategoryTotals();
+
+  // Only categories we can actually measure count toward the redistribution base.
+  const measurableSum = RUNTIME_WEIGHT_CATEGORIES.reduce(
+    (sum, cat) => sum + (runtimeWeights[cat] ?? 0), 0,
+  );
+
+  // Degenerate case: profile doesn't specify any of our measurable categories at all
+  // (e.g. a category set entirely outside our vocabulary) — fall back to static.
+  if (measurableSum <= 0) {
+    return { ...WEIGHTS };
+  }
+
+  const scale = 1 / measurableSum;
+  const macroWeights: Record<RuntimeWeightCategory, number> = { visual: 0, conversion: 0, accessibility: 0, usability: 0, animation: 0 };
+  for (const cat of RUNTIME_WEIGHT_CATEGORIES) {
+    macroWeights[cat] = (runtimeWeights[cat] ?? 0) * scale;
+  }
+
+  const effective = {} as Record<keyof typeof WEIGHTS, number>;
+  for (const dim of Object.keys(WEIGHTS) as (keyof typeof WEIGHTS)[]) {
+    const cat = DIMENSION_TO_RUNTIME_CATEGORY[dim];
+    const groupTotal = staticTotals[cat];
+    // Preserve each dimension's relative share within its macro group.
+    const shareWithinGroup = groupTotal > 0 ? WEIGHTS[dim] / groupTotal : 0;
+    effective[dim] = macroWeights[cat] * shareWithinGroup;
+  }
+  return effective;
+}
+
 export function evaluateDesign(input: EvaluationInput): EvaluationResult {
   const { code, sectionOrder, authState } = input;
   const isDashboard = input.isDashboard ?? false;
@@ -805,22 +896,27 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     motionStyle:    input.designDNA?.animationPersonality ?? '',
   });
 
+  // V9.1: Runtime Intelligence activation — dynamic per-project-type weights
+  // replace the static WEIGHTS constant whenever a blueprint is supplied.
+  const dynamicWeightsUsed = !!input.runtimeWeights && Object.keys(input.runtimeWeights).length > 0;
+  const W = computeEffectiveWeights(input.runtimeWeights);
+
   const overallScore =
     Math.round(
-      (hero.score                    * WEIGHTS.hero +
-        layout.score                 * WEIGHTS.layout +
-        cta.score                    * WEIGHTS.cta +
-        accessibility.score          * WEIGHTS.accessibility +
-        shadcn.score                 * WEIGHTS.shadcn +
-        coverage.score               * WEIGHTS.coverage +
-        navigation.score             * WEIGHTS.navigation +
-        accountMenu.score            * WEIGHTS.accountMenu +
-        authNavbarAlignment.score    * WEIGHTS.authNavbarAlignment +
-        consistency.score            * WEIGHTS.consistency +
-        dashboard.score              * WEIGHTS.dashboard +
-        form.score                   * WEIGHTS.form +
-        motion.score                 * WEIGHTS.motion +
-        dnaQualityScore              * WEIGHTS.dnaQuality) * 10
+      (hero.score                    * W.hero +
+        layout.score                 * W.layout +
+        cta.score                    * W.cta +
+        accessibility.score          * W.accessibility +
+        shadcn.score                 * W.shadcn +
+        coverage.score               * W.coverage +
+        navigation.score             * W.navigation +
+        accountMenu.score            * W.accountMenu +
+        authNavbarAlignment.score    * W.authNavbarAlignment +
+        consistency.score            * W.consistency +
+        dashboard.score              * W.dashboard +
+        form.score                   * W.form +
+        motion.score                 * W.motion +
+        dnaQualityScore              * W.dnaQuality) * 10
     ) / 10;
 
   // Record motion telemetry
@@ -871,5 +967,7 @@ export function evaluateDesign(input: EvaluationInput): EvaluationResult {
     coveragePercent:           coverage.coveragePercent,
     componentUsage:            coverage.componentUsage,
     issues:                    allIssues,
+    weightsApplied:            W,
+    dynamicWeightsUsed,
   };
 }

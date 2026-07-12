@@ -20,6 +20,7 @@ import type { FrontendOutput, PipelineKeys } from "./pipelineTypes.js";
 import type { UXReport } from "../../ux-intelligence/uxTypes.js";
 import { createLogger } from "../../lib/structuredLogger.js";
 import type { RuntimeBlueprint } from "../../runtime-intelligence/runtimeTypes.js";
+import { recordEvaluatorWeightUsage } from "../../runtime-intelligence/runtimeMetrics.js";
 
 const log = createLogger("DesignEvaluatorStep");
 
@@ -93,12 +94,25 @@ export async function runDesignEvaluatorStep(
     ? 0
     : (runtimeBlueprint?.evaluationStrategy.isStrict ? MAX_DESIGN_REPAIR_PASSES + 1 : MAX_DESIGN_REPAIR_PASSES);
 
+  // V9.1: Runtime Intelligence's evaluationStrategy.weights now drives which
+  // dimensions (visual/conversion/accessibility/usability/animation) matter
+  // most for this project's type — replacing the static evaluator weights.
+  const runtimeWeights = runtimeBlueprint?.evaluationStrategy.weights;
+
   let evalResult = evaluateDesign({
     code: currentCode,
     sectionOrder: blueprint.sectionOrder,
     designDNA: design,
     authState,
+    runtimeWeights,
   });
+
+  // V9.1: telemetry — which profile/weights actually scored this build.
+  recordEvaluatorWeightUsage(
+    runtimeBlueprint?.evaluationStrategy.profile ?? "static-default",
+    evalResult.weightsApplied,
+    evalResult.dynamicWeightsUsed,
+  );
 
   log.info("DESIGN_EVAL_INITIAL", {
     overallScore: evalResult.overallScore,
@@ -124,6 +138,10 @@ export async function runDesignEvaluatorStep(
     issues: evalResult.issues,
     repairRequired: evalResult.overallScore < evalThreshold,
     threshold: evalThreshold,
+    // V9.1: additive — surfaces which weight profile scored this build.
+    dynamicWeightsUsed: evalResult.dynamicWeightsUsed,
+    weightsApplied: evalResult.weightsApplied,
+    weightProfile: runtimeBlueprint?.evaluationStrategy.priorityDimension,
   });
 
   const initialScore = evalResult.overallScore; // Phase 8: track score before any repair
@@ -161,6 +179,7 @@ export async function runDesignEvaluatorStep(
         sectionOrder: blueprint.sectionOrder,
         designDNA: design,
         authState,
+        runtimeWeights,
       });
 
       const improvement = Math.round((evalResult.overallScore - prevScore) * 10) / 10;

@@ -43,6 +43,9 @@ export async function learnFromRuntimeBuild(input: RuntimeLearningInput): Promis
       evaluationScore:         findDimScore(blueprint, 'evaluation'),
       improved:                hasPreviousImproved(inMemoryStore, mode),
       recordedAt:              Date.now(),
+      // V9.1: track which evaluator weight profile scored this build, so we
+      // can later tell which profiles correlate with higher overall scores.
+      weightProfile:           blueprint.evaluationStrategy?.profile ?? 'unknown',
     };
 
     inMemoryStore.push(record);
@@ -66,16 +69,21 @@ export function getRuntimeLearningStats(): {
   timeAccuracy:       number;   // 0–1: how close estimates were to actuals
   repairAccuracy:     number;   // 0–1: how close repair estimates were
   byMode:             Partial<Record<GenerationMode, number>>;
+  /** V9.1: average overall score per evaluator weight profile — which
+   *  profiles correlate with better builds. */
+  byWeightProfile:    Record<string, { count: number; averageScore: number }>;
 } {
   const records = inMemoryStore;
   if (records.length === 0) {
     return {
       totalRecords: 0, improvedCount: 0, averageScore: 0,
       averageBuildTimeMs: 0, timeAccuracy: 0, repairAccuracy: 0, byMode: {},
+      byWeightProfile: {},
     };
   }
 
   const byMode: Partial<Record<GenerationMode, number>> = {};
+  const profileTotals = new Map<string, { count: number; scoreSum: number }>();
   let totalScore = 0;
   let totalBuildTime = 0;
   let improvedCount = 0;
@@ -88,6 +96,12 @@ export function getRuntimeLearningStats(): {
     totalBuildTime += r.actualBuildTimeMs;
     if (r.improved) improvedCount++;
 
+    const profile = r.weightProfile ?? 'unknown';
+    const bucket = profileTotals.get(profile) ?? { count: 0, scoreSum: 0 };
+    bucket.count++;
+    bucket.scoreSum += r.overallScore;
+    profileTotals.set(profile, bucket);
+
     // Time accuracy: 1 - relative error (capped at 0)
     const timeError = Math.abs(r.actualBuildTimeMs - r.estimatedBuildTimeMs)
       / Math.max(r.estimatedBuildTimeMs, 1);
@@ -96,6 +110,14 @@ export function getRuntimeLearningStats(): {
     const repairError = Math.abs(r.actualRepairCount - r.estimatedRepairCount)
       / Math.max(r.estimatedRepairCount, 1);
     repairErrorSum += Math.min(repairError, 1);
+  }
+
+  const byWeightProfile: Record<string, { count: number; averageScore: number }> = {};
+  for (const [profile, bucket] of profileTotals) {
+    byWeightProfile[profile] = {
+      count:        bucket.count,
+      averageScore: parseFloat((bucket.scoreSum / bucket.count).toFixed(2)),
+    };
   }
 
   const n = records.length;
@@ -107,6 +129,7 @@ export function getRuntimeLearningStats(): {
     timeAccuracy:       parseFloat((1 - timeErrorSum / n).toFixed(3)),
     repairAccuracy:     parseFloat((1 - repairErrorSum / n).toFixed(3)),
     byMode,
+    byWeightProfile,
   };
 }
 

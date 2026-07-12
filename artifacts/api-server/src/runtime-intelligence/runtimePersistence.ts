@@ -59,6 +59,21 @@ export function getRollbackSnapshot(currentVersion: number): RuntimeSnapshot | u
   return candidates[candidates.length - 1];
 }
 
+/** V9.1: the currently-active evaluator weight profile, with rollback/version
+ *  history available via getRuntimeSnapshotByVersion / getRollbackSnapshot. */
+export function getActiveEvaluatorProfile(): {
+  version:   number;
+  buildId:   string;
+  profile:   string;
+  weights:   Record<string, number>;
+  threshold: number;
+} | undefined {
+  const snap = getCurrentRuntimeSnapshot();
+  if (!snap || !snap.blueprint?.evaluationStrategy) return undefined;
+  const { profile, weights, threshold } = snap.blueprint.evaluationStrategy;
+  return { version: snap.version, buildId: snap.buildId, profile, weights, threshold };
+}
+
 export function getRuntimePersistenceStats(): {
   totalSnapshots: number;
   currentVersion: number;

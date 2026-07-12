@@ -51,9 +51,9 @@ import { getSecurityArchitectMetrics }        from "../security-architect/securi
 import { getSecurityLearningStats }           from "../security-architect/securityLearning.js";
 import { getSecurityArchitectPersistenceStats } from "../security-architect/securityPersistence.js";
 // V9.0: Runtime Intelligence telemetry
-import { getRuntimeMetrics }          from "../runtime-intelligence/runtimeMetrics.js";
+import { getRuntimeMetrics, getEvaluatorWeightStats } from "../runtime-intelligence/runtimeMetrics.js";
 import { getRuntimeLearningStats }    from "../runtime-intelligence/runtimeLearning.js";
-import { getRuntimePersistenceStats } from "../runtime-intelligence/runtimePersistence.js";
+import { getRuntimePersistenceStats, getActiveEvaluatorProfile } from "../runtime-intelligence/runtimePersistence.js";
 
 const router: Router = Router();
 

@@ -103,6 +103,8 @@ export interface EvaluationStrategy {
   threshold:         number;                  // minimum passing score
   priorityDimension: string;
   rationale:         string;
+  /** V9.1: name of the weight profile selected (e.g. 'landing-page', 'saas'). */
+  profile:           string;
 }
 
 export interface OptimizationStrategy {
@@ -339,6 +341,8 @@ export interface RuntimeLearningRecord {
   evaluationScore:      number;
   improved:             boolean;
   recordedAt:           number;
+  /** V9.1: which evaluator weight profile drove this build's evaluation. */
+  weightProfile:        string;
 }
 
 // ── Metrics ───────────────────────────────────────────────────────────────────

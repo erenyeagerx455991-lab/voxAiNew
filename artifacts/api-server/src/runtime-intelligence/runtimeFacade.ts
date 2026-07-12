@@ -81,6 +81,10 @@ export {
   recordRuntimeLearning,
   getRuntimeMetrics,
   resetRuntimeMetrics,
+  // V9.1: evaluator weight activation telemetry
+  recordEvaluatorWeightUsage,
+  getEvaluatorWeightStats,
+  resetEvaluatorWeightUsage,
 } from './runtimeMetrics.js';
 
 // Learning
@@ -100,6 +104,8 @@ export {
   getRollbackSnapshot,
   getRuntimePersistenceStats,
   resetRuntimePersistence,
+  // V9.1
+  getActiveEvaluatorProfile,
 } from './runtimePersistence.js';
 export type { RuntimeSnapshot as RuntimeSnapshotRecord } from './runtimePersistence.js';
 

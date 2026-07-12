@@ -10,6 +10,77 @@ interface BuildRecord {
 
 const state: { records: BuildRecord[]; learnCount: number } = { records: [], learnCount: 0 };
 
+// ── V9.1 Runtime Intelligence Activation — evaluator weight usage telemetry ──
+interface WeightUsageEvent {
+  profile:  string;
+  weights:  Record<string, number>;
+  dynamic:  boolean;
+  recordedAt: number;
+}
+const weightUsageState: { events: WeightUsageEvent[] } = { events: [] };
+
+/** Called by the Design Evaluator step every time it scores a build. */
+export function recordEvaluatorWeightUsage(
+  profile:  string,
+  weights:  Record<string, number>,
+  dynamic:  boolean,
+): void {
+  weightUsageState.events.push({ profile, weights, dynamic, recordedAt: Date.now() });
+  if (weightUsageState.events.length > 500) weightUsageState.events.shift();
+}
+
+export function getEvaluatorWeightStats(): {
+  totalEvaluations:          number;
+  dynamicWeightUsage:        number;    // count of evaluations scored with dynamic (runtime) weights
+  weightActivationRate:      number;    // 0–1
+  weightOverrides:           number;    // alias of dynamicWeightUsage — times the static default was overridden
+  projectTypeDistribution:   Record<string, number>;
+  averageWeightsUsed:        Record<string, number>; // averaged across dynamic evaluations, per category
+} {
+  const events = weightUsageState.events;
+  const n = events.length;
+  if (n === 0) {
+    return {
+      totalEvaluations: 0, dynamicWeightUsage: 0, weightActivationRate: 0,
+      weightOverrides: 0, projectTypeDistribution: {}, averageWeightsUsed: {},
+    };
+  }
+
+  const projectTypeDistribution: Record<string, number> = {};
+  const weightSums = new Map<string, number>();
+  const weightCounts = new Map<string, number>();
+  let dynamicCount = 0;
+
+  for (const ev of events) {
+    projectTypeDistribution[ev.profile] = (projectTypeDistribution[ev.profile] ?? 0) + 1;
+    if (ev.dynamic) {
+      dynamicCount++;
+      for (const [cat, w] of Object.entries(ev.weights)) {
+        weightSums.set(cat, (weightSums.get(cat) ?? 0) + w);
+        weightCounts.set(cat, (weightCounts.get(cat) ?? 0) + 1);
+      }
+    }
+  }
+
+  const averageWeightsUsed: Record<string, number> = {};
+  for (const [cat, sum] of weightSums) {
+    averageWeightsUsed[cat] = parseFloat((sum / (weightCounts.get(cat) ?? 1)).toFixed(4));
+  }
+
+  return {
+    totalEvaluations:        n,
+    dynamicWeightUsage:      dynamicCount,
+    weightActivationRate:    parseFloat((dynamicCount / n).toFixed(3)),
+    weightOverrides:         dynamicCount,
+    projectTypeDistribution,
+    averageWeightsUsed,
+  };
+}
+
+export function resetEvaluatorWeightUsage(): void {
+  weightUsageState.events.length = 0;
+}
+
 export function recordRuntimeBuild(
   mode:          GenerationMode,
   qualityScores: RuntimeQualityScore[],
@@ -100,4 +171,5 @@ export function getRuntimeMetrics(): {
 export function resetRuntimeMetrics(): void {
   state.records = [];
   state.learnCount = 0;
+  weightUsageState.events.length = 0;
 }
