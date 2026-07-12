@@ -1,0 +1,525 @@
+V9.0 — AI Runtime Intelligence & Autonomous Generation Engine
+
+Objective
+
+Implement V9.0 AI Runtime Intelligence Engine.
+
+This is NOT another planner.
+
+Do NOT create another Architect.
+
+Do NOT duplicate existing Product, Frontend, Backend, DevOps, QA or Security modules.
+
+Instead, build the intelligence layer that decides HOW the AI generation process should execute.
+
+The Runtime Intelligence Engine becomes the brain that controls generation strategy before any code generation starts.
+
+---
+
+Current Pipeline
+
+User
+
+↓
+
+Intent Analyzer
+
+↓
+
+Project Memory
+
+↓
+
+Product Manager
+
+↓
+
+Frontend Architect
+
+↓
+
+Backend Architect
+
+↓
+
+DevOps Architect
+
+↓
+
+QA Architect
+
+↓
+
+Security Intelligence
+
+↓
+
+Planner
+
+↓
+
+Code Generation
+
+↓
+
+Repair
+
+↓
+
+Evaluation
+
+↓
+
+Director
+
+↓
+
+Done
+
+---
+
+Insert Runtime Intelligence between
+
+Security Intelligence
+
+↓
+
+Runtime Intelligence
+
+↓
+
+Planner
+
+---
+
+Runtime Intelligence must NEVER generate UI.
+
+Runtime Intelligence only controls generation strategy.
+
+---
+
+Responsibilities
+
+The engine must answer questions like:
+
+Should generation be incremental?
+
+Should generation be parallel?
+
+Should generation be deterministic?
+
+Should repair be conservative?
+
+Should evaluation be strict?
+
+Should accessibility become highest priority?
+
+Should performance override animation?
+
+Should SEO override motion?
+
+Should design quality override speed?
+
+Should dashboard generation use a different strategy?
+
+Should SaaS projects use another optimization strategy?
+
+Should enterprise apps use another validation strategy?
+
+Should ecommerce use another deployment strategy?
+
+Everything becomes dynamic.
+
+---
+
+Runtime Blueprint
+
+Create
+
+RuntimeBlueprint
+
+containing
+
+Generation Strategy
+
+Repair Strategy
+
+Evaluation Strategy
+
+Optimization Strategy
+
+Caching Strategy
+
+Context Strategy
+
+Parallelization Strategy
+
+Validation Strategy
+
+Rendering Strategy
+
+Prompt Strategy
+
+Retry Strategy
+
+Streaming Strategy
+
+Deployment Strategy
+
+Risk Strategy
+
+Memory Strategy
+
+---
+
+Generation Modes
+
+Support
+
+Fast
+
+Balanced
+
+Quality
+
+Enterprise
+
+Creative
+
+Strict
+
+Experimental
+
+Safe
+
+Each mode changes
+
+repair
+
+evaluation
+
+candidate selection
+
+optimization
+
+prompt depth
+
+retrieval depth
+
+validation
+
+streaming
+
+automatically.
+
+---
+
+Dynamic Prompt Intelligence
+
+Before Code Generator executes
+
+Runtime Intelligence builds
+
+Generation Context
+
+Prompt Context
+
+Architecture Context
+
+Memory Context
+
+Retrieval Context
+
+Design Context
+
+Backend Context
+
+Security Context
+
+QA Context
+
+Optimization Context
+
+These are merged into one immutable Runtime Context.
+
+---
+
+Dynamic Candidate Strategy
+
+Instead of always generating A/B/C
+
+Runtime decides
+
+Generate A only
+
+Generate A/B
+
+Generate A/B/C
+
+Generate 5 candidates
+
+Skip candidates
+
+Generate component-only
+
+Generate page-only
+
+Generate layout-only
+
+depending on project complexity.
+
+---
+
+Dynamic Repair Policy
+
+Choose automatically
+
+Single repair
+
+Multi repair
+
+Aggressive repair
+
+Safe repair
+
+Skip repair
+
+Repair components only
+
+Repair CSS only
+
+Repair TypeScript only
+
+Repair runtime only
+
+---
+
+Evaluation Policy
+
+Runtime dynamically changes evaluator weights.
+
+Examples
+
+Landing Page
+
+Visual Quality 35%
+
+Performance 15%
+
+Conversion 25%
+
+Accessibility 10%
+
+SEO 15%
+
+Dashboard
+
+Performance 30%
+
+Usability 30%
+
+Accessibility 20%
+
+Visual 10%
+
+Animation 10%
+
+Enterprise
+
+Reliability 35%
+
+Security 30%
+
+Performance 20%
+
+Visual 5%
+
+Accessibility 10%
+
+---
+
+Retrieval Intelligence
+
+Runtime decides
+
+How many RAGs to query
+
+Which libraries
+
+How much context
+
+Maximum tokens
+
+Priority ordering
+
+Cache usage
+
+Reuse previous retrieval
+
+Skip unnecessary retrieval
+
+---
+
+Performance Intelligence
+
+Predict
+
+Estimated build time
+
+Estimated repair count
+
+Estimated token usage
+
+Estimated runtime cost
+
+Estimated memory
+
+Estimated bundle size
+
+Estimated completion probability
+
+---
+
+Runtime Learning
+
+Learn from
+
+Repair failures
+
+Evaluation scores
+
+User edits
+
+Telemetry
+
+Generation duration
+
+Prompt size
+
+Success rate
+
+Candidate success
+
+Optimization success
+
+Use this to improve future runtime decisions.
+
+---
+
+Persistence
+
+Create Runtime Persistence.
+
+Store
+
+Last 500 Runtime Blueprints
+
+Version history
+
+Rollback support
+
+Snapshots
+
+Debounced persistence
+
+Crash-safe recovery
+
+---
+
+Telemetry
+
+Expose
+
+runtimeIntelligence
+
+through
+
+GET /api/telemetry/quality
+
+including
+
+runtimeScore
+
+strategyDistribution
+
+averageGenerationTime
+
+repairEfficiency
+
+evaluationEfficiency
+
+optimizationEfficiency
+
+tokenEfficiency
+
+candidateEfficiency
+
+cacheHitRate
+
+learningStatistics
+
+persistenceHealth
+
+---
+
+SSE
+
+Add
+
+runtime_start
+
+runtime_progress
+
+runtime_complete
+
+runtime_learning
+
+No breaking changes.
+
+Only additive events.
+
+---
+
+Tests
+
+Add
+
+300+
+
+unit tests
+
+integration tests
+
+pipeline tests
+
+telemetry tests
+
+learning tests
+
+persistence tests
+
+strategy tests
+
+All previous tests must remain green.
+
+---
+
+Constraints
+
+Do not duplicate existing modules.
+
+Do not change public API contracts.
+
+Do not break SSE.
+
+Do not modify existing planner responsibilities.
+
+Everything must be deterministic.
+
+Learning must remain asynchronous.
+
+Runtime failures must never stop builds.
+
+Follow existing VoxAI architecture conventions.
+
+The Runtime Intelligence Engine must become the central execution brain that decides HOW the AI builds software, while existing architects continue deciding WHAT should be built.
