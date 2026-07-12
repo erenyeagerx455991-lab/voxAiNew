@@ -1,0 +1,379 @@
+V8.X ENGINEERING SPECIFICATION
+
+Version
+
+V8.X — <Module Name>
+
+---
+
+OBJECTIVE
+
+Describe the actual engineering objective of this version.
+
+Example:
+
+Build a deterministic architecture layer that performs X before Y.
+
+The layer must integrate with the existing VoxAI pipeline without introducing breaking changes.
+
+---
+
+PIPELINE POSITION
+
+Pipeline order:
+
+...
+
+↓
+
+Current Step
+
+↓
+
+NEW STEP (V8.X)
+
+↓
+
+Next Step
+
+...
+
+The new layer executes only once per build.
+
+It must finish before the next stage begins.
+
+---
+
+PURPOSE
+
+Explain exactly what this module solves.
+
+Do NOT describe implementation prompts.
+
+Describe the software behavior.
+
+Example:
+
+The engine analyses...
+
+The engine generates...
+
+The engine validates...
+
+The engine predicts...
+
+---
+
+INPUTS
+
+The module receives:
+
+- BuildContext
+- ProductPlan
+- FrontendArchitecture
+- BackendArchitecture
+- DesignDNA
+
+(or whatever is appropriate)
+
+---
+
+OUTPUT
+
+Produces:
+
+Example:
+
+ModuleOutput
+
+including:
+
+- score
+- metadata
+- recommendations
+- planner output
+- telemetry payload
+
+---
+
+NEW MODULES
+
+Create these files.
+
+Example:
+
+src/module/
+
+types.ts
+
+planner.ts
+
+validator.ts
+
+metrics.ts
+
+learning.ts
+
+persistence.ts
+
+engine.ts
+
+facade.ts
+
+pipelineStep.ts
+
+---
+
+FILES TO MODIFY
+
+Example:
+
+buildPipeline.ts
+
+pipelineTypes.ts
+
+telemetry.ts
+
+index.ts
+
+agentMetrics.ts
+
+routes/...
+
+Only modify what is required.
+
+---
+
+PIPELINE INTEGRATION
+
+Insert the module after:
+
+...
+
+Before:
+
+...
+
+No existing step should break.
+
+---
+
+TELEMETRY
+
+Expose:
+
+moduleScore
+
+plannerDistribution
+
+learningStatistics
+
+persistenceHealth
+
+executionTime
+
+No existing telemetry should be removed.
+
+---
+
+PERSISTENCE
+
+Store:
+
+maximum records
+
+version history
+
+rollback support
+
+debounced writes
+
+automatic recovery
+
+---
+
+VALIDATION
+
+Create deterministic validation.
+
+Score:
+
+Dimension
+
+Weight
+
+Rules
+
+Penalty
+
+Return 0–10.
+
+---
+
+LEARNING
+
+Implement asynchronous learning.
+
+Never block builds.
+
+Never affect pipeline execution.
+
+Use debounced persistence.
+
+---
+
+SSE EVENTS
+
+Emit:
+
+module_start
+
+module_progress
+
+module_complete
+
+module_learning
+
+Preserve existing SSE contracts.
+
+---
+
+TESTS
+
+Add:
+
+Unit tests
+
+Integration tests
+
+Pipeline tests
+
+Persistence tests
+
+Validator tests
+
+Telemetry tests
+
+Learning tests
+
+Target:
+
+100% pass
+
+Zero regressions.
+
+---
+
+BUILD VALIDATION
+
+Run:
+
+TypeScript
+
+Production build
+
+Test suite
+
+Fix failures.
+
+Re-run until clean.
+
+---
+
+AUDIT DOCUMENT
+
+Generate:
+
+artifacts/api-server/v8.xAudit.md
+
+Include:
+
+Architecture
+
+Pipeline
+
+Files
+
+Telemetry
+
+Persistence
+
+Validation
+
+Learning
+
+Testing
+
+Known limitations
+
+---
+
+ACCEPTANCE CRITERIA
+
+The implementation is complete only when:
+
+✓ Build passes
+
+✓ Tests pass
+
+✓ Pipeline works
+
+✓ Telemetry works
+
+✓ Persistence works
+
+✓ Learning works
+
+✓ SSE works
+
+✓ Audit generated
+
+✓ No breaking changes
+
+---
+
+CONSTRAINTS
+
+Do not rewrite working modules.
+
+Do not duplicate functionality.
+
+Reuse existing architecture.
+
+Preserve compatibility.
+
+Prefer extension over replacement.
+
+Keep implementation deterministic.
+
+Never introduce breaking API changes unless explicitly required.
+
+---
+
+FINAL DELIVERABLE
+
+Provide:
+
+Repository audit
+
+Gap analysis
+
+Implementation summary
+
+Files created
+
+Files modified
+
+Pipeline changes
+
+Telemetry changes
+
+Tests added
+
+Test results
+
+Build results
+
+Audit report
+
+Final completion status
