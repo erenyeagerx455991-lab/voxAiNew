@@ -81,3 +81,9 @@ VoxAI (branded "NexoGen") generates polished landing pages and web apps from a t
 ## User preferences
 
 _Populate as you build — explicit user instructions worth remembering across sessions._
+
+## Setup status (imported project)
+
+- Set up on Replit on 2026-07-12: `pnpm install` run, `DATABASE_URL` was already provisioned, `OPENROUTER_API_KEY` and `GROQ_API_KEY` were requested from and provided by the user, DB schema pushed (no changes needed), and the `voxai` (frontend) and `api-server` workflows are running.
+- `REDIS_URL` is not set — the build queue runs in-memory, which is fine for development.
+- Artifacts were already scaffolded in the repo (`artifacts/voxai`, `artifacts/api-server`, `artifacts/mockup-sandbox`) but were not yet registered with Replit's artifact/workflow system on import — re-syncing the `artifact.toml` files (via `verifyAndReplaceArtifactToml`) registered them and created the managed workflows.
