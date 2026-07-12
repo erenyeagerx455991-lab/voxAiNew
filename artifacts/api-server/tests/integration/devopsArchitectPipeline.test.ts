@@ -9,6 +9,7 @@ import {
   resetDevOpsMetrics,
   getDevOpsLearningStats,
   resetDevOpsLearning,
+  saveDevOpsBlueprint,
   getDevOpsPersistenceStats,
   resetDevOpsPersistence,
   flushDevOpsPersistence,
@@ -226,7 +227,6 @@ describe('Persistence — rollback', () => {
 
   it('rollback to v1 returns saved blueprint', () => {
     const bp = makeBlueprint('SaaSBackend');
-    const { saveDevOpsBlueprint } = require('../../src/devops-architect/devopsPersistence.js');
     saveDevOpsBlueprint(bp);
     flushDevOpsPersistence();
     const v = getCurrentDevOpsVersion();
@@ -237,7 +237,6 @@ describe('Persistence — rollback', () => {
   it('multi-version rollback retrieves correct version', () => {
     const bp1 = makeBlueprint('SaaSBackend');
     const bp2 = makeBlueprint('Enterprise');
-    const { saveDevOpsBlueprint } = require('../../src/devops-architect/devopsPersistence.js');
     saveDevOpsBlueprint(bp1); flushDevOpsPersistence(); const v1 = getCurrentDevOpsVersion();
     saveDevOpsBlueprint(bp2); flushDevOpsPersistence(); const v2 = getCurrentDevOpsVersion();
     expect(v1).toBeLessThan(v2);
@@ -247,7 +246,6 @@ describe('Persistence — rollback', () => {
 
   it('persistenceStats shows both capacity and version', () => {
     const bp = makeBlueprint('Finance');
-    const { saveDevOpsBlueprint } = require('../../src/devops-architect/devopsPersistence.js');
     saveDevOpsBlueprint(bp); flushDevOpsPersistence();
     const stats = getDevOpsPersistenceStats();
     expect(stats.totalSnapshots).toBe(1);

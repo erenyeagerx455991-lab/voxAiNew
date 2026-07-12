@@ -10,7 +10,7 @@ export function planDevOpsSecurity(t: BackendType, provider: CloudProvider): Dev
   const needsFull   = isEnterprise(t) || isRegulated;
 
   const complianceLevel: DevOpsSecurityBlueprint['complianceLevel'] =
-    isRegulated ? 'Enterprise' : isEnterprise(t) ? 'Standard' : 'Basic';
+    isRegulated ? 'Enterprise' : (isEnterprise(t) || !isSimple(t)) ? 'Standard' : 'Basic';
 
   return {
     hasSecretRotation:        needsFull,

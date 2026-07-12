@@ -89,7 +89,7 @@ export function getDevOpsPersistenceStats(): {
   return {
     totalSnapshots: n,
     currentVersion: state.versionCounter,
-    capacityUsed:   n === 0 ? 0 : Math.round((n / MAX_SNAPSHOTS) * 100),
+    capacityUsed:   n === 0 ? 0 : Math.max(1, Math.round((n / MAX_SNAPSHOTS) * 100)),
     oldestVersion:  n === 0 ? null : state.snapshots[0].version,
     newestVersion:  n === 0 ? null : state.snapshots[n - 1].version,
   };
