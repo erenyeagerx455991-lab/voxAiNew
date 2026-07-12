@@ -38,6 +38,7 @@ import { runProductManagerStep } from "./productManagerStep.js";
 import { runFrontendArchitectStep }  from "./frontendArchitectStep.js";
 import { runBackendArchitectStep }   from "./backendArchitectStep.js";
 import { runDevOpsArchitectStep }    from "./devopsArchitectStep.js";
+import { runQAArchitectStep }        from "./qaArchitectStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -107,11 +108,22 @@ export async function runBuildPipeline(
       backendArchitectOutput,
     );
 
+    // ── Step 0.8: QA Architect (V8.8 — static QA/reliability blueprint, no LLM) ─
+    const qaArchitectOutput = await runQAArchitectStep(
+      prompt,
+      buildId,
+      res,
+      productManagerOutput,
+      backendArchitectOutput,
+      devopsArchitectOutput,
+    );
+
     // Combine all blueprints for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
       '\n' + backendArchitectOutput.enrichedPromptWithArchitecture +
-      '\n' + devopsArchitectOutput.enrichedPromptWithDevOps;
+      '\n' + devopsArchitectOutput.enrichedPromptWithDevOps +
+      '\n' + qaArchitectOutput.enrichedPromptWithQA;
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -279,6 +291,9 @@ export async function runBuildPipeline(
       // V8.7: devops architecture blueprint (additive)
       devopsBlueprint: devopsArchitectOutput.blueprint,
       devopsArchitectureScore: devopsArchitectOutput.overallScore,
+      // V8.8: QA architecture blueprint (additive)
+      qaBlueprint: qaArchitectOutput.blueprint,
+      qaArchitectureScore: qaArchitectOutput.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

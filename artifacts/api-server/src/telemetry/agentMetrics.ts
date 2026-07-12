@@ -30,7 +30,11 @@ export type AgentName =
   // V8.5 additions
   | "FrontendArchitect"
   // V8.6 additions
-  | "BackendArchitect";
+  | "BackendArchitect"
+  // V8.7 additions
+  | "DevOpsArchitect"
+  // V8.8 additions
+  | "QAArchitect";
 
 interface AgentRecord {
   calls: number;

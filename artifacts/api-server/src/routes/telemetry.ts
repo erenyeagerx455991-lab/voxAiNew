@@ -44,6 +44,9 @@ import { getPersistenceStats }         from "../backend-architect/backendPersist
 import { getDevOpsMetrics }            from "../devops-architect/devopsMetrics.js";
 import { getDevOpsLearningStats }      from "../devops-architect/devopsLearning.js";
 import { getDevOpsPersistenceStats }   from "../devops-architect/devopsPersistence.js";
+import { getQAMetrics }               from "../qa-architect/qaMetrics.js";
+import { getQALearningStats }         from "../qa-architect/qaLearning.js";
+import { getQAPersistenceStats }      from "../qa-architect/qaPersistence.js";
 
 const router: Router = Router();
 
@@ -232,6 +235,37 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
           capacityUsed:   dp.capacityUsed,
           oldestVersion:  dp.oldestVersion,
           newestVersion:  dp.newestVersion,
+        },
+      };
+    })(),
+    // V8.8: Autonomous QA Architect telemetry (additive)
+    qaArchitecture: (() => {
+      const qm = getQAMetrics();
+      const ql = getQALearningStats();
+      const qp = getQAPersistenceStats();
+      return {
+        ...qm,
+        qaScore:            qm.averageScore,
+        coverageScore:      qm.averageCoverageScore,
+        performanceScore:   qm.averagePerfScore,
+        securityScore:      qm.averageSecurityScore,
+        accessibilityScore: qm.averageA11yScore,
+        compatibilityScore: qm.scoreByDimension.compatibility ?? 0,
+        riskScore:          qm.averageRiskScore,
+        reliabilityScore:   qm.averageReliabilityScore,
+        learningStatistics: {
+          totalRecords:  ql.totalRecords,
+          improvedCount: ql.improvedCount,
+          averageScore:  ql.averageScore,
+          byStrategy:    ql.byStrategy,
+        },
+        plannerDistribution: qm.topStrategies,
+        persistenceHealth: {
+          totalSnapshots: qp.totalSnapshots,
+          currentVersion: qp.currentVersion,
+          capacityUsed:   qp.capacityUsed,
+          oldestVersion:  qp.oldestVersion,
+          newestVersion:  qp.newestVersion,
         },
       };
     })(),
