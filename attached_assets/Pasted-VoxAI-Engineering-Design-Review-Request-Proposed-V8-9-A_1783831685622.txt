@@ -1,0 +1,307 @@
+VoxAI Engineering Design Review Request — Proposed V8.9 Architecture
+
+Context
+
+I am evolving the VoxAI platform through versioned architecture milestones (V8.x roadmap).
+
+This document describes a proposed architecture, not an approved implementation.
+
+Please treat it as an engineering proposal that must first be reviewed against the current repository.
+
+Do not assume every proposed module needs to be built.
+
+Do not assume missing modules should automatically be created.
+
+---
+
+Primary Objective
+
+Perform a comprehensive engineering review of the current VoxAI codebase.
+
+Your goal is to determine:
+
+- what already exists
+- what is partially implemented
+- what is missing
+- what should be reused
+- what should be extended
+- what should not be implemented at all
+
+The review must be repository-driven rather than proposal-driven.
+
+---
+
+Review Process
+
+Phase 1 — Repository Discovery
+
+Read the repository first.
+
+Identify:
+
+- current architecture
+- pipeline stages
+- planners
+- validators
+- telemetry
+- persistence
+- learning engines
+- metrics
+- facades
+- SSE events
+- orchestrators
+- existing architecture layers
+
+Produce an inventory.
+
+Do not make assumptions.
+
+---
+
+Phase 2 — Capability Mapping
+
+Compare the proposed V8.9 capabilities with the current repository.
+
+For every capability classify it as exactly one of:
+
+- Already Complete
+- Partially Implemented
+- Missing
+- Better Solved Elsewhere
+- Duplicate
+- Should Not Exist
+
+Every conclusion must reference actual code.
+
+---
+
+Phase 3 — File Mapping
+
+For every proposed module identify:
+
+Existing file
+
+or
+
+Closest existing implementation
+
+or
+
+Missing
+
+Do not recommend creating files that duplicate existing functionality.
+
+---
+
+Phase 4 — Pipeline Review
+
+Audit the current build pipeline.
+
+Identify:
+
+current execution order
+
+existing architecture stages
+
+existing orchestration
+
+existing planner layers
+
+current insertion points
+
+Determine whether V8.9 requires:
+
+- new pipeline step
+- extension of existing step
+- no pipeline changes
+
+Explain why.
+
+---
+
+Phase 5 — Telemetry Review
+
+Audit:
+
+telemetry routes
+
+quality endpoint
+
+metrics
+
+learning statistics
+
+planner distribution
+
+Determine whether new telemetry fields are genuinely required.
+
+Avoid duplicate metrics.
+
+---
+
+Phase 6 — Persistence Review
+
+Inspect persistence architecture.
+
+Determine whether:
+
+existing persistence layer can be reused
+
+existing snapshot system already satisfies requirements
+
+new storage is actually needed
+
+Prefer extension over replacement.
+
+---
+
+Phase 7 — Learning Review
+
+Audit learning systems.
+
+Identify whether existing learning already covers proposed behavior.
+
+Recommend additions only where necessary.
+
+---
+
+Phase 8 — Risk Review
+
+Identify:
+
+duplicate logic
+
+pipeline conflicts
+
+circular dependencies
+
+maintenance cost
+
+performance impact
+
+migration risk
+
+API compatibility risk
+
+SSE compatibility risk
+
+---
+
+Phase 9 — Recommendation
+
+For every proposed feature provide exactly one recommendation:
+
+Implement
+
+Extend Existing
+
+Reuse Existing
+
+Postpone
+
+Reject
+
+Every recommendation must include engineering justification.
+
+---
+
+Phase 10 — Implementation Roadmap
+
+Only after completing all previous phases,
+
+produce the smallest safe implementation roadmap.
+
+Each roadmap item should include:
+
+purpose
+
+affected files
+
+dependencies
+
+estimated complexity
+
+risk level
+
+recommended order
+
+Avoid large "big bang" implementations.
+
+Prefer incremental integration.
+
+---
+
+Hard Constraints
+
+Do not implement anything during this review.
+
+Do not create new modules during this review.
+
+Do not rename existing architecture without evidence.
+
+Do not duplicate planners.
+
+Do not duplicate validators.
+
+Do not duplicate telemetry.
+
+Do not duplicate persistence.
+
+Do not duplicate learning engines.
+
+Do not modify pipeline until the review is complete.
+
+Base every conclusion on the actual repository.
+
+If the proposal conflicts with the repository, prefer the repository and explain the conflict.
+
+---
+
+Deliverables
+
+Produce:
+
+1. Repository Inventory
+
+2. Existing Architecture Diagram
+
+3. Capability Matrix
+
+4. Pipeline Analysis
+
+5. File Mapping Table
+
+6. Telemetry Analysis
+
+7. Persistence Analysis
+
+8. Learning Analysis
+
+9. Risk Report
+
+10. Gap Analysis
+
+11. Recommended Architecture
+
+12. Incremental Implementation Plan
+
+13. Estimated Engineering Effort
+
+14. Open Questions
+
+---
+
+Success Criteria
+
+The review is complete only if:
+
+- every conclusion is repository-backed
+- no assumptions are made without evidence
+- duplicate implementations are identified
+- reuse opportunities are documented
+- risks are clearly explained
+- implementation roadmap is incremental rather than monolithic
+
+Do not implement code as part of this task.
+
+The goal of this task is engineering review and architectural planning only.
