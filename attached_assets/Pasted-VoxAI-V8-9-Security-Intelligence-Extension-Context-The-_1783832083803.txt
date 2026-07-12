@@ -1,0 +1,416 @@
+VoxAI V8.9 — Security Intelligence Extension
+
+Context
+
+The repository has already been reviewed.
+
+The review confirmed that security planning already exists across multiple architecture layers.
+
+Current coverage includes:
+
+- Authentication Planning
+- Authorization Planning
+- Permission Planning
+- Security Planning
+- Secret Management
+- Infrastructure Security
+- QA Security Validation
+
+These capabilities must remain the single source of truth.
+
+The objective of V8.9 is NOT to introduce another Security Architect.
+
+The objective is to evolve the existing architecture while preserving the current pipeline.
+
+---
+
+Primary Objective
+
+Extend the current security architecture without introducing a parallel planning system.
+
+Reuse existing planners whenever possible.
+
+Only introduce genuinely missing capabilities.
+
+---
+
+Existing Security Components
+
+Treat the following modules as authoritative.
+
+Backend Architect
+
+- authPlanner.ts
+- permissionPlanner.ts
+- securityPlanner.ts
+
+DevOps Architect
+
+- securityPlanner.ts
+- secretPlanner.ts
+
+QA Architect
+
+- security validation
+- security scoring
+
+Do not duplicate their responsibilities.
+
+---
+
+New Responsibilities
+
+V8.9 should introduce only missing capabilities.
+
+Privacy Planning
+
+Create a planner responsible for:
+
+- data retention
+- data deletion
+- right to export
+- consent requirements
+- cookie categories
+- data residency
+- sensitive data classification
+- PII detection
+- audit logging requirements
+
+This planner should integrate into the existing Backend Architect.
+
+---
+
+Compliance Planning
+
+Extend the existing compliance model.
+
+Current system:
+
+Basic
+
+Standard
+
+Enterprise
+
+New system should additionally generate framework-specific guidance.
+
+Support:
+
+GDPR
+
+SOC2
+
+HIPAA
+
+PCI DSS
+
+ISO27001
+
+Generate checklist objects rather than boolean flags.
+
+---
+
+Threat Modeling
+
+Create deterministic threat analysis.
+
+Support:
+
+STRIDE
+
+OWASP Top 10
+
+Prompt Injection
+
+Supply Chain
+
+Credential Leakage
+
+Session Hijacking
+
+Broken Access Control
+
+Business Logic Abuse
+
+Output:
+
+Threat list
+
+Severity
+
+Mitigation
+
+Priority
+
+No LLM.
+
+Pure deterministic analysis.
+
+---
+
+Encryption Strategy
+
+Replace simple encryption flags with structured planning.
+
+Include:
+
+Data at Rest
+
+Data in Transit
+
+Key Management
+
+Key Rotation
+
+Certificate Management
+
+Backup Encryption
+
+Secret Encryption
+
+---
+
+Secret Lifecycle
+
+Extend existing secret planner.
+
+Support:
+
+creation
+
+rotation
+
+expiration
+
+revocation
+
+environment isolation
+
+secret ownership
+
+audit trail
+
+---
+
+Security Blueprint
+
+Instead of multiple disconnected outputs,
+
+generate one unified Security Blueprint.
+
+Example:
+
+Authentication
+
+Authorization
+
+Compliance
+
+Privacy
+
+Threat Model
+
+Encryption
+
+Secrets
+
+Infrastructure
+
+Monitoring
+
+Incident Response
+
+Risk Score
+
+Recommendations
+
+All downstream planners should consume this blueprint.
+
+---
+
+Telemetry Improvements
+
+Do not replace existing telemetry.
+
+Create a read-side aggregation layer.
+
+Generate:
+
+securityArchitecture
+
+which combines:
+
+backend security
+
+devops security
+
+qa security
+
+privacy
+
+compliance
+
+threats
+
+Provide:
+
+overallSecurityScore
+
+privacyScore
+
+complianceScore
+
+threatScore
+
+authenticationScore
+
+authorizationScore
+
+encryptionScore
+
+secretScore
+
+plannerDistribution
+
+learningStatistics
+
+persistenceHealth
+
+---
+
+Learning
+
+Extend existing learning.
+
+Do not create another learning engine.
+
+Allow learning from:
+
+security issues
+
+privacy failures
+
+compliance failures
+
+runtime incidents
+
+user feedback
+
+visual regressions caused by security changes
+
+Persist through the existing persistence architecture.
+
+---
+
+Pipeline
+
+Do not add a new Security Architect stage.
+
+Reuse the current architecture.
+
+Extend:
+
+Backend Architect
+
+DevOps Architect
+
+QA Architect
+
+Only create a lightweight Security Blueprint builder if required.
+
+---
+
+Validation
+
+Security validation should now include:
+
+Authentication
+
+Authorization
+
+Privacy
+
+Compliance
+
+Threat Coverage
+
+Encryption
+
+Secrets
+
+Infrastructure
+
+Monitoring
+
+Recovery
+
+Risk
+
+Maintainability
+
+Generate one unified security score.
+
+---
+
+Constraints
+
+Do not duplicate:
+
+Authentication Planner
+
+Authorization Planner
+
+Permission Planner
+
+Security Planner
+
+Secret Planner
+
+QA Security Validation
+
+Do not introduce another orchestrator.
+
+Do not change pipeline ordering unless technically necessary.
+
+Prefer extension over replacement.
+
+---
+
+Deliverables
+
+1. Repository impact analysis
+
+2. Files to extend
+
+3. New planners (only if missing)
+
+4. Unified Security Blueprint
+
+5. Updated validator
+
+6. Telemetry aggregation
+
+7. Learning integration
+
+8. Persistence integration
+
+9. Test plan
+
+10. Migration notes
+
+---
+
+Success Criteria
+
+The implementation is successful if:
+
+- existing planners remain the source of truth
+- no duplicated security logic exists
+- privacy planning is added
+- compliance planning is expanded
+- threat modeling is introduced
+- encryption strategy becomes lifecycle-aware
+- secret management supports lifecycle planning
+- telemetry exposes one unified security architecture
+- downstream agents consume a single Security Blueprint
+- no unnecessary pipeline stage is introduced
