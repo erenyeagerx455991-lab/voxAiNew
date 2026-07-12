@@ -50,6 +50,10 @@ import { getQAPersistenceStats }      from "../qa-architect/qaPersistence.js";
 import { getSecurityArchitectMetrics }        from "../security-architect/securityMetrics.js";
 import { getSecurityLearningStats }           from "../security-architect/securityLearning.js";
 import { getSecurityArchitectPersistenceStats } from "../security-architect/securityPersistence.js";
+// V9.0: Runtime Intelligence telemetry
+import { getRuntimeMetrics }          from "../runtime-intelligence/runtimeMetrics.js";
+import { getRuntimeLearningStats }    from "../runtime-intelligence/runtimeLearning.js";
+import { getRuntimePersistenceStats } from "../runtime-intelligence/runtimePersistence.js";
 
 const router: Router = Router();
 
@@ -299,6 +303,40 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
           capacityUsed:   sp.capacityUsed,
           oldestVersion:  sp.oldestVersion,
           newestVersion:  sp.newestVersion,
+        },
+      };
+    })(),
+    // V9.0: Runtime Intelligence telemetry (additive)
+    runtimeIntelligence: (() => {
+      const rm = getRuntimeMetrics();
+      const rl = getRuntimeLearningStats();
+      const rp = getRuntimePersistenceStats();
+      return {
+        ...rm,
+        runtimeScore:            rm.averageScore,
+        strategyDistribution:    rm.strategyDistribution,
+        averageGenerationTime:   rm.averageGenerationTime,
+        repairEfficiency:        rm.repairEfficiency,
+        evaluationEfficiency:    rm.evaluationEfficiency,
+        optimizationEfficiency:  rm.optimizationEfficiency,
+        tokenEfficiency:         rm.tokenEfficiency,
+        candidateEfficiency:     rm.candidateEfficiency,
+        cacheHitRate:            rm.cacheHitRate,
+        learningStatistics: {
+          totalRecords:       rl.totalRecords,
+          improvedCount:      rl.improvedCount,
+          averageScore:       rl.averageScore,
+          averageBuildTimeMs: rl.averageBuildTimeMs,
+          timeAccuracy:       rl.timeAccuracy,
+          repairAccuracy:     rl.repairAccuracy,
+          byMode:             rl.byMode,
+        },
+        persistenceHealth: {
+          totalSnapshots: rp.totalSnapshots,
+          currentVersion: rp.currentVersion,
+          capacityUsed:   rp.capacityUsed,
+          oldestVersion:  rp.oldestVersion,
+          newestVersion:  rp.newestVersion,
         },
       };
     })(),

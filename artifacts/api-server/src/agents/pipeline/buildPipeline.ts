@@ -5,6 +5,12 @@
  * that takes its predecessor's output + shared keys + SSE response.
  *
  * Step order:
+ *  0    ProductManager         — static product strategy
+ *  0.5  FrontendArchitect     — static frontend blueprint
+ *  0.6  BackendArchitect      — static backend blueprint (+ security intelligence)
+ *  0.7  DevOpsArchitect       — static devops blueprint
+ *  0.8  QAArchitect           — static QA/reliability blueprint
+ *  0.9  RuntimeIntelligence   — V9.0 generation strategy brain (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -39,6 +45,7 @@ import { runFrontendArchitectStep }  from "./frontendArchitectStep.js";
 import { runBackendArchitectStep }   from "./backendArchitectStep.js";
 import { runDevOpsArchitectStep }    from "./devopsArchitectStep.js";
 import { runQAArchitectStep }        from "./qaArchitectStep.js";
+import { runRuntimeIntelligenceStep } from "./runtimeIntelligenceStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
@@ -118,12 +125,25 @@ export async function runBuildPipeline(
       devopsArchitectOutput,
     );
 
-    // Combine all blueprints for downstream Planner
+    // ── Step 0.9: Runtime Intelligence (V9.0 — generation strategy brain, no LLM) ─
+    const runtimeIntelligenceOutput = await runRuntimeIntelligenceStep(
+      prompt,
+      buildId,
+      res,
+      productManagerOutput,
+      frontendArchitectOutput,
+      backendArchitectOutput,
+      devopsArchitectOutput,
+      qaArchitectOutput,
+    );
+
+    // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
       '\n' + backendArchitectOutput.enrichedPromptWithArchitecture +
       '\n' + devopsArchitectOutput.enrichedPromptWithDevOps +
-      '\n' + qaArchitectOutput.enrichedPromptWithQA;
+      '\n' + qaArchitectOutput.enrichedPromptWithQA +
+      runtimeIntelligenceOutput.contextString;   // V9.0 runtime context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -297,6 +317,9 @@ export async function runBuildPipeline(
       // V8.9: Security architecture blueprint — from securityIntelligence embedded in backend blueprint
       securityBlueprint: backendArchitectOutput.blueprint.securityIntelligence,
       securityArchitectureScore: backendArchitectOutput.blueprint.securityIntelligence.overallScore,
+      // V9.0: Runtime Intelligence blueprint — generation strategy brain
+      runtimeBlueprint: runtimeIntelligenceOutput.blueprint,
+      runtimeScore: runtimeIntelligenceOutput.overallScore,
     });
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

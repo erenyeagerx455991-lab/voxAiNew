@@ -51,6 +51,10 @@ import("./backend-architect/backendPersistence.js").then(({ initBackendArchitect
 import("./security-architect/securityPersistence.js").then(({ initSecurityArchitectPersistence }) =>
   initSecurityArchitectPersistence()
 ).catch(() => { /* errors are logged inside initSecurityArchitectPersistence */ });
+// V9.0: Init Runtime Intelligence persistence on startup (non-blocking, best-effort)
+import("./runtime-intelligence/runtimePersistence.js").then(({ initRuntimeIntelligencePersistence }) =>
+  initRuntimeIntelligencePersistence()
+).catch(() => { /* errors are logged inside initRuntimeIntelligencePersistence */ });
 
 app.listen(port, (err) => {
   if (err) {
