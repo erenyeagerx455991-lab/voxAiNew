@@ -55,6 +55,8 @@ import { getRuntimeMetrics, getEvaluatorWeightStats } from "../runtime-intellige
 import { getRuntimeLearningStats }    from "../runtime-intelligence/runtimeLearning.js";
 import { getRuntimePersistenceStats, getActiveEvaluatorProfile } from "../runtime-intelligence/runtimePersistence.js";
 import { getOrchestratorQualitySnapshot } from "../agent-orchestrator/orchestratorMetrics.js";
+// V9.3: Model & Resource Orchestration Engine telemetry
+import { getModelOrchestrationSnapshot } from "../model-orchestrator/modelOrchestratorMetrics.js";
 
 const router: Router = Router();
 
@@ -343,6 +345,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     })(),
     // V9.2: Adaptive Multi-Agent Orchestrator telemetry (additive)
     orchestrator: getOrchestratorQualitySnapshot(),
+    // V9.3: Model & Resource Orchestration Engine telemetry (additive)
+    modelOrchestration: getModelOrchestrationSnapshot(),
     generatedAt: new Date().toISOString(),
   });
 });

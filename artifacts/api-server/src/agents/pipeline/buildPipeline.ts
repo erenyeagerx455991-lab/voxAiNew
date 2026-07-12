@@ -11,6 +11,8 @@
  *  0.7  DevOpsArchitect       — static devops blueprint
  *  0.8  QAArchitect           — static QA/reliability blueprint
  *  0.9  RuntimeIntelligence   — V9.0 generation strategy brain (no LLM)
+ *  0.92 Orchestrator          — V9.2 adaptive execution planning (no LLM)
+ *  0.95 ModelOrchestrator     — V9.3 model/resource routing engine (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -49,6 +51,7 @@ import { runRuntimeIntelligenceStep } from "./runtimeIntelligenceStep.js";
 import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import { runOrchestratorStep, finalizeOrchestratorExecution } from "./orchestratorStep.js";
+import { runModelOrchestratorStep, finalizeModelOrchestratorExecution } from "./modelOrchestratorStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -138,10 +141,13 @@ export async function runBuildPipeline(
       qaArchitectOutput,
     );
 
-    // ── Step 0.95: Orchestrator (V9.2 — adaptive execution planning, no LLM) ──
+    // ── Step 0.92: Orchestrator (V9.2 — adaptive execution planning, no LLM) ──
     const executionBlueprint = await runOrchestratorStep(buildId, res, runtimeIntelligenceOutput);
     const skipped = new Set(executionBlueprint.skippedAgents);
     const pipelineStart = Date.now();
+
+    // ── Step 0.95: Model Orchestrator (V9.3 — model/resource routing, no LLM) ─
+    const modelBlueprint = await runModelOrchestratorStep(buildId, res, executionBlueprint);
 
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
@@ -345,6 +351,10 @@ export async function runBuildPipeline(
       executionBlueprint,
       orchestratorComplexity: executionBlueprint.complexity,
       orchestratorSkippedAgents: executionBlueprint.skippedAgents,
+      // V9.3: Model & Resource Orchestration Engine — model blueprint (additive)
+      modelBlueprint,
+      modelOrchestratorBudget: modelBlueprint.totalTokenBudget,
+      modelOrchestratorProviders: modelBlueprint.providerDistribution,
     });
 
     // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
@@ -352,6 +362,15 @@ export async function runBuildPipeline(
       res,
       executionBlueprint,
       evalRes?.overallScore ?? directorScore83,
+      Date.now() - pipelineStart,
+    );
+
+    // ── V9.3: Model Orchestrator learning + telemetry (fire-and-forget) ──────────
+    finalizeModelOrchestratorExecution(
+      res,
+      modelBlueprint,
+      evalRes?.overallScore ?? directorScore83,
+      modelBlueprint.expectedTotalCost,
       Date.now() - pipelineStart,
     );
 
