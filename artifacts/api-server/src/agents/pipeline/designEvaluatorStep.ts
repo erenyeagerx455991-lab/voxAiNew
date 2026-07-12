@@ -60,6 +60,10 @@ export interface EvaluatorResult {
   scoreBeforeRepair: number;
   scoreAfterRepair: number;
   retrievalImpactScore: number;
+  /** V9.1: the actual per-dimension weights used to compute overallScore. */
+  weightsApplied: Record<string, number>;
+  /** V9.1: true when RuntimeBlueprint.evaluationStrategy.weights drove scoring. */
+  dynamicWeightsUsed: boolean;
 }
 
 export interface EvaluatorStepOutput extends FrontendOutput {

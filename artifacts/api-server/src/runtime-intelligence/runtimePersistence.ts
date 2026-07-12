@@ -3,6 +3,7 @@
 // Mirrors backendPersistence.ts / securityPersistence.ts:
 // in-memory capped snapshot store, crash-safe, rollback-capable.
 import type { RuntimeBlueprint, GenerationMode, RuntimeSnapshot } from './runtimeTypes.js';
+export type { RuntimeSnapshot } from './runtimeTypes.js';
 
 const MAX_HISTORY = 500;
 
