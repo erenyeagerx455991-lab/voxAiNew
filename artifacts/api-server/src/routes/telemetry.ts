@@ -47,6 +47,9 @@ import { getDevOpsPersistenceStats }   from "../devops-architect/devopsPersisten
 import { getQAMetrics }               from "../qa-architect/qaMetrics.js";
 import { getQALearningStats }         from "../qa-architect/qaLearning.js";
 import { getQAPersistenceStats }      from "../qa-architect/qaPersistence.js";
+import { getSecurityArchitectMetrics }        from "../security-architect/securityMetrics.js";
+import { getSecurityLearningStats }           from "../security-architect/securityLearning.js";
+import { getSecurityArchitectPersistenceStats } from "../security-architect/securityPersistence.js";
 
 const router: Router = Router();
 
@@ -266,6 +269,36 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
           capacityUsed:   qp.capacityUsed,
           oldestVersion:  qp.oldestVersion,
           newestVersion:  qp.newestVersion,
+        },
+      };
+    })(),
+    // V8.9: Security Architecture Integration telemetry (additive)
+    securityArchitecture: (() => {
+      const sm = getSecurityArchitectMetrics();
+      const sl = getSecurityLearningStats();
+      const sp = getSecurityArchitectPersistenceStats();
+      return {
+        ...sm,
+        overallSecurityScore:  sm.averageScore,
+        privacyScore:          sm.scoreByDimension.privacy ?? 0,
+        complianceScore:       sm.scoreByDimension.compliance ?? 0,
+        threatScore:           sm.scoreByDimension.threatModel ?? 0,
+        encryptionScore:       sm.scoreByDimension.encryption ?? 0,
+        secretManagementScore: sm.scoreByDimension.secrets ?? 0,
+        owaspScore:            sm.scoreByDimension.owasp ?? 0,
+        learningStatistics: {
+          totalRecords:  sl.totalRecords,
+          improvedCount: sl.improvedCount,
+          averageScore:  sl.averageScore,
+          byType:        sl.byType,
+        },
+        plannerDistribution: sm.topBackendTypes,
+        persistenceHealth: {
+          totalSnapshots: sp.totalSnapshots,
+          currentVersion: sp.currentVersion,
+          capacityUsed:   sp.capacityUsed,
+          oldestVersion:  sp.oldestVersion,
+          newestVersion:  sp.newestVersion,
         },
       };
     })(),

@@ -323,3 +323,87 @@ export interface SecurityMetricsSnapshot {
   learningRecordCount:      number;
   lastUpdated:              string;
 }
+
+// ── V8.9 Security Architecture Integration — Activation Layer ─────────────────
+//
+// The interfaces above (AuthenticationBlueprint, AuthorizationBlueprint, Identity,
+// MultiTenant, etc.) intentionally overlap with what Backend Architect already
+// plans and scores (authPlanner.ts, permissionPlanner.ts, securityPlanner.ts).
+// Those planners are NOT wired here — Backend Architect remains the sole owner
+// of authentication / authorization / permissions / rate-limiting *decisions*.
+//
+// SecurityIntelligenceBlueprint composes only the planners that are genuinely
+// new capability: privacy, compliance, threat modeling, encryption, secrets
+// lifecycle, key management, session policy, audit, OWASP, security headers,
+// network security, rate-limit *shape* (values, not the enforcement decision),
+// monitoring, incident response, and aggregate risk.
+
+export type SecurityIntelligenceDimension =
+  | 'privacy' | 'compliance' | 'threatModel' | 'encryption' | 'secrets'
+  | 'keyManagement' | 'session' | 'audit' | 'owasp' | 'securityHeaders'
+  | 'networkSecurity' | 'rateLimit' | 'monitoring' | 'incident' | 'risk';
+
+export const ALL_SECURITY_INTELLIGENCE_DIMENSIONS: SecurityIntelligenceDimension[] = [
+  'privacy', 'compliance', 'threatModel', 'encryption', 'secrets',
+  'keyManagement', 'session', 'audit', 'owasp', 'securityHeaders',
+  'networkSecurity', 'rateLimit', 'monitoring', 'incident', 'risk',
+];
+
+export interface SecurityIntelligenceQualityScore {
+  dimension: SecurityIntelligenceDimension;
+  score:     number;   // 0–10
+  rationale: string;
+}
+
+export interface SecurityIntelligenceBlueprint {
+  privacy:          PrivacyBlueprint;
+  compliance:       ComplianceBlueprint;
+  threatModel:      ThreatModelBlueprint;
+  encryption:       EncryptionBlueprint;
+  secrets:          SecretsPlannerBlueprint;
+  keyManagement:    KeyManagementBlueprint;
+  session:          SessionBlueprint;
+  audit:            AuditBlueprint;
+  owasp:            OWASPBlueprint;
+  securityHeaders:  SecurityHeaderBlueprint;
+  networkSecurity:  NetworkSecurityBlueprint;
+  rateLimit:        RateLimitBlueprint;
+  monitoring:       SecurityMonitoringBlueprint;
+  incident:         IncidentBlueprint;
+  risk:             SecurityRiskBlueprint;
+  qualityScores:    SecurityIntelligenceQualityScore[];
+  overallScore:     number;
+  recommendations:  string[];
+}
+
+export interface SecurityIntelligenceOutput {
+  blueprint:         Readonly<SecurityIntelligenceBlueprint>;
+  overallScore:      number;
+  processingTimeMs:  number;
+}
+
+export interface SecurityIntelligenceLearningRecord {
+  buildId:       string;
+  backendType:   string;
+  overallScore:  number;
+  privacyScore:  number;
+  complianceScore: number;
+  threatScore:   number;
+  improved:      boolean;
+  recordedAt:    number;
+}
+
+export interface SecurityIntelligenceLearningInput {
+  buildId:        string;
+  backendType:    string;
+  blueprint:      SecurityIntelligenceBlueprint;
+}
+
+export interface SecurityIntelligenceMetricsSnapshot {
+  totalBuilds:              number;
+  averageScore:             number;
+  scoreByDimension:         Partial<Record<SecurityIntelligenceDimension, number>>;
+  topBackendTypes:          Array<{ type: string; count: number }>;
+  learningRecordCount:      number;
+  lastUpdated:              number;
+}

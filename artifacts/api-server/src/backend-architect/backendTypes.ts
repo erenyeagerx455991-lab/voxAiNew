@@ -1,4 +1,5 @@
 // ── V8.6 Backend Architect — Type Definitions ─────────────────────────────────
+import type { SecurityIntelligenceBlueprint } from '../security-architect/securityTypes.js';
 
 export const ALL_BACKEND_TYPES = [
   'LandingAPI', 'SaaSBackend', 'CRMBackend', 'ERPBackend', 'Marketplace',
@@ -309,6 +310,17 @@ export interface BackendQualityScore {
 export interface BackendArchitectureBlueprint {
   backendType:              BackendType;
   backendTypeConfidence:    number;
+  /**
+   * V8.9 — Security Architecture Integration. Composed by the (previously
+   * unwired) security-architect module: privacy, compliance, threat model,
+   * encryption, secrets lifecycle, key management, session policy, audit,
+   * OWASP, security headers, network security, rate-limit shape, monitoring,
+   * incident response, and risk. Does NOT duplicate authArchitecture /
+   * permissionArchitecture / securityArchitecture below, which remain the
+   * sole owners of authentication, authorization, and OWASP/app-security
+   * *decisions*.
+   */
+  securityIntelligence:     SecurityIntelligenceBlueprint;
   databaseArchitecture:     DatabaseArchitecture;
   apiArchitecture:          APIArchitecture;
   authArchitecture:         AuthArchitecture;

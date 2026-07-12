@@ -28,6 +28,7 @@ import { planTestingArchitecture }    from './testingPlanner.js';
 import { planPerformanceArchitecture } from './performancePlanner.js';
 import { validateBackendBlueprint }   from './backendValidator.js';
 import { recordBackendBuild }         from './backendMetrics.js';
+import { runSecurityArchitect }       from '../security-architect/securityArchitect.js';
 
 // ── Folder Structure ───────────────────────────────────────────────────────────
 
@@ -89,6 +90,7 @@ function buildBackendContext(blueprint: BackendArchitectureBlueprint, prompt: st
     `STORAGE: ${blueprint.storageArchitecture.primaryProvider}`,
     `DEPLOYMENT: ${blueprint.deploymentArchitecture.strategy} | SCALING: ${blueprint.performanceArchitecture.scalingStrategy}`,
     `SECURITY: ${blueprint.securityArchitecture.complianceLevel} | OWASP: ${blueprint.securityArchitecture.hasOWASPCompliance}`,
+    `SECURITY INTELLIGENCE: score ${blueprint.securityIntelligence.overallScore}/10 | compliance: ${blueprint.securityIntelligence.compliance.standards.join(', ') || 'none'} | privacy: ${blueprint.securityIntelligence.privacy.hasGDPR ? 'GDPR' : 'none'}`,
     `TESTING: ${blueprint.testingArchitecture.testingFramework} | COVERAGE: ${blueprint.testingArchitecture.targetCoverage}%`,
     `VALIDATION: ${blueprint.validationArchitecture.library}`,
     `SERVICES (${blueprint.serviceArchitecture.serviceCount}): ${blueprint.serviceArchitecture.services.slice(0, 5).join(', ')}${blueprint.serviceArchitecture.serviceCount > 5 ? '...' : ''}`,
@@ -116,6 +118,12 @@ export function runBackendArchitect(
   // Phase 1 — Classification
   const { type: backendType, confidence: backendTypeConfidence } = classifyBackendType(prompt, productGoal);
 
+  // V8.9 — Security Architecture Integration: activate the previously unwired
+  // privacy/compliance/threat-model/encryption/secrets/etc. planners. This is
+  // computed independently of the auth/permission/security planners below —
+  // no duplication, no shared mutable state.
+  const securityIntelligence = runSecurityArchitect(backendType).blueprint;
+
   // Phases 2-18 — All Planners
   const databaseArchitecture    = planDatabaseArchitecture(backendType, features);
   const apiArchitecture         = planAPIArchitecture(backendType, features);
@@ -142,6 +150,7 @@ export function runBackendArchitect(
   const blueprint: BackendArchitectureBlueprint = {
     backendType,
     backendTypeConfidence,
+    securityIntelligence,
     databaseArchitecture,
     apiArchitecture,
     authArchitecture,

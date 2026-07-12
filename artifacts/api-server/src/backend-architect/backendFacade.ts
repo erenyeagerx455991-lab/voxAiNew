@@ -82,3 +82,7 @@ export {
 } from './backendPersistence.js';
 export type { ArchitectureSnapshot } from './backendPersistence.js';
 export { runBackendArchitect }         from './backendArchitect.js';
+
+// ── V8.9: Security Architecture Integration — re-exported for convenience ────
+export type { SecurityIntelligenceBlueprint, SecurityIntelligenceOutput } from '../security-architect/securityTypes.js';
+export { runSecurityArchitect } from '../security-architect/securityArchitect.js';
