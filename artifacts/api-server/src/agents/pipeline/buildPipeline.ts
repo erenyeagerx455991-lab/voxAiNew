@@ -14,6 +14,7 @@
  *  0.92 Orchestrator          — V9.2 adaptive execution planning (no LLM)
  *  0.95 ModelOrchestrator     — V9.3 model/resource routing engine (no LLM)
  *  0.97 KnowledgeEngine       — V9.4 autonomous knowledge intelligence (no LLM)
+ *  0.99 ReasoningEngine       — V9.5 autonomous reasoning & decision brain (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -54,6 +55,7 @@ import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import { runOrchestratorStep, finalizeOrchestratorExecution } from "./orchestratorStep.js";
 import { runModelOrchestratorStep, finalizeModelOrchestratorExecution } from "./modelOrchestratorStep.js";
 import { runKnowledgeEngineStep, finalizeKnowledgeEngineExecution } from "./knowledgeEngineStep.js";
+import { runReasoningEngineStep, finalizeReasoningEngineExecution } from "./reasoningEngineStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -164,6 +166,19 @@ export async function runBuildPipeline(
       },
     );
 
+    // ── Step 0.99: Reasoning Engine (V9.5 — autonomous reasoning/decision brain, no LLM) ─
+    const reasoningStepOutput = await runReasoningEngineStep(
+      buildId, res, prompt, executionBlueprint.complexity, modelBlueprint,
+      {
+        productManagerOutput,
+        frontendArchitectOutput,
+        backendArchitectOutput,
+        devopsArchitectOutput,
+        qaArchitectOutput,
+        runtimeIntelligenceOutput,
+      },
+    );
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
@@ -171,7 +186,8 @@ export async function runBuildPipeline(
       '\n' + devopsArchitectOutput.enrichedPromptWithDevOps +
       '\n' + qaArchitectOutput.enrichedPromptWithQA +
       runtimeIntelligenceOutput.contextString +   // V9.0 runtime context
-      knowledgeStepOutput.contextString;          // V9.4 knowledge engine context
+      knowledgeStepOutput.contextString +         // V9.4 knowledge engine context
+      reasoningStepOutput.contextString;          // V9.5 reasoning engine context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -373,6 +389,10 @@ export async function runBuildPipeline(
       modelOrchestratorProviders: modelBlueprint.providerDistribution,
       // V9.4: Autonomous Knowledge Intelligence Engine — bundle targets (additive)
       knowledgeBundleTargets: Object.keys(knowledgeStepOutput.bundles),
+      // V9.5: Autonomous Reasoning & Decision Intelligence Engine — blueprint (additive)
+      reasoningBlueprint: reasoningStepOutput.blueprint,
+      reasoningChosenPath: reasoningStepOutput.blueprint.chosenPath.id,
+      reasoningConfidenceScore: reasoningStepOutput.blueprint.confidence.confidenceScore,
     });
 
     // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
@@ -396,6 +416,14 @@ export async function runBuildPipeline(
     finalizeKnowledgeEngineExecution(
       res,
       buildId,
+      evalRes?.overallScore ?? directorScore83,
+    );
+
+    // ── V9.5: Reasoning Engine learning + telemetry (fire-and-forget) ───────────
+    finalizeReasoningEngineExecution(
+      res,
+      buildId,
+      reasoningStepOutput.blueprint,
       evalRes?.overallScore ?? directorScore83,
     );
 
