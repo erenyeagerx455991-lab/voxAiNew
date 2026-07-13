@@ -84,6 +84,6 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Setup status (imported project)
 
-- Set up on Replit on 2026-07-12: `pnpm install` run, `DATABASE_URL` was already provisioned, `OPENROUTER_API_KEY` and `GROQ_API_KEY` were requested from and provided by the user, DB schema pushed (no changes needed), and the `voxai` (frontend) and `api-server` workflows are running.
+- Re-set up on Replit on 2026-07-13 after a fresh import wiped the previous Replit wiring (no artifacts/workflows registered, only `DATABASE_URL` present): ran `pnpm install`, pushed the DB schema (no changes needed), registered the three artifacts (`voxai` web frontend, `api-server` API, `mockup-sandbox` canvas preview), and confirmed all three workflows start cleanly.
+- **Still needed from the user:** `OPENROUTER_API_KEY` and `GROQ_API_KEY` — requested but not yet provided. The server runs without them, but every generate/edit/repair build request will fail until both are set.
 - `REDIS_URL` is not set — the build queue runs in-memory, which is fine for development.
-- Artifacts were already scaffolded in the repo (`artifacts/voxai`, `artifacts/api-server`, `artifacts/mockup-sandbox`) but were not yet registered with Replit's artifact/workflow system on import — re-syncing the `artifact.toml` files (via `verifyAndReplaceArtifactToml`) registered them and created the managed workflows.
