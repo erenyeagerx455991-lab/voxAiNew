@@ -1,270 +1,119 @@
-// ── V9.4 Knowledge Collector — normalises subsystem outputs into KnowledgeRecords ──
+// ── V9.4 Knowledge Engine — Collector ─────────────────────────────────────────
+//
+// Normalizes knowledge from existing subsystem outputs (already threaded
+// through the pipeline step's function signature) into a common
+// KnowledgeRecord shape and stores it in a capped in-memory array, one store
+// per domain conceptually (implemented as a single capped array filterable
+// by domain — avoids duplicating the capped-array machinery per domain).
+import type { KnowledgeDomain, KnowledgeRecord } from './types.js';
+import { addNode, linkIntoChain } from './knowledgeGraph.js';
 
-import type { KnowledgeRecord, KnowledgeDomain } from './types.js';
+const MAX_RECORDS = 1000;
+let store: KnowledgeRecord[] = [];
+let idCounter = 0;
 
-let _seq = 0;
+export interface KnowledgeInput {
+  domain:             KnowledgeDomain;
+  title:              string;
+  summary:            string;
+  tags?:              string[];
+  sourceAgent:        string;
+  buildId:            string;
+  quality?:           number;
+  confidence?:        number;
+  productionSuccess?: number;
+  popularity?:        number;
+  repairRate?:        number;
+  runtimePerformance?: number;
+  accessibilityScore?: number;
+  securityScore?:     number;
+  businessSuccess?:   number;
+  relatedIds?:        string[];
+}
+
 function nextId(domain: KnowledgeDomain): string {
-  return `ke-${domain.toLowerCase()}-${Date.now()}-${++_seq}`;
+  idCounter++;
+  return `kn-${domain.toLowerCase()}-${idCounter}`;
 }
 
-function clamp(v: number, lo = 0, hi = 10): number {
-  return Math.max(lo, Math.min(hi, v));
+export function ingestKnowledge(input: KnowledgeInput): KnowledgeRecord {
+  const now = Date.now();
+  const record: KnowledgeRecord = {
+    id:                 nextId(input.domain),
+    domain:             input.domain,
+    title:              input.title,
+    summary:            input.summary,
+    tags:               input.tags ?? [],
+    sourceAgent:        input.sourceAgent,
+    buildId:            input.buildId,
+    quality:            clamp(input.quality ?? 5, 0, 10),
+    confidence:         clamp(input.confidence ?? 0.5, 0, 1),
+    productionSuccess:  clamp(input.productionSuccess ?? 0.5, 0, 1),
+    popularity:         Math.max(0, input.popularity ?? 0),
+    repairRate:         clamp(input.repairRate ?? 0, 0, 1),
+    runtimePerformance: clamp(input.runtimePerformance ?? 5, 0, 10),
+    accessibilityScore: clamp(input.accessibilityScore ?? 5, 0, 10),
+    securityScore:      clamp(input.securityScore ?? 5, 0, 10),
+    businessSuccess:    clamp(input.businessSuccess ?? 5, 0, 10),
+    version:            1,
+    createdAt:          now,
+    updatedAt:          now,
+    relatedIds:         input.relatedIds ?? [],
+  };
+
+  try {
+    store.push(record);
+    if (store.length > MAX_RECORDS) store.splice(0, store.length - MAX_RECORDS);
+
+    // Mirror into the knowledge graph as a generic node keyed by domain.
+    addNode({ id: record.id, type: 'Generic', label: record.title, domain: record.domain, data: { buildId: record.buildId } });
+    linkIntoChain({ id: record.id, type: domainToChainType(record.domain), label: record.title, domain: record.domain });
+  } catch { /* collection must never stop a build */ }
+
+  return record;
 }
 
-function freshness(recordedAt: number): number {
-  const age = Date.now() - recordedAt;
-  const maxAge = 7 * 24 * 3600 * 1000; // 7 days
-  return Math.max(0, 1 - age / maxAge);
+function domainToChainType(domain: KnowledgeDomain): 'Product' | 'Feature' | 'Component' | 'Pattern' | 'Performance' | 'Security' | 'Accessibility' | 'Conversion' | 'Generic' {
+  switch (domain) {
+    case 'Product':        return 'Product';
+    case 'Frontend':
+    case 'Backend':        return 'Feature';
+    case 'Component':      return 'Component';
+    case 'Design':
+    case 'Motion':         return 'Pattern';
+    case 'Performance':
+    case 'Runtime':        return 'Performance';
+    case 'Security':       return 'Security';
+    case 'Accessibility':  return 'Accessibility';
+    case 'Conversion':
+    case 'Business':       return 'Conversion';
+    default:                return 'Generic';
+  }
 }
 
-export interface ProductManagerSnapshot {
-  productScore?: number;
-  overallScore?: number;
-  tags?: string[];
-  recordedAt?: number;
-  [key: string]: unknown;
+function clamp(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v));
 }
 
-export interface ArchitectSnapshot {
-  overallScore?: number;
-  tags?: string[];
-  recordedAt?: number;
-  [key: string]: unknown;
+export function getAllKnowledgeRecords(): KnowledgeRecord[] {
+  return [...store];
 }
 
-export interface RuntimeSnapshot {
-  averageScore?: number;
-  tags?: string[];
-  recordedAt?: number;
-  [key: string]: unknown;
+export function getKnowledgeByDomain(domain: KnowledgeDomain): KnowledgeRecord[] {
+  return store.filter(r => r.domain === domain);
 }
 
-export interface TelemetrySnapshot {
-  knowledgeScore?: number;
-  totalExecutions?: number;
-  [key: string]: unknown;
-}
-
-export function collectFromProductManager(snap: ProductManagerSnapshot): KnowledgeRecord {
-  const score = clamp(snap.productScore ?? snap.overallScore ?? 5);
+export function getKnowledgeStats(): { totalRecords: number; capacityUsed: number; byDomain: Record<string, number> } {
+  const byDomain: Record<string, number> = {};
+  for (const r of store) byDomain[r.domain] = (byDomain[r.domain] ?? 0) + 1;
   return {
-    id: nextId('Product'),
-    domain: 'Product',
-    title: 'Product Manager Output',
-    summary: 'Product strategy and business goal analysis',
-    tags: snap.tags ?? ['product', 'strategy', 'business'],
-    categories: ['Product'],
-    keywords: ['product', 'strategy', 'goals', 'features', 'market'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.8,
-    repairFrequency: 0.1,
-    runtimePerf: 8,
-    accessibility: 5,
-    security: 5,
-    businessSuccess: score,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'ProductManager',
-    payload: snap as Record<string, unknown>,
+    totalRecords: store.length,
+    capacityUsed: Math.round((store.length / MAX_RECORDS) * 100),
+    byDomain,
   };
 }
 
-export function collectFromFrontendArchitect(snap: ArchitectSnapshot): KnowledgeRecord {
-  const score = clamp(snap.overallScore ?? 5);
-  return {
-    id: nextId('Frontend'),
-    domain: 'Frontend',
-    title: 'Frontend Architecture Blueprint',
-    summary: 'Frontend technology stack, component structure, and design patterns',
-    tags: snap.tags ?? ['frontend', 'architecture', 'components', 'design'],
-    categories: ['Frontend', 'Architecture'],
-    keywords: ['react', 'typescript', 'tailwind', 'components', 'layout', 'design'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.85,
-    repairFrequency: 0.15,
-    runtimePerf: 7,
-    accessibility: 7,
-    security: 5,
-    businessSuccess: score * 0.9,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'FrontendArchitect',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectFromBackendArchitect(snap: ArchitectSnapshot): KnowledgeRecord {
-  const score = clamp(snap.overallScore ?? 5);
-  return {
-    id: nextId('Backend'),
-    domain: 'Backend',
-    title: 'Backend Architecture Blueprint',
-    summary: 'Backend API, database, and service layer architecture',
-    tags: snap.tags ?? ['backend', 'api', 'database', 'architecture'],
-    categories: ['Backend', 'API', 'Database'],
-    keywords: ['api', 'rest', 'database', 'postgres', 'redis', 'auth', 'security'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.82,
-    repairFrequency: 0.12,
-    runtimePerf: 8,
-    accessibility: 4,
-    security: 8,
-    businessSuccess: score * 0.85,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'BackendArchitect',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectFromDevOpsArchitect(snap: ArchitectSnapshot): KnowledgeRecord {
-  const score = clamp(snap.overallScore ?? 5);
-  return {
-    id: nextId('DevOps'),
-    domain: 'DevOps',
-    title: 'DevOps Architecture Blueprint',
-    summary: 'Deployment, infrastructure, monitoring, and CI/CD patterns',
-    tags: snap.tags ?? ['devops', 'deployment', 'infrastructure', 'ci'],
-    categories: ['DevOps', 'Deployment'],
-    keywords: ['docker', 'kubernetes', 'ci', 'cd', 'monitoring', 'infrastructure', 'cloud'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.75,
-    repairFrequency: 0.1,
-    runtimePerf: 8,
-    accessibility: 3,
-    security: 7,
-    businessSuccess: score * 0.8,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'DevOpsArchitect',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectFromQAArchitect(snap: ArchitectSnapshot): KnowledgeRecord {
-  const score = clamp(snap.overallScore ?? 5);
-  return {
-    id: nextId('QA'),
-    domain: 'QA',
-    title: 'QA Architecture Blueprint',
-    summary: 'Testing strategy, reliability, coverage, and quality gates',
-    tags: snap.tags ?? ['qa', 'testing', 'reliability', 'coverage'],
-    categories: ['QA', 'Benchmark'],
-    keywords: ['vitest', 'jest', 'coverage', 'e2e', 'unit', 'integration', 'quality'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.78,
-    repairFrequency: 0.08,
-    runtimePerf: 7,
-    accessibility: 5,
-    security: 6,
-    businessSuccess: score * 0.82,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'QAArchitect',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectFromRuntimeIntelligence(snap: RuntimeSnapshot): KnowledgeRecord {
-  const score = clamp(snap.averageScore ?? 5);
-  return {
-    id: nextId('Runtime'),
-    domain: 'Runtime',
-    title: 'Runtime Intelligence Output',
-    summary: 'Generation strategy, evaluation weights, repair and optimization decisions',
-    tags: snap.tags ?? ['runtime', 'performance', 'generation', 'strategy'],
-    categories: ['Runtime', 'Performance'],
-    keywords: ['runtime', 'generation', 'repair', 'candidates', 'evaluation', 'performance'],
-    quality: score,
-    confidence: score / 10,
-    freshness: freshness(snap.recordedAt ?? Date.now()),
-    productionSuccess: score / 10,
-    popularity: 0.7,
-    repairFrequency: 0.2,
-    runtimePerf: score,
-    accessibility: 4,
-    security: 5,
-    businessSuccess: score * 0.75,
-    version: 1,
-    recordedAt: snap.recordedAt ?? Date.now(),
-    sourceAgent: 'RuntimeIntelligence',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectFromTelemetry(snap: TelemetrySnapshot): KnowledgeRecord {
-  const score = clamp(snap.knowledgeScore ?? 5);
-  return {
-    id: nextId('Telemetry'),
-    domain: 'Telemetry',
-    title: 'Telemetry Snapshot',
-    summary: 'System-wide telemetry, metrics, and performance data',
-    tags: ['telemetry', 'metrics', 'monitoring'],
-    categories: ['Telemetry'],
-    keywords: ['telemetry', 'metrics', 'latency', 'throughput', 'error', 'success'],
-    quality: score,
-    confidence: 0.9,
-    freshness: freshness(Date.now()),
-    productionSuccess: (snap.totalExecutions ?? 0) > 0 ? 0.85 : 0.5,
-    popularity: 0.6,
-    repairFrequency: 0.05,
-    runtimePerf: 8,
-    accessibility: 4,
-    security: 5,
-    businessSuccess: score * 0.7,
-    version: 1,
-    recordedAt: Date.now(),
-    sourceAgent: 'Telemetry',
-    payload: snap as Record<string, unknown>,
-  };
-}
-
-export function collectGeneric(
-  domain: KnowledgeDomain,
-  sourceAgent: string,
-  title: string,
-  summary: string,
-  tags: string[],
-  quality: number,
-  payload: Record<string, unknown>,
-): KnowledgeRecord {
-  const score = clamp(quality);
-  return {
-    id: nextId(domain),
-    domain,
-    title,
-    summary,
-    tags,
-    categories: [domain],
-    keywords: tags,
-    quality: score,
-    confidence: score / 10,
-    freshness: 1.0,
-    productionSuccess: score / 10,
-    popularity: 0.5,
-    repairFrequency: 0.1,
-    runtimePerf: score * 0.9,
-    accessibility: 5,
-    security: 5,
-    businessSuccess: score * 0.8,
-    version: 1,
-    recordedAt: Date.now(),
-    sourceAgent,
-    payload,
-  };
+export function resetKnowledgeCollector(): void {
+  store = [];
+  idCounter = 0;
 }

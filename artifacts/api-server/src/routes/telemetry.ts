@@ -57,6 +57,8 @@ import { getRuntimePersistenceStats, getActiveEvaluatorProfile } from "../runtim
 import { getOrchestratorQualitySnapshot } from "../agent-orchestrator/orchestratorMetrics.js";
 // V9.3: Model & Resource Orchestration Engine telemetry
 import { getModelOrchestrationSnapshot } from "../model-orchestrator/modelOrchestratorMetrics.js";
+// V9.4: Autonomous Knowledge Intelligence Engine telemetry
+import { getKnowledgeEngineMetrics } from "../knowledge-engine/knowledgeMetrics.js";
 
 const router: Router = Router();
 
@@ -347,6 +349,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     orchestrator: getOrchestratorQualitySnapshot(),
     // V9.3: Model & Resource Orchestration Engine telemetry (additive)
     modelOrchestration: getModelOrchestrationSnapshot(),
+    // V9.4: Autonomous Knowledge Intelligence Engine telemetry (additive)
+    knowledgeEngine: getKnowledgeEngineMetrics(),
     generatedAt: new Date().toISOString(),
   });
 });

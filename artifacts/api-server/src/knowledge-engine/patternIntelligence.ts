@@ -1,118 +1,118 @@
-// ── V9.4 Pattern Intelligence — component/layout/API pattern registry ─────────
+// ── V9.4 Knowledge Engine — Pattern Intelligence ──────────────────────────────
+//
+// Tracks reusable patterns (component shapes, layouts, API designs, etc.)
+// with the 13 spec fields: Quality/Performance/Accessibility/Conversion/
+// Maintainability scores, Popularity, UsageCount, ProductionSuccess,
+// FailureRate, RepairRate, Confidence, Freshness, Version.
+import type { KnowledgeDomain, PatternRecord } from './types.js';
 
-import type { KnowledgeDomain } from './types.js';
+const MAX_PATTERNS = 1000;
+let patterns = new Map<string, PatternRecord>();
 
-export interface PatternRecord {
-  id:                string;
-  domain:            KnowledgeDomain;
-  name:              string;
-  description:       string;
-  tags:              string[];
-  // Quality dimensions (0-10)
-  qualityScore:      number;
-  performanceScore:  number;
-  accessibilityScore: number;
-  conversionScore:   number;
-  maintainabilityScore: number;
-  // Usage statistics
-  popularity:        number;  // 0-1
-  usageCount:        number;
-  productionSuccess: number;  // 0-1
-  failureRate:       number;  // 0-1
-  repairRate:        number;  // 0-1
-  // Metadata
-  confidence:        number;  // 0-1
-  freshness:         number;  // 0-1
-  version:           number;
-  registeredAt:      number;
-  updatedAt:         number;
+export interface PatternUpdateInput {
+  id:                 string;
+  domain:             KnowledgeDomain;
+  name:               string;
+  qualityScore?:       number;
+  performanceScore?:   number;
+  accessibilityScore?: number;
+  conversionScore?:    number;
+  maintainabilityScore?: number;
+  productionSuccess?:  boolean;
+  failed?:             boolean;
+  repaired?:           boolean;
 }
 
-const MAX_PATTERNS = 500;
-let patternStore: PatternRecord[] = [];
-let _patSeq = 0;
+function clamp01(v: number): number {
+  return Math.max(0, Math.min(1, v));
+}
 
-export function registerPattern(
-  domain: KnowledgeDomain,
-  name: string,
-  description: string,
-  tags: string[],
-  scores: Partial<Pick<PatternRecord,
-    'qualityScore' | 'performanceScore' | 'accessibilityScore' |
-    'conversionScore' | 'maintainabilityScore'>>,
-): PatternRecord {
-  const existing = patternStore.find(p => p.domain === domain && p.name === name);
-  if (existing) {
-    return updatePattern(existing.id, scores);
+export function registerPattern(input: PatternUpdateInput): PatternRecord {
+  const now = Date.now();
+  const existing = patterns.get(input.id);
+
+  if (!existing) {
+    const record: PatternRecord = {
+      id:                   input.id,
+      domain:               input.domain,
+      name:                 input.name,
+      qualityScore:         input.qualityScore ?? 5,
+      performanceScore:     input.performanceScore ?? 5,
+      accessibilityScore:   input.accessibilityScore ?? 5,
+      conversionScore:      input.conversionScore ?? 5,
+      maintainabilityScore: input.maintainabilityScore ?? 5,
+      popularity:           0.01,
+      usageCount:           1,
+      productionSuccess:    input.productionSuccess ? 1 : 0.5,
+      failureRate:          input.failed ? 1 : 0,
+      repairRate:           input.repaired ? 1 : 0,
+      confidence:           0.3,
+      freshness:            1,
+      version:              1,
+      updatedAt:            now,
+    };
+    try {
+      patterns.set(input.id, record);
+      if (patterns.size > MAX_PATTERNS) {
+        const oldestKey = [...patterns.values()].sort((a, b) => a.updatedAt - b.updatedAt)[0]?.id;
+        if (oldestKey) patterns.delete(oldestKey);
+      }
+    } catch { /* pattern registration must never stop a build */ }
+    return record;
   }
 
-  const record: PatternRecord = {
-    id:                   `pat-${domain.toLowerCase()}-${++_patSeq}`,
-    domain,
-    name,
-    description,
-    tags,
-    qualityScore:         scores.qualityScore         ?? 5,
-    performanceScore:     scores.performanceScore     ?? 5,
-    accessibilityScore:   scores.accessibilityScore   ?? 5,
-    conversionScore:      scores.conversionScore      ?? 5,
-    maintainabilityScore: scores.maintainabilityScore ?? 5,
-    popularity:           0.5,
-    usageCount:           1,
-    productionSuccess:    0.8,
-    failureRate:          0.05,
-    repairRate:           0.1,
-    confidence:           0.7,
-    freshness:            1.0,
-    version:              1,
-    registeredAt:         Date.now(),
-    updatedAt:            Date.now(),
-  };
+  const usageCount = existing.usageCount + 1;
+  const blend = (prev: number, next: number | undefined) =>
+    next === undefined ? prev : parseFloat(((prev * existing.usageCount + next) / usageCount).toFixed(3));
 
-  patternStore.push(record);
-  if (patternStore.length > MAX_PATTERNS) patternStore = patternStore.slice(-MAX_PATTERNS);
-  return record;
-}
-
-export function updatePattern(
-  id: string,
-  updates: Partial<Pick<PatternRecord,
-    'qualityScore' | 'performanceScore' | 'accessibilityScore' |
-    'conversionScore' | 'maintainabilityScore' | 'usageCount' |
-    'productionSuccess' | 'failureRate' | 'repairRate' | 'popularity'>>,
-): PatternRecord {
-  const idx = patternStore.findIndex(p => p.id === id);
-  if (idx === -1) throw new Error(`Pattern not found: ${id}`);
-  const old = patternStore[idx];
   const updated: PatternRecord = {
-    ...old,
-    ...updates,
-    version:   old.version + 1,
-    updatedAt: Date.now(),
-    freshness: 1.0,
+    ...existing,
+    qualityScore:         blend(existing.qualityScore, input.qualityScore),
+    performanceScore:     blend(existing.performanceScore, input.performanceScore),
+    accessibilityScore:   blend(existing.accessibilityScore, input.accessibilityScore),
+    conversionScore:      blend(existing.conversionScore, input.conversionScore),
+    maintainabilityScore: blend(existing.maintainabilityScore, input.maintainabilityScore),
+    usageCount,
+    popularity:           clamp01(Math.min(1, usageCount / 100)),
+    productionSuccess:    clamp01(
+      (existing.productionSuccess * existing.usageCount + (input.productionSuccess ? 1 : 0)) / usageCount,
+    ),
+    failureRate: clamp01(
+      (existing.failureRate * existing.usageCount + (input.failed ? 1 : 0)) / usageCount,
+    ),
+    repairRate: clamp01(
+      (existing.repairRate * existing.usageCount + (input.repaired ? 1 : 0)) / usageCount,
+    ),
+    confidence: clamp01(Math.min(1, 0.3 + usageCount * 0.02)),
+    freshness:  1,
+    version:    existing.version + 1,
+    updatedAt:  now,
   };
-  patternStore[idx] = updated;
+
+  try {
+    patterns.set(input.id, updated);
+  } catch { /* pattern registration must never stop a build */ }
   return updated;
 }
 
-export function queryPatterns(domain?: KnowledgeDomain, tags?: string[]): PatternRecord[] {
-  let results = domain ? patternStore.filter(p => p.domain === domain) : [...patternStore];
-  if (tags && tags.length > 0) {
-    const tagSet = new Set(tags.map(t => t.toLowerCase()));
-    results = results.filter(p => p.tags.some(t => tagSet.has(t.toLowerCase())));
-  }
-  return results.sort((a, b) => b.qualityScore - a.qualityScore);
+export function getPattern(id: string): PatternRecord | undefined {
+  return patterns.get(id);
 }
 
-export function getTopPatterns(domain?: KnowledgeDomain, topK = 5): PatternRecord[] {
-  return queryPatterns(domain).slice(0, topK);
+export function listPatterns(domain?: KnowledgeDomain): PatternRecord[] {
+  const all = [...patterns.values()];
+  return domain ? all.filter(p => p.domain === domain) : all;
 }
 
-export function getAllPatterns(): PatternRecord[] {
-  return [...patternStore];
+export function getTopPatterns(domain?: KnowledgeDomain, limit = 5): PatternRecord[] {
+  return listPatterns(domain)
+    .sort((a, b) =>
+      (b.qualityScore + b.performanceScore + b.accessibilityScore + b.conversionScore + b.maintainabilityScore) -
+      (a.qualityScore + a.performanceScore + a.accessibilityScore + a.conversionScore + a.maintainabilityScore),
+    )
+    .slice(0, limit);
 }
 
 export function resetPatternIntelligence(): void {
-  patternStore = [];
-  _patSeq = 0;
+  patterns = new Map();
 }

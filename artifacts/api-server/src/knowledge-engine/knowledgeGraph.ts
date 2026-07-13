@@ -1,123 +1,123 @@
-// ── V9.4 Knowledge Graph Engine — in-memory graph ────────────────────────────
+// ── V9.4 Knowledge Engine — Knowledge Graph ───────────────────────────────────
+//
+// In-memory graph linking Products -> Features -> Components -> Patterns ->
+// BusinessGoals -> Performance -> Security -> Accessibility -> Conversion ->
+// ProductionOutcomes. Every node supports arbitrary relationships, not just
+// the canonical chain. Distinct from the unrelated `backend.knowledgeGraph`
+// (file/dependency graph) — do not confuse the two.
+import type { KnowledgeNode, KnowledgeEdge, KnowledgeNodeType } from './types.js';
 
-import type { KnowledgeNode, KnowledgeEdge, KnowledgeDomain, KnowledgeRelationship } from './types.js';
+interface GraphState {
+  nodes: Map<string, KnowledgeNode>;
+  edges: KnowledgeEdge[];
+}
 
-export class KnowledgeGraphEngine {
-  private nodes = new Map<string, KnowledgeNode>();
-  private edges: KnowledgeEdge[] = [];
+const state: GraphState = { nodes: new Map(), edges: [] };
 
-  addNode(node: KnowledgeNode): void {
-    this.nodes.set(node.id, node);
-  }
+/** The canonical chain order from the spec, used for default relationship inference. */
+export const CANONICAL_CHAIN: KnowledgeNodeType[] = [
+  'Product', 'Feature', 'Component', 'Pattern', 'BusinessGoal',
+  'Performance', 'Security', 'Accessibility', 'Conversion', 'ProductionOutcome',
+];
 
-  addEdge(edge: KnowledgeEdge): void {
-    this.edges.push(edge);
-  }
+export function addNode(node: KnowledgeNode): void {
+  try {
+    state.nodes.set(node.id, node);
+  } catch { /* graph mutations must never stop a build */ }
+}
 
-  getNode(id: string): KnowledgeNode | undefined {
-    return this.nodes.get(id);
-  }
+export function addEdge(edge: KnowledgeEdge): void {
+  try {
+    if (!state.nodes.has(edge.from) || !state.nodes.has(edge.to)) return;
+    state.edges.push(edge);
+  } catch { /* graph mutations must never stop a build */ }
+}
 
-  getAllNodes(): KnowledgeNode[] {
-    return Array.from(this.nodes.values());
-  }
+export function getNode(id: string): KnowledgeNode | undefined {
+  return state.nodes.get(id);
+}
 
-  getAllEdges(): KnowledgeEdge[] {
-    return [...this.edges];
-  }
+export function listNodes(): KnowledgeNode[] {
+  return [...state.nodes.values()];
+}
 
-  getRelated(nodeId: string, relationship?: KnowledgeRelationship): KnowledgeNode[] {
-    const related: KnowledgeNode[] = [];
-    for (const e of this.edges) {
-      if (e.from === nodeId && (!relationship || e.type === relationship)) {
-        const n = this.nodes.get(e.to);
-        if (n) related.push(n);
-      }
-      if (e.to === nodeId && (!relationship || e.type === relationship)) {
-        const n = this.nodes.get(e.from);
-        if (n) related.push(n);
-      }
+export function listEdges(): KnowledgeEdge[] {
+  return [...state.edges];
+}
+
+export function getRelated(nodeId: string, relation?: string): KnowledgeNode[] {
+  const related: KnowledgeNode[] = [];
+  for (const edge of state.edges) {
+    if (edge.from === nodeId && (!relation || edge.relation === relation)) {
+      const n = state.nodes.get(edge.to);
+      if (n) related.push(n);
     }
-    return related;
+    if (edge.to === nodeId && (!relation || edge.relation === relation)) {
+      const n = state.nodes.get(edge.from);
+      if (n) related.push(n);
+    }
   }
+  return related;
+}
 
-  traverse(startId: string, maxDepth = 3): KnowledgeNode[] {
-    const visited = new Set<string>();
-    const result: KnowledgeNode[] = [];
-    const queue: Array<{ id: string; depth: number }> = [{ id: startId, depth: 0 }];
+/** Breadth-first traversal up to `depth` hops from `startId`. */
+export function traverse(startId: string, depth = 2): KnowledgeNode[] {
+  const visited = new Set<string>([startId]);
+  let frontier = [startId];
+  const results: KnowledgeNode[] = [];
 
-    while (queue.length > 0) {
-      const item = queue.shift()!;
-      if (visited.has(item.id) || item.depth > maxDepth) continue;
-      visited.add(item.id);
-      const node = this.nodes.get(item.id);
-      if (node) {
-        result.push(node);
-        for (const e of this.edges) {
-          if (e.from === item.id && !visited.has(e.to)) {
-            queue.push({ id: e.to, depth: item.depth + 1 });
-          }
+  for (let d = 0; d < depth && frontier.length > 0; d++) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      for (const n of getRelated(id)) {
+        if (!visited.has(n.id)) {
+          visited.add(n.id);
+          results.push(n);
+          next.push(n.id);
         }
       }
     }
-    return result;
+    frontier = next;
   }
-
-  reset(): void {
-    this.nodes.clear();
-    this.edges = [];
-  }
-
-  get nodeCount(): number { return this.nodes.size; }
-  get edgeCount(): number { return this.edges.length; }
-  get relationshipDensity(): number {
-    const n = this.nodes.size;
-    if (n < 2) return 0;
-    return parseFloat((this.edges.length / (n * (n - 1) / 2)).toFixed(4));
-  }
+  return results;
 }
 
-// ── Singleton + domain chain initialization ───────────────────────────────────
-
-export const globalKnowledgeGraph = new KnowledgeGraphEngine();
-
-const DOMAIN_CHAIN: KnowledgeDomain[] = [
-  'Product', 'Frontend', 'Component', 'Design', 'Business',
-  'Performance', 'Security', 'Accessibility', 'Conversion',
-];
-
-const RELATIONSHIP_MAP: Record<string, KnowledgeRelationship> = {
-  'Product->Frontend':      'PRODUCES',
-  'Frontend->Component':    'PRODUCES',
-  'Component->Design':      'REFERENCES',
-  'Design->Business':       'PRODUCES',
-  'Business->Performance':  'OPTIMIZES',
-  'Performance->Security':  'VALIDATES',
-  'Security->Accessibility':'VALIDATES',
-  'Accessibility->Conversion': 'OPTIMIZES',
-};
-
-export function initializeDomainChain(): void {
-  for (const domain of DOMAIN_CHAIN) {
-    const nodeId = `domain:${domain}`;
-    if (!globalKnowledgeGraph.getNode(nodeId)) {
-      globalKnowledgeGraph.addNode({
-        id: nodeId,
-        domain,
-        label: domain,
-        properties: { initialized: true },
-        recordIds: [],
-      });
+/** Links a node into the canonical chain based on its type, connecting it to
+ * the nearest existing predecessor/successor stage if present. Best-effort. */
+export function linkIntoChain(node: KnowledgeNode): void {
+  try {
+    addNode(node);
+    const idx = CANONICAL_CHAIN.indexOf(node.type);
+    if (idx < 0) return;
+    // Link forward to the nearest node of the next chain stage that shares the same domain.
+    for (let i = idx + 1; i < CANONICAL_CHAIN.length; i++) {
+      const candidate = [...state.nodes.values()].find(
+        n => n.type === CANONICAL_CHAIN[i] && n.domain === node.domain,
+      );
+      if (candidate) {
+        addEdge({ from: node.id, to: candidate.id, relation: 'chain-next', weight: 0.6 });
+        break;
+      }
     }
-  }
-
-  for (let i = 0; i < DOMAIN_CHAIN.length - 1; i++) {
-    const from = `domain:${DOMAIN_CHAIN[i]}`;
-    const to   = `domain:${DOMAIN_CHAIN[i + 1]}`;
-    const key  = `${DOMAIN_CHAIN[i]}->${DOMAIN_CHAIN[i + 1]}`;
-    const rel: KnowledgeRelationship = RELATIONSHIP_MAP[key] ?? 'REFERENCES';
-    globalKnowledgeGraph.addEdge({ from, to, type: rel, weight: 1.0 });
-  }
+  } catch { /* never stop a build */ }
 }
 
-initializeDomainChain();
+export function getGraphDensity(): number {
+  const n = state.nodes.size;
+  if (n < 2) return 0;
+  const maxEdges = n * (n - 1);
+  return maxEdges > 0 ? Math.min(1, state.edges.length / maxEdges) : 0;
+}
+
+export function getGraphStats(): { nodeCount: number; edgeCount: number; density: number } {
+  return {
+    nodeCount: state.nodes.size,
+    edgeCount: state.edges.length,
+    density:   parseFloat(getGraphDensity().toFixed(4)),
+  };
+}
+
+export function resetKnowledgeGraph(): void {
+  state.nodes.clear();
+  state.edges.length = 0;
+}

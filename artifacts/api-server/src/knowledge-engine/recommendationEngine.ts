@@ -1,101 +1,46 @@
-// ── V9.4 Recommendation Engine ────────────────────────────────────────────────
-
-import type { KnowledgeDomain, RecommendationResult } from './types.js';
+// ── V9.4 Knowledge Engine — Recommendation Engine ─────────────────────────────
+//
+// Recommends better components/layouts/APIs/architecture/deployment/testing/
+// security/runtime/performance/UX/conversion choices based on accumulated
+// pattern intelligence + knowledge ranking.
+import type { KnowledgeDomain, RecommendationResult, RecommendationItem } from './types.js';
+import { getTopPatterns } from './patternIntelligence.js';
 import { rankKnowledge } from './knowledgeRanking.js';
-import { queryPatterns } from './patternIntelligence.js';
-import { getKnowledgeStore } from './knowledgeLearning.js';
+import { getKnowledgeByDomain } from './knowledgeCollector.js';
 
-export interface RecommendationContext {
-  prompt?:    string;
-  tags?:      string[];
-  complexity?: 'simple' | 'moderate' | 'complex' | 'enterprise';
-  topK?:      number;
+export function recommend(domain: KnowledgeDomain, limit = 5): RecommendationResult {
+  const topPatterns = getTopPatterns(domain, limit);
+  const domainKnowledge = getKnowledgeByDomain(domain);
+  const rankedKnowledge = rankKnowledge(domainKnowledge).slice(0, limit);
+
+  const fromPatterns: RecommendationItem[] = topPatterns.map(p => ({
+    title:  p.name,
+    domain,
+    score:  parseFloat(((p.qualityScore + p.performanceScore + p.accessibilityScore + p.conversionScore + p.maintainabilityScore) / 5).toFixed(2)),
+    reason: `Pattern used ${p.usageCount}x, production success ${(p.productionSuccess * 100).toFixed(0)}%, repair rate ${(p.repairRate * 100).toFixed(0)}%`,
+    patternId: p.id,
+  }));
+
+  const fromKnowledge: RecommendationItem[] = rankedKnowledge.map(r => ({
+    title:  r.title,
+    domain,
+    score:  r.compositeScore,
+    reason: `Composite score ${r.compositeScore}/10 across quality, production success, and accessibility signals`,
+    patternId: null,
+  }));
+
+  const merged = [...fromPatterns, ...fromKnowledge]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  return { domain, suggestions: merged };
 }
 
-const DOMAIN_HINTS: Record<KnowledgeDomain, string[]> = {
-  Product:        ['product', 'strategy', 'goals', 'features', 'market', 'business'],
-  Frontend:       ['react', 'typescript', 'ui', 'components', 'tailwind', 'layout'],
-  Backend:        ['api', 'rest', 'graphql', 'server', 'node', 'express'],
-  API:            ['endpoint', 'rest', 'graphql', 'websocket', 'http'],
-  Database:       ['postgres', 'mysql', 'redis', 'mongodb', 'sql', 'orm'],
-  Architecture:   ['microservices', 'monolith', 'patterns', 'ddd', 'hexagonal'],
-  Component:      ['button', 'card', 'form', 'modal', 'table', 'list'],
-  Design:         ['design', 'color', 'typography', 'spacing', 'ux', 'ui'],
-  Motion:         ['animation', 'transition', 'framer', 'motion', 'gesture'],
-  Security:       ['auth', 'jwt', 'oauth', 'owasp', 'xss', 'csrf', 'encryption'],
-  QA:             ['test', 'vitest', 'jest', 'e2e', 'coverage', 'quality'],
-  DevOps:         ['docker', 'kubernetes', 'ci', 'cd', 'deploy', 'cloud'],
-  Runtime:        ['runtime', 'performance', 'generation', 'repair', 'build'],
-  Business:       ['revenue', 'conversion', 'retention', 'growth', 'kpi'],
-  Conversion:     ['cta', 'cro', 'funnel', 'conversion', 'landing'],
-  Performance:    ['bundle', 'lazy', 'cache', 'ttfb', 'lcp', 'fcp'],
-  Accessibility:  ['wcag', 'aria', 'a11y', 'screen-reader', 'contrast'],
-  Prompt:         ['prompt', 'llm', 'ai', 'context', 'instruction'],
-  Repair:         ['fix', 'repair', 'error', 'bug', 'patch'],
-  Failure:        ['failure', 'fallback', 'error', 'crash', 'timeout'],
-  Deployment:     ['deploy', 'release', 'rollout', 'staging', 'production'],
-  Benchmark:      ['benchmark', 'metric', 'measure', 'profile', 'score'],
-  Telemetry:      ['telemetry', 'log', 'trace', 'metric', 'monitor'],
-};
-
-export function recommend(
-  domain: KnowledgeDomain,
-  context: RecommendationContext,
-): RecommendationResult[] {
-  const topK = context.topK ?? 5;
-
-  // Pull records from the in-memory store filtered by domain
-  const allRecords = getKnowledgeStore().filter(r => r.domain === domain);
-  const ranked     = rankKnowledge(allRecords).slice(0, topK * 2);
-
-  // Also pull patterns
-  const patterns = queryPatterns(domain, context.tags).slice(0, topK);
-
-  const results: RecommendationResult[] = [];
-
-  // From ranked knowledge records
-  for (const r of ranked.slice(0, topK)) {
-    results.push({
-      id:         r.id,
-      domain:     r.domain,
-      title:      r.title,
-      summary:    r.summary,
-      score:      r.compositeScore,
-      tags:       r.tags,
-      confidence: r.confidence,
-      reasoning:  `Ranked score ${r.compositeScore.toFixed(2)} from ${r.sourceAgent}`,
-    });
-  }
-
-  // Fill from patterns if needed
-  for (const p of patterns) {
-    if (results.length >= topK) break;
-    results.push({
-      id:         p.id,
-      domain:     p.domain,
-      title:      p.name,
-      summary:    p.description,
-      score:      p.qualityScore,
-      tags:       p.tags,
-      confidence: p.confidence,
-      reasoning:  `Pattern with quality ${p.qualityScore.toFixed(1)}, usage ${p.usageCount}`,
-    });
-  }
-
-  // If still empty, generate hint-based fallback
-  if (results.length === 0) {
-    const hints = DOMAIN_HINTS[domain] ?? [];
-    results.push({
-      id:         `hint-${domain}-${Date.now()}`,
-      domain,
-      title:      `${domain} Best Practices`,
-      summary:    `Default best practices for ${domain}: ${hints.slice(0, 3).join(', ')}`,
-      score:      5,
-      tags:       hints.slice(0, 5),
-      confidence: 0.5,
-      reasoning:  'Fallback hint-based recommendation (no historical records)',
-    });
-  }
-
-  return results.sort((a, b) => b.score - a.score).slice(0, topK);
+/** Approximate confidence that recommendations reflect real accumulated signal
+ * (rises as more usage/production data accrues; 0 with no data). */
+export function getRecommendationAccuracy(domain?: KnowledgeDomain): number {
+  const patterns = domain ? getTopPatterns(domain, 1000) : getTopPatterns(undefined, 1000);
+  if (patterns.length === 0) return 0;
+  const avgConfidence = patterns.reduce((sum, p) => sum + p.confidence, 0) / patterns.length;
+  return parseFloat(avgConfidence.toFixed(3));
 }

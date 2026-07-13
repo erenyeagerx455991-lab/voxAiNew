@@ -13,6 +13,7 @@
  *  0.9  RuntimeIntelligence   — V9.0 generation strategy brain (no LLM)
  *  0.92 Orchestrator          — V9.2 adaptive execution planning (no LLM)
  *  0.95 ModelOrchestrator     — V9.3 model/resource routing engine (no LLM)
+ *  0.97 KnowledgeEngine       — V9.4 autonomous knowledge intelligence (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -52,6 +53,7 @@ import { runBackendStep } from "./backendStep.js";
 import { runRuntimeValidationStep } from "./runtimeValidationStep.js";
 import { runOrchestratorStep, finalizeOrchestratorExecution } from "./orchestratorStep.js";
 import { runModelOrchestratorStep, finalizeModelOrchestratorExecution } from "./modelOrchestratorStep.js";
+import { runKnowledgeEngineStep, finalizeKnowledgeEngineExecution } from "./knowledgeEngineStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -149,13 +151,27 @@ export async function runBuildPipeline(
     // ── Step 0.95: Model Orchestrator (V9.3 — model/resource routing, no LLM) ─
     const modelBlueprint = await runModelOrchestratorStep(buildId, res, executionBlueprint);
 
+    // ── Step 0.97: Knowledge Engine (V9.4 — autonomous knowledge intelligence, no LLM) ─
+    const knowledgeStepOutput = await runKnowledgeEngineStep(
+      buildId, res, executionBlueprint, modelBlueprint,
+      {
+        productManagerOutput,
+        frontendArchitectOutput,
+        backendArchitectOutput,
+        devopsArchitectOutput,
+        qaArchitectOutput,
+        runtimeIntelligenceOutput,
+      },
+    );
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
       '\n' + backendArchitectOutput.enrichedPromptWithArchitecture +
       '\n' + devopsArchitectOutput.enrichedPromptWithDevOps +
       '\n' + qaArchitectOutput.enrichedPromptWithQA +
-      runtimeIntelligenceOutput.contextString;   // V9.0 runtime context
+      runtimeIntelligenceOutput.contextString +   // V9.0 runtime context
+      knowledgeStepOutput.contextString;          // V9.4 knowledge engine context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -355,6 +371,8 @@ export async function runBuildPipeline(
       modelBlueprint,
       modelOrchestratorBudget: modelBlueprint.totalTokenBudget,
       modelOrchestratorProviders: modelBlueprint.providerDistribution,
+      // V9.4: Autonomous Knowledge Intelligence Engine — bundle targets (additive)
+      knowledgeBundleTargets: Object.keys(knowledgeStepOutput.bundles),
     });
 
     // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
@@ -372,6 +390,13 @@ export async function runBuildPipeline(
       evalRes?.overallScore ?? directorScore83,
       modelBlueprint.expectedTotalCost,
       Date.now() - pipelineStart,
+    );
+
+    // ── V9.4: Knowledge Engine learning + telemetry (fire-and-forget) ───────────
+    finalizeKnowledgeEngineExecution(
+      res,
+      buildId,
+      evalRes?.overallScore ?? directorScore83,
     );
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

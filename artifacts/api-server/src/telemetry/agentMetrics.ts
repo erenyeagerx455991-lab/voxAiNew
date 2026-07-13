@@ -40,7 +40,11 @@ export type AgentName =
   // V9.0 additions
   | "RuntimeIntelligence"
   // V9.2 additions
-  | "Orchestrator";
+  | "Orchestrator"
+  // V9.3 additions
+  | "ModelOrchestrator"
+  // V9.4 additions
+  | "KnowledgeEngine";
 
 interface AgentRecord {
   calls: number;

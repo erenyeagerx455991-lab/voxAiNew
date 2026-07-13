@@ -1,112 +1,68 @@
-// ── V9.4 Semantic Retrieval — deterministic keyword/tag overlap scoring ────────
+// ── V9.4 Knowledge Engine — Semantic Retrieval ────────────────────────────────
+//
+// Deterministic "semantic" retrieval via weighted tag/category/keyword
+// overlap scoring — NOT real embeddings (no vector DB / embedding API
+// configured). Mirrors the scoring-heuristic style used by design-rag's
+// retriever.ts and costIntelligence.ts.
+import type { KnowledgeRecord, SemanticQuery, SemanticRetrievalResult, RetrievedKnowledge } from './types.js';
+import { getAllKnowledgeRecords } from './knowledgeCollector.js';
 
-import type { KnowledgeRecord, KnowledgeDomain } from './types.js';
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of',
+  'with', 'by', 'is', 'are', 'be', 'this', 'that', 'like',
+]);
 
-export interface SemanticQuery {
-  text:    string;
-  domain?: KnowledgeDomain;
-  tags?:   string[];
+export function extractTerms(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(w => w.length > 2 && !STOPWORDS.has(w));
 }
 
-export interface ScoredKnowledgeRecord extends KnowledgeRecord {
-  relevanceScore: number;
-  scoreBreakdown: {
-    tagOverlap:     number;
-    categoryMatch:  number;
-    keywordMatch:   number;
-    domainBonus:    number;
-    qualityBoost:   number;
+function overlapScore(a: string[], b: string[]): number {
+  if (a.length === 0 || b.length === 0) return 0;
+  const setB = new Set(b);
+  const hits = a.filter(t => setB.has(t)).length;
+  return hits / Math.max(a.length, 1);
+}
+
+export function scoreRecord(query: SemanticQuery, record: KnowledgeRecord): number {
+  const queryTerms = extractTerms(query.text);
+  const recordTerms = [...extractTerms(record.title), ...extractTerms(record.summary), ...record.tags.map(t => t.toLowerCase())];
+
+  const textScore = overlapScore(queryTerms, recordTerms);
+  const tagScore = query.tags && query.tags.length > 0
+    ? overlapScore(query.tags.map(t => t.toLowerCase()), record.tags.map(t => t.toLowerCase()))
+    : 0;
+  const domainScore = query.domain ? (query.domain === record.domain ? 1 : 0) : 0.5;
+
+  // Weighted blend: text relevance dominates, domain match and tag overlap refine it.
+  const raw = textScore * 0.5 + tagScore * 0.3 + domainScore * 0.2;
+  // Quality/confidence act as a mild tiebreaker boost, never overriding relevance.
+  const qualityBoost = (record.quality / 10) * 0.1;
+  return Math.min(1, raw * 0.9 + qualityBoost);
+}
+
+export function retrieveKnowledge(query: SemanticQuery, records?: KnowledgeRecord[]): SemanticRetrievalResult {
+  const pool = records ?? getAllKnowledgeRecords();
+  const filtered = query.domain ? pool.filter(r => r.domain === query.domain) : pool;
+
+  const scored: RetrievedKnowledge[] = filtered
+    .map(r => ({ ...r, relevanceScore: scoreRecord(query, r) }))
+    .filter(r => r.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+  const limit = query.limit ?? 10;
+  return {
+    query,
+    results: scored.slice(0, limit),
+    totalScanned: pool.length,
   };
 }
 
-// Weights for relevance scoring components (sum = 1.00)
-const RELEVANCE_WEIGHTS = {
-  tagOverlap:    0.30,
-  categoryMatch: 0.20,
-  keywordMatch:  0.30,
-  domainBonus:   0.10,
-  qualityBoost:  0.10,
-} as const;
-
-function tokenize(text: string): string[] {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(t => t.length > 2);
-}
-
-function overlapScore(queryTokens: string[], recordTokens: string[]): number {
-  if (queryTokens.length === 0 || recordTokens.length === 0) return 0;
-  const querySet = new Set(queryTokens);
-  const recordSet = new Set(recordTokens);
-  let matches = 0;
-  for (const t of querySet) {
-    if (recordSet.has(t)) matches++;
-  }
-  // Jaccard similarity
-  const union = new Set([...querySet, ...recordSet]).size;
-  return union === 0 ? 0 : matches / union;
-}
-
-function tagOverlapScore(queryTags: string[], recordTags: string[]): number {
-  if (queryTags.length === 0 || recordTags.length === 0) return 0;
-  const querySet = new Set(queryTags.map(t => t.toLowerCase()));
-  let hits = 0;
-  for (const t of recordTags) {
-    if (querySet.has(t.toLowerCase())) hits++;
-  }
-  return Math.min(1, hits / Math.max(queryTags.length, 1));
-}
-
-export function retrieveKnowledge(
-  query: SemanticQuery,
-  corpus: KnowledgeRecord[],
-  topK = 10,
-): ScoredKnowledgeRecord[] {
-  const queryTokens = tokenize(query.text);
-  const queryTags   = (query.tags ?? []).map(t => t.toLowerCase());
-  const queryDomain = query.domain;
-
-  const scored: ScoredKnowledgeRecord[] = corpus.map(record => {
-    // Tag overlap
-    const tagOverlap = tagOverlapScore(
-      [...queryTags, ...queryTokens],
-      record.tags,
-    );
-
-    // Category match (exact domain match in categories)
-    const categoryMatch = record.categories
-      .map(c => c.toLowerCase())
-      .some(c => queryTokens.includes(c) || (queryDomain && c === queryDomain.toLowerCase()))
-      ? 1.0
-      : tagOverlapScore(queryTokens, record.categories);
-
-    // Keyword match (token overlap with record keywords)
-    const keywordMatch = overlapScore(queryTokens, record.keywords);
-
-    // Domain bonus
-    const domainBonus = queryDomain && record.domain === queryDomain ? 1.0 : 0.0;
-
-    // Quality boost (normalized 0-1)
-    const qualityBoost = record.quality / 10;
-
-    const relevanceScore =
-      RELEVANCE_WEIGHTS.tagOverlap    * tagOverlap    +
-      RELEVANCE_WEIGHTS.categoryMatch * categoryMatch +
-      RELEVANCE_WEIGHTS.keywordMatch  * keywordMatch  +
-      RELEVANCE_WEIGHTS.domainBonus   * domainBonus   +
-      RELEVANCE_WEIGHTS.qualityBoost  * qualityBoost;
-
-    return {
-      ...record,
-      relevanceScore: parseFloat(relevanceScore.toFixed(4)),
-      scoreBreakdown: { tagOverlap, categoryMatch, keywordMatch, domainBonus, qualityBoost },
-    };
-  });
-
-  return scored
-    .filter(r => r.relevanceScore > 0)
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, topK);
+/** Coverage = fraction of known domains that currently have >= 1 record. */
+export function getSemanticCoverage(totalDomains: number, records?: KnowledgeRecord[]): number {
+  const pool = records ?? getAllKnowledgeRecords();
+  const covered = new Set(pool.map(r => r.domain)).size;
+  return totalDomains > 0 ? parseFloat((covered / totalDomains).toFixed(3)) : 0;
 }

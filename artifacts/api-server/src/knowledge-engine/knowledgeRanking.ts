@@ -1,65 +1,72 @@
-// ── V9.4 Knowledge Ranking — 10-factor weighted composite score ───────────────
+// ── V9.4 Knowledge Engine — Ranking ────────────────────────────────────────────
+//
+// Composite 0-10 ranking across the 10 spec factors. Weights sum to 1.00,
+// following the same convention as DIRECTOR_WEIGHTS / QUALITY_WEIGHTS in
+// other V8.x static engines.
+import type { KnowledgeRecord, RankedKnowledgeRecord, KnowledgeRankingFactors } from './types.js';
 
-import type { KnowledgeRecord, KnowledgeRankingFactors } from './types.js';
-
-// Weights sum to 1.00
 export const RANKING_WEIGHTS: Record<keyof KnowledgeRankingFactors, number> = {
-  quality:          0.20,
-  confidence:       0.12,
-  freshness:        0.10,
-  productionSuccess: 0.15,
-  popularity:       0.08,
-  repairFrequency:  0.08,
-  runtimePerf:      0.10,
-  accessibility:    0.07,
-  security:         0.05,
-  businessSuccess:  0.05,
+  quality:            0.16,
+  confidence:         0.10,
+  freshness:          0.08,
+  productionSuccess:  0.14,
+  popularity:         0.08,
+  repairFrequency:    0.10,
+  runtimePerformance: 0.10,
+  accessibility:      0.08,
+  security:           0.08,
+  businessSuccess:    0.08,
 };
 
-export interface RankedKnowledgeRecord extends KnowledgeRecord {
-  compositeScore: number; // 0-10
-  rankFactors:    KnowledgeRankingFactors;
+function assertWeightsSumTo1(): void {
+  const sum = Object.values(RANKING_WEIGHTS).reduce((a, b) => a + b, 0);
+  if (Math.abs(sum - 1) > 0.001) {
+    throw new Error(`RANKING_WEIGHTS must sum to 1.00, got ${sum}`);
+  }
+}
+assertWeightsSumTo1();
+
+/** Freshness: 10 = created within the last hour, decaying to 0 over ~30 days. */
+function freshnessScore(createdAt: number, now: number): number {
+  const ageMs = Math.max(0, now - createdAt);
+  const ageDays = ageMs / (1000 * 60 * 60 * 24);
+  const decay = Math.max(0, 1 - ageDays / 30);
+  return parseFloat((decay * 10).toFixed(2));
 }
 
-function normalizeRepairFrequency(freq: number): number {
-  // Lower repair frequency is better — invert it
-  return Math.max(0, 1 - freq);
+/** Popularity: normalized against a soft cap of 100 uses -> 10. */
+function popularityScore(popularity: number): number {
+  return parseFloat(Math.min(10, (popularity / 100) * 10).toFixed(2));
 }
 
-export function computeRankingFactors(record: KnowledgeRecord): KnowledgeRankingFactors {
+export function computeFactors(record: KnowledgeRecord, now = Date.now()): KnowledgeRankingFactors {
   return {
-    quality:          record.quality / 10,
-    confidence:       record.confidence,
-    freshness:        record.freshness,
-    productionSuccess: record.productionSuccess,
-    popularity:       record.popularity,
-    repairFrequency:  normalizeRepairFrequency(record.repairFrequency),
-    runtimePerf:      record.runtimePerf / 10,
-    accessibility:    record.accessibility / 10,
-    security:         record.security / 10,
-    businessSuccess:  record.businessSuccess / 10,
+    quality:            record.quality,
+    confidence:         record.confidence * 10,
+    freshness:          freshnessScore(record.createdAt, now),
+    productionSuccess:  record.productionSuccess * 10,
+    popularity:         popularityScore(record.popularity),
+    repairFrequency:    (1 - record.repairRate) * 10, // inverted — fewer repairs is better
+    runtimePerformance: record.runtimePerformance,
+    accessibility:      record.accessibilityScore,
+    security:           record.securityScore,
+    businessSuccess:    record.businessSuccess,
   };
 }
 
-export function computeCompositeScore(factors: KnowledgeRankingFactors): number {
+export function compositeScore(factors: KnowledgeRankingFactors): number {
   let score = 0;
-  for (const [k, weight] of Object.entries(RANKING_WEIGHTS) as [keyof KnowledgeRankingFactors, number][]) {
-    score += weight * (factors[k] ?? 0);
+  for (const key of Object.keys(RANKING_WEIGHTS) as (keyof KnowledgeRankingFactors)[]) {
+    score += factors[key] * RANKING_WEIGHTS[key];
   }
-  // Normalize to 0-10
-  return parseFloat((score * 10).toFixed(3));
+  return parseFloat(score.toFixed(2));
 }
 
-export function rankKnowledge(records: KnowledgeRecord[]): RankedKnowledgeRecord[] {
+export function rankKnowledge(records: KnowledgeRecord[], now = Date.now()): RankedKnowledgeRecord[] {
   return records
-    .map(record => {
-      const rankFactors    = computeRankingFactors(record);
-      const compositeScore = computeCompositeScore(rankFactors);
-      return { ...record, compositeScore, rankFactors };
+    .map(r => {
+      const factorBreakdown = computeFactors(r, now);
+      return { ...r, factorBreakdown, compositeScore: compositeScore(factorBreakdown) };
     })
     .sort((a, b) => b.compositeScore - a.compositeScore);
-}
-
-export function getRankingWeightsSum(): number {
-  return Object.values(RANKING_WEIGHTS).reduce((s, w) => s + w, 0);
 }
