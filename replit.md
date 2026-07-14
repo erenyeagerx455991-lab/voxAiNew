@@ -84,6 +84,6 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Setup status (imported project)
 
-- Re-set up on Replit on 2026-07-13 after a fresh import wiped the previous Replit wiring (no artifacts/workflows registered, only `DATABASE_URL` present): ran `pnpm install`, pushed the DB schema (no changes needed), registered the three artifacts (`voxai` web frontend, `api-server` API, `mockup-sandbox` canvas preview), and confirmed all three workflows start cleanly.
+- Re-set up on Replit on 2026-07-14 after another fresh import wiped the previous Replit wiring (no artifacts/workflows registered, no secrets except `SESSION_SECRET`): ran `pnpm install`, confirmed the pre-provisioned Postgres DB and pushed the schema (no changes needed), got the three artifacts (`voxai` web frontend, `api-server` API, `mockup-sandbox` canvas preview) re-registered and all three workflows running and verified via screenshot + proxy checks.
 - **Still needed from the user:** `OPENROUTER_API_KEY` and `GROQ_API_KEY` — requested but not yet provided. The server runs without them, but every generate/edit/repair build request will fail until both are set.
 - `REDIS_URL` is not set — the build queue runs in-memory, which is fine for development.
