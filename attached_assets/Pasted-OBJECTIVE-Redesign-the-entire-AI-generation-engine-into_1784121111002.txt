@@ -1,0 +1,475 @@
+OBJECTIVE
+
+Redesign the entire AI generation engine into an enterprise-grade orchestrated multi-agent architecture inspired by modern AI application builders such as Lovable, Bolt.new, and v0.
+
+This is NOT a chatbot.
+
+This is NOT a sequential prompt chain.
+
+This is an intelligent orchestration engine where every specialized agent performs a dedicated responsibility under a central orchestrator.
+
+The architecture must be modular, deterministic, extensible, observable, and fault tolerant.
+
+=====================================================
+
+GLOBAL PRINCIPLE
+
+The system should never think in terms of prompts.
+
+It should think in terms of work.
+
+Every user request becomes a structured task graph.
+
+Every task becomes independent work.
+
+Every work item is executed by the best specialized agent.
+
+Every output is validated.
+
+Every failure is repaired.
+
+Every successful artifact is merged into one coherent project.
+
+=====================================================
+
+PIPELINE
+
+User Prompt
+
+↓
+
+Planner
+
+↓
+
+Parallel
+
+• Architecture Reasoning
+
+• Product Reasoning
+
+↓
+
+Merge
+
+↓
+
+Task Graph Builder
+
+↓
+
+Task Scheduler
+
+↓
+
+Parallel Execution
+
+• Frontend Agent
+
+• Backend Agent
+
+• Database Agent
+
+↓
+
+Dependency Resolution
+
+↓
+
+Build
+
+↓
+
+Error Classification
+
+↓
+
+Smart Repair
+
+↓
+
+Visual Validation
+
+↓
+
+Merge
+
+↓
+
+Project Output
+
+=====================================================
+
+The orchestrator owns the complete lifecycle.
+
+No agent may directly invoke another agent.
+
+All communication happens through the orchestrator.
+
+The orchestrator controls
+
+• scheduling
+
+• retries
+
+• priorities
+
+• memory
+
+• dependencies
+
+• context
+
+• cancellation
+
+• rollback
+
+=====================================================
+
+Planner
+
+Responsibilities
+
+Understand user intent.
+
+Extract hidden requirements.
+
+Detect project type.
+
+Identify technologies.
+
+Estimate complexity.
+
+Produce execution strategy.
+
+Output
+
+Structured execution plan.
+
+=====================================================
+
+Architecture Agent
+
+Design project architecture.
+
+Generate folder structure.
+
+Define routes.
+
+Define modules.
+
+Define services.
+
+Define APIs.
+
+Define data flow.
+
+Define state management.
+
+Produce architecture specification.
+
+=====================================================
+
+Product Reasoning Agent
+
+Think like a senior product manager.
+
+Identify
+
+target users
+
+business goals
+
+user flows
+
+information architecture
+
+conversion goals
+
+required features
+
+feature priorities
+
+non-functional requirements
+
+=====================================================
+
+Task Graph Builder
+
+Convert architecture into DAG (Directed Acyclic Graph).
+
+Each task contains
+
+id
+
+dependencies
+
+priority
+
+estimated cost
+
+required tools
+
+required context
+
+required files
+
+required outputs
+
+Independent tasks must execute in parallel.
+
+=====================================================
+
+Task Scheduler
+
+Optimize execution order.
+
+Run independent tasks concurrently.
+
+Prevent conflicting writes.
+
+Track progress.
+
+Support retries.
+
+=====================================================
+
+Frontend Agent
+
+Generate
+
+React
+
+TypeScript
+
+Tailwind
+
+components
+
+layouts
+
+responsive design
+
+design system
+
+animations
+
+accessibility
+
+=====================================================
+
+Backend Agent
+
+Generate
+
+APIs
+
+business logic
+
+authentication
+
+middleware
+
+validation
+
+security
+
+=====================================================
+
+Database Agent
+
+Design schema.
+
+Relationships.
+
+Indexes.
+
+Constraints.
+
+Migrations.
+
+Seed data.
+
+=====================================================
+
+Dependency Resolution
+
+Resolve imports.
+
+Package versions.
+
+Shared interfaces.
+
+Type conflicts.
+
+Circular dependencies.
+
+=====================================================
+
+Build Agent
+
+Perform real project build.
+
+Compile project.
+
+Install dependencies.
+
+Run lint.
+
+Run type check.
+
+Run tests.
+
+Generate build report.
+
+=====================================================
+
+Error Classification
+
+Errors must be categorized.
+
+Syntax
+
+Type
+
+Import
+
+Runtime
+
+Dependency
+
+Configuration
+
+Build
+
+Architecture
+
+Logic
+
+=====================================================
+
+Smart Repair
+
+Repair only affected files.
+
+Never regenerate the whole project.
+
+Maintain architecture consistency.
+
+Retry intelligently.
+
+Limit retry attempts.
+
+=====================================================
+
+Visual Validation
+
+Inspect generated UI.
+
+Check
+
+spacing
+
+typography
+
+responsive layout
+
+contrast
+
+component consistency
+
+alignment
+
+design system
+
+interaction quality
+
+=====================================================
+
+Merge
+
+Merge outputs from all successful agents.
+
+Resolve conflicts.
+
+Maintain architecture integrity.
+
+Generate final project.
+
+=====================================================
+
+Cross Cutting Systems
+
+Global Memory
+
+Context Retrieval
+
+Knowledge Graph
+
+Dependency Graph
+
+Design System Registry
+
+Component Registry
+
+Prompt Cache
+
+Telemetry
+
+Metrics
+
+Audit Logs
+
+Event Bus
+
+Version History
+
+=====================================================
+
+Engineering Principles
+
+Stateless agents.
+
+Shared memory.
+
+Deterministic execution.
+
+Structured outputs.
+
+Retry safety.
+
+Observability.
+
+Event driven.
+
+Parallel execution.
+
+Incremental editing.
+
+Idempotent operations.
+
+No duplicated logic.
+
+No hidden state.
+
+=====================================================
+
+Quality Rules
+
+Never regenerate the whole project if only one file changed.
+
+Never execute unrelated tasks.
+
+Always reuse existing project context.
+
+Always validate before merging.
+
+Always repair before failing.
+
+Always preserve user edits.
+
+Prefer incremental modifications over regeneration.
+
+=====================================================
+
+The final architecture should resemble a modern AI operating system rather than a prompt chain.
