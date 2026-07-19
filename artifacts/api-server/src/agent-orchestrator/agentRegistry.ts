@@ -219,6 +219,24 @@ export const AGENT_REGISTRY: Record<AgentName, AgentDeclaration> = {
     timeoutPolicy: timeout(120_000, 'abort'),
     modelTier: 'cheap-reasoning', baseCostTokens: 2_000, baseDurationMs: 30_000,
   },
+  // V9.5: Autonomous Reasoning & Decision Intelligence Engine — step 0.99
+  // Static/deterministic (no LLM calls). Runs before the Planner and provides
+  // a ReasoningBlueprint to every downstream agent. Never skippable — the
+  // blueprint is consumed by the Planner context string.
+  ReasoningEngine: {
+    name: 'ReasoningEngine',
+    requires: ['RuntimeIntelligence'],
+    dependsOn: ['RuntimeIntelligence'],
+    produces: ['reasoningBlueprint', 'reasoningContext'],
+    consumes: [
+      'runtimeBlueprint', 'productPlan', 'frontendBlueprint',
+      'backendBlueprint', 'devopsBlueprint', 'qaBlueprint',
+    ],
+    skippable: false,
+    retryPolicy: retry(0, 'none', 'low', false, 'fallback'),
+    timeoutPolicy: timeout(3_000),
+    modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 20,
+  },
 };
 
 export const ALL_AGENT_NAMES: AgentName[] = Object.keys(AGENT_REGISTRY) as AgentName[];

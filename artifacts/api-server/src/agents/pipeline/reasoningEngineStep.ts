@@ -41,7 +41,7 @@ export async function runReasoningEngineStep(
   modelBudget: { totalTokenBudget?: number; tokenEfficiency?: number; expectedTotalCost?: number; fallbackPrediction?: number } | undefined,
   upstream: ReasoningStepUpstream,
 ): Promise<ReasoningStepOutput> {
-  return withAgentMetrics('ReasoningEngine' as any, async () => {
+  return withAgentMetrics('ReasoningEngine', async () => {
     const startedAt = Date.now();
     const sendEvent = (event: object) => {
       try { res.write(`data: ${JSON.stringify(event)}\n\n`); } catch { /* SSE writes must never throw */ }
