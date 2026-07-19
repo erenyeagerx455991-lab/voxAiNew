@@ -219,6 +219,24 @@ export const AGENT_REGISTRY: Record<AgentName, AgentDeclaration> = {
     timeoutPolicy: timeout(120_000, 'abort'),
     modelTier: 'cheap-reasoning', baseCostTokens: 2_000, baseDurationMs: 30_000,
   },
+  // V9.6: Autonomous Execution Intelligence Engine — step 0.995
+  // Static/deterministic (no LLM calls). Runs after ReasoningEngine and before
+  // the Planner. Converts ReasoningBlueprint → ExecutionIntelligenceBlueprint.
+  // Never skippable — the execution plan is consumed by the Planner context.
+  ExecutionIntelligence: {
+    name: 'ExecutionIntelligence',
+    requires: ['ReasoningEngine'],
+    dependsOn: ['ReasoningEngine'],
+    produces: ['executionBlueprint', 'executionContext'],
+    consumes: [
+      'reasoningBlueprint', 'runtimeBlueprint', 'productPlan',
+      'frontendBlueprint', 'backendBlueprint', 'devopsBlueprint', 'qaBlueprint',
+    ],
+    skippable: false,
+    retryPolicy: retry(0, 'none', 'low', false, 'fallback'),
+    timeoutPolicy: timeout(3_000),
+    modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 15,
+  },
   // V9.5: Autonomous Reasoning & Decision Intelligence Engine — step 0.99
   // Static/deterministic (no LLM calls). Runs before the Planner and provides
   // a ReasoningBlueprint to every downstream agent. Never skippable — the

@@ -32,7 +32,8 @@ export type AgentName =
   | 'DesignDirector'
   | 'Scaffold'
   | 'RuntimeValidation'
-  | 'ReasoningEngine';
+  | 'ReasoningEngine'
+  | 'ExecutionIntelligence';
 
 export type ProjectComplexity = 'simple' | 'standard' | 'enterprise';
 

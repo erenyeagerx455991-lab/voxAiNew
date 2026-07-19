@@ -15,6 +15,7 @@
  *  0.95 ModelOrchestrator     — V9.3 model/resource routing engine (no LLM)
  *  0.97 KnowledgeEngine       — V9.4 autonomous knowledge intelligence (no LLM)
  *  0.99 ReasoningEngine       — V9.5 autonomous reasoning & decision brain (no LLM)
+ *  0.995 ExecutionIntelligence — V9.6 autonomous execution planning brain (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -56,6 +57,7 @@ import { runOrchestratorStep, finalizeOrchestratorExecution } from "./orchestrat
 import { runModelOrchestratorStep, finalizeModelOrchestratorExecution } from "./modelOrchestratorStep.js";
 import { runKnowledgeEngineStep, finalizeKnowledgeEngineExecution } from "./knowledgeEngineStep.js";
 import { runReasoningEngineStep, finalizeReasoningEngineExecution } from "./reasoningEngineStep.js";
+import { runExecutionIntelligenceStep, finalizeExecutionIntelligenceStep } from "./executionIntelligenceStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -179,15 +181,34 @@ export async function runBuildPipeline(
       },
     );
 
+    // ── Step 0.995: Execution Intelligence (V9.6 — autonomous execution planning, no LLM) ─
+    const executionIntelligenceStepOutput = await runExecutionIntelligenceStep(
+      buildId, res, executionBlueprint.complexity, reasoningStepOutput.blueprint,
+      {
+        totalTokenBudget:  modelBlueprint.totalTokenBudget,
+        tokenEfficiency:   modelBlueprint.tokenEfficiency,
+        expectedTotalCost: modelBlueprint.expectedTotalCost,
+      },
+      {
+        productManagerOutput,
+        frontendArchitectOutput,
+        backendArchitectOutput,
+        devopsArchitectOutput,
+        qaArchitectOutput,
+        runtimeIntelligenceOutput,
+      },
+    );
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
       '\n' + backendArchitectOutput.enrichedPromptWithArchitecture +
       '\n' + devopsArchitectOutput.enrichedPromptWithDevOps +
       '\n' + qaArchitectOutput.enrichedPromptWithQA +
-      runtimeIntelligenceOutput.contextString +   // V9.0 runtime context
-      knowledgeStepOutput.contextString +         // V9.4 knowledge engine context
-      reasoningStepOutput.contextString;          // V9.5 reasoning engine context
+      runtimeIntelligenceOutput.contextString +              // V9.0 runtime context
+      knowledgeStepOutput.contextString +                    // V9.4 knowledge engine context
+      reasoningStepOutput.contextString +                    // V9.5 reasoning engine context
+      executionIntelligenceStepOutput.contextString;         // V9.6 execution intelligence context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -393,6 +414,10 @@ export async function runBuildPipeline(
       reasoningBlueprint: reasoningStepOutput.blueprint,
       reasoningChosenPath: reasoningStepOutput.blueprint.chosenPath.id,
       reasoningConfidenceScore: reasoningStepOutput.blueprint.confidence.confidenceScore,
+      // V9.6: Autonomous Execution Intelligence Engine — blueprint (additive)
+      executionIntelligenceBlueprint: executionIntelligenceStepOutput.blueprint,
+      executionMode: executionIntelligenceStepOutput.blueprint.executionMode,
+      executionScore: executionIntelligenceStepOutput.blueprint.executionScore,
     });
 
     // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
@@ -425,6 +450,15 @@ export async function runBuildPipeline(
       buildId,
       reasoningStepOutput.blueprint,
       evalRes?.overallScore ?? directorScore83,
+    );
+
+    // ── V9.6: Execution Intelligence learning + telemetry (fire-and-forget) ─────
+    finalizeExecutionIntelligenceStep(
+      res,
+      buildId,
+      executionIntelligenceStepOutput.blueprint,
+      evalRes?.overallScore ?? directorScore83,
+      Date.now() - pipelineStart,
     );
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
