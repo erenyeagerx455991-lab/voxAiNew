@@ -1,0 +1,742 @@
+VoxAI V9.6 — Autonomous Execution Intelligence Engine
+
+Objective
+
+Implement V9.6 Autonomous Execution Intelligence Engine.
+
+This is NOT another Planner, Architect, Generator, or Reasoning module.
+
+The goal is to transform VoxAI from an intelligent planning system into an intelligent execution system capable of autonomously managing the complete lifecycle of execution after reasoning is finished.
+
+This engine must become the execution brain of VoxAI.
+
+---
+
+Pipeline Position
+
+Insert the new step immediately after:
+
+Knowledge Intelligence
+↓
+
+Reasoning Intelligence (V9.5)
+
+↓
+
+Execution Intelligence (NEW V9.6)
+
+↓
+
+Planner
+
+Reasoning decides WHAT should happen.
+
+Execution Intelligence decides HOW it should happen.
+
+Planner receives an already optimized execution strategy.
+
+---
+
+Primary Responsibilities
+
+The engine must:
+
+- Convert reasoning into executable tasks.
+- Break large work into dependency-aware task graphs.
+- Detect parallel execution opportunities.
+- Prioritize execution order.
+- Predict execution cost.
+- Predict execution time.
+- Allocate retries.
+- Allocate timeout policies.
+- Detect blocking tasks.
+- Detect critical path.
+- Support partial execution.
+- Support resumable execution.
+- Handle long-running workflows.
+- Re-plan after failures.
+- Produce deterministic execution plans.
+
+No LLM calls.
+
+Pure deterministic intelligence.
+
+---
+
+Create New Module
+
+src/execution-intelligence/
+
+---
+
+Required Files
+
+executionTypes.ts
+
+taskGraphBuilder.ts
+
+dependencyResolver.ts
+
+parallelPlanner.ts
+
+criticalPathPlanner.ts
+
+priorityPlanner.ts
+
+executionScheduler.ts
+
+retryPlanner.ts
+
+timeoutPlanner.ts
+
+resourcePlanner.ts
+
+executionCostPlanner.ts
+
+executionTimePlanner.ts
+
+checkpointPlanner.ts
+
+resumePlanner.ts
+
+rollbackPlanner.ts
+
+failureRecoveryPlanner.ts
+
+executionValidator.ts
+
+executionLearning.ts
+
+executionMetrics.ts
+
+executionPersistence.ts
+
+executionTelemetry.ts
+
+executionIntelligence.ts
+
+executionFacade.ts
+
+executionIntelligenceStep.ts
+
+---
+
+Execution Blueprint
+
+Create a complete ExecutionBlueprint.
+
+Example:
+
+ExecutionBlueprint
+{
+    taskGraph,
+
+    executionOrder,
+
+    parallelGroups,
+
+    checkpoints,
+
+    retries,
+
+    timeoutPolicies,
+
+    rollbackPlan,
+
+    resumePlan,
+
+    criticalPath,
+
+    executionScore,
+
+    estimatedCost,
+
+    estimatedTime,
+
+    resourceUsage,
+
+    failureStrategy,
+
+    executionMode
+}
+
+---
+
+Task Graph Builder
+
+Convert reasoning output into DAG.
+
+Each task contains:
+
+id
+
+name
+
+dependsOn
+
+priority
+
+estimatedCost
+
+estimatedTime
+
+parallelizable
+
+retryable
+
+timeout
+
+rollbackRequired
+
+---
+
+Dependency Resolver
+
+Build dependency graph.
+
+Detect:
+
+Missing dependencies
+
+Circular dependencies
+
+Redundant dependencies
+
+Independent branches
+
+Blocking chains
+
+---
+
+Parallel Planner
+
+Automatically group tasks.
+
+Example
+
+Group A
+
+Frontend
+
+Backend
+
+Documentation
+
+↓
+
+Group B
+
+Testing
+
+↓
+
+Group C
+
+Deployment
+
+Produce:
+
+parallelEfficiency
+
+parallelGroups
+
+idleTimePrediction
+
+---
+
+Critical Path Planner
+
+Detect
+
+Longest dependency chain
+
+Critical tasks
+
+Blocking tasks
+
+Execution bottlenecks
+
+Estimated completion path
+
+---
+
+Priority Planner
+
+Assign priority.
+
+Priority dimensions:
+
+Business value
+
+User impact
+
+Dependency depth
+
+Risk
+
+Execution cost
+
+Estimated duration
+
+Criticality
+
+---
+
+Retry Planner
+
+For every task determine
+
+retry count
+
+retry policy
+
+backoff strategy
+
+retry window
+
+Never retry:
+
+User errors
+
+Validation failures
+
+Configuration errors
+
+Retry:
+
+Network
+
+Timeout
+
+Temporary provider errors
+
+---
+
+Timeout Planner
+
+Determine timeout for each task.
+
+Example
+
+Small task
+
+30 sec
+
+Medium
+
+2 min
+
+Large
+
+5 min
+
+Enterprise
+
+10 min
+
+---
+
+Resource Planner
+
+Estimate
+
+CPU
+
+Memory
+
+LLM calls
+
+API calls
+
+Disk
+
+Network
+
+Cache
+
+Temporary storage
+
+---
+
+Execution Cost Planner
+
+Estimate
+
+Token usage
+
+API cost
+
+Infrastructure cost
+
+Total execution cost
+
+Cost confidence
+
+---
+
+Execution Time Planner
+
+Estimate
+
+Minimum
+
+Average
+
+Worst case
+
+Critical path duration
+
+Parallel savings
+
+---
+
+Checkpoint Planner
+
+Automatically insert checkpoints.
+
+Support
+
+Resume
+
+Rollback
+
+Crash recovery
+
+Partial completion
+
+---
+
+Resume Planner
+
+Support
+
+Resume after crash
+
+Resume after restart
+
+Resume after timeout
+
+Resume after user pause
+
+Resume after deployment interruption
+
+---
+
+Rollback Planner
+
+Generate rollback strategy.
+
+Rollback only affected tasks.
+
+Never restart full pipeline unless necessary.
+
+---
+
+Failure Recovery Planner
+
+When execution fails:
+
+Identify failed node
+
+Identify affected tasks
+
+Skip unaffected tasks
+
+Generate recovery path
+
+Continue execution
+
+---
+
+Execution Validator
+
+Score 0–10
+
+Dimensions:
+
+Task Graph
+
+Dependencies
+
+Parallelism
+
+Critical Path
+
+Retry Strategy
+
+Timeout Strategy
+
+Resource Allocation
+
+Execution Cost
+
+Recovery
+
+Overall Execution
+
+---
+
+Learning Engine
+
+Learn from every execution.
+
+Track:
+
+Average duration
+
+Average retries
+
+Failure rate
+
+Parallel efficiency
+
+Recovery success
+
+Cost prediction accuracy
+
+Execution success
+
+Persist asynchronously.
+
+Never block pipeline.
+
+---
+
+Metrics
+
+Maintain rolling statistics.
+
+500 record cap.
+
+Expose
+
+Average execution score
+
+Average duration
+
+Average retries
+
+Failure frequency
+
+Recovery frequency
+
+Parallel efficiency
+
+Execution mode distribution
+
+---
+
+Persistence
+
+Store
+
+ExecutionBlueprint
+
+Version history
+
+Rollback snapshots
+
+Resume checkpoints
+
+500 snapshot cap
+
+Support rollback
+
+Support recovery
+
+---
+
+Telemetry
+
+GET
+
+/api/telemetry/quality
+
+Add
+
+executionIntelligence
+
+Fields
+
+executionScore
+
+parallelEfficiency
+
+averageDuration
+
+averageRetries
+
+failureRate
+
+recoveryRate
+
+learningStatistics
+
+plannerDistribution
+
+persistenceHealth
+
+estimatedCost
+
+estimatedTime
+
+---
+
+SSE Events
+
+Emit
+
+execution_start
+
+execution_progress
+
+execution_complete
+
+execution_learning
+
+Do NOT modify existing events.
+
+Only additive.
+
+---
+
+Pipeline Integration
+
+Register AgentName
+
+ExecutionIntelligence
+
+Insert after
+
+Reasoning Intelligence
+
+Before Planner
+
+Planner must consume
+
+ExecutionBlueprint
+
+instead of raw reasoning output.
+
+---
+
+Tests
+
+Create
+
+Unit Tests
+
+Integration Tests
+
+Persistence Tests
+
+Telemetry Tests
+
+SSE Tests
+
+Recovery Tests
+
+Rollback Tests
+
+Resume Tests
+
+Parallel Planning Tests
+
+Dependency Resolution Tests
+
+Critical Path Tests
+
+Execution Cost Tests
+
+Execution Time Tests
+
+Retry Planner Tests
+
+Timeout Planner Tests
+
+Target:
+
+250+ new tests.
+
+Zero regression.
+
+---
+
+Constraints
+
+Do NOT change:
+
+Previous Architect modules
+
+Reasoning Engine
+
+Knowledge Engine
+
+Runtime Engine
+
+Security Engine
+
+Planner logic
+
+Generator
+
+Repair
+
+Deployment
+
+Only extend the pipeline.
+
+No breaking changes.
+
+Backward compatible.
+
+---
+
+Deliverables
+
+Provide:
+
+1. Complete implementation
+
+2. Pipeline wiring
+
+3. Telemetry wiring
+
+4. Persistence wiring
+
+5. Learning wiring
+
+6. SSE wiring
+
+7. Agent registration
+
+8. Test suite
+
+9. Build verification
+
+10. Typecheck verification
+
+11. Final audit document
+
+artifacts/api-server/v9.6Audit.md
+
+---
+
+Success Criteria
+
+- Deterministic execution planning
+- Complete dependency graph
+- Automatic parallel scheduling
+- Accurate critical path
+- Cost prediction
+- Time prediction
+- Retry intelligence
+- Resume support
+- Rollback support
+- Failure recovery
+- Learning enabled
+- Telemetry enabled
+- Persistence enabled
+- 250+ tests
+- Zero regressions
+- Production-ready implementation
