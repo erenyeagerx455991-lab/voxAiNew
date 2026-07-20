@@ -237,6 +237,24 @@ export const AGENT_REGISTRY: Record<AgentName, AgentDeclaration> = {
     timeoutPolicy: timeout(3_000),
     modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 15,
   },
+  // V9.7: Autonomous Planning Intelligence Engine — step 0.997
+  // Static/deterministic (no LLM calls). Runs after ExecutionIntelligence and before
+  // the Planner. Converts prompt + upstream context → complete PlanningBlueprint.
+  // Never skippable — planning context enriches the Planner prompt.
+  PlanningIntelligence: {
+    name: 'PlanningIntelligence',
+    requires: ['ExecutionIntelligence'],
+    dependsOn: ['ExecutionIntelligence'],
+    produces: ['planningBlueprint', 'planningContext'],
+    consumes: [
+      'executionBlueprint', 'reasoningBlueprint', 'runtimeBlueprint', 'productPlan',
+      'frontendBlueprint', 'backendBlueprint',
+    ],
+    skippable: false,
+    retryPolicy: retry(0, 'none', 'low', false, 'fallback'),
+    timeoutPolicy: timeout(5_000),
+    modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 20,
+  },
   // V9.5: Autonomous Reasoning & Decision Intelligence Engine — step 0.99
   // Static/deterministic (no LLM calls). Runs before the Planner and provides
   // a ReasoningBlueprint to every downstream agent. Never skippable — the

@@ -63,6 +63,8 @@ import { getKnowledgeEngineMetrics } from "../knowledge-engine/knowledgeMetrics.
 import { getReasoningEngineMetrics } from "../reasoning-engine/reasoningMetrics.js";
 // V9.6: Autonomous Execution Intelligence Engine telemetry
 import { getExecutionIntelligenceSnapshot } from "../execution-intelligence/executionTelemetry.js";
+// V9.7: Autonomous Planning Intelligence Engine telemetry
+import { getPlanningMetricsSnapshot } from "../planning-intelligence/planningTelemetry.js";
 
 const router: Router = Router();
 
@@ -359,6 +361,8 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     reasoningEngine: getReasoningEngineMetrics(),
     // V9.6: Autonomous Execution Intelligence Engine telemetry (additive)
     executionIntelligence: getExecutionIntelligenceSnapshot(),
+    // V9.7: Autonomous Planning Intelligence Engine telemetry (additive)
+    planningIntelligence: getPlanningMetricsSnapshot(),
     generatedAt: new Date().toISOString(),
   });
 });

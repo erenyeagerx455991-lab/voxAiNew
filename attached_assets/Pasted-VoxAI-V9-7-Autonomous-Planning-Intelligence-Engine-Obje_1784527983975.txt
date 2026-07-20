@@ -1,0 +1,834 @@
+VoxAI V9.7 — Autonomous Planning Intelligence Engine
+
+Objective
+
+Implement V9.7 Autonomous Planning Intelligence Engine as a pure deterministic, zero-LLM planning layer that executes after Execution Intelligence and before the existing Planner.
+
+The purpose of this engine is NOT to generate code.
+
+Its purpose is to transform a high-level prompt into a complete engineering execution roadmap that every downstream architect, planner, generator, evaluator, repair agent, and execution module can follow.
+
+This module must behave exactly like a Senior Technical Program Manager + Senior Software Architect.
+
+---
+
+Architecture Principles
+
+MUST FOLLOW
+
+- Pure deterministic logic
+- No additional LLM calls
+- No breaking API changes
+- No Planner rewrite
+- No Architecture rewrite
+- No Generator rewrite
+- Fire-and-forget learning
+- Versioned persistence
+- Additive integration only
+- Existing pipeline order must remain stable
+
+---
+
+Pipeline Position
+
+Insert a new pipeline step:
+
+Execution Intelligence
+
+↓
+
+Planning Intelligence (NEW)
+
+↓
+
+Planner
+
+↓
+
+Frontend Architect
+
+↓
+
+Backend Architect
+
+↓
+
+Generator
+
+↓
+
+Evaluator
+
+↓
+
+Repair
+
+---
+
+Responsibilities
+
+---
+
+Phase 1 — Goal Analysis
+
+Create
+
+goalPlanner.ts
+
+Detect:
+
+Business Goal
+
+Technical Goal
+
+UX Goal
+
+Performance Goal
+
+SEO Goal
+
+Security Goal
+
+Scalability Goal
+
+Accessibility Goal
+
+Analytics Goal
+
+Maintenance Goal
+
+Return
+
+PlanningGoals
+
+---
+
+Phase 2 — Requirement Extraction
+
+Create
+
+requirementPlanner.ts
+
+Extract automatically:
+
+Pages
+
+Layouts
+
+Components
+
+APIs
+
+Database
+
+Authentication
+
+Authorization
+
+Dashboard
+
+Admin Panel
+
+Forms
+
+CMS
+
+Payments
+
+Notifications
+
+Analytics
+
+Search
+
+Settings
+
+Reports
+
+User Roles
+
+Feature Flags
+
+etc.
+
+Return
+
+RequirementBlueprint
+
+---
+
+Phase 3 — Feature Dependency Graph
+
+Create
+
+dependencyPlanner.ts
+
+Build a DAG
+
+Example
+
+Authentication
+
+↓
+
+Profile
+
+↓
+
+Dashboard
+
+↓
+
+Analytics
+
+↓
+
+Settings
+
+Detect
+
+Cycles
+
+Missing dependencies
+
+Invalid order
+
+Independent branches
+
+Blocking chains
+
+Return
+
+DependencyBlueprint
+
+---
+
+Phase 4 — Milestone Planning
+
+Create
+
+milestonePlanner.ts
+
+Automatically divide project into milestones
+
+Example
+
+Milestone 1
+
+Foundation
+
+Milestone 2
+
+Authentication
+
+Milestone 3
+
+Core Features
+
+Milestone 4
+
+Backend
+
+Milestone 5
+
+Deployment
+
+Return
+
+MilestoneBlueprint
+
+---
+
+Phase 5 — Roadmap Planning
+
+Create
+
+roadmapPlanner.ts
+
+Generate complete roadmap
+
+Sprint 1
+
+Sprint 2
+
+Sprint 3
+
+Sprint 4
+
+Parallel Work
+
+Sequential Work
+
+Critical Deliverables
+
+Return
+
+RoadmapBlueprint
+
+---
+
+Phase 6 — Feature Planning
+
+Create
+
+featurePlanner.ts
+
+Plan
+
+Core Features
+
+Optional Features
+
+Future Features
+
+Blocked Features
+
+Dependencies
+
+Complexity
+
+Return
+
+FeatureBlueprint
+
+---
+
+Phase 7 — Task Planning
+
+Create
+
+taskPlanner.ts
+
+Break roadmap into tasks
+
+Task IDs
+
+Dependencies
+
+Estimated Effort
+
+Priority
+
+Owner Category
+
+Parallel Groups
+
+Return
+
+TaskBlueprint
+
+---
+
+Phase 8 — Risk Planning
+
+Create
+
+riskPlanner.ts
+
+Detect
+
+High Risk
+
+Medium Risk
+
+Low Risk
+
+Unknown Risk
+
+Technical Debt
+
+Security Risk
+
+Architecture Risk
+
+Timeline Risk
+
+Return
+
+RiskBlueprint
+
+---
+
+Phase 9 — Estimation Planning
+
+Create
+
+estimationPlanner.ts
+
+Estimate
+
+Development Time
+
+LLM Tokens
+
+Files
+
+Components
+
+APIs
+
+Database Tables
+
+Infrastructure
+
+Overall Cost
+
+Return
+
+EstimationBlueprint
+
+---
+
+Phase 10 — Increment Planning
+
+Create
+
+incrementPlanner.ts
+
+Split project into
+
+Increment 1
+
+Increment 2
+
+Increment 3
+
+Increment 4
+
+Increment 5
+
+Each increment should be independently buildable.
+
+Return
+
+IncrementBlueprint
+
+---
+
+Phase 11 — Priority Planning
+
+Create
+
+priorityPlanner.ts
+
+Calculate
+
+Business Value
+
+Technical Importance
+
+Risk
+
+Dependency Weight
+
+Complexity
+
+Return
+
+PriorityBlueprint
+
+---
+
+Phase 12 — Implementation Planning
+
+Create
+
+implementationPlanner.ts
+
+Determine
+
+Sequential Tasks
+
+Parallel Tasks
+
+Critical Path
+
+Blocked Tasks
+
+Fast-track Tasks
+
+Return
+
+ImplementationBlueprint
+
+---
+
+Phase 13 — Validation
+
+Create
+
+validationPlanner.ts
+
+Validate
+
+Requirements
+
+Dependencies
+
+Roadmap
+
+Milestones
+
+Tasks
+
+Risks
+
+Estimation
+
+Implementation
+
+Completeness
+
+Return
+
+PlanningValidation
+
+Planning Score
+
+0–10
+
+---
+
+Phase 14 — Core Orchestrator
+
+Create
+
+planningIntelligence.ts
+
+Responsibilities
+
+Execute all planners
+
+Merge outputs
+
+Create final
+
+PlanningBlueprint
+
+Never call LLM
+
+Never mutate existing modules
+
+---
+
+Phase 15 — Learning
+
+Create
+
+planningLearning.ts
+
+Fire-and-forget
+
+Async
+
+Never block pipeline
+
+Learn from
+
+Successful Builds
+
+Failed Builds
+
+Execution Time
+
+User Feedback
+
+Planner Accuracy
+
+Rolling history
+
+500 records
+
+---
+
+Phase 16 — Metrics
+
+Create
+
+planningMetrics.ts
+
+Track
+
+Planning Score
+
+Average Planning Time
+
+Roadmap Accuracy
+
+Dependency Accuracy
+
+Validation Score
+
+Risk Coverage
+
+Learning Count
+
+Planner Distribution
+
+Rolling window
+
+500 builds
+
+---
+
+Phase 17 — Persistence
+
+Create
+
+planningPersistence.ts
+
+Requirements
+
+Versioned Snapshots
+
+500 Snapshot Cap
+
+Rollback
+
+Resume
+
+History
+
+Recovery
+
+Debounced Writes
+
+Never throw
+
+---
+
+Phase 18 — Facade
+
+Create
+
+planningFacade.ts
+
+Expose
+
+runPlanningIntelligence()
+
+persistPlanningSnapshot()
+
+learnFromPlanning()
+
+getPlanningMetrics()
+
+getPlanningStats()
+
+rollbackPlanning()
+
+resetPlanning()
+
+Everything exported through a single public API.
+
+---
+
+Phase 19 — Pipeline Step
+
+Create
+
+planningIntelligenceStep.ts
+
+Add SSE Events
+
+planning_start
+
+planning_progress
+
+planning_complete
+
+planning_learning
+
+Must be additive only.
+
+---
+
+Phase 20 — Pipeline Wiring
+
+Update
+
+buildPipeline.ts
+
+Insert
+
+Planning Intelligence
+
+after
+
+Execution Intelligence
+
+before
+
+Planner
+
+Planner must consume
+
+PlanningBlueprint
+
+instead of only the raw prompt.
+
+---
+
+Phase 21 — Telemetry
+
+Update
+
+GET /api/telemetry/quality
+
+Add
+
+planningIntelligence
+
+with
+
+planningScore
+
+roadmapScore
+
+dependencyScore
+
+estimationScore
+
+riskScore
+
+validationScore
+
+learningStatistics
+
+plannerDistribution
+
+persistenceHealth
+
+averagePlanningTime
+
+No breaking API changes.
+
+---
+
+Phase 22 — Agent Registry
+
+Update
+
+agentMetrics.ts
+
+Add
+
+PlanningIntelligence
+
+to
+
+AgentName
+
+and
+
+AGENT_REGISTRY
+
+---
+
+Phase 23 — Startup
+
+Update
+
+index.ts
+
+Initialize
+
+Planning Persistence
+
+Planning Metrics
+
+Planning Learning
+
+using the same non-blocking startup pattern as previous engines.
+
+---
+
+Phase 24 — Tests
+
+Create comprehensive tests.
+
+Minimum
+
+250+ new tests
+
+Include
+
+Unit Tests
+
+Integration Tests
+
+Pipeline Tests
+
+Learning Tests
+
+Persistence Tests
+
+Rollback Tests
+
+Telemetry Tests
+
+SSE Tests
+
+Dependency Tests
+
+Validation Tests
+
+Milestone Tests
+
+Roadmap Tests
+
+Risk Tests
+
+Execution Order Tests
+
+No regressions allowed.
+
+---
+
+Phase 25 — Audit Document
+
+Generate
+
+artifacts/api-server/v9.7Audit.md
+
+Include
+
+Architecture Diagram
+
+Pipeline Position
+
+Module Inventory
+
+Planner Responsibilities
+
+Telemetry Mapping
+
+Persistence Design
+
+Learning Design
+
+Validation Matrix
+
+Performance Notes
+
+Future Extension Points
+
+---
+
+Success Criteria
+
+- Pure deterministic engine
+- Zero additional LLM calls
+- Zero breaking changes
+- Fully additive integration
+- Planner consumes PlanningBlueprint
+- Versioned persistence
+- Fire-and-forget learning
+- Complete telemetry
+- Comprehensive audit document
+- 250+ new tests
+- Full regression suite passing
+- Production build succeeds
+- Zero new TypeScript errors
+- API server starts cleanly
+- All existing functionality preserved

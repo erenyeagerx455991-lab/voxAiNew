@@ -33,7 +33,8 @@ export type AgentName =
   | 'Scaffold'
   | 'RuntimeValidation'
   | 'ReasoningEngine'
-  | 'ExecutionIntelligence';
+  | 'ExecutionIntelligence'
+  | 'PlanningIntelligence';
 
 export type ProjectComplexity = 'simple' | 'standard' | 'enterprise';
 

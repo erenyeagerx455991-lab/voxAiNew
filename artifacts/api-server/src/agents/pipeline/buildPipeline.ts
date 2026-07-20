@@ -16,6 +16,7 @@
  *  0.97 KnowledgeEngine       — V9.4 autonomous knowledge intelligence (no LLM)
  *  0.99 ReasoningEngine       — V9.5 autonomous reasoning & decision brain (no LLM)
  *  0.995 ExecutionIntelligence — V9.6 autonomous execution planning brain (no LLM)
+ *  0.997 PlanningIntelligence — V9.7 autonomous planning intelligence engine (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -58,6 +59,7 @@ import { runModelOrchestratorStep, finalizeModelOrchestratorExecution } from "./
 import { runKnowledgeEngineStep, finalizeKnowledgeEngineExecution } from "./knowledgeEngineStep.js";
 import { runReasoningEngineStep, finalizeReasoningEngineExecution } from "./reasoningEngineStep.js";
 import { runExecutionIntelligenceStep, finalizeExecutionIntelligenceStep } from "./executionIntelligenceStep.js";
+import { runPlanningIntelligenceStep, finalizePlanningIntelligenceStep } from "./planningIntelligenceStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -199,6 +201,20 @@ export async function runBuildPipeline(
       },
     );
 
+    // ── Step 0.997: Planning Intelligence (V9.7 — autonomous planning, no LLM) ──
+    const planningIntelligenceStepOutput = await runPlanningIntelligenceStep(
+      buildId, res, prompt, executionBlueprint.complexity,
+      reasoningStepOutput.blueprint.chosenPath.id,
+      reasoningStepOutput.blueprint.confidence.confidenceScore,
+      executionIntelligenceStepOutput.blueprint.executionMode,
+      {
+        totalTokenBudget:  modelBlueprint.totalTokenBudget,
+        expectedTotalCost: modelBlueprint.expectedTotalCost,
+        tokenEfficiency:   modelBlueprint.tokenEfficiency,
+      },
+      { productManagerOutput, frontendArchitectOutput, backendArchitectOutput },
+    );
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
@@ -208,7 +224,8 @@ export async function runBuildPipeline(
       runtimeIntelligenceOutput.contextString +              // V9.0 runtime context
       knowledgeStepOutput.contextString +                    // V9.4 knowledge engine context
       reasoningStepOutput.contextString +                    // V9.5 reasoning engine context
-      executionIntelligenceStepOutput.contextString;         // V9.6 execution intelligence context
+      executionIntelligenceStepOutput.contextString +        // V9.6 execution intelligence context
+      planningIntelligenceStepOutput.contextString;          // V9.7 planning intelligence context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -418,6 +435,9 @@ export async function runBuildPipeline(
       executionIntelligenceBlueprint: executionIntelligenceStepOutput.blueprint,
       executionMode: executionIntelligenceStepOutput.blueprint.executionMode,
       executionScore: executionIntelligenceStepOutput.blueprint.executionScore,
+      // V9.7: Autonomous Planning Intelligence Engine — blueprint (additive)
+      planningBlueprint: planningIntelligenceStepOutput.blueprint,
+      planningScore: planningIntelligenceStepOutput.blueprint.planningScore,
     });
 
     // ── V9.2: Orchestrator learning + telemetry (fire-and-forget, never blocks) ─
@@ -458,6 +478,15 @@ export async function runBuildPipeline(
       buildId,
       executionIntelligenceStepOutput.blueprint,
       evalRes?.overallScore ?? directorScore83,
+      Date.now() - pipelineStart,
+    );
+
+    // ── V9.7: Planning Intelligence learning + telemetry (fire-and-forget) ──────
+    finalizePlanningIntelligenceStep(
+      res,
+      buildId,
+      planningIntelligenceStepOutput.blueprint,
+      (evalRes?.overallScore ?? directorScore83) >= 6,
       Date.now() - pipelineStart,
     );
 

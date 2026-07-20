@@ -55,6 +55,13 @@ import("./security-architect/securityPersistence.js").then(({ initSecurityArchit
 import("./runtime-intelligence/runtimePersistence.js").then(({ initRuntimeIntelligencePersistence }) =>
   initRuntimeIntelligencePersistence()
 ).catch(() => { /* errors are logged inside initRuntimeIntelligencePersistence */ });
+// V9.7: Init Planning Intelligence (persistence + metrics + learning) on startup (non-blocking)
+Promise.all([
+  import("./planning-intelligence/planningPersistence.js"),
+  import("./planning-intelligence/planningMetrics.js"),
+  import("./planning-intelligence/planningLearning.js"),
+]).then(() => { /* modules loaded — in-memory state ready */ })
+  .catch(() => { /* never block startup on planning init */ });
 
 app.listen(port, (err) => {
   if (err) {
