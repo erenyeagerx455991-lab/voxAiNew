@@ -1,0 +1,467 @@
+VoxAI V9.8 — Autonomous Workflow Intelligence Engine
+
+Objective
+
+Implement V9.8 Autonomous Workflow Intelligence Engine.
+
+This is NOT another Planner, Architect, Generator, or Execution Engine.
+
+The purpose of V9.8 is to make VoxAI intelligently manage, optimize, evolve, and orchestrate its entire multi-agent workflow.
+
+Every previous engine decides what, why, how, or when.
+
+V9.8 decides which workflow is the best workflow.
+
+It becomes the Workflow Brain of VoxAI.
+
+---
+
+Core Principles
+
+- Pure deterministic engine
+- Zero additional LLM calls
+- No breaking API changes
+- No Planner rewrite
+- No Architect rewrite
+- No Generator rewrite
+- Fire-and-forget learning
+- Versioned persistence
+- Additive integration only
+
+---
+
+Pipeline Position
+
+Insert:
+
+Reasoning Intelligence
+
+↓
+
+Execution Intelligence
+
+↓
+
+Planning Intelligence
+
+↓
+
+Workflow Intelligence (NEW V9.8)
+
+↓
+
+Planner
+
+↓
+
+Generation
+
+---
+
+Responsibilities
+
+Phase 1 — Workflow Detection
+
+Detect project type and automatically choose the most appropriate workflow.
+
+Examples:
+
+- Landing Page Workflow
+- SaaS Workflow
+- Dashboard Workflow
+- Ecommerce Workflow
+- Enterprise Workflow
+- CMS Workflow
+- Blog Workflow
+- API Workflow
+- AI Product Workflow
+- Mobile-first Workflow
+
+Return:
+
+WorkflowBlueprint
+
+---
+
+Phase 2 — Workflow Selection
+
+Create
+
+workflowSelector.ts
+
+Choose workflow based on:
+
+- Product Goal
+- Complexity
+- Runtime Mode
+- Cost Budget
+- Time Budget
+- Risk
+- Project Size
+
+---
+
+Phase 3 — Agent Flow Planner
+
+Determine:
+
+- Required Agents
+- Optional Agents
+- Skipped Agents
+- Merged Agents
+- Execution Groups
+
+Never execute unnecessary agents.
+
+---
+
+Phase 4 — Workflow Optimization
+
+Optimize:
+
+- Agent count
+- Token usage
+- Runtime
+- Cost
+- Latency
+- Memory
+- Build duration
+
+Produce:
+
+OptimizationBlueprint
+
+---
+
+Phase 5 — Dynamic Agent Routing
+
+Automatically route work to the most appropriate agents.
+
+Support:
+
+- Sequential routing
+- Parallel routing
+- Conditional routing
+- Fallback routing
+
+---
+
+Phase 6 — Workflow Variants
+
+Maintain multiple workflow templates.
+
+Example:
+
+Fast Workflow
+
+Balanced Workflow
+
+Quality Workflow
+
+Enterprise Workflow
+
+Ultra Quality Workflow
+
+Automatically select the best one.
+
+---
+
+Phase 7 — Workflow Prediction
+
+Predict:
+
+- Success probability
+- Failure probability
+- Estimated duration
+- Estimated cost
+- Quality score
+- Reliability score
+
+---
+
+Phase 8 — Workflow Validator
+
+Validate:
+
+- Agent order
+- Missing stages
+- Duplicate stages
+- Dead branches
+- Circular routing
+- Inefficient paths
+
+Score:
+
+0–10
+
+---
+
+Phase 9 — Workflow Learning
+
+Learn continuously from every build.
+
+Track:
+
+- Workflow success rate
+- Agent efficiency
+- Average runtime
+- Cost savings
+- Failure causes
+- Recovery effectiveness
+
+Fire-and-forget only.
+
+Never block pipeline.
+
+---
+
+Phase 10 — Workflow Evolution
+
+Automatically evolve workflows.
+
+Support:
+
+- New workflow versions
+- Workflow optimization
+- Agent replacement
+- Stage removal
+- Stage insertion
+- Workflow comparison
+
+---
+
+Phase 11 — Workflow A/B Analysis
+
+Compare workflows.
+
+Metrics:
+
+- Speed
+- Cost
+- Quality
+- Success Rate
+- User Satisfaction
+
+Recommend the best workflow.
+
+---
+
+Phase 12 — Workflow Analytics
+
+Maintain rolling statistics.
+
+Track:
+
+- Workflow usage
+- Project distribution
+- Agent utilization
+- Average execution time
+- Average cost
+- Success rate
+- Failure rate
+
+---
+
+Phase 13 — Workflow Persistence
+
+Store:
+
+- WorkflowBlueprint
+- Version history
+- Workflow snapshots
+- Learning history
+- Rollback data
+
+Requirements:
+
+- 500 snapshot cap
+- Versioned storage
+- Rollback
+- Recovery
+- Debounced writes
+- Never throw
+
+---
+
+Phase 14 — Workflow Telemetry
+
+Extend:
+
+GET
+
+/api/telemetry/quality
+
+Add:
+
+workflowIntelligence
+
+Expose:
+
+- workflowScore
+- optimizationScore
+- routingScore
+- predictionScore
+- validationScore
+- workflowSuccessRate
+- averageWorkflowTime
+- averageWorkflowCost
+- learningStatistics
+- plannerDistribution
+- persistenceHealth
+
+---
+
+Phase 15 — SSE Events
+
+Additive only.
+
+Emit:
+
+workflow_start
+
+workflow_progress
+
+workflow_complete
+
+workflow_learning
+
+Do NOT modify existing SSE events.
+
+---
+
+Phase 16 — Pipeline Integration
+
+Insert Workflow Intelligence after Planning Intelligence.
+
+Planner must consume:
+
+WorkflowBlueprint
+
+alongside PlanningBlueprint and ExecutionBlueprint.
+
+---
+
+Phase 17 — Agent Registry
+
+Update:
+
+AgentName
+
+Add:
+
+WorkflowIntelligence
+
+Register inside AGENT_REGISTRY.
+
+---
+
+Phase 18 — Startup
+
+Initialize:
+
+- Workflow Persistence
+- Workflow Metrics
+- Workflow Learning
+
+Use existing non-blocking startup pattern.
+
+---
+
+Phase 19 — Public Facade
+
+Create:
+
+workflowFacade.ts
+
+Expose:
+
+- runWorkflowIntelligence()
+- persistWorkflowSnapshot()
+- learnFromWorkflow()
+- getWorkflowMetrics()
+- getWorkflowStats()
+- rollbackWorkflow()
+- resetWorkflow()
+
+---
+
+Phase 20 — Tests
+
+Create:
+
+- Unit Tests
+- Integration Tests
+- Pipeline Tests
+- Workflow Selection Tests
+- Routing Tests
+- Optimization Tests
+- Prediction Tests
+- Validation Tests
+- Persistence Tests
+- Rollback Tests
+- Learning Tests
+- Telemetry Tests
+- SSE Tests
+
+Target:
+
+- 250+ new tests
+- Zero regressions
+
+---
+
+Phase 21 — Audit Document
+
+Generate:
+
+artifacts/api-server/v9.8Audit.md
+
+Include:
+
+- Module Inventory
+- Pipeline Position
+- Workflow Diagram
+- Routing Matrix
+- Optimization Strategy
+- Learning Design
+- Persistence Design
+- Validation Matrix
+- Telemetry Mapping
+- Future Extension Points
+
+---
+
+Constraints
+
+- No new LLM calls
+- No breaking changes
+- No Planner rewrite
+- No Architect rewrite
+- No Generator rewrite
+- No Repair rewrite
+- No Deployment rewrite
+- Pure deterministic implementation
+- Fully additive integration
+
+---
+
+Success Criteria
+
+- Automatic workflow selection
+- Intelligent agent routing
+- Dynamic workflow optimization
+- Workflow prediction
+- Workflow validation
+- Workflow evolution
+- Workflow analytics
+- Fire-and-forget learning
+- Versioned persistence
+- Complete telemetry
+- Complete SSE support
+- Planner consumes WorkflowBlueprint
+- 250+ new tests
+- Production build succeeds
+- Zero new TypeScript errors
+- API server starts cleanly
+- Zero regressions
+- Production-ready implementation
