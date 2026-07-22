@@ -273,6 +273,23 @@ export const AGENT_REGISTRY: Record<AgentName, AgentDeclaration> = {
     timeoutPolicy: timeout(3_000),
     modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 20,
   },
+  // V9.9: Adaptive Intelligence — step 0.998, after PlanningIntelligence, before Planner.
+  // Pure deterministic — zero LLM calls. Produces an AdaptiveBlueprint that the Planner
+  // consumes as context alongside PlanningBlueprint, WorkflowBlueprint, ExecutionBlueprint.
+  AdaptiveIntelligence: {
+    name: 'AdaptiveIntelligence',
+    requires: ['PlanningIntelligence'],
+    dependsOn: ['PlanningIntelligence'],
+    produces: ['adaptiveBlueprint', 'adaptiveContext'],
+    consumes: [
+      'planningBlueprint', 'executionBlueprint', 'reasoningBlueprint',
+      'productPlan', 'frontendBlueprint', 'backendBlueprint', 'devopsBlueprint', 'qaBlueprint',
+    ],
+    skippable: false,
+    retryPolicy: retry(0, 'none', 'low', false, 'fallback'),
+    timeoutPolicy: timeout(3_000),
+    modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 25,
+  },
 };
 
 export const ALL_AGENT_NAMES: AgentName[] = Object.keys(AGENT_REGISTRY) as AgentName[];

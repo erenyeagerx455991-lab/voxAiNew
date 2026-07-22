@@ -17,6 +17,7 @@
  *  0.99 ReasoningEngine       — V9.5 autonomous reasoning & decision brain (no LLM)
  *  0.995 ExecutionIntelligence — V9.6 autonomous execution planning brain (no LLM)
  *  0.997 PlanningIntelligence — V9.7 autonomous planning intelligence engine (no LLM)
+ *  0.998 AdaptiveIntelligence — V9.9 autonomous adaptive intelligence engine (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -60,6 +61,7 @@ import { runKnowledgeEngineStep, finalizeKnowledgeEngineExecution } from "./know
 import { runReasoningEngineStep, finalizeReasoningEngineExecution } from "./reasoningEngineStep.js";
 import { runExecutionIntelligenceStep, finalizeExecutionIntelligenceStep } from "./executionIntelligenceStep.js";
 import { runPlanningIntelligenceStep, finalizePlanningIntelligenceStep } from "./planningIntelligenceStep.js";
+import { runAdaptiveIntelligenceStep, finalizeAdaptiveIntelligenceStep } from "./adaptiveIntelligenceStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -215,6 +217,28 @@ export async function runBuildPipeline(
       { productManagerOutput, frontendArchitectOutput, backendArchitectOutput },
     );
 
+    // ── Step 0.998: Adaptive Intelligence (V9.9 — autonomous adaptive brain, no LLM) ─
+    const adaptiveIntelligenceStepOutput = await runAdaptiveIntelligenceStep(
+      buildId, res, prompt, executionBlueprint.complexity,
+      reasoningStepOutput.blueprint.chosenPath.id,
+      reasoningStepOutput.blueprint.confidence.confidenceScore,
+      executionIntelligenceStepOutput.blueprint.executionMode,
+      planningIntelligenceStepOutput.blueprint.planningScore,
+      executionIntelligenceStepOutput.blueprint.executionScore,
+      {
+        totalTokenBudget:  modelBlueprint.totalTokenBudget,
+        expectedTotalCost: modelBlueprint.expectedTotalCost,
+        tokenEfficiency:   modelBlueprint.tokenEfficiency,
+      },
+      {
+        productManagerOutput,
+        frontendArchitectOutput,
+        backendArchitectOutput,
+        devopsArchitectOutput,
+        qaArchitectOutput,
+      },
+    );
+
     // Combine all blueprints + runtime context string for downstream Planner
     const enrichedPromptWithArchitecture =
       enrichedPromptWithFrontend +
@@ -225,7 +249,8 @@ export async function runBuildPipeline(
       knowledgeStepOutput.contextString +                    // V9.4 knowledge engine context
       reasoningStepOutput.contextString +                    // V9.5 reasoning engine context
       executionIntelligenceStepOutput.contextString +        // V9.6 execution intelligence context
-      planningIntelligenceStepOutput.contextString;          // V9.7 planning intelligence context
+      planningIntelligenceStepOutput.contextString +         // V9.7 planning intelligence context
+      adaptiveIntelligenceStepOutput.contextString;          // V9.9 adaptive intelligence context
 
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
@@ -488,6 +513,16 @@ export async function runBuildPipeline(
       planningIntelligenceStepOutput.blueprint,
       (evalRes?.overallScore ?? directorScore83) >= 6,
       Date.now() - pipelineStart,
+    );
+
+    // ── V9.9: Adaptive Intelligence learning + telemetry (fire-and-forget) ──────
+    finalizeAdaptiveIntelligenceStep(
+      res,
+      buildId,
+      adaptiveIntelligenceStepOutput.blueprint,
+      (evalRes?.overallScore ?? directorScore83) >= 6,
+      Date.now() - pipelineStart,
+      adaptiveIntelligenceStepOutput.blueprint.performanceAdaptation.estimatedCost,
     );
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────

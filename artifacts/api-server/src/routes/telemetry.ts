@@ -65,6 +65,8 @@ import { getReasoningEngineMetrics } from "../reasoning-engine/reasoningMetrics.
 import { getExecutionIntelligenceSnapshot } from "../execution-intelligence/executionTelemetry.js";
 // V9.7: Autonomous Planning Intelligence Engine telemetry
 import { getPlanningMetricsSnapshot } from "../planning-intelligence/planningTelemetry.js";
+// V9.9: Autonomous Adaptive Intelligence Engine telemetry
+import { getAdaptiveMetricsSnapshot } from "../adaptive-intelligence/adaptiveTelemetry.js";
 
 const router: Router = Router();
 
@@ -363,6 +365,22 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
     executionIntelligence: getExecutionIntelligenceSnapshot(),
     // V9.7: Autonomous Planning Intelligence Engine telemetry (additive)
     planningIntelligence: getPlanningMetricsSnapshot(),
+    // V9.9: Autonomous Adaptive Intelligence Engine telemetry (additive)
+    adaptiveIntelligence: (() => {
+      const am = getAdaptiveMetricsSnapshot();
+      return {
+        adaptiveScore:            am.adaptiveScore,
+        runtimeOptimizationScore: am.runtimeOptimizationScore,
+        costOptimizationScore:    am.costOptimizationScore,
+        qualityOptimizationScore: am.qualityOptimizationScore,
+        performanceGain:          am.performanceGain,
+        failureReduction:         am.failureReduction,
+        adaptationSuccessRate:    am.adaptationSuccessRate,
+        learningStatistics:       am.learningStatistics,
+        plannerDistribution:      am.plannerDistribution,
+        persistenceHealth:        am.persistenceHealth,
+      };
+    })(),
     generatedAt: new Date().toISOString(),
   });
 });

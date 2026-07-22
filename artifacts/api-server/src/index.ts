@@ -62,6 +62,13 @@ Promise.all([
   import("./planning-intelligence/planningLearning.js"),
 ]).then(() => { /* modules loaded — in-memory state ready */ })
   .catch(() => { /* never block startup on planning init */ });
+// V9.9: Init Adaptive Intelligence (persistence + metrics + learning) on startup (non-blocking)
+Promise.all([
+  import("./adaptive-intelligence/adaptivePersistence.js"),
+  import("./adaptive-intelligence/adaptiveMetrics.js"),
+  import("./adaptive-intelligence/adaptiveLearning.js"),
+]).then(() => { /* modules loaded — adaptive intelligence in-memory state ready */ })
+  .catch(() => { /* never block startup on adaptive init */ });
 
 app.listen(port, (err) => {
   if (err) {

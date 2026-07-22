@@ -1,0 +1,432 @@
+VoxAI V9.9 — Autonomous Adaptive Intelligence Engine
+
+Objective
+
+Implement V9.9 Autonomous Adaptive Intelligence Engine.
+
+This is NOT another Planner, Architect, Workflow Engine, Generator, or Evaluator.
+
+The purpose of V9.9 is to make VoxAI adapt its own behavior in real time based on project complexity, runtime conditions, historical learning, workflow performance, execution outcomes, and agent efficiency.
+
+Every previous engine decides:
+
+- What to build
+- How to build
+- Which workflow to use
+
+V9.9 decides:
+
+«How the entire AI system should dynamically adapt itself while running.»
+
+It becomes the Adaptive Brain of VoxAI.
+
+---
+
+Core Principles
+
+- Pure deterministic engine
+- Zero additional LLM calls
+- No breaking API changes
+- No Planner rewrite
+- No Architect rewrite
+- No Workflow rewrite
+- No Generator rewrite
+- Fully additive integration
+- Fire-and-forget learning
+- Versioned persistence
+
+---
+
+Pipeline Position
+
+Insert:
+
+Planning Intelligence
+
+↓
+
+Workflow Intelligence
+
+↓
+
+Adaptive Intelligence (NEW V9.9)
+
+↓
+
+Planner
+
+↓
+
+Generation
+
+---
+
+Responsibilities
+
+Phase 1 — Runtime Adaptation
+
+Analyze:
+
+- Runtime Mode
+- Complexity
+- Workflow
+- Execution Plan
+- Historical Success
+- Resource Usage
+
+Generate
+
+AdaptiveBlueprint
+
+---
+
+Phase 2 — Strategy Selection
+
+Automatically choose:
+
+- Speed Strategy
+- Cost Strategy
+- Quality Strategy
+- Balanced Strategy
+- Enterprise Strategy
+
+---
+
+Phase 3 — Agent Adaptation
+
+Determine
+
+- Agents to Skip
+- Agents to Upgrade
+- Agents to Merge
+- Agents to Repeat
+- Agents to Downgrade
+
+Never execute unnecessary work.
+
+---
+
+Phase 4 — Resource Adaptation
+
+Adapt
+
+- CPU Budget
+- Memory Budget
+- Token Budget
+- API Budget
+- Retry Budget
+- Timeout Budget
+
+---
+
+Phase 5 — Execution Adaptation
+
+Optimize
+
+- Parallelism
+- Retry Policies
+- Recovery Policies
+- Execution Order
+- Resource Allocation
+
+---
+
+Phase 6 — Quality Adaptation
+
+Automatically raise or lower
+
+- Evaluation Threshold
+- Repair Threshold
+- Candidate Count
+- Runtime Policies
+
+---
+
+Phase 7 — Failure Adaptation
+
+Detect
+
+- Frequent Failures
+- Slow Agents
+- Cost Spikes
+- Retry Storms
+- Recovery Loops
+
+Generate
+
+Adaptive Recovery Plan
+
+---
+
+Phase 8 — Performance Adaptation
+
+Optimize
+
+- Build Time
+- Memory Usage
+- Latency
+- Cost
+- Throughput
+
+---
+
+Phase 9 — Adaptive Validator
+
+Validate
+
+- Adaptation Quality
+- Resource Usage
+- Cost Efficiency
+- Runtime Stability
+- Learning Quality
+- Adaptation Accuracy
+
+Return
+
+Adaptive Score (0–10)
+
+---
+
+Phase 10 — Adaptive Learning
+
+Learn from
+
+- Runtime
+- Workflow
+- Execution
+- QA
+- User Feedback
+- Build Success
+- Failures
+
+Fire-and-forget only.
+
+Never block pipeline.
+
+---
+
+Phase 11 — Adaptive Metrics
+
+Maintain rolling statistics
+
+Track
+
+- Adaptation Success Rate
+- Average Adaptation Score
+- Runtime Savings
+- Cost Savings
+- Quality Improvements
+- Failure Reductions
+- Agent Utilization
+
+500-record rolling window.
+
+---
+
+Phase 12 — Adaptive Persistence
+
+Store
+
+- AdaptiveBlueprint
+- Version History
+- Learning History
+- Runtime History
+- Rollback Snapshots
+
+Requirements
+
+- 500 snapshot cap
+- Rollback
+- Recovery
+- Debounced writes
+- Never throw
+
+---
+
+Phase 13 — Adaptive Telemetry
+
+Extend
+
+GET /api/telemetry/quality
+
+Add
+
+adaptiveIntelligence
+
+Expose
+
+- adaptiveScore
+- runtimeOptimizationScore
+- costOptimizationScore
+- qualityOptimizationScore
+- performanceGain
+- failureReduction
+- adaptationSuccessRate
+- learningStatistics
+- plannerDistribution
+- persistenceHealth
+
+---
+
+Phase 14 — SSE Events
+
+Emit
+
+- adaptive_start
+- adaptive_progress
+- adaptive_complete
+- adaptive_learning
+
+Additive only.
+
+---
+
+Phase 15 — Pipeline Integration
+
+Insert
+
+Adaptive Intelligence
+
+after
+
+Workflow Intelligence
+
+before
+
+Planner
+
+Planner must receive
+
+AdaptiveBlueprint
+
+alongside
+
+- PlanningBlueprint
+- WorkflowBlueprint
+- ExecutionBlueprint
+
+---
+
+Phase 16 — Agent Registry
+
+Update
+
+AgentName
+
+Add
+
+AdaptiveIntelligence
+
+Update
+
+AGENT_REGISTRY
+
+---
+
+Phase 17 — Startup
+
+Initialize
+
+- Adaptive Persistence
+- Adaptive Metrics
+- Adaptive Learning
+
+Use existing startup pattern.
+
+---
+
+Phase 18 — Public Facade
+
+Create
+
+adaptiveFacade.ts
+
+Expose
+
+- runAdaptiveIntelligence()
+- persistAdaptiveSnapshot()
+- learnFromAdaptive()
+- getAdaptiveMetrics()
+- getAdaptiveStats()
+- rollbackAdaptive()
+- resetAdaptive()
+
+---
+
+Phase 19 — Tests
+
+Create
+
+- Unit Tests
+- Integration Tests
+- Pipeline Tests
+- Adaptation Tests
+- Runtime Tests
+- Resource Tests
+- Failure Tests
+- Recovery Tests
+- Learning Tests
+- Persistence Tests
+- Telemetry Tests
+- SSE Tests
+
+Target
+
+- 250+ new tests
+- Zero regressions
+
+---
+
+Phase 20 — Audit Document
+
+Generate
+
+artifacts/api-server/v9.9Audit.md
+
+Include
+
+- Module Inventory
+- Pipeline Diagram
+- Adaptation Flow
+- Resource Strategy
+- Runtime Strategy
+- Learning Design
+- Persistence Design
+- Validation Matrix
+- Telemetry Mapping
+- Extension Points
+
+---
+
+Constraints
+
+- Zero new LLM calls
+- No breaking changes
+- No Planner rewrite
+- No Workflow rewrite
+- No Generator rewrite
+- Pure deterministic implementation
+- Fully additive integration
+
+---
+
+Success Criteria
+
+- Dynamic runtime adaptation
+- Intelligent agent adaptation
+- Automatic resource optimization
+- Runtime-aware execution
+- Cost optimization
+- Quality optimization
+- Failure adaptation
+- Fire-and-forget learning
+- Versioned persistence
+- Complete telemetry
+- Complete SSE support
+- Planner consumes AdaptiveBlueprint
+- 250+ new tests
+- Production build succeeds
+- Zero new TypeScript errors
+- API server starts cleanly
+- Zero regressions
+- Production-ready implementation

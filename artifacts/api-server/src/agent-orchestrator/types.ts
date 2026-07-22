@@ -34,7 +34,8 @@ export type AgentName =
   | 'RuntimeValidation'
   | 'ReasoningEngine'
   | 'ExecutionIntelligence'
-  | 'PlanningIntelligence';
+  | 'PlanningIntelligence'
+  | 'AdaptiveIntelligence';
 
 export type ProjectComplexity = 'simple' | 'standard' | 'enterprise';
 
