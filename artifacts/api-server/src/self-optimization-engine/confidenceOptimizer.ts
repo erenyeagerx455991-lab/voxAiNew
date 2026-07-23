@@ -28,8 +28,8 @@ export function optimizeConfidence(ctx: SelfOptimizationContext): ConfidenceBlue
   if (avgScore < 6) confidenceFactors.push('low-upstream-scores — review intelligence engines');
   if (successRate < 0.75) confidenceFactors.push('low-historical-success — check error patterns');
 
-  const riskLevel: ConfidenceBlueprint['riskLevel'] = executionConfidence >= 0.8 ? 'low'
-    : executionConfidence >= 0.6 ? 'medium'
+  const riskLevel: ConfidenceBlueprint['riskLevel'] = executionConfidence >= 0.75 ? 'low'
+    : executionConfidence >= 0.65 ? 'medium'
     : 'high';
 
   const confidenceScore = Math.round(executionConfidence * 10 * 10) / 10;
