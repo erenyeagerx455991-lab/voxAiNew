@@ -67,6 +67,8 @@ import { getExecutionIntelligenceSnapshot } from "../execution-intelligence/exec
 import { getPlanningMetricsSnapshot } from "../planning-intelligence/planningTelemetry.js";
 // V9.9: Autonomous Adaptive Intelligence Engine telemetry
 import { getAdaptiveMetricsSnapshot } from "../adaptive-intelligence/adaptiveTelemetry.js";
+// V10.0: Autonomous Self-Optimization Engine telemetry
+import { getOptimizationMetricsSnapshot } from "../self-optimization-engine/optimizationTelemetry.js";
 
 const router: Router = Router();
 
@@ -379,6 +381,27 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
         learningStatistics:       am.learningStatistics,
         plannerDistribution:      am.plannerDistribution,
         persistenceHealth:        am.persistenceHealth,
+      };
+    })(),
+    // V10.0: Autonomous Self-Optimization Engine telemetry (additive)
+    optimizationEngine: (() => {
+      const om = getOptimizationMetricsSnapshot();
+      return {
+        overallOptimizationScore: om.overallOptimizationScore,
+        performanceScore:         om.performanceScore,
+        latencyScore:             om.latencyScore,
+        costScore:                om.costScore,
+        workflowScore:            om.workflowScore,
+        parallelScore:            om.parallelScore,
+        resourceScore:            om.resourceScore,
+        tokenScore:               om.tokenScore,
+        qualityScore:             om.qualityScore,
+        repairScore:              om.repairScore,
+        retryScore:               om.retryScore,
+        modelScore:               om.modelScore,
+        learningStatistics:       om.learningStatistics,
+        plannerDistribution:      om.plannerDistribution,
+        persistenceHealth:        om.persistenceHealth,
       };
     })(),
     generatedAt: new Date().toISOString(),

@@ -69,6 +69,13 @@ Promise.all([
   import("./adaptive-intelligence/adaptiveLearning.js"),
 ]).then(() => { /* modules loaded — adaptive intelligence in-memory state ready */ })
   .catch(() => { /* never block startup on adaptive init */ });
+// V10.0: Init Self-Optimization Engine (persistence + metrics + learning) on startup (non-blocking)
+Promise.all([
+  import("./self-optimization-engine/optimizationPersistence.js"),
+  import("./self-optimization-engine/optimizationMetrics.js"),
+  import("./self-optimization-engine/optimizationLearning.js"),
+]).then(() => { /* modules loaded — self-optimization engine in-memory state ready */ })
+  .catch(() => { /* never block startup on optimization init */ });
 
 app.listen(port, (err) => {
   if (err) {

@@ -52,7 +52,9 @@ export type AgentName =
   // V9.7 additions
   | "PlanningIntelligence"
   // V9.9 additions
-  | "AdaptiveIntelligence";
+  | "AdaptiveIntelligence"
+  // V10.0 additions
+  | "SelfOptimizationEngine";
 
 interface AgentRecord {
   calls: number;

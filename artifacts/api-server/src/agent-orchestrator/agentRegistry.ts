@@ -290,6 +290,23 @@ export const AGENT_REGISTRY: Record<AgentName, AgentDeclaration> = {
     timeoutPolicy: timeout(3_000),
     modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 25,
   },
+  // V10.0: Self-Optimization Engine — step 0.999, after AdaptiveIntelligence, before Planner.
+  // Pure deterministic — zero LLM calls. Observes, analyzes, and recommends optimizations
+  // for the entire build: execution, latency, tokens, cost, workflow, parallelism, agents, model.
+  SelfOptimizationEngine: {
+    name: 'SelfOptimizationEngine',
+    requires: ['AdaptiveIntelligence'],
+    dependsOn: ['AdaptiveIntelligence'],
+    produces: ['optimizationBlueprint', 'optimizationContext'],
+    consumes: [
+      'adaptiveBlueprint', 'planningBlueprint', 'executionBlueprint', 'reasoningBlueprint',
+      'productPlan', 'frontendBlueprint', 'backendBlueprint', 'devopsBlueprint', 'qaBlueprint',
+    ],
+    skippable: false,
+    retryPolicy: retry(0, 'none', 'low', false, 'fallback'),
+    timeoutPolicy: timeout(3_000),
+    modelTier: 'fast', baseCostTokens: 0, baseDurationMs: 30,
+  },
 };
 
 export const ALL_AGENT_NAMES: AgentName[] = Object.keys(AGENT_REGISTRY) as AgentName[];

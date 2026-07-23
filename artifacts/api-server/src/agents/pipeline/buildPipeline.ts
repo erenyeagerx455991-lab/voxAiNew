@@ -18,6 +18,7 @@
  *  0.995 ExecutionIntelligence — V9.6 autonomous execution planning brain (no LLM)
  *  0.997 PlanningIntelligence — V9.7 autonomous planning intelligence engine (no LLM)
  *  0.998 AdaptiveIntelligence — V9.9 autonomous adaptive intelligence engine (no LLM)
+ *  0.999 SelfOptimizationEngine — V10.0 autonomous self-optimization engine (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -62,6 +63,7 @@ import { runReasoningEngineStep, finalizeReasoningEngineExecution } from "./reas
 import { runExecutionIntelligenceStep, finalizeExecutionIntelligenceStep } from "./executionIntelligenceStep.js";
 import { runPlanningIntelligenceStep, finalizePlanningIntelligenceStep } from "./planningIntelligenceStep.js";
 import { runAdaptiveIntelligenceStep, finalizeAdaptiveIntelligenceStep } from "./adaptiveIntelligenceStep.js";
+import { runOptimizationStep, finalizeOptimizationStep } from "./optimizationStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -252,9 +254,27 @@ export async function runBuildPipeline(
       planningIntelligenceStepOutput.contextString +         // V9.7 planning intelligence context
       adaptiveIntelligenceStepOutput.contextString;          // V9.9 adaptive intelligence context
 
+    // ── Step 0.999: Self-Optimization Engine (V10.0 — performance brain, no LLM) ─
+    const optimizationStepOutput = await runOptimizationStep(
+      buildId, res, prompt, executionBlueprint.complexity,
+      reasoningStepOutput.blueprint.confidence.confidenceScore,
+      planningIntelligenceStepOutput.blueprint.planningScore,
+      executionIntelligenceStepOutput.blueprint.executionScore,
+      adaptiveIntelligenceStepOutput.blueprint.adaptiveScore,
+      {
+        totalTokenBudget:  modelBlueprint.totalTokenBudget,
+        expectedTotalCost: modelBlueprint.expectedTotalCost,
+        tokenEfficiency:   modelBlueprint.tokenEfficiency,
+      },
+    );
+
+    const enrichedPromptWithOptimization =
+      enrichedPromptWithArchitecture +
+      optimizationStepOutput.contextString;               // V10.0 self-optimization context
+
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
-      runPlannerStep(enrichedPromptWithArchitecture, keys, res),
+      runPlannerStep(enrichedPromptWithOptimization, keys, res),
     );
 
     // ── Step 2: Architecture ───────────────────────────────────────────────────
@@ -523,6 +543,17 @@ export async function runBuildPipeline(
       (evalRes?.overallScore ?? directorScore83) >= 6,
       Date.now() - pipelineStart,
       adaptiveIntelligenceStepOutput.blueprint.performanceAdaptation.estimatedCost,
+    );
+
+    // ── V10.0: Self-Optimization Engine learning + telemetry (fire-and-forget) ──
+    finalizeOptimizationStep(
+      res,
+      buildId,
+      optimizationStepOutput.blueprint,
+      (evalRes?.overallScore ?? directorScore83) >= 6,
+      Date.now() - pipelineStart,
+      optimizationStepOutput.blueprint.cost.estimatedTotalCost,
+      evalRes?.overallScore ?? directorScore83,
     );
 
     // ── V8.1: Fire-and-forget DNA learning (never blocks SSE stream) ───────────
