@@ -1,0 +1,738 @@
+# V10.0 — Autonomous Self-Optimization Engine
+
+## OBJECTIVE
+
+Implement V10.0 Autonomous Self-Optimization Engine for VoxAI.
+
+This is NOT a code-generation engine.
+This is NOT a planner.
+This is NOT a workflow engine.
+This is NOT another architect.
+
+Its ONLY responsibility is continuously optimizing the entire AI system.
+
+The implementation must be 100% deterministic.
+
+No additional LLM calls.
+
+No embeddings.
+
+No vector database.
+
+No external optimization service.
+
+Everything must be computed using runtime telemetry, historical execution data, metrics, learning history, and existing intelligence outputs.
+
+The implementation must be completely additive.
+
+Never replace existing modules.
+
+Never modify existing business logic.
+
+Never change Planner behaviour.
+
+Never change Generator behaviour.
+
+Never change Repair behaviour.
+
+Never change existing Architect engines.
+
+The optimization engine must only observe, analyze, recommend, and optimize execution.
+
+--------------------------------------------------
+
+## PURPOSE
+
+The Self-Optimization Engine acts as the Performance Brain of VoxAI.
+
+It continuously improves
+
+• execution speed
+
+• build quality
+
+• token usage
+
+• latency
+
+• retry behavior
+
+• workflow efficiency
+
+• parallel execution
+
+• resource utilization
+
+• model allocation
+
+• cost
+
+without changing the functional output.
+
+--------------------------------------------------
+
+## PIPELINE POSITION
+
+Insert exactly here
+
+Workflow Intelligence
+↓
+
+Adaptive Intelligence
+↓
+
+Autonomous Self Optimization Engine   ← NEW
+
+↓
+
+Planner
+
+Do NOT move any existing step.
+
+--------------------------------------------------
+
+## RESPONSIBILITIES
+
+The engine must optimize
+
+1.
+Execution Performance
+
+2.
+Pipeline Latency
+
+3.
+Agent Performance
+
+4.
+Workflow Efficiency
+
+5.
+Model Allocation
+
+6.
+Token Consumption
+
+7.
+Retry Strategy
+
+8.
+Repair Strategy
+
+9.
+Resource Allocation
+
+10.
+Cost
+
+11.
+Parallel Execution
+
+12.
+Quality Thresholds
+
+13.
+Timeout Strategy
+
+14.
+Scheduling
+
+15.
+Memory Usage
+
+16.
+Cache Usage
+
+17.
+Context Size
+
+18.
+Prompt Compression
+
+19.
+Agent Ordering
+
+20.
+Execution Confidence
+
+--------------------------------------------------
+
+## ENGINE MUST ANALYZE
+
+For every build
+
+collect
+
+execution time
+
+agent latency
+
+agent failures
+
+repair attempts
+
+retry count
+
+token usage
+
+API usage
+
+cost
+
+quality score
+
+runtime score
+
+knowledge score
+
+reasoning score
+
+workflow score
+
+planning score
+
+execution score
+
+memory usage
+
+parallel efficiency
+
+resource usage
+
+critical path
+
+idle time
+
+LLM response times
+
+cache hit rate
+
+compression ratio
+
+overall success rate
+
+--------------------------------------------------
+
+## OPTIMIZATION MODULES
+
+Implement
+
+performanceOptimizer.ts
+
+latencyOptimizer.ts
+
+tokenOptimizer.ts
+
+costOptimizer.ts
+
+workflowOptimizer.ts
+
+parallelOptimizer.ts
+
+schedulerOptimizer.ts
+
+repairOptimizer.ts
+
+retryOptimizer.ts
+
+timeoutOptimizer.ts
+
+resourceOptimizer.ts
+
+memoryOptimizer.ts
+
+cacheOptimizer.ts
+
+promptOptimizer.ts
+
+contextOptimizer.ts
+
+qualityOptimizer.ts
+
+agentOptimizer.ts
+
+modelOptimizer.ts
+
+orderingOptimizer.ts
+
+confidenceOptimizer.ts
+
+optimizationValidator.ts
+
+optimizationLearning.ts
+
+optimizationMetrics.ts
+
+optimizationPersistence.ts
+
+optimizationFacade.ts
+
+optimizationTypes.ts
+
+optimizationStep.ts
+
+--------------------------------------------------
+
+## PERFORMANCE OPTIMIZER
+
+Analyze
+
+average latency
+
+slow agents
+
+critical path
+
+waiting time
+
+parallel bottlenecks
+
+Output
+
+Performance Blueprint
+
+--------------------------------------------------
+
+## COST OPTIMIZER
+
+Optimize
+
+token cost
+
+LLM usage
+
+repair cost
+
+retry cost
+
+parallel cost
+
+API usage
+
+Output
+
+Cost Blueprint
+
+--------------------------------------------------
+
+## TOKEN OPTIMIZER
+
+Analyze
+
+prompt size
+
+completion size
+
+compression
+
+duplicate context
+
+unused context
+
+Output
+
+Token Blueprint
+
+--------------------------------------------------
+
+## PARALLEL OPTIMIZER
+
+Analyze
+
+parallel opportunities
+
+blocking chains
+
+dependency bottlenecks
+
+idle workers
+
+wave execution
+
+Output
+
+Parallel Blueprint
+
+--------------------------------------------------
+
+## MODEL OPTIMIZER
+
+Select best model tier using
+
+quality
+
+latency
+
+cost
+
+confidence
+
+complexity
+
+Output
+
+Model Allocation Blueprint
+
+--------------------------------------------------
+
+## RETRY OPTIMIZER
+
+Optimize
+
+retry count
+
+retry delay
+
+retry strategy
+
+retry confidence
+
+Output
+
+Retry Blueprint
+
+--------------------------------------------------
+
+## REPAIR OPTIMIZER
+
+Optimize
+
+repair threshold
+
+repair passes
+
+repair confidence
+
+repair necessity
+
+Output
+
+Repair Blueprint
+
+--------------------------------------------------
+
+## RESOURCE OPTIMIZER
+
+Optimize
+
+CPU
+
+Memory
+
+Disk
+
+Network
+
+LLM
+
+API
+
+Cache
+
+Output
+
+Resource Blueprint
+
+--------------------------------------------------
+
+## QUALITY OPTIMIZER
+
+Optimize
+
+quality threshold
+
+repair threshold
+
+candidate count
+
+execution mode
+
+validation strictness
+
+Output
+
+Quality Blueprint
+
+--------------------------------------------------
+
+## AGENT OPTIMIZER
+
+Analyze every agent
+
+Planner
+
+Reasoning
+
+Knowledge
+
+Execution
+
+Workflow
+
+Adaptive
+
+Runtime
+
+Design Director
+
+Backend
+
+Frontend
+
+DevOps
+
+QA
+
+Security
+
+etc
+
+Calculate
+
+efficiency
+
+latency
+
+quality
+
+cost
+
+success rate
+
+confidence
+
+Output
+
+Agent Optimization Blueprint
+
+--------------------------------------------------
+
+## MODEL
+
+No ML.
+
+No neural networks.
+
+Pure deterministic scoring.
+
+Weighted formulas only.
+
+--------------------------------------------------
+
+## LEARNING
+
+Learning must be
+
+fire-and-forget
+
+async
+
+never block pipeline
+
+rolling history
+
+500 optimization records
+
+versioned snapshots
+
+rollback support
+
+--------------------------------------------------
+
+## VALIDATOR
+
+Validator dimensions
+
+Performance
+
+Latency
+
+Cost
+
+Quality
+
+Workflow
+
+Scheduling
+
+Parallelism
+
+Resource Usage
+
+Token Efficiency
+
+Repair Strategy
+
+Retry Strategy
+
+Model Allocation
+
+Confidence
+
+Each
+
+0–10
+
+Overall Optimization Score
+
+0–10
+
+--------------------------------------------------
+
+## TELEMETRY
+
+Extend
+
+GET /api/telemetry/quality
+
+Add
+
+optimizationEngine
+
+containing
+
+overallOptimizationScore
+
+performanceScore
+
+latencyScore
+
+costScore
+
+workflowScore
+
+parallelScore
+
+resourceScore
+
+tokenScore
+
+qualityScore
+
+repairScore
+
+retryScore
+
+modelScore
+
+learningStatistics
+
+plannerDistribution
+
+persistenceHealth
+
+--------------------------------------------------
+
+## SSE EVENTS
+
+Additive only
+
+optimization_start
+
+optimization_progress
+
+optimization_complete
+
+optimization_learning
+
+Never modify existing SSE contracts.
+
+--------------------------------------------------
+
+## PERSISTENCE
+
+Versioned snapshots
+
+500 cap
+
+rollback
+
+resume
+
+non-blocking
+
+--------------------------------------------------
+
+## TESTS
+
+Create
+
+250+ deterministic tests
+
+cover
+
+all optimizers
+
+validator
+
+metrics
+
+learning
+
+telemetry
+
+pipeline
+
+persistence
+
+rollback
+
+SSE
+
+No flaky tests.
+
+--------------------------------------------------
+
+## AUDIT
+
+Generate
+
+artifacts/api-server/v10.0Audit.md
+
+Include
+
+Module inventory
+
+Pipeline position
+
+Optimization flow
+
+Telemetry mapping
+
+Learning flow
+
+Persistence design
+
+Performance impact
+
+Backward compatibility
+
+--------------------------------------------------
+
+## SUCCESS CRITERIA
+
+✔ Fully deterministic
+
+✔ Zero additional LLM calls
+
+✔ Zero breaking changes
+
+✔ Additive only
+
+✔ Existing pipeline preserved
+
+✔ Planner unchanged
+
+✔ Generator unchanged
+
+✔ Architects unchanged
+
+✔ Production build succeeds
+
+✔ Typecheck introduces zero new errors
+
+✔ Full regression suite passes
+
+✔ Audit document generated
+
+✔ Ready for V10.1 Meta Intelligence Engine
