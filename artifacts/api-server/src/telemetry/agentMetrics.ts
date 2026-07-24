@@ -54,7 +54,8 @@ export type AgentName =
   // V9.9 additions
   | "AdaptiveIntelligence"
   // V10.0 additions
-  | "SelfOptimizationEngine";
+  | "SelfOptimizationEngine"
+  | "MetaIntelligence";
 
 interface AgentRecord {
   calls: number;

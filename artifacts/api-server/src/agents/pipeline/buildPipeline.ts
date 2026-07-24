@@ -18,7 +18,8 @@
  *  0.995 ExecutionIntelligence — V9.6 autonomous execution planning brain (no LLM)
  *  0.997 PlanningIntelligence — V9.7 autonomous planning intelligence engine (no LLM)
  *  0.998 AdaptiveIntelligence — V9.9 autonomous adaptive intelligence engine (no LLM)
- *  0.999 SelfOptimizationEngine — V10.0 autonomous self-optimization engine (no LLM)
+ *  0.999  SelfOptimizationEngine — V10.0 autonomous self-optimization engine (no LLM)
+ *  0.9995 MetaIntelligence      — V10.1 autonomous meta intelligence engine (no LLM)
  *  1  Planner               — intent analysis, blueprint, DNA composition
  *  2  Architecture           — project blueprint, tech stack
  *  3  ComponentTree          — full page tree (deterministic, inline)
@@ -46,7 +47,6 @@ import { runDesignEvaluatorStep } from "./designEvaluatorStep.js";
 import { runDesignCriticStep } from "./designCriticStep.js";
 import { runConversionStep } from "./conversionStep.js";
 import { runAccessibilityStep } from "./accessibilityStep.js";
-import { runOptimizationStep } from "./optimizationStep.js";
 import { runDesignDirectorStep } from "./designDirectorStep.js";
 import { runProductManagerStep } from "./productManagerStep.js";
 import { runFrontendArchitectStep }  from "./frontendArchitectStep.js";
@@ -64,6 +64,7 @@ import { runExecutionIntelligenceStep, finalizeExecutionIntelligenceStep } from 
 import { runPlanningIntelligenceStep, finalizePlanningIntelligenceStep } from "./planningIntelligenceStep.js";
 import { runAdaptiveIntelligenceStep, finalizeAdaptiveIntelligenceStep } from "./adaptiveIntelligenceStep.js";
 import { runOptimizationStep, finalizeOptimizationStep } from "./optimizationStep.js";
+import { runMetaStep, finalizeMetaStep } from "./metaStep.js";
 import type { PipelineKeys } from "./pipelineTypes.js";
 import { createTraceContext, withBuildId } from "../../telemetry/traceContext.js";
 import { setLogContext, clearLogContext } from "../../lib/structuredLogger.js";
@@ -272,9 +273,33 @@ export async function runBuildPipeline(
       enrichedPromptWithArchitecture +
       optimizationStepOutput.contextString;               // V10.0 self-optimization context
 
+    // ── Step 0.9995: Meta Intelligence Engine (V10.1 — meta brain, no LLM) ───
+    const metaStepOutput = await runMetaStep(
+      buildId, res, prompt, executionBlueprint.complexity,
+      reasoningStepOutput.blueprint.confidence.confidenceScore,
+      planningIntelligenceStepOutput.blueprint.planningScore,
+      executionIntelligenceStepOutput.blueprint.executionScore,
+      adaptiveIntelligenceStepOutput.blueprint.adaptiveScore,
+      optimizationStepOutput.blueprint.overallOptimizationScore,
+      {
+        qualityScore:                undefined,
+        runtimeScore:                undefined,
+        knowledgeScore:              undefined,
+        workflowScore:               undefined,
+        tokenEfficiency:             modelBlueprint.tokenEfficiency,
+        optimizationPerformanceScore: optimizationStepOutput.blueprint.validation.performanceScore,
+        optimizationCostScore:       optimizationStepOutput.blueprint.validation.costScore,
+        optimizationTokenScore:      optimizationStepOutput.blueprint.validation.tokenEfficiencyScore,
+      },
+    );
+
+    const enrichedPromptWithMeta =
+      enrichedPromptWithOptimization +
+      metaStepOutput.contextString;                       // V10.1 meta intelligence context
+
     // ── Step 1: Planner ────────────────────────────────────────────────────────
     const plan = await withAgentMetrics("Planner", () =>
-      runPlannerStep(enrichedPromptWithOptimization, keys, res),
+      runPlannerStep(enrichedPromptWithMeta, keys, res),
     );
 
     // ── Step 2: Architecture ───────────────────────────────────────────────────
@@ -543,6 +568,16 @@ export async function runBuildPipeline(
       (evalRes?.overallScore ?? directorScore83) >= 6,
       Date.now() - pipelineStart,
       adaptiveIntelligenceStepOutput.blueprint.performanceAdaptation.estimatedCost,
+    );
+
+    // ── V10.1: Meta Intelligence Engine learning + telemetry (fire-and-forget) ──
+    finalizeMetaStep(
+      res,
+      buildId,
+      metaStepOutput.blueprint,
+      (evalRes?.overallScore ?? directorScore83) >= 6,
+      Date.now() - pipelineStart,
+      evalRes?.overallScore ?? directorScore83,
     );
 
     // ── V10.0: Self-Optimization Engine learning + telemetry (fire-and-forget) ──

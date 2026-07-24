@@ -69,6 +69,7 @@ import { getPlanningMetricsSnapshot } from "../planning-intelligence/planningTel
 import { getAdaptiveMetricsSnapshot } from "../adaptive-intelligence/adaptiveTelemetry.js";
 // V10.0: Autonomous Self-Optimization Engine telemetry
 import { getOptimizationMetricsSnapshot } from "../self-optimization-engine/optimizationTelemetry.js";
+import { getMetaMetricsSnapshot } from "../meta-intelligence/metaTelemetry.js";
 
 const router: Router = Router();
 
@@ -402,6 +403,24 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
         learningStatistics:       om.learningStatistics,
         plannerDistribution:      om.plannerDistribution,
         persistenceHealth:        om.persistenceHealth,
+      };
+    })(),
+    // V10.1: Autonomous Meta Intelligence Engine telemetry (additive)
+    metaIntelligence: (() => {
+      const mm = getMetaMetricsSnapshot();
+      return {
+        overallMetaScore:    mm.overallMetaScore,
+        architectureScore:   mm.architectureScore,
+        performanceScore:    mm.performanceScore,
+        optimizationScore:   mm.optimizationScore,
+        learningScore:       mm.learningScore,
+        healthScore:         mm.healthScore,
+        confidenceScore:     mm.confidenceScore,
+        diagnosticScore:     mm.diagnosticScore,
+        recommendationCount: mm.recommendationCount,
+        learningStatistics:  mm.learningStatistics,
+        plannerDistribution: mm.plannerDistribution,
+        persistenceHealth:   mm.persistenceHealth,
       };
     })(),
     generatedAt: new Date().toISOString(),

@@ -76,6 +76,13 @@ Promise.all([
   import("./self-optimization-engine/optimizationLearning.js"),
 ]).then(() => { /* modules loaded — self-optimization engine in-memory state ready */ })
   .catch(() => { /* never block startup on optimization init */ });
+// V10.1: Init Meta Intelligence Engine (persistence + metrics + learning) on startup (non-blocking)
+Promise.all([
+  import("./meta-intelligence/metaPersistence.js"),
+  import("./meta-intelligence/metaMetrics.js"),
+  import("./meta-intelligence/metaLearning.js"),
+]).then(() => { /* modules loaded — meta intelligence engine in-memory state ready */ })
+  .catch(() => { /* never block startup on meta init */ });
 
 app.listen(port, (err) => {
   if (err) {
