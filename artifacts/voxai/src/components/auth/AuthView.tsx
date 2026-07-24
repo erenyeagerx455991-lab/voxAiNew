@@ -67,9 +67,9 @@ export default function AuthView({ initialMode = 'login', onBack }: AuthViewProp
     mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create account' : 'Reset password';
   const subtitle =
     mode === 'login'
-      ? 'Sign in to continue to VoxAI'
+      ? 'Sign in to continue to Vx'
       : mode === 'signup'
-        ? 'Get started with VoxAI for free'
+        ? 'Get started with Vx for free'
         : 'Enter your email to receive a reset link';
 
   return (
@@ -254,7 +254,7 @@ export default function AuthView({ initialMode = 'login', onBack }: AuthViewProp
       </div>
 
       <div className="px-6 py-4 text-center">
-        <p className="text-xs text-gray-400">VoxAI &middot; Premium AI Platform</p>
+        <p className="text-xs text-gray-400">Vx &middot; Premium AI Platform</p>
       </div>
     </div>
   );

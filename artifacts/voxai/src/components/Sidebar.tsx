@@ -76,7 +76,7 @@ export default function Sidebar({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-          <span className="text-lg font-semibold tracking-tight text-black dark:text-white">VoxAI</span>
+          <span className="text-lg font-semibold tracking-tight text-black dark:text-white">Vx</span>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -231,7 +231,7 @@ export default function Sidebar({
             </div>
           )}
           <div className="px-5 py-3">
-            <p className="text-xs text-gray-400 dark:text-gray-600">VoxAI &middot; Premium AI Platform</p>
+            <p className="text-xs text-gray-400 dark:text-gray-600">Vx &middot; Premium AI Platform</p>
           </div>
         </div>
       </aside>

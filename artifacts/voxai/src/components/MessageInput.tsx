@@ -58,7 +58,7 @@ export default function MessageInput({ onSend, disabled }: MessageInputProps) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Message VoxAI..."
+            placeholder="Message Vx..."
             rows={1}
             disabled={disabled}
             className="w-full resize-none bg-transparent text-[15px] text-black dark:text-white md:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 md:placeholder:text-gray-600 outline-none leading-relaxed max-h-[120px] disabled:opacity-50"
