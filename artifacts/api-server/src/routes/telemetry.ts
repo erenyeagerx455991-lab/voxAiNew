@@ -50,6 +50,8 @@ import { getQAPersistenceStats }      from "../qa-architect/qaPersistence.js";
 import { getSecurityArchitectMetrics }        from "../security-architect/securityMetrics.js";
 import { getSecurityLearningStats }           from "../security-architect/securityLearning.js";
 import { getSecurityArchitectPersistenceStats } from "../security-architect/securityPersistence.js";
+// V10.2: Manual Development Intelligence telemetry
+import { getWorkspaceMetricsSnapshot } from "../manual-development/workspaceMetrics.js";
 // V9.0: Runtime Intelligence telemetry
 import { getRuntimeMetrics, getEvaluatorWeightStats } from "../runtime-intelligence/runtimeMetrics.js";
 import { getRuntimeLearningStats }    from "../runtime-intelligence/runtimeLearning.js";
@@ -421,6 +423,27 @@ router.get("/telemetry/quality", authMiddleware, (_req, res) => {
         learningStatistics:  mm.learningStatistics,
         plannerDistribution: mm.plannerDistribution,
         persistenceHealth:   mm.persistenceHealth,
+      };
+    })(),
+    // V10.2: Manual Development Intelligence telemetry (additive)
+    manualDevelopment: (() => {
+      const wm = getWorkspaceMetricsSnapshot();
+      return {
+        manualEdits:            wm.manualEdits,
+        aiEdits:                wm.aiEdits,
+        editRatio:              wm.editRatio,
+        mergeConflicts:         wm.mergeConflicts,
+        mergeConflictsResolved: wm.mergeConflictsResolved,
+        conflictResolutionRate: wm.conflictResolutionRate,
+        syncOperations:         wm.syncOperations,
+        terminalCommands:       wm.terminalCommands,
+        gitCommits:             wm.gitCommits,
+        workspaceSnapshots:     wm.workspaceSnapshots,
+        previewUpdates:         wm.previewUpdates,
+        avgPreviewLatencyMs:    wm.avgPreviewLatencyMs,
+        editorDiagnostics:      wm.editorDiagnostics,
+        avgWorkspaceHealth:     wm.avgWorkspaceHealth,
+        sessionDurationMs:      wm.sessionDurationMs,
       };
     })(),
     generatedAt: new Date().toISOString(),

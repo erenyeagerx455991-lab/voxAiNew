@@ -36,7 +36,9 @@ export type AgentName =
   | 'ExecutionIntelligence'
   | 'PlanningIntelligence'
   | 'AdaptiveIntelligence'
-  | 'SelfOptimizationEngine';
+  | 'SelfOptimizationEngine'
+  // V10.2 additions
+  | 'ManualDevelopment';
 
 export type ProjectComplexity = 'simple' | 'standard' | 'enterprise';
 
