@@ -77,6 +77,9 @@ app.use("/api/chat", generalRateLimiter, chatRateLimiter, authMiddleware);
 // /api/security/* — metrics and baseline require auth (health endpoint is separate)
 app.use("/api/security", generalRateLimiter, authMiddleware);
 
+// /api/projects/* — project persistence, protected by auth when API_KEY is set
+app.use("/api/projects", generalRateLimiter, authMiddleware);
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/api", router);
 

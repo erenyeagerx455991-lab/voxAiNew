@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { createChat, getChats, getMessages, updateChatTitle, deleteChat, addMessage } from '../services/chatService';
+import { saveProject, deleteProject as deleteProjectApi, renameProject as renameProjectApi, getProject } from '../services/projectService';
 import { mockStreamResponse, mockEditResponse, runtimeRepair } from '../services/mockAiService';
 import type { ProjectBlueprint, ProjectFile, ProjectMemory, DNAComposition, ThemeTokens, MotionProfile, DNABuildData, EditOperation, EditDiff, ComponentRegistry, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState, RuntimeHealthV3, RuntimeTimeline, AutonomousBuildState } from '../services/builderService';
 import { saveProjectMemory, loadProjectMemory, clearProjectMemory, buildDependencyGraph, buildComponentRegistry, saveKnowledgeGraph, loadKnowledgeGraph, clearKnowledgeGraph, saveRegistrySelection, loadRegistrySelection, clearRegistrySelection, buildRegistryFileMap, saveComponentHistory, loadComponentHistory, addComponentHistoryEntry, saveRepairHistory, loadRepairHistory, computeRepairMetrics, clearRepairHistory } from '../services/builderService';
@@ -347,10 +348,24 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       loadMessages(id);
       const cached = localStorage.getItem(CODE_KEY(id));
       setGeneratedCode(cached ?? '');
-      // Restore persisted project files
+      // Restore persisted project files — localStorage first, backend DB fallback
       try {
         const cachedFiles = localStorage.getItem(FILES_KEY(id));
-        if (cachedFiles) setProjectFiles(JSON.parse(cachedFiles));
+        if (cachedFiles) {
+          setProjectFiles(JSON.parse(cachedFiles));
+        } else {
+          // Not in local cache (new device / cleared storage) — fetch from DB
+          void getProject(id).then((project) => {
+            if (project?.files && project.files.length > 0) {
+              setProjectFiles(project.files as Parameters<typeof setProjectFiles>[0]);
+              try { localStorage.setItem(FILES_KEY(id), JSON.stringify(project.files)); } catch {}
+            }
+            if (project?.previewHtml) {
+              setGeneratedCode(project.previewHtml);
+              try { localStorage.setItem(CODE_KEY(id), project.previewHtml); } catch {}
+            }
+          });
+        }
       } catch {}
       // Restore project memory
       const mem = loadProjectMemory(id);
@@ -561,6 +576,27 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
             setProjectMemory(mem);
             if (editOp) setEditHistory(prev => [...prev.slice(-49), editOp]);
             saveProjectMemory(chatId!, mem);
+
+            // Auto-save project files to backend DB (fire-and-forget)
+            // userId is derived server-side; we never send it from the client.
+            void (async () => {
+              try {
+                const previewFile = serverFiles.find(f => f.name === 'index.html') ?? serverFiles[0];
+                await saveProject({
+                  chatId: chatId!,
+                  title: content.slice(0, 80),
+                  prompt: content,
+                  files: serverFiles.map(f => ({
+                    name: f.name,
+                    content: f.content,
+                    lang: (f as { lang?: string }).lang ?? '',
+                    path: (f as { path?: string }).path ?? '',
+                  })),
+                  fileCount: serverFiles.length,
+                  previewHtml: previewFile?.content?.slice(0, 50_000) ?? null,
+                });
+              } catch { /* silently ignore save errors */ }
+            })();
           }
 
           setBuildStep(9);
@@ -750,6 +786,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
       try {
         await deleteChat(id);
       } catch {}
+      void deleteProjectApi(id);
       removeLocalChat(id);
       localStorage.removeItem(CODE_KEY(id));
       localStorage.removeItem(FILES_KEY(id));
@@ -777,6 +814,7 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     try {
       await updateChatTitle(id, title);
     } catch {}
+    void renameProjectApi(id, title);
     updateLocalChatTitle(id, title);
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
   }, []);
