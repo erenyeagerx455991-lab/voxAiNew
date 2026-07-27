@@ -1,0 +1,711 @@
+# V10.2 — Autonomous Dual-Mode Development Engine (Vibe Coding + Manual Coding)
+
+## Objective
+
+Build V10.2 Autonomous Dual-Mode Development Engine.
+
+The objective is to transform NexoGen from an AI-only vibe coding platform into a complete software development platform where users can:
+
+1. Build entire applications using AI (Vibe Coding).
+2. Write code manually.
+3. Mix AI-generated code with handwritten code.
+4. Switch between AI and manual development at any time.
+5. Keep both modes synchronized automatically.
+6. Never lose manual edits after AI regeneration.
+7. Preserve architecture, state, dependencies, routing, APIs, database, and project consistency.
+
+This engine must work like Cursor + Lovable + VS Code combined.
+
+---
+
+# CRITICAL REQUIREMENTS
+
+This engine MUST NOT replace existing generation.
+
+It extends the platform.
+
+Existing AI generation remains unchanged.
+
+Instead, after AI generates a project, the user receives a complete IDE inside the browser.
+
+The IDE becomes the permanent workspace.
+
+Everything afterwards happens inside that workspace.
+
+---
+
+# USER EXPERIENCE
+
+The user can:
+
+• Generate an app using AI.
+• Open the project.
+• Edit React code.
+• Edit TypeScript.
+• Edit HTML.
+• Edit CSS.
+• Edit Tailwind.
+• Edit Next.js.
+• Edit Express.
+• Edit Node.
+• Edit APIs.
+• Edit backend.
+• Create files.
+• Delete files.
+• Rename files.
+• Move files.
+• Create folders.
+• Install packages.
+• Run commands.
+• Use Git.
+• Commit.
+• Revert.
+• Ask AI to edit only selected code.
+• Accept or reject changes.
+
+The AI must behave like an intelligent coding assistant, not overwrite the user's work.
+
+---
+
+# ARCHITECTURE
+
+Create a new pipeline layer:
+
+Planner
+↓
+
+Architecture
+
+↓
+
+Frontend Architect
+
+↓
+
+Backend Architect
+
+↓
+
+DevOps
+
+↓
+
+QA
+
+↓
+
+Execution Intelligence
+
+↓
+
+Planning Intelligence
+
+↓
+
+Workflow Intelligence
+
+↓
+
+Self Optimization
+
+↓
+
+Meta Intelligence
+
+↓
+
+Manual Development Intelligence (NEW)
+
+↓
+
+Planner
+
+↓
+
+Generator
+
+---
+
+# MODULES TO BUILD
+
+Create a complete module:
+
+src/manual-development/
+
+Containing deterministic planners.
+
+Examples:
+
+manualWorkspace.ts
+
+codeEditorPlanner.ts
+
+fileSystemPlanner.ts
+
+projectStructurePlanner.ts
+
+dependencyPlanner.ts
+
+manualMergePlanner.ts
+
+conflictResolver.ts
+
+liveSyncPlanner.ts
+
+cursorPlanner.ts
+
+selectionPlanner.ts
+
+undoRedoPlanner.ts
+
+gitPlanner.ts
+
+versionPlanner.ts
+
+commandPlanner.ts
+
+terminalPlanner.ts
+
+previewPlanner.ts
+
+hotReloadPlanner.ts
+
+diagnosticsPlanner.ts
+
+lintPlanner.ts
+
+formatterPlanner.ts
+
+completionPlanner.ts
+
+refactorPlanner.ts
+
+renamePlanner.ts
+
+navigationPlanner.ts
+
+symbolPlanner.ts
+
+workspacePersistence.ts
+
+workspaceLearning.ts
+
+workspaceMetrics.ts
+
+workspaceValidator.ts
+
+workspaceFacade.ts
+
+workspaceStep.ts
+
+---
+
+# FILE EXPLORER
+
+Implement a VS Code–style explorer.
+
+Support:
+
+Folders
+
+Nested folders
+
+Files
+
+Create
+
+Rename
+
+Delete
+
+Move
+
+Duplicate
+
+Search
+
+Collapse
+
+Expand
+
+Drag & Drop
+
+Context menu
+
+---
+
+# CODE EDITOR
+
+Integrate Monaco Editor.
+
+Support:
+
+React
+
+TypeScript
+
+JavaScript
+
+HTML
+
+CSS
+
+SCSS
+
+Tailwind
+
+JSON
+
+Markdown
+
+Node
+
+Express
+
+Next.js
+
+Python
+
+YAML
+
+Environment files
+
+Syntax highlighting
+
+Code folding
+
+Bracket matching
+
+Multiple cursors
+
+Auto indent
+
+Code minimap
+
+Inline errors
+
+Diagnostics
+
+Auto save
+
+---
+
+# LIVE PREVIEW
+
+Implement instant preview.
+
+Any code change updates preview automatically.
+
+Support:
+
+React Fast Refresh
+
+Hot Reload
+
+Error Overlay
+
+Compile Errors
+
+Runtime Errors
+
+---
+
+# AI + MANUAL SYNC
+
+When AI modifies code:
+
+Never overwrite manual edits.
+
+Instead:
+
+Detect user modifications.
+
+Create diff.
+
+Merge intelligently.
+
+If conflict exists:
+
+Show merge UI.
+
+Allow:
+
+Accept AI
+
+Accept Mine
+
+Merge Both
+
+Manual Edit
+
+---
+
+# PARTIAL AI EDITS
+
+User can highlight code.
+
+Ask AI:
+
+Optimize this.
+
+Refactor this.
+
+Convert to hooks.
+
+Fix bug.
+
+Improve performance.
+
+Add comments.
+
+Explain code.
+
+Generate tests.
+
+Only selected code changes.
+
+Everything else stays untouched.
+
+---
+
+# TERMINAL
+
+Provide integrated terminal.
+
+Support:
+
+npm
+
+pnpm
+
+yarn
+
+bun
+
+git
+
+node
+
+python
+
+bash
+
+Custom commands
+
+Command history
+
+Multiple terminals
+
+---
+
+# PACKAGE MANAGER
+
+Allow package installation.
+
+AI understands installed dependencies.
+
+Dependency graph updates automatically.
+
+---
+
+# GIT
+
+Implement Git panel.
+
+Support:
+
+Commit
+
+Diff
+
+History
+
+Branches
+
+Checkout
+
+Rollback
+
+Restore
+
+---
+
+# CODE INTELLIGENCE
+
+Provide:
+
+Autocomplete
+
+Hover
+
+Definitions
+
+References
+
+Rename Symbol
+
+Find All References
+
+Outline
+
+Breadcrumbs
+
+Diagnostics
+
+Code Actions
+
+---
+
+# PROJECT MEMORY
+
+Track:
+
+Files edited
+
+Manual changes
+
+AI changes
+
+Conflict history
+
+Preferred coding style
+
+Framework preferences
+
+Frequently edited modules
+
+---
+
+# AI UNDERSTANDS MANUAL CODE
+
+Before every AI generation:
+
+Analyze entire workspace.
+
+Understand:
+
+Architecture
+
+Imports
+
+Exports
+
+Hooks
+
+Components
+
+Types
+
+State
+
+Context
+
+Routes
+
+Backend
+
+Database
+
+Dependencies
+
+Naming style
+
+Folder conventions
+
+Never regenerate blindly.
+
+---
+
+# WORKSPACE SNAPSHOTS
+
+Support:
+
+Checkpoint creation
+
+Restore
+
+Diff
+
+Named snapshots
+
+Automatic snapshots
+
+Rollback
+
+---
+
+# VALIDATION
+
+Validate:
+
+Broken imports
+
+Unused files
+
+Unused exports
+
+Circular dependencies
+
+Type errors
+
+ESLint
+
+Formatting
+
+Broken routes
+
+Missing APIs
+
+Dependency issues
+
+---
+
+# TELEMETRY
+
+Add:
+
+manualDevelopment
+
+workspaceHealth
+
+mergeConflicts
+
+manualEdits
+
+aiEdits
+
+syncOperations
+
+terminalCommands
+
+gitCommits
+
+workspaceSnapshots
+
+livePreviewLatency
+
+editorDiagnostics
+
+---
+
+# LEARNING
+
+Learn:
+
+Coding style
+
+Formatting
+
+Architecture preference
+
+Folder naming
+
+Component style
+
+State management preference
+
+Library preference
+
+Testing preference
+
+AI uses these automatically.
+
+---
+
+# SSE EVENTS
+
+Additive only:
+
+workspace_start
+
+workspace_progress
+
+workspace_complete
+
+workspace_learning
+
+manual_edit
+
+ai_edit
+
+merge_conflict
+
+preview_update
+
+terminal_update
+
+git_update
+
+---
+
+# PERFORMANCE
+
+Workspace must support:
+
+100,000+ lines of code
+
+10,000+ files
+
+Large monorepos
+
+Incremental indexing
+
+Background parsing
+
+Lazy loading
+
+Memory efficient caching
+
+---
+
+# TESTING
+
+Create 300+ deterministic tests.
+
+Zero regressions.
+
+Existing pipeline must remain unchanged.
+
+---
+
+# AUDIT
+
+Generate:
+
+artifacts/api-server/v10.2Audit.md
+
+Including:
+
+Architecture
+
+Workspace Flow
+
+Editor Features
+
+Merge Engine
+
+Synchronization
+
+Performance
+
+Telemetry
+
+Learning
+
+Testing
+
+Extension Points
+
+---
+
+# SUCCESS CRITERIA
+
+NexoGen becomes both:
+
+1. An autonomous AI software company that can generate complete applications.
+
+AND
+
+2. A professional browser-based IDE where developers can manually write, edit, debug, refactor, and maintain production-grade software with AI assistance.
+
+The implementation must be fully additive, deterministic where applicable, backward compatible, production-ready, and must not break any existing V1–V10.1 functionality.

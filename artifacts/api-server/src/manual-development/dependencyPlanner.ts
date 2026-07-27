@@ -80,14 +80,15 @@ export function detectCircularDependencies(
 export function extractImports(content: string): string[] {
   const imports: string[] = [];
   const patterns = [
-    /import\s+.*?\bfrom\s+['"]([^'"]+)['"]/g,
+    /import\s+.*?\bfrom\s+['"]([^'"]+)['"]/g,   // import X from 'y'
+    /import\s+['"]([^'"]+)['"]/g,                // import './local' (side-effect)
     /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
     /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   ];
   for (const pattern of patterns) {
     let m: RegExpExecArray | null;
     while ((m = pattern.exec(content)) !== null) {
-      imports.push(m[1]);
+      if (m[1]) imports.push(m[1]);
     }
   }
   return [...new Set(imports)];

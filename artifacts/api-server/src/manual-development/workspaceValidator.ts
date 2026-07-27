@@ -44,7 +44,9 @@ export function validateImports(
     // Check local imports
     for (const imp of local) {
       const dir  = filePath.split('/').slice(0, -1).join('/');
-      const base = `${dir}/${imp}`.replace(/\/\//g, '/');
+      const raw  = dir ? `${dir}/${imp}` : imp;
+      // Normalize: collapse /./  and strip leading ./
+      const base = raw.replace(/\/\.\//g, '/').replace(/^\.\//g, '').replace(/\/\//g, '/');
       const candidates = [base, `${base}.ts`, `${base}.tsx`, `${base}.js`, `${base}.jsx`, `${base}/index.ts`, `${base}/index.tsx`];
       const exists = candidates.some(c => filePaths.has(c));
       if (!exists) {

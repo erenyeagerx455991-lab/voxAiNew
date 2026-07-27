@@ -58,11 +58,13 @@ router.get('/workspace/:projectId/files', authMiddleware, (req, res) => {
   }
 });
 
-router.get('/workspace/:projectId/files/*', authMiddleware, (req, res) => {
+// GET /workspace/:projectId/file?path=src/App.tsx
+router.get('/workspace/:projectId/file', authMiddleware, (req, res) => {
   try {
-    const filePath = (req.params as Record<string, string>)[0] ?? '';
-    const state    = getOrCreateWorkspace(req.params.projectId);
-    const file     = state.files.get(filePath);
+    const filePath = req.query['path'] as string | undefined;
+    if (!filePath) return res.status(400).json({ error: 'query param ?path= is required' });
+    const state = getOrCreateWorkspace(req.params.projectId);
+    const file  = state.files.get(filePath);
     if (!file || file.isDeleted) return res.status(404).json({ error: 'File not found' });
     res.json({ file });
   } catch {
@@ -93,9 +95,11 @@ router.post('/workspace/:projectId/files', authMiddleware, (req, res) => {
   }
 });
 
-router.put('/workspace/:projectId/files/*', authMiddleware, (req, res) => {
+// PUT /workspace/:projectId/file?path=src/App.tsx
+router.put('/workspace/:projectId/file', authMiddleware, (req, res) => {
   try {
-    const filePath = (req.params as Record<string, string>)[0] ?? '';
+    const filePath = req.query['path'] as string | undefined;
+    if (!filePath) return res.status(400).json({ error: 'query param ?path= is required' });
     const { content = '', source = 'manual' } = req.body as { content?: string; source?: 'ai' | 'manual' };
     wsUpdateFile(req.params.projectId, filePath, content, source);
     if (source === 'manual') recordManualEdit();
@@ -105,9 +109,11 @@ router.put('/workspace/:projectId/files/*', authMiddleware, (req, res) => {
   }
 });
 
-router.delete('/workspace/:projectId/files/*', authMiddleware, (req, res) => {
+// DELETE /workspace/:projectId/file?path=src/App.tsx
+router.delete('/workspace/:projectId/file', authMiddleware, (req, res) => {
   try {
-    const filePath = (req.params as Record<string, string>)[0] ?? '';
+    const filePath = req.query['path'] as string | undefined;
+    if (!filePath) return res.status(400).json({ error: 'query param ?path= is required' });
     wsDeleteFile(req.params.projectId, filePath);
     res.json({ path: filePath, deleted: true });
   } catch {
