@@ -265,6 +265,8 @@ function AppContent() {
                   streamingContent={store.streamingContent}
                   chatError={store.chatError}
                   buildStep={store.buildStep}
+                  buildAgentName={store.buildAgentName}
+                  buildAgentStatus={store.buildAgentStatus}
                   isEditMode={store.projectFiles.length > 0}
                   lastEditDiff={store.lastEditDiff}
                 />

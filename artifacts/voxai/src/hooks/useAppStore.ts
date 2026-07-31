@@ -33,6 +33,8 @@ interface AppState {
   chatError: string;
   generatedCode: string;
   buildStep: number;
+  buildAgentName: string;
+  buildAgentStatus: string;
   projectBlueprint: ProjectBlueprint | null;
   sectionOrder: string[] | undefined;
   projectFiles: ProjectFile[];
@@ -150,6 +152,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
   const [chatError, setChatError] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [buildStep, setBuildStep] = useState(-1);
+  const [buildAgentName, setBuildAgentName] = useState('');
+  const [buildAgentStatus, setBuildAgentStatus] = useState('');
   const [projectBlueprint, setProjectBlueprint] = useState<ProjectBlueprint | null>(null);
   const [sectionOrder, setSectionOrder] = useState<string[] | undefined>(undefined);
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
@@ -674,10 +678,16 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
           setStreamingContent('');
           setIsTyping(false);
           setBuildStep(-1);
+          setBuildAgentName('');
+          setBuildAgentStatus('');
           loadingRef.current = false;
         };
 
-        const handleStep = (step: number) => setBuildStep(step);
+        const handleStep = (step: number, agent?: string, status?: string) => {
+          setBuildStep(step);
+          if (agent) setBuildAgentName(agent);
+          if (status) setBuildAgentStatus(status);
+        };
 
         // ── Route: edit existing project OR full build ────────────────────────
         if (isEditMode) {
@@ -834,6 +844,8 @@ export function useAppStore(isAuthenticated: boolean, onCreditsChange?: () => vo
     chatError,
     generatedCode,
     buildStep,
+    buildAgentName,
+    buildAgentStatus,
     projectBlueprint,
     sectionOrder,
     projectFiles,

@@ -74,7 +74,7 @@ export async function mockStreamResponse(
     files?: ProjectFile[]
   ) => void,
   onError: (err: string) => void,
-  onStep?: (step: number) => void,
+  onStep?: (step: number, agent?: string, status?: string) => void,
   onDnaComposition?: (data: DNABuildData) => void,
   onBuildHealth?: (health: BuildHealth) => void,
   onKnowledgeGraph?: (graph: ProjectKnowledgeGraph) => void,
@@ -123,7 +123,7 @@ export async function mockStreamResponse(
           const json = JSON.parse(payload);
 
           if (json.type === "error") return onError(json.error);
-          if (json.type === "step") onStep?.(json.step);
+          if (json.type === "step") onStep?.(json.step, json.agent, json.status);
           if (json.type === "token") { planText += json.token; onToken(json.token); }
           if (json.type === "dna_composition" && json.composition) {
             onDnaComposition?.({
@@ -264,7 +264,7 @@ export async function mockEditResponse(
     diff?: EditDiff
   ) => void,
   onError: (err: string) => void,
-  onStep?: (step: number) => void,
+  onStep?: (step: number, agent?: string, status?: string) => void,
   onIntentDetected?: (editType: string, targetFiles: string[], reason: string) => void,
   onFileTargets?: (files: string[]) => void,
   onQualityCheck?: (score: number, passed: boolean, issues: string[]) => void,
@@ -314,7 +314,7 @@ export async function mockEditResponse(
           const json = JSON.parse(payload);
 
           if (json.type === "error") return onError(json.error);
-          if (json.type === "step") onStep?.(json.step ?? 0);
+          if (json.type === "step") onStep?.(json.step ?? 0, json.agent, json.status);
 
           if (json.type === "intent_detected") {
             onIntentDetected?.(json.editType, json.targetFiles ?? [], json.reason ?? "");

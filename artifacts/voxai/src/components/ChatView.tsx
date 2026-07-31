@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import type { Message } from '../lib/types';
 import type { EditDiff } from '../services/builderService';
@@ -26,84 +26,152 @@ const EDIT_STEPS = [
   { label: 'Merge Engine',     colors: 'from-indigo-500 to-blue-600' },
 ];
 
-function AgentIcon({ isActive, isDone, colors }: { isActive: boolean; isDone: boolean; colors: string }) {
-  if (isDone) {
-    return (
-      <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${colors} flex items-center justify-center shrink-0`}>
-        <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-          <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-    );
-  }
-  if (isActive) {
-    return (
-      <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${colors} flex items-center justify-center shrink-0`}>
-        <svg className="animate-spin text-white w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-      </div>
-    );
-  }
-  return (
-    <div className="w-7 h-7 rounded-full bg-gray-700/40 border border-gray-600/40 flex items-center justify-center shrink-0">
-      <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-    </div>
-  );
-}
+function AgentPipeline({
+  buildStep,
+  isEditMode,
+  agentStatus,
+}: {
+  buildStep: number;
+  isEditMode: boolean;
+  agentStatus?: string;
+}) {
+  const [elapsed, setElapsed] = useState(0);
 
-function AgentPipeline({ buildStep, isEditMode }: { buildStep: number; isEditMode: boolean }) {
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
   if (buildStep < 0) return null;
 
-  if (isEditMode) {
-    const steps = EDIT_STEPS;
-    const activeStep = buildStep <= 4 ? buildStep : 4;
-    const isDone = buildStep >= 9;
+  const steps = isEditMode ? EDIT_STEPS : BUILD_STEPS;
+  const totalSteps = steps.length;
+  const activeStep = isEditMode ? Math.min(buildStep, totalSteps - 1) : buildStep;
+  const isDoneAll = isEditMode ? buildStep >= 9 : buildStep >= totalSteps;
+  const completedCount = isDoneAll ? totalSteps : Math.max(0, activeStep);
+  const pct = isDoneAll ? 100 : Math.round((completedCount / totalSteps) * 100);
+  const isError = agentStatus === 'error';
+  const isWarn  = agentStatus === 'warn';
 
-    return (
-      <div className="flex justify-start mb-3">
-        <div className="bg-gray-900/90 border border-gray-700/50 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col gap-2.5 min-w-[220px]">
-          <div className="flex items-center gap-2 mb-0.5">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Edit Pipeline V5</span>
+  const fmtTime = (s: number) =>
+    s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+
+  const accentClass = isEditMode
+    ? 'text-blue-400'
+    : isDoneAll ? 'text-emerald-400' : 'text-violet-400';
+
+  const barClass = isEditMode
+    ? 'bg-gradient-to-r from-blue-500 to-cyan-400'
+    : 'bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-400';
+
+  const dotClass = isDoneAll
+    ? 'bg-emerald-500'
+    : isEditMode ? 'bg-blue-500 animate-pulse' : 'bg-violet-500 animate-pulse';
+
+  return (
+    <div className="flex justify-start mb-3">
+      <div className="bg-[#0d0d18] border border-white/8 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col min-w-[268px] max-w-[310px]">
+
+        {/* ── Header ─────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-1.5">
+            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${accentClass}`}>
+              {isDoneAll
+                ? 'Build Complete'
+                : isEditMode ? 'Edit Pipeline' : 'Multi-Agent Pipeline'}
+            </span>
           </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[10px] text-gray-600 font-mono tabular-nums">{fmtTime(elapsed)}</span>
+            <span className="text-[10px] text-gray-500 font-semibold tabular-nums">{pct}%</span>
+          </div>
+        </div>
+
+        {/* ── Progress bar ───────────────────────────────────────── */}
+        <div className="w-full h-[3px] bg-white/5 rounded-full overflow-hidden mb-3">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ease-out ${barClass}`}
+            style={{ width: `${Math.max(3, pct)}%` }}
+          />
+        </div>
+
+        {/* ── Step rows ──────────────────────────────────────────── */}
+        <div className="flex flex-col gap-0.5">
           {steps.map(({ label, colors }, i) => {
-            const stepDone = isDone || activeStep > i;
-            const stepActive = !isDone && activeStep === i;
+            const stepDone   = isDoneAll || (isEditMode ? activeStep > i : buildStep > i);
+            const stepActive = !isDoneAll && (isEditMode ? activeStep === i : buildStep === i);
+            const stepPending = !stepDone && !stepActive;
+
             return (
-              <div key={label} className={`flex items-center gap-2.5 transition-all duration-300 ${activeStep < i && !isDone ? 'opacity-35' : 'opacity-100'}`}>
-                <AgentIcon isActive={stepActive} isDone={stepDone} colors={colors} />
-                <span className={`text-[13px] font-semibold leading-none ${stepDone ? 'text-gray-300' : stepActive ? 'text-white' : 'text-gray-500'}`}>
+              <div
+                key={label}
+                className={`flex items-center gap-2 py-[5px] transition-all duration-300 ${stepPending ? 'opacity-30' : 'opacity-100'}`}
+              >
+                {/* Icon */}
+                <div className="w-5 h-5 shrink-0 relative flex items-center justify-center">
+                  {stepDone ? (
+                    <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${colors} flex items-center justify-center`}>
+                      <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5">
+                        <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  ) : stepActive ? (
+                    <>
+                      <div className={`absolute inset-0 rounded-full opacity-30 animate-ping bg-gradient-to-br ${isError ? 'from-red-500 to-rose-600' : isWarn ? 'from-yellow-500 to-amber-500' : colors}`} />
+                      <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${isError ? 'from-red-500 to-rose-600' : isWarn ? 'from-yellow-500 to-amber-500' : colors} flex items-center justify-center`}>
+                        {isError || isWarn ? (
+                          <span className="text-white text-[8px] font-black">!</span>
+                        ) : (
+                          <svg className="animate-spin text-white w-2.5 h-2.5" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-white/4 border border-white/8 flex items-center justify-center">
+                      <span className="w-1 h-1 rounded-full bg-gray-700 block" />
+                    </div>
+                  )}
+                </div>
+
+                {/* Label */}
+                <span className={`text-[12px] font-semibold leading-none flex-1 transition-colors ${
+                  stepDone   ? 'text-gray-400' :
+                  stepActive ? (isError ? 'text-red-400' : isWarn ? 'text-yellow-400' : 'text-white') :
+                  'text-gray-600'
+                }`}>
                   {label}
                 </span>
+
+                {/* Status badge */}
+                {stepActive && !isError && !isWarn && (
+                  <span className="text-[9px] font-semibold text-violet-400/70 uppercase tracking-wide shrink-0">
+                    {isEditMode ? 'active' : 'running'}
+                  </span>
+                )}
+                {stepActive && isError && (
+                  <span className="text-[9px] font-semibold text-red-400 uppercase tracking-wide shrink-0">error</span>
+                )}
+                {stepActive && isWarn && (
+                  <span className="text-[9px] font-semibold text-yellow-400 uppercase tracking-wide shrink-0">warn</span>
+                )}
               </div>
             );
           })}
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="flex justify-start mb-3">
-      <div className="bg-gray-900/90 border border-gray-700/50 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-3.5 flex flex-col gap-2.5 min-w-[240px]">
-        <div className="flex items-center gap-2 mb-0.5">
-          <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
-          <span className="text-[10px] font-bold text-violet-400 uppercase tracking-widest">Multi-Agent Pipeline</span>
+        {/* ── Footer ─────────────────────────────────────────────── */}
+        <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-between">
+          <span className="text-[10px] text-gray-600">
+            {completedCount} / {totalSteps} agents done
+          </span>
+          {isDoneAll && (
+            <span className="text-[10px] text-emerald-400 font-semibold">✓ Complete</span>
+          )}
         </div>
-        {BUILD_STEPS.map(({ label, colors }, i) => {
-          const isDone = buildStep > i;
-          const isActive = buildStep === i;
-          return (
-            <div key={label} className={`flex items-center gap-2.5 transition-all duration-300 ${buildStep < i ? 'opacity-35' : 'opacity-100'}`}>
-              <AgentIcon isActive={isActive} isDone={isDone} colors={colors} />
-              <span className={`text-[13px] font-semibold leading-none ${isDone ? 'text-gray-300' : isActive ? 'text-white' : 'text-gray-500'}`}>
-                {label}
-              </span>
-            </div>
-          );
-        })}
       </div>
     </div>
   );
@@ -215,6 +283,8 @@ interface ChatViewProps {
   streamingContent: string;
   chatError: string;
   buildStep: number;
+  buildAgentName?: string;
+  buildAgentStatus?: string;
   isEditMode?: boolean;
   lastEditDiff?: EditDiff | null;
 }
@@ -257,7 +327,7 @@ function ErrorBanner({ message }: { message: string }) {
   );
 }
 
-export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep, isEditMode, lastEditDiff }: ChatViewProps) {
+export default function ChatView({ messages, isTyping, streamingContent, chatError, buildStep, buildAgentName: _buildAgentName, buildAgentStatus, isEditMode, lastEditDiff }: ChatViewProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -291,11 +361,11 @@ export default function ChatView({ messages, isTyping, streamingContent, chatErr
         ))}
 
         {isTyping && isEditMode && buildStep >= 0 && buildStep < 9 && (
-          <AgentPipeline buildStep={buildStep} isEditMode={true} />
+          <AgentPipeline buildStep={buildStep} isEditMode={true} agentStatus={buildAgentStatus} />
         )}
 
         {isTyping && !isEditMode && buildStep >= 0 && (
-          <AgentPipeline buildStep={buildStep} isEditMode={false} />
+          <AgentPipeline buildStep={buildStep} isEditMode={false} agentStatus={buildAgentStatus} />
         )}
 
         {isTyping && hasPlanItems && !isEditMode && (

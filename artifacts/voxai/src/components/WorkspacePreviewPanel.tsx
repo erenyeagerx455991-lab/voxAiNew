@@ -1103,47 +1103,105 @@ const BUILD_STEP_LABELS = [
 ];
 
 function BuildingState({ buildStep }: { buildStep: number }) {
-  const label =
-    buildStep >= 0 && buildStep < BUILD_STEP_LABELS.length
-      ? BUILD_STEP_LABELS[buildStep]
-      : 'Building...';
-  const progress = Math.max(8, ((buildStep + 1) / BUILD_STEP_LABELS.length) * 100);
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const total   = BUILD_STEP_LABELS.length;
+  const safeStep = Math.max(0, Math.min(buildStep, total - 1));
+  const label   = BUILD_STEP_LABELS[safeStep] ?? 'Building…';
+  const pct     = Math.max(4, Math.round(((safeStep + 1) / total) * 100));
+  const fmtTime = (s: number) => s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`;
+
+  // SVG arc ring params
+  const R    = 44;
+  const circ = 2 * Math.PI * R;
+  const dash = circ * (1 - pct / 100);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-10 gap-8">
-      <div className="w-full max-w-md space-y-3">
-        <div className="h-10 rounded-xl animate-pulse" style={{ background: 'rgba(99,102,241,0.18)', animationDelay: '0ms' }} />
-        <div className="h-3 rounded-full animate-pulse bg-white/6 w-3/4 mx-auto" style={{ animationDelay: '80ms' }} />
-        <div className="h-3 rounded-full animate-pulse bg-white/4 w-1/2 mx-auto" style={{ animationDelay: '160ms' }} />
-        <div className="flex gap-2 justify-center pt-1">
-          <div className="h-8 w-24 rounded-lg animate-pulse bg-indigo-500/25" style={{ animationDelay: '240ms' }} />
-          <div className="h-8 w-20 rounded-lg animate-pulse bg-white/6"      style={{ animationDelay: '320ms' }} />
+    <div className="flex-1 flex flex-col items-center justify-center px-8 gap-6 select-none">
+
+      {/* ── Skeleton preview ─────────────────────────────────────── */}
+      <div className="w-full max-w-sm space-y-3 opacity-60">
+        <div className="h-9 rounded-xl animate-pulse bg-indigo-500/12" style={{ animationDelay: '0ms' }} />
+        <div className="flex gap-2">
+          <div className="h-3 rounded-full flex-1 animate-pulse bg-white/6" style={{ animationDelay: '80ms' }} />
+          <div className="h-3 rounded-full w-2/5 animate-pulse bg-white/4" style={{ animationDelay: '160ms' }} />
         </div>
-        <div className="grid grid-cols-3 gap-2 pt-2">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-20 rounded-xl animate-pulse bg-white/5" style={{ animationDelay: `${400 + i * 100}ms` }} />
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map(i => (
+            <div key={i} className="h-16 rounded-xl animate-pulse bg-white/5" style={{ animationDelay: `${240 + i * 80}ms` }} />
           ))}
         </div>
-        <div className="space-y-2 pt-1">
-          <div className="h-2.5 rounded-full animate-pulse bg-white/5 w-full"  style={{ animationDelay: '700ms' }} />
-          <div className="h-2.5 rounded-full animate-pulse bg-white/4 w-5/6"  style={{ animationDelay: '780ms' }} />
-          <div className="h-2.5 rounded-full animate-pulse bg-white/3 w-4/6"  style={{ animationDelay: '860ms' }} />
+        <div className="space-y-2">
+          <div className="h-2 rounded-full animate-pulse bg-white/5 w-full"  style={{ animationDelay: '480ms' }} />
+          <div className="h-2 rounded-full animate-pulse bg-white/4 w-5/6"  style={{ animationDelay: '560ms' }} />
+          <div className="h-2 rounded-full animate-pulse bg-white/3 w-3/5"  style={{ animationDelay: '640ms' }} />
         </div>
       </div>
-      <div className="flex flex-col items-center gap-3 w-full max-w-md">
-        <div className="w-full h-0.5 bg-white/5 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-indigo-500 rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:0ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:150ms]" />
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 inline-block animate-bounce [animation-delay:300ms]" />
+
+      {/* ── Progress ring + info ─────────────────────────────────── */}
+      <div className="flex flex-col items-center gap-4 w-full max-w-sm">
+
+        {/* Ring */}
+        <div className="relative w-24 h-24">
+          <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+            {/* Track */}
+            <circle cx="50" cy="50" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+            {/* Progress arc */}
+            <circle
+              cx="50" cy="50" r={R} fill="none"
+              stroke="url(#progressGrad)"
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={circ}
+              strokeDashoffset={dash}
+              className="transition-all duration-700 ease-out"
+            />
+            <defs>
+              <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stopColor="#8b5cf6" />
+                <stop offset="50%"  stopColor="#d946ef" />
+                <stop offset="100%" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+          </svg>
+          {/* Centre text */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
+            <span className="text-[18px] font-bold text-white tabular-nums leading-none">{pct}%</span>
+            <span className="text-[9px] text-gray-600 font-mono tabular-nums">{fmtTime(elapsed)}</span>
           </div>
-          <span className="text-[13px] text-gray-500">{label}</span>
+        </div>
+
+        {/* Step label */}
+        <div className="flex flex-col items-center gap-1.5 text-center">
+          <p
+            key={label}
+            className="text-[13px] text-white/80 font-medium leading-snug transition-all duration-500"
+          >
+            {label}
+          </p>
+          <p className="text-[11px] text-gray-600 tabular-nums">
+            Step {safeStep + 1} of {total}
+          </p>
+        </div>
+
+        {/* Step pip track */}
+        <div className="flex items-center gap-1 flex-wrap justify-center max-w-[240px]">
+          {BUILD_STEP_LABELS.map((_, i) => (
+            <div
+              key={i}
+              className={`rounded-full transition-all duration-500 ${
+                i < safeStep
+                  ? 'w-2 h-2 bg-indigo-500'
+                  : i === safeStep
+                    ? 'w-3 h-2 bg-violet-400 shadow-[0_0_6px_2px_rgba(139,92,246,0.5)]'
+                    : 'w-2 h-2 bg-white/8'
+              }`}
+            />
+          ))}
         </div>
       </div>
     </div>
