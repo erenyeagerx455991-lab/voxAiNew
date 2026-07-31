@@ -564,6 +564,20 @@ export function buildPreviewHtml(code: string): string {
       var stack = reason ? (reason.stack || '') : '';
       __reportRuntimeError(msg, stack, '', '');
     });
+
+    // ── Console capture — forward log/warn/error/info to parent preview panel ──
+    (function() {
+      var _orig = { log: console.log, warn: console.warn, error: console.error, info: console.info };
+      ['log', 'warn', 'error', 'info'].forEach(function(lvl) {
+        console[lvl] = function() {
+          var parts = Array.prototype.slice.call(arguments).map(function(a) {
+            try { return (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a); } catch(e2) { return String(a); }
+          });
+          try { window.parent.postMessage({ type: 'console_log', level: lvl, message: parts.join(' '), ts: Date.now() }, '*'); } catch(e2) {}
+          _orig[lvl].apply(console, arguments);
+        };
+      });
+    })();
   </script>
 </head>
 <body>

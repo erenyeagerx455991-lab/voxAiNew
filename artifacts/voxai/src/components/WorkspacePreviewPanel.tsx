@@ -6,6 +6,7 @@ import {
   Network, LayoutDashboard, Component, Database, GitBranch, Package,
   Lock, LockOpen, BookOpen, PackageCheck, Activity, CheckCircle2,
   XCircle, Circle, PackagePlus, TerminalSquare,
+  Smartphone, Tablet, RefreshCw, Maximize2, Minimize2,
 } from 'lucide-react';
 import { buildPreviewHtml, buildPreviewHtmlFromFiles, generateProjectFiles } from '../services/builderService';
 import type { ProjectBlueprint, ProjectFile, DNAComposition, ThemeTokens, MotionProfile, EditDiff, BuildHealth, ProjectKnowledgeGraph, RegistrySelection, RegistryHealth, RegistryFileMap, ComponentHistory, RuntimeState, RuntimeRepairRecord, RepairMetrics, SelfHealingState, RuntimeHealthV3, RuntimeTimeline, AutonomousBuildState } from '../services/builderService';
@@ -1276,17 +1277,48 @@ export default function WorkspacePreviewPanel({
   const [runtimeError, setRuntimeError] = useState<{ message: string; file?: string; stack?: string } | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // V5.2: Listen for runtime_error messages from the preview iframe
+  // ── Preview enhancements ───────────────────────────────────────────────────
+  const [viewport, setViewport] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [iframeLoading, setIframeLoading] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<Array<{ level: string; message: string; ts: number }>>([]);
+  const [showConsole, setShowConsole] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const consoleRef = useRef<HTMLDivElement>(null);
+
+  // Listen for runtime_error + console_log messages from the preview iframe
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
-      if (!e.data || e.data.type !== 'runtime_error') return;
-      const err = { file: e.data.file || '', message: e.data.message || 'Unknown runtime error', stack: e.data.stack || '', component: e.data.component || '' };
-      setRuntimeError(err);
-      onRuntimeError?.(err);
+      if (!e.data) return;
+      if (e.data.type === 'runtime_error') {
+        const err = { file: e.data.file || '', message: e.data.message || 'Unknown runtime error', stack: e.data.stack || '', component: e.data.component || '' };
+        setRuntimeError(err);
+        onRuntimeError?.(err);
+      } else if (e.data.type === 'console_log') {
+        setConsoleLogs(prev => [...prev.slice(-199), { level: e.data.level || 'log', message: e.data.message || '', ts: e.data.ts || Date.now() }]);
+      }
     }
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, [onRuntimeError]);
+
+  // Auto-scroll console to bottom on new entries
+  useEffect(() => {
+    if (showConsole && consoleRef.current) {
+      consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+    }
+  }, [consoleLogs, showConsole]);
+
+  // Clear console + error banner when a new build arrives
+  const prevBuildKeyRef = useRef('');
+  useEffect(() => {
+    const key = serverFiles && serverFiles.length > 0 ? String(serverFiles.length) : code.slice(0, 64);
+    if (key !== prevBuildKeyRef.current) {
+      prevBuildKeyRef.current = key;
+      setConsoleLogs([]);
+      setRuntimeError(null);
+    }
+  }, [serverFiles, code]);
 
   // Prefer server-generated files (blueprint-driven, proper TypeScript).
   // Fall back to client-side generation only when server files aren't available.
@@ -1554,8 +1586,62 @@ export default function WorkspacePreviewPanel({
 
       {/* ── Preview tab ── */}
       {tab === 'preview' && (
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {/* V5.2 Runtime Error Banner */}
+        <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[#0d0d12] flex flex-col' : 'flex-1 flex flex-col overflow-hidden relative'}>
+
+          {/* Preview toolbar */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#13131c] border-b border-white/5 shrink-0">
+            {/* Fake address bar */}
+            <div className="flex items-center gap-1.5 bg-[#0d0d12] rounded-md h-6 px-2.5 min-w-0 flex-1 max-w-xs">
+              <Globe size={9} className="text-emerald-600 shrink-0" />
+              <span className="text-[10px] text-gray-600 truncate font-mono select-none">nexogen://preview</span>
+            </div>
+            {/* Refresh */}
+            <button
+              onClick={() => { setRefreshKey(k => k + 1); setConsoleLogs([]); setIframeLoading(true); }}
+              title="Refresh preview"
+              className="p-1 rounded text-gray-600 hover:text-gray-300 hover:bg-white/8 transition-colors"
+            >
+              <RefreshCw size={12} />
+            </button>
+            {/* Viewport switcher */}
+            <div className="flex items-center bg-[#0d0d12] rounded-md p-0.5">
+              {([
+                { key: 'mobile',  icon: <Smartphone size={11} />, title: 'Mobile (375px)' },
+                { key: 'tablet',  icon: <Tablet     size={11} />, title: 'Tablet (768px)' },
+                { key: 'desktop', icon: <Monitor    size={11} />, title: 'Desktop (full width)' },
+              ] as const).map(({ key, icon, title }) => (
+                <button
+                  key={key}
+                  onClick={() => setViewport(key)}
+                  title={title}
+                  className={`px-1.5 py-0.5 rounded transition-colors ${viewport === key ? 'bg-white/15 text-white' : 'text-gray-600 hover:text-gray-300'}`}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+            {/* Console toggle */}
+            <button
+              onClick={() => setShowConsole(v => !v)}
+              title="Toggle console output"
+              className={`p-1 rounded transition-colors relative ${showConsole ? 'bg-amber-500/20 text-amber-400' : 'text-gray-600 hover:text-gray-300 hover:bg-white/8'}`}
+            >
+              <TerminalSquare size={12} />
+              {consoleLogs.some(l => l.level === 'error') && (
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-red-500" />
+              )}
+            </button>
+            {/* Fullscreen toggle */}
+            <button
+              onClick={() => setIsFullscreen(v => !v)}
+              title={isFullscreen ? 'Exit fullscreen' : 'Expand preview'}
+              className="p-1 rounded text-gray-600 hover:text-gray-300 hover:bg-white/8 transition-colors"
+            >
+              {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+            </button>
+          </div>
+
+          {/* Runtime Error Banner */}
           {runtimeError && (
             <div className="mx-3 mt-2 mb-1 rounded-lg border border-red-500/30 bg-red-500/8 px-3 py-2 shrink-0">
               <div className="flex items-start justify-between gap-2">
@@ -1576,18 +1662,101 @@ export default function WorkspacePreviewPanel({
               </div>
             </div>
           )}
-          <iframe
-            ref={iframeRef}
-            key={serverFiles && serverFiles.length > 0 ? serverFiles.length : code}
-            srcDoc={
-              serverFiles && serverFiles.length > 0
-                ? buildPreviewHtmlFromFiles(serverFiles)
-                : buildPreviewHtml(code)
-            }
-            title="Live preview"
-            sandbox="allow-scripts allow-same-origin"
-            className="flex-1 w-full border-0"
-          />
+
+          {/* Iframe viewport area */}
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {viewport === 'desktop' ? (
+              /* Desktop: fills all available space */
+              <div className="flex-1 relative min-h-0">
+                {iframeLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d12] z-10 pointer-events-none">
+                    <div className="w-5 h-5 border-2 border-indigo-500/60 border-t-indigo-400 rounded-full animate-spin" />
+                  </div>
+                )}
+                <iframe
+                  ref={iframeRef}
+                  key={`${refreshKey}-${serverFiles && serverFiles.length > 0 ? serverFiles.length : code.length}`}
+                  srcDoc={serverFiles && serverFiles.length > 0 ? buildPreviewHtmlFromFiles(serverFiles) : buildPreviewHtml(code)}
+                  title="Live preview"
+                  sandbox="allow-scripts"
+                  onLoad={() => setIframeLoading(false)}
+                  className="absolute inset-0 w-full h-full border-0"
+                />
+              </div>
+            ) : (
+              /* Mobile / Tablet: fixed-width frame centred over a dark bg */
+              <div className="flex-1 overflow-auto flex justify-center py-6 px-4 bg-[#090910]">
+                <div className={`shrink-0 rounded-xl overflow-hidden border border-white/10 shadow-2xl relative ${viewport === 'mobile' ? 'w-[375px]' : 'w-[768px]'}`}>
+                  {iframeLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#0d0d12] z-10 pointer-events-none">
+                      <div className="w-5 h-5 border-2 border-indigo-500/60 border-t-indigo-400 rounded-full animate-spin" />
+                    </div>
+                  )}
+                  {/* Minimal browser chrome */}
+                  <div className="flex items-center gap-2 px-3 py-2 bg-[#16161f] border-b border-white/5">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-red-500/40" />
+                      <div className="w-2 h-2 rounded-full bg-yellow-500/40" />
+                      <div className="w-2 h-2 rounded-full bg-green-500/40" />
+                    </div>
+                    <div className="flex-1 bg-[#0d0d12] rounded h-4 flex items-center px-2">
+                      <span className="text-[9px] text-gray-700 font-mono">
+                        {viewport === 'mobile' ? '375px · mobile' : '768px · tablet'}
+                      </span>
+                    </div>
+                  </div>
+                  <iframe
+                    ref={iframeRef}
+                    key={`${refreshKey}-${serverFiles && serverFiles.length > 0 ? serverFiles.length : code.length}`}
+                    srcDoc={serverFiles && serverFiles.length > 0 ? buildPreviewHtmlFromFiles(serverFiles) : buildPreviewHtml(code)}
+                    title="Live preview"
+                    sandbox="allow-scripts"
+                    onLoad={() => setIframeLoading(false)}
+                    className="w-full border-0 block"
+                    style={{ height: viewport === 'mobile' ? '700px' : '820px' }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Console panel */}
+          {showConsole && (
+            <div className="h-36 flex flex-col border-t border-white/5 bg-[#080810] shrink-0">
+              <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 shrink-0">
+                <div className="flex items-center gap-1.5">
+                  <TerminalSquare size={11} className="text-gray-600" />
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Console</span>
+                  {consoleLogs.length > 0 && (
+                    <span className="text-[10px] text-gray-700 font-mono">({consoleLogs.length})</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setConsoleLogs([])}
+                  className="text-[10px] text-gray-700 hover:text-gray-400 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              <div ref={consoleRef} className="flex-1 overflow-y-auto px-3 py-1.5 space-y-0.5 font-mono">
+                {consoleLogs.length === 0 ? (
+                  <p className="text-[10px] text-gray-700 italic py-2">No console output yet — logs from your generated app will appear here.</p>
+                ) : (
+                  consoleLogs.map((log, i) => (
+                    <div key={i} className={`flex items-start gap-1.5 py-0.5 ${
+                      log.level === 'error' ? 'text-red-400' :
+                      log.level === 'warn'  ? 'text-yellow-400' :
+                      log.level === 'info'  ? 'text-blue-400' :
+                      'text-gray-400'
+                    }`}>
+                      <span className="text-[9px] opacity-50 shrink-0 mt-0.5 uppercase w-7">{log.level}</span>
+                      <span className="text-[10px] leading-relaxed break-all">{log.message}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
